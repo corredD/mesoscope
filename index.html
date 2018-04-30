@@ -1,0 +1,518 @@
+<html ng-app="pclDemo">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Mesoscope @ TSRI</title>
+  <style>
+  code {
+    padding: 2px 4px;
+    font-size: 90%;
+    color: #c7254e;
+    background-color: #f9f2f4;
+    border-radius: 4px;
+  }
+  </style>
+  <link type="text/css" rel="stylesheet" href="style_dev.css">
+  <link rel="stylesheet" href="menu_style.css">
+
+  <link rel="stylesheet" href="extras/SlickGrid/plugins/slick.rowdetailview.css" type="text/css" />
+  <link rel="stylesheet" href="extras/SlickGrid/slick.grid.css" type="text/css" />
+  <link rel="stylesheet" href="extras/SlickGrid/controls/slick.pager.css" type="text/css" />
+  <link rel="stylesheet" href="extras/SlickGrid/css/smoothness/jquery-ui-1.11.3.custom.css" type="text/css" />
+  <link rel="stylesheet" href="extras/SlickGrid/examples/examples.css" type="text/css" />
+  <link rel="stylesheet" href="extras/SlickGrid/controls/slick.columnpicker.css" type="text/css" />
+  <!--/*PFV*/-->
+
+  <!-- jquery svg -->
+  <link rel="stylesheet" type="text/css" href="extras/pfv/js/vendor/svg/jquery.svg.css" />
+  <link rel="stylesheet" href="extras/pfv/js/vendor/bootstrap-3.3.5/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="extras/pfv/css/bootstrap-slider.css">
+
+  <!--link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"-->
+
+  <!-- font awesome icons -->
+  <link rel="stylesheet" href="extras/pfv/css/font-awesome.min.css">
+
+  <!-- NGL -->
+  <!-- <script src="js/vendor/ngl.embedded.min.js"></script> -->
+
+  <!-- and finally our own code ... !-->
+  <link href="extras/pfv/css/pfv.css" rel="stylesheet">
+  <!--script data-main='demo' src='extras/pfv/js/vendor/require.js'></script-->
+
+  <!--[if IE]>
+	<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+<![endif]-->
+  <style type="text/css">
+    .gridster li header {
+      background: #999;
+      display: block;
+      font-size: 20px;
+      line-height: normal;
+      padding: 4px 0 6px;
+      margin-bottom: 20px;
+      cursor: move;
+    }
+
+    .detail {
+      padding: 5px
+    }
+
+    .preload {
+      font-size: 18px;
+    }
+
+    .dynamic-cell-detail> :first-child {
+      vertical-align: middle;
+      line-height: 13px;
+      padding: 10px;
+      margin-left: 20px;
+    }
+  </style>
+
+
+  <style>
+    #wrapper {
+      height: 100%;
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    #menuContainer {
+      width: 20%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: #222;
+    }
+
+    #menuContainer li {
+      border-bottom: 1px solid #000;
+      border-top: 1px solid #333;
+      cursor: pointer;
+      padding: 10px 5px;
+      color: #BBB;
+      background: #1a1a1a;
+      font: 12px Arial, sans-serif;
+    }
+
+    #menuContainer li:hover {
+      background: #111;
+      color: #CCC;
+    }
+
+    #layoutContainer {
+      width: 100%;
+      height: 85%;
+      padding: 5px 5px; //box-shadow: -3px 0px 9px 0px rgba( 0, 0, 0, 0.4 );
+    }
+  </style>
+  <link type="text/css" rel="stylesheet" href="https://golden-layout.com/files/latest/css/goldenlayout-base.css" />
+  <link type="text/css" rel="stylesheet" href="https://golden-layout.com/files/latest/css/goldenlayout-light-theme.css" />
+
+  <!--PDB component library-->
+  <!-- Complied & minified library css -->
+  <link rel="stylesheet" href="//www.ebi.ac.uk/pdbe/pdb-component-library/v1.0/css/pdb.component.library.min-1.0.0.css" />
+  <!-- Dependencey scripts (these can be skipped if already included in page) -->
+  <script src="//www.ebi.ac.uk/pdbe/pdb-component-library/libs/d3.min.js"></script>
+  <script src="//www.ebi.ac.uk/pdbe/pdb-component-library/libs/angular.1.4.7.min.js"></script>
+  <!-- Complied & minified library JS -->
+  <script src="//www.ebi.ac.uk/pdbe/pdb-component-library/v1.0/js/pdb.component.library.min-1.0.0.js"></script>
+
+
+  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+  <script type="text/javascript" src="extras/goldenlayout.min.js"></script>
+  <!--script type="text/javascript" src="js/layout_mg.js"></script-->
+
+  <script src="extras/d3.v4.min.js"></script>
+  <script src="https://d3js.org/d3-zoom.v1.min.js"></script>
+  <!--script src="https://d3js.org/d3-contour.v1.min.js"></script>
+<script src="https://d3js.org/d3-geo.v1.min.js"></script-->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js"></script>
+
+  <!-- NGL  -->
+  <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js"></script>
+
+  <script src="extras/SlickGrid/lib/firebugx.js"></script>
+  <!--script src="extras/SlickGrid/lib/jquery-1.11.2.min.js"></script-->
+  <script src="extras/SlickGrid/lib/jquery-ui-1.11.3.js"></script>
+  <script src="extras/SlickGrid/lib/jquery.event.drag-2.3.0.js"></script>
+  <script src="extras/SlickGrid/lib/jquery.tmpl.min.js"></script>
+  <!--script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script-->
+  <!--script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script-->
+  <script src="https://cdn.rawgit.com/scottjehl/jQuery-Tree-Control/master/js/jQuery.tree.js" type="text/javascript"></script>
+
+  <!--XLSX-->
+  <script src="https://oss.sheetjs.com/js-xlsx/xlsx.core.min.js"></script>
+  <script src="https://oss.sheetjs.com/js-xlsx/xlsx.full.min.js"></script>
+  <!--script src="https://unpkg.com/canvas-datagrid/dist/canvas-datagrid.js"></script-->
+
+  <!--GRid ??-->
+  <!--script src="https://cdnjs.cloudflare.com/ajax/libs/free-jqgrid/4.15.3/jquery.jqgrid.min.js"></script-->
+  <!--slickGrid-->
+  <script src="extras/SlickGrid/slick.core.js"></script>
+  <script src="extras/SlickGrid/plugins/slick.cellrangedecorator.js"></script>
+  <script src="extras/SlickGrid/plugins/slick.cellrangeselector.js"></script>
+  <script src="extras/SlickGrid/plugins/slick.cellselectionmodel.js"></script>
+  <script src="extras/SlickGrid/plugins/slick.rowselectionmodel.js"></script>
+  <script src="extras/SlickGrid/slick.formatters.js"></script>
+  <script src="extras/SlickGrid/slick.editors.js"></script>
+  <script src="extras/SlickGrid/slick.grid.js"></script>
+  <script src="extras/SlickGrid/slick.groupitemmetadataprovider.js"></script>
+  <script src="extras/SlickGrid/slick.dataview.js"></script>
+  <script src="extras/SlickGrid/controls/slick.pager.js"></script>
+  <script src="extras/SlickGrid/controls/slick.columnpicker.js"></script>
+  <script src="extras/SlickGrid/examples/slick.compositeeditor.js"></script>
+  <script src="extras/SlickGrid/plugins/slick.checkboxselectcolumn.js"></script>
+  <script src="extras/SlickGrid/plugins/slick.rowdetailview.js"></script>
+  <script src="extras/SlickGrid/plugins/slick.autotooltips.js"></script>
+
+  <script type="text/javascript" src="https://fastcdn.org/FileSaver.js/1.1.20151003/FileSaver.js"></script>
+
+  <script src="http://ebi-uniprot.github.io/CDN/protvista/protvista.js"></script>
+  <link href="http://ebi-uniprot.github.io/CDN/protvista/css/main.css" rel="stylesheet"/>
+
+
+  <!--COLLADA-->
+
+
+<script src="extras/collada/gl-matrix-min.js"></script>
+<script src="extras/collada/tinyxml.js"></script>
+<script src="extras/collada/collada.js"></script>
+
+  <style>
+    .dropdown {
+      a {
+        text-decoration: none;
+      }
+      float: left;
+
+      [data-toggle="dropdown"] {
+        position: relative;
+        display: block;
+        color: white;
+        background: $blue;
+        @include double-shadow($blue);
+        @include hover-style($blue);
+        @include text-shadow(0 -1px 0 rgba(0, 0, 0, 0.3));
+        padding: 10px;
+
+      }
+      .icon-arrow {
+        position: absolute;
+        display: block;
+        font-size: 0.7em;
+        color: #fff;
+        top: 14px;
+        right: 10px;
+
+        &.open {
+          @include transform(rotate(-180deg));
+          @include transition(transform .6s);
+        }
+        &.close {
+          @include transform(rotate(0deg));
+          @include transition(transform .6s);
+        }
+
+        &:before {
+          content: '\25BC';
+        }
+      }
+
+      .dropdown-menu {
+        max-height: 0;
+        overflow: hidden;
+        @include ul-nostyle;
+
+        li {
+          padding: 0;
+
+          a {
+            display: block;
+            color: darken($gray, 50%);
+            background: $gray;
+            @include double-shadow($gray);
+            @include hover-style($gray);
+            @include text-shadow(0 -1px 0 rgba(255, 255, 255, 0.3));
+            padding: 10px 10px;
+          }
+        }
+      }
+
+      .show,
+      .hide {
+        @include transform-origin(50%, 0%);
+      }
+
+      .show {
+        display: block;
+        max-height: 9999px;
+        @include transform(scaleY(1));
+        @include animation(showAnimation .5s ease-in-out);
+        @include transition(max-height 1s ease-in-out);
+      }
+
+      .hide {
+        display: none;
+        max-height: 0;
+        @include transform(scaleY(0));
+        @include animation(hideAnimation .4s ease-out);
+        @include transition(max-height .6s ease-out);
+      }
+    }
+
+    @include keyframes(showAnimation) {
+      0% {
+        @include transform(scaleY(0.1));
+      }
+      40% {
+        @include transform(scaleY(1.04));
+      }
+      60% {
+        @include transform(scaleY(0.98));
+      }
+      80% {
+        @include transform(scaleY(1.04));
+      }
+      100% {
+        @include transform(scaleY(0.98));
+      }
+      80% {
+        @include transform(scaleY(1.02));
+      }
+      100% {
+        @include transform(scaleY(1));
+      }
+    }
+
+    @include keyframes(hideAnimation) {
+      0% {
+        @include transform(scaleY(1));
+      }
+      60% {
+        @include transform(scaleY(0.98));
+      }
+      80% {
+        @include transform(scaleY(1.02));
+      }
+      100% {
+        @include transform(scaleY(0));
+      }
+    }
+
+    .chooseColor {
+      width: 10px;
+      height: 10px;
+      background: #fff;
+      float: left;
+      margin: 5px 5px 0 0;
+      cursor: pointer;
+    }
+
+    .chooseColor .selectedColor {
+      width: 10px;
+      height: 10px;
+    }
+
+    .chooseColor ul {
+      display: none;
+      box-shadow: 2px 2px 3px rgba( 0, 0, 0, 0.7);
+    }
+
+    .chooseColor:hover ul {
+      display: block;
+    }
+
+    .chooseColor ul,
+    .chooseColor ul li {
+      margin: 0;
+      padding: 0;
+      list-style-type: none;
+    }
+
+    .chooseColor ul li {
+      width: 10px;
+      height: 10px;
+      cursor: pointer;
+    }
+
+    .chooseColor ul li:hover {
+      border: 1px solid orange;
+
+      select {
+        width: 10px;
+        height: 10px;
+        background: #fff;
+        float: center;
+        cursor: pointer;
+      }
+
+  </style>
+
+
+
+  <script>
+  // Code goes here
+    var app = angular.module('pclDemo',['pdb.component.library']);
+
+    app.config(function($locationProvider) {
+      $locationProvider.html5Mode({
+      enabled: true,
+      requireBase: false
+      });
+    });
+    app.directive('pdbeComp',function($compile){
+      return {
+        restrict: 'C',
+        link: function(scope, element, attrs){
+
+          var compMainDiv = document.getElementById(attrs.displayIn);
+          var template = element.text();
+          var compContent =  $compile(template)(scope);
+
+          angular.element(compMainDiv).prepend(compContent);
+
+          element.bind('DOMSubtreeModified', function() {
+            console.log("DOMSubtreeModified");
+            template = element.text();
+            compContent =  $compile(template)(scope);
+            angular.element(compMainDiv).html('');
+            angular.element(compMainDiv).prepend(compContent);
+            scope.flag = 1;
+          });
+        }
+      }
+    });
+  </script>
+
+
+</head>
+
+<body>
+  <div hidden>
+    <pre style="clear:both"><code id="pdbeComp_topov" class="pdbeComp" display-in="topov" contenteditable="true">&lt;pdb-topology-viewer entry-id="1aqd" entity-id="1" height="370"&gt;&lt;/pdb-topology-viewer&gt;</code></pre>
+  </div>
+  <div hidden>
+    <pre style="clear:both"><code id="pdbeComp_seqv" class="pdbeComp" display-in="seqv" contenteditable="true">&lt;pdb-seq-viewer entry-id="1aqd" entity-id="1" height="370"&gt;&lt;/pdb-seq-viewer&gt;</code></pre>
+  </div>
+  <div hidden>
+    <pre style="clear:both"><code id="pdbeComp_puv" class="pdbeComp" display-in="puv" contenteditable="true">&lt;pdb-uniprot-viewer entry-id="P07550" entity-id="1" height="370"&gt;&lt;/pdb-uniprot-viewer&gt;</code></pre>
+  </div>
+  <!--div class="TopBar">  </div-->
+    <!--div class="SearchBar"></div-->
+    <!--div class="Logo"></div-->
+  <div class"aheader">
+    <div class="logo_head"">
+     <img id="logo_image" src="images/Logo@2xc.png" height="90%">
+     <img id="logo_image" src="images/customLogo2.png"  height="90%"alt="logo"  />
+     <h1 id="logo_image" > Mesoscope @ TSRI </h1>
+   </div>
+
+   <div id='cssmenu'>
+   <ul>
+      <li class='has-sub'><a href='#'><span>Setup From</span></a>
+        <ul>
+          <li><a href="#" onclick="selectDB()">Current database</a></li>
+          <li class='has-sub'><a href="#">Examples</a>
+              <ul>
+                  <li><a href="#" onclick="LoadExampleBlood()">Blood Plasma</a>
+                  <!--li><a href="#" onclick="LoadExampleHIV()">HIV</a-->
+                  <li><a href="#" onclick="LoadExampleMpn()">Mycoplasma Pneumonia</a>
+              </ul>
+          </li>
+          <li><a href="#" for="jsfile_input" onclick="$('#jsfile_input').trigger('click');">File (.json, _serialized.json,.xlsx,.csv)</a></li>
+          <li class='last'><a href="#" for="file_input" onclick="$('#file_input').trigger('click');">Setup Data Directory (PDB,geoms)</a></li>
+        </ul>
+      </li>
+      <li><a href='#'  onclick="CreateNew();"><span>Create New</span></a></li>
+      <li class='has-sub'><a href='#'><span>Export</span></a>
+        <ul>
+          <li><a href="#" onclick="SaveRecipeCellPACK()">cellPACK recipe</a></li>
+          <li><a href="#" onclick="SaveRecipeCellPACK_serialized()">cellPACK-gpu recipe</a></li>
+          <li><a href="#" onclick="saveCurrentCSV(gridArray[0])">Spreadsheet CSV</a></li>
+          <!--li><a href="#" >Spreadsheet XL</a></li-->
+        </ul>
+      </li>
+      <li class='last has-sub'><a href='#'><span>Help</span></a>
+        <ul>
+        <li><a href="#" onclick="on('Settings')">Settings</a></li>
+        <li><a href="#" onclick="on('Help')">Help</a></li>
+        <li><a href="#" onclick="on('About')">About Us</a></li>
+        <li><a href="#" onclick="on('FAQ')">FAQ</a></li>
+        <li><a href="#" onclick="on('Contact')">Contact</a></li>
+        </ul>
+      </li>
+   </ul>
+   </div>
+
+
+
+  <!--/div<input class="togglePFV" id="togglePFV" type="checkbox">-->
+  <input class="hidden" type="file" id="jsfile_input" accept=".csv,.json,.xlsx" type="file" onchange="selectFile(event)" />
+  <input class="hidden" type="file" id="file_input" onchange="selectFolder(event)" webkitdirectory mozdirectory msdirectory odirectory directory multiple />
+
+
+  <div id="overlay" onclick="off()">
+    <div id="overlay_text">Overlay Text</div>
+  </div>
+
+  <div id="layoutContainer"></div>
+
+  <div class='slickform modal' id="slickdetail">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="close" id="closeslickdetail">&times;</span>
+        <h2>Column Mapping</h2>
+      </div>
+      <div class="modal-body" id="slickitems">
+      </div>
+      <hr/>
+      <div class="modal-footer">
+        <div>
+          <button id="saveDetail" style="color:black;">Save</button>
+          <button id="cancelDetail" style="color:black;">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="dialog" class="modal" title="Leave Page"></div>
+  <div id="svgexport"></div>
+
+  <ul class='custom-menu-node'>
+    <li onclick="RenameNodeOver()">rename</li>
+    <li onclick="DeleteNodeOver()">delete</li>
+  </ul>
+
+  <div id="topov" class="topov"  height="100%" width="100%"></div>
+  <div id="seqv" class="seqv"  height="100%" width="100%"></div>
+  <div id="puv" class="puv"  height="100%" width="100%"></div>
+
+</body>
+
+<script src="extras/clustering.min.js"></script>
+<script src="js/gridtable.js"></script>
+<script src="js/ngl.js"></script>
+<script src="js/ngl_grid.js"></script>
+<script src="js/distance.js"></script>
+<script src="js/pycallback.js"></script>
+<script src="js/query_helper.js"></script>
+<script src="js/cp_serialized.js"></script>
+<script src="js/main.js"></script>
+<script src="js/layout_mg.js"></script>
+
+
+<!-- Protein Feature View from rcsb-->
+<!--script src="extras/jquery.svg.js"></script>
+<script src="extras/bootstrap-slider.min.js"></script>
+<script src="extras/helper.js"></script>
+
+<script src="extras/proteinfeatureview.ver.js"></script>
+<script src="js/pfv_util.js"></script-->
+
+
+</html>

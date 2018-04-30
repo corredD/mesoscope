@@ -1,0 +1,682 @@
+@import url("reset.css");
+
+/* Novos elementos HTML5 */
+
+article, aside, figure, footer, header, hgroup, nav, section { 
+	display:block; 
+}
+
+/* -------- */
+
+body {
+	margin: 0;
+	font-family: "Montserrat";
+	font-weight: 300;
+	font-size: 16px;
+	line-height: 10px;
+	background: url(images/Background_Tile.png) left top repeat;
+}
+
+a:link, a:visited {
+	color: #000;
+	transition: 0.3s;
+	text-decoration: none;
+}
+
+a:active
+{
+	color:orange;
+	text-decoration: none;
+}
+
+a:hover {
+	color: orange;
+	font-size: 18px;
+}
+
+/* ID's */
+
+/*header {
+	width: 1920px;
+	height: 264px;
+	max-width 100%;
+	float:left;
+	position: relative;
+	display:flex;
+	background: url(images/TopBanner@2x.png) left top no-repeat;
+	background-size: contain;
+}*/
+
+.TopBar{
+	height: 75px;
+	display:flex;
+	flex-wrap: wrap;
+	justify-content:space-between;
+	align-items: center;
+	background: url(images/TopBanner.png) repeat;
+	border-radius: 0px 0px 0px 12.5px;
+	box-shadow: 5px 5px 20px LightGrey;
+	background-size: contain;
+}
+
+.Logo
+{
+	width: 105px;
+	height: 60px;
+	order:1;
+	transition: 1.0s;
+	max-width:100%;
+	background: url(images/Logo@2x.png) no-repeat;
+	background-size: contain;
+}
+
+.Logo:hover 
+{
+ transform: scale(0.75) rotate(360deg);
+}
+
+.SearchBar
+{
+	width: 477px;
+	height: 45px;
+	transition: 0.3s;
+	order:2;
+	max-width: 100%;
+	background: url(images/SearchBar@2x.png) no-repeat;
+	background-size: contain;
+}
+
+.SearchBar:hover 
+{
+ transform: scale(1.05);
+}
+
+.HelpButton
+{
+	width: 25px;
+	height: 25px;
+	opacity:0.5;
+	transition: 0.3s;
+	max-width: 100%;
+	border-radius: 5px 5px 5px 5px;
+	background: url(images/Help.png) no-repeat;
+	background-size: contain;
+}
+
+.MenuBar{
+	height: 25px;
+	max-width 100%;
+	display:flex;
+	flex-flow: row wrap;
+	justify-content:space-around;
+	align-items: center;
+	background: url(images/MenuBar.png) repeat;
+	background-size: contain;
+	margin-left: 50px;
+	border-radius: 0px 0px 0px 12.5px;
+	box-shadow: 5px 5px 20px LightGrey;
+}
+
+
+.PreviousButton
+{
+	width: 25px;
+	height: 25px;
+	opacity:0.5;
+	transition: 0.3s;
+	max-width: 100%;
+	border-radius: 5px 5px 5px 5px;
+	background: url(images/Back.png) no-repeat;
+	background-size: contain;
+}
+
+.PreviousButton:hover 
+{
+ opacity:1;
+ transform: scale(1.05);
+}
+
+.NextButton
+{
+	width: 25px;
+	height: 25px;
+	opacity:0.5;
+	transition: 0.3s;
+	max-width: 100%;
+	border-radius: 5px 5px 5px 5px;
+	background: url(images/Forward.png) no-repeat;
+	background-size: contain;
+}
+
+.NextButton:hover 
+{
+ opacity:1;
+ transform: scale(1.05);
+}
+
+.CenterButton
+{
+	width: 25px;
+	height: 25px;
+	opacity:0.5;
+	transition: 0.3s;
+	max-width: 100%;
+	border-radius: 5px 5px 5px 5px;
+	background: url(images/Center.png) no-repeat;
+	background-size: contain;
+}
+
+.CenterButton:hover 
+{
+ opacity:1;
+ transform: scale(1.05);
+}
+
+.ResetView
+{
+	width: 25px;
+	height: 25px;
+	opacity:0.5;
+	transition: 0.3s;
+	border-radius: 5px 5px 5px 5px;
+	background: url(images/ResetView.png) no-repeat;
+	background-size: contain;
+}
+
+.ResetView:hover 
+{
+ opacity:1;
+ transform: scale(1.05);
+}
+
+.Settings
+{
+	width: 25px;
+	height: 25px;
+	opacity:0.5;
+	transition: 0.3s;
+	border-radius: 5px 5px 5px 5px;
+	background: url(images/Settings.png) no-repeat;
+	background-size: contain;
+}
+.Settings:hover 
+{
+ opacity:1;
+ transform: scale(1.05);
+}
+
+.LoadFile
+{
+	width: 65px;
+	height: 25px;
+	opacity:0.5;
+	transition: 0.3s;
+	border-radius: 5px 5px 5px 5px;
+	background: url(images/LoadFile.png) no-repeat;
+	background-size: contain;
+}
+
+.LoadFile:hover 
+{
+ opacity:1;
+ transform: scale(1.05);
+}
+
+.spacer
+{
+	width: 50px;
+	height: 25px;
+	flex-grow:0.9;
+}
+
+.ConnectToDb
+{
+	width: 80px;
+	height: 25px;
+	opacity:0.5;
+	transition: 0.3s;
+	border-radius: 5px 5px 5px 5px;
+	background: url(images/ConnectToDb.png) no-repeat;
+	background-size: contain;
+}
+
+.ConnectToDb:hover 
+{
+ opacity:1;
+ transform: scale(1.05);
+}
+
+.MainContainer
+{
+	display:flex;
+	flex-wrap: wrap;
+	width: 100%;
+	height: 800;
+}
+
+/* Header Elements could be a column direction */
+.GlobalView {
+	order:1;
+	width: 100%;
+	height: 50%;
+	display:flex;
+	justify-content:space-around;
+	flex-grow: 1;
+	border-radius: 25px 25px 25px 25px;
+}
+.GlobalView:hover {
+	border: 1px solid black;
+	}
+
+.D3Pane
+{
+	order:1;
+	width: 33%;
+	height: 100%;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content:space-between;
+	max-width: 100%;
+	background: url(images/Pane.png) repeat;
+	border-radius: 25px 25px 25px 25px;
+	box-shadow: 5px 5px 20px LightGrey;
+	background-size: contain;
+	box-sizing: border-box;
+	padding: 25px;
+	
+}
+
+.D3Pane:hover {
+	border: 1px solid black;
+	}
+/*.NGLPane
+{
+	width: 45%;
+	height: 800px;
+	order:3;
+	display: flex;
+	flex-wrap: wrap;
+	max-width: 100%;
+	background: url(images/Pane.png) repeat;
+	border-radius: 25px 25px 25px 25px;
+	box-shadow: 5px 5px 20px LightGrey;
+	background-size: contain;
+}
+*/
+.NGLpan
+{
+	width: 33%;
+	height: 100%;
+	order:2;
+	display: flex;
+	flex-direction:column;
+	justify-content:space-between;
+	max-width: 100%;
+	background: url(images/Pane.png) repeat;
+	border-radius: 25px 25px 25px 25px;
+	box-shadow: 5px 5px 20px LightGrey;
+	background-size: contain;	
+	box-sizing: border-box;
+	padding: 25px;
+}
+.NGLpan:hover {
+	border: 1px solid black;
+	}
+
+.NGLOptions
+{
+	width: 100%;
+	height: 40px;
+	display: flex;
+	flex-flow: wrap row;
+	align-items:center;
+	max-width: 100%;
+	background-size: contain;
+}
+
+.child_item {
+  flex-grow: 1; /* default 0 */
+}
+
+.NGL
+{
+	width: 90%;
+	height: 90%;
+	display: flex;
+	flex-flow: row wrap;
+	max-width: 100%;
+	background-size: contain;
+	padding: 5px;
+	
+}
+
+.nglgrid
+{
+	border: 1px solid black;
+	flex-grow:1;
+	background-color: white;
+	//border-radius: 25px 25px 25px 25px;
+	//box-shadow: 5px 5px 20px LightGrey;
+	//background-size: contain;
+}
+
+
+.PFV
+{
+	width: 33%;
+	height: 100%;
+	order:3;
+	//display: flex;
+	//flex-direction:column;
+	max-width: 100%;
+	background: url(images/Pane.png) repeat;
+	border-radius: 25px 25px 25px 25px;
+	box-shadow: 5px 5px 20px LightGrey;
+	background-size: contain;
+	box-sizing: border-box;
+	padding: 25px;
+}
+
+.PFV:hover {
+	border: 1px solid black;
+	}
+
+
+.BottomPane
+{
+	width: 100%;
+	height: 100%;
+	order:3;
+	max-width: 100%;
+	background: url(images/Pane.png) repeat;
+	border-radius: 25px 25px 25px 25px;
+	box-shadow: 5px 5px 20px LightGrey;
+	background-size: contain;
+	padding: 35px;
+	flex-grow: 1;
+}
+
+.BottomPane:hover {
+	border: 1px solid black;
+	}
+/* -------- */
+
+footer {
+	height: 25px;
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	background: url(images/MenuBar.png) repeat;
+	background-size: contain;
+	margin-left: 50px;
+	border-radius: 12.5px 0px 0px 0px;
+}
+
+/* -------- */
+
+/* Text Format */
+
+section#content {
+	position: relative;
+	margin: 0 auto;
+	text-shadow: 0 1px 0 #FFF;
+}
+section#content h3 {
+	margin-bottom: 15px;
+	color: #949691;
+	font-size: 18px;
+	font-weight: bold;
+}
+section#content p {
+	 margin-bottom: 15px;
+}
+
+.aloader {
+  border: 16px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 16px solid #3498db;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  max-width: 20px;
+  max-height: 20px;
+  min-height: 20px;
+  background: url(images/MenuBar.png) repeat;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+  
+  
+  
+  
+.dropdown {
+	a {
+		text-decoration: none;
+	}
+  float: left;
+  
+	[data-toggle="dropdown"] {
+		position: relative;
+		display: block;
+		color: white;
+		background: $blue;
+		@include double-shadow($blue);
+		@include hover-style($blue);
+		@include text-shadow(0 -1px 0 rgba(0,0,0,0.3));
+		padding: 10px;
+
+	}
+	.icon-arrow {
+		position: absolute;
+		display: block;
+		font-size: 0.7em;
+		color: #fff;
+		top: 14px;
+		right: 10px;
+
+		&.open {
+			@include transform(rotate(-180deg));
+			@include transition(transform .6s);
+		}
+		&.close {
+			@include transform(rotate(0deg));
+			@include transition(transform .6s);
+		}
+
+		&:before {
+			content: '\25BC';
+		}
+	}
+
+	.dropdown-menu {
+		max-height: 0;
+		overflow: hidden;
+		@include ul-nostyle;
+
+		li {
+			padding: 0;
+
+			a {
+				display: block;
+				color: darken($gray, 50%);
+				background: $gray;
+				@include double-shadow($gray);
+				@include hover-style($gray);
+				@include text-shadow(0 -1px 0 rgba(255,255,255,0.3));
+				padding: 10px 10px;
+			}
+		}
+	}
+
+	.show, .hide {
+		@include transform-origin(50%, 0%);
+	}
+
+	.show {
+		display: block;
+		max-height: 9999px;
+		@include transform(scaleY(1));
+		@include animation(showAnimation .5s ease-in-out);
+		@include transition(max-height 1s ease-in-out);
+	}
+
+	.hide {
+		max-height: 0;
+		@include transform(scaleY(0));
+		@include animation(hideAnimation .4s ease-out);
+		@include transition(max-height .6s ease-out);
+	}
+}
+
+@include keyframes(showAnimation) {
+	0% {
+		@include transform(scaleY(0.1));
+	}
+	40% {
+		@include transform(scaleY(1.04));
+	}
+	60% {
+		@include transform(scaleY(0.98));
+	}
+	80% {
+		@include transform(scaleY(1.04));
+	}
+	100% {
+		@include transform(scaleY(0.98));
+	}				
+	80% {
+		@include transform(scaleY(1.02));
+	}
+	100% {
+		@include transform(scaleY(1));
+	}
+}
+
+@include keyframes(hideAnimation) {
+  0% {
+  	@include transform(scaleY(1));
+  }
+  60% {
+  	@include transform(scaleY(0.98));
+  }
+  80% {
+  	@include transform(scaleY(1.02));
+  }
+  100% {
+  	@include transform(scaleY(0));
+  }
+}
+
+/* *********************** */
+/* The Modal (background)  */
+/* *********************** */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    -webkit-animation-name: fadeIn; /* Fade in the background */
+    -webkit-animation-duration: 0.4s;
+    animation-name: fadeIn;
+    animation-duration: 0.4s
+}
+
+/* Modal Content */
+.modal-content {
+    position: fixed;
+    bottom: 0;
+    background-color: #fefefe;
+    width: 100%;
+    -webkit-animation-name: slideIn;
+    -webkit-animation-duration: 0.4s;
+    animation-name: slideIn;
+    animation-duration: 0.4s
+}
+
+/* The Close Button */
+.close {
+    color: white;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal-header {
+    padding: 2px 16px;
+    background-color: #5cb85c;
+    color: white;
+}
+
+.modal-body {
+	padding: 2px 16px;
+  display:flex;
+	flex-flow: row wrap;
+	justify-content:space-around;
+	align-items: center;
+	}
+
+.modal-footer {
+    padding: 2px 16px;
+    background-color: #5cb85c;
+    color: white;
+}
+
+/* Add Animation */
+@-webkit-keyframes slideIn {
+    from {bottom: -300px; opacity: 0} 
+    to {bottom: 0; opacity: 1}
+}
+
+@keyframes slideIn {
+    from {bottom: -300px; opacity: 0}
+    to {bottom: 0; opacity: 1}
+}
+
+@-webkit-keyframes fadeIn {
+    from {opacity: 0} 
+    to {opacity: 1}
+}
+
+@keyframes fadeIn {
+    from {opacity: 0} 
+    to {opacity: 1}
+}
+
+  </style>
+/* -------- */
+
+/* Footer */
+
+/*footer p {
+	width: 1920px;
+	height: 75px;
+	position: relative;
+	background: url(images/Footer@2x.png) left top no-repeat;
+	background-size: contain;
+}*/
+
+/* -------- */

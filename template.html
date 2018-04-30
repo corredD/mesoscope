@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="utf-8" />
+<title>ProtList</title>
+<script src="extras/collada/gl-matrix-min.js"></script>
+<script src="extras/collada/tinyxml.js"></script>
+<script src="extras/collada/collada.js"></script>
+<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+</head>
+
+<body>
+<p>PDBid :<input type="text" id="pdb_str"/></p>
+<p>Selection:<input type="text" id="sel_str"/></p>
+<p>BU:<input type="text" id="bu_str"/></p>
+<p>Model:<input type="text" id="mo_str"/></p>
+<p>File: <input type="file" name="inputfile" onchange="selectFile(event)"></p>
+<p><button onclick="callServer()">Submit</button></p>
+
+<div id="server_result">results?</div>
+
+</body>
+<script>
+var thefile = null;
+function selectFile(e){
+    var theFiles = e.target.files;
+    thefile = theFiles[0];
+  }
+
+function callServer(){
+  var pdb = document.getElementById("pdb_str");
+  var bu = document.getElementById("bu_str");
+  var sele = document.getElementById("sel_str");
+  var model = document.getElementById("mo_str");
+
+  var formData = new FormData();
+  //console.log(thefile)
+  // add assoc key values, this will be posts values
+    if (thefile !== null) {
+      formData.append("inputfile", thefile, thefile.name);
+      formData.append("upload_file", true);
+    }
+    if (pdb!=="") formData.append("pdbId", pdb.value);
+    if (bu!=="") formData.append("bu", bu.value);
+    if (sele!=="") formData.append("selection", sele.value);
+    if (model!=="") formData.append("modelId", model.value);
+    //formData.append(name, value);
+    console.log([pdb.value,bu.value,sele.value,model.value,thefile]);
+    console.log(formData);
+        $.ajax({
+            type: "POST",
+            url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
+            success: function (data) {
+                console.log(data);
+                var e = document.getElementById("server_result");
+                e.innerHTML = data;
+                var x = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
+                console.log(x);
+            },
+            error: function (error) {
+                console.log(error);
+            },
+            async: true,
+            data: formData,
+            cache: false,
+            contentType: false,
+            processData: false,
+            timeout: 60000
+        });
+}
+
+//action="http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py"
+
+function callback(scene) {
+  console.log(scene);
+}
+
+function callAjax(url, callback,querytxt)
+{
+
+ // compatible with IE7+, Firefox, Chrome, Opera, Safari
+ var response_backup;
+ var xmlhttp = new XMLHttpRequest();
+ all_xmlhttp.push(xmlhttp);
+ toggleShow(document.getElementById("spinner"));
+ xmlhttp.onreadystatechange = function()
+ {
+   if (xmlhttp.readyState == 4 && xmlhttp.status == 200)
+   {
+     //console.log(xmlhttp.responseText);
+     callback(xmlhttp.responseText,querytxt);
+     toggleHide(document.getElementById("spinner"));
+     //progressbar.style.width = '0%';
+     all_xmlhttp=remove(all_xmlhttp,xmlhttp);
+   }
+ }
+ xmlhttp.onprogress = function (event) {
+     console.log(event.loaded);
+     console.log(event.total);
+     response_backup = xmlhttp.responseText;
+     var percentComplete = (event.loaded / event.total) * 100;
+     //$('#progressbar').progressbar( "option", "value", percentComplete );
+     //progressbar.style.width = width + '%';
+     toggleShow(document.getElementById("spinner"));
+};
+xmlhttp.onabort= function (event) {
+     console.log(event.loaded);
+     console.log(event.total);
+     callback(response_backup,querytxt);
+   //console.log(xmlhttp.responseText);
+   //console.log(response_backup);
+   };
+ xmlhttp.open("GET", url, true);
+ xmlhttp.send();
+}
+
+//Collada.load( "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/geometries/4ue5_cms.dae", callback );
+
+console.log("test")
+
+</script>
+
+
+</html>

@@ -1,0 +1,113 @@
+html, body {
+    height: 100%;
+    width:100%;
+    margin:0;
+}
+
+.biovizApp {
+    display: flex;
+    display: -webkit-flex; /* Fix webkit based browser flex behavior */
+    flex-direction: column;
+    -webkit-flex-direction: column;
+}
+
+#biovizContainer {
+    display: flex;
+    display: -webkit-flex; /* Fix webkit based browser flex behavior */
+}
+
+#biovizFrame {
+    flex: 1 1 auto;
+    -webkit-flex: 1 1 auto;
+    width: 100%;
+}
+
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none;   /* Chrome/Safari/Opera */
+  -khtml-user-select: none;    /* Konqueror */
+  -moz-user-select: none;      /* Firefox */
+  -ms-user-select: none;       /* Internet Explorer/Edge */
+  user-select: none;           /* Non-prefixed version, currently
+                                  not supported by any browser */
+  pointer-events: none;
+}
+
+#moleculeSelector {
+	width: 90%;
+	height: 30%;
+}
+
+img.labels {
+    width: 40px;
+    height: auto;
+}
+
+img.imageLabels {
+    width: 12px;
+    height: auto;
+}
+
+#strToLoad {
+    width: 10%;
+}
+
+.repSelected {
+  color: red;
+}
+
+/* Legend CSS style */
+.legend-array {
+    border-spacing: 0px;
+}
+.legend-mapping {
+    position: relative;
+}
+
+.legend-mapping input {
+    padding-left: 20px;
+    width: 30px;
+    height: 10px;
+}
+
+.legend-mapping .color-box {
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+    background-color: #ccc;
+    position: absolute;
+    border: 1px solid #000;
+    left: 5px;
+    top: 5px;
+}
+
+.mapSelection {
+    display:inline-block;
+    height:1em;
+}
+
+.gradientLabelLeft {
+    color: white;
+    float: left;
+    margin-left: 10px;
+}
+
+.gradientLabelRight {
+    color: white;
+    float: right;
+    margin-right: 10px;
+}
+
+#previousMapping .ui-button-text {
+    padding-bottom: 0px;
+    padding-top: 0px;
+}
+#nextMapping .ui-button-text {
+    padding-bottom: 0px;
+    padding-top: 0px;
+}
+
+.legend-array tbody tr td {
+    padding-top: 0px;
+    padding-bottom: 0px;
+}

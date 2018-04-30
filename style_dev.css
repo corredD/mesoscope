@@ -1,0 +1,1004 @@
+@import url("reset.css");
+/* Novos elementos HTML5 */
+
+article, aside, figure, footer, header, hgroup, nav, section {
+  display: block;
+}
+
+/* -------- */
+
+body {
+  margin: 0;
+  font-family: "Montserrat";
+  font-weight: 300;
+  font-size: 16px;
+  line-height: 10px;
+  background: url(images/Background_Tile.png) left top repeat;
+}
+
+h1, h2, h3, p {
+  margin: 10px;
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.demo {
+  margin: 3em 0;
+  padding: 7.5em 0 5.5em; //background: #26941f;
+}
+
+.demo:hover .gridster {
+  margin: 0 auto;
+  opacity: .8;
+  -webkit-transition: opacity .6s;
+  -moz-transition: opacity .6s;
+  -o-transition: opacity .6s;
+  -ms-transition: opacity .6s;
+  transition: opacity .6s;
+}
+
+.content {
+  color: white;
+}
+
+.gridster .gs-w {
+  //background: #61A9CF;
+  cursor: pointer;
+  -webkit-box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.gridster .player {
+  -webkit-box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.3);
+  box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.3);
+  background: #BBB;
+}
+
+.gridster .gs-w.try {
+  background-image: url(../img/sprite.png);
+  background-repeat: no-repeat;
+  background-position: 37px -169px;
+}
+
+.gridster .preview-holder {
+  border: none !important;
+  border-radius: 0 !important;
+  background: red !important;
+}
+
+.gridster ul {
+  //background-color: #EFEFEF;
+}
+
+.gridster li {
+  font-size: 1em;
+  font-weight: bold;
+  text-align: center;
+  line-height: 100%;
+}
+
+ul {
+  list-style-type: none;
+}
+
+li {
+  list-style: none;
+  font-weight: bold;
+}
+
+.gridster-box {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.controls {
+  margin-bottom: 20px;
+}
+
+.TopBar {
+  height: 10%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  background-size: contain;
+}
+
+.logo_head {
+	width: 100%;
+	height: 10%;
+	display: flex;
+  flex-flow: row;
+	justify-content: space-between;
+	align-items: center;
+	background-size: contain;
+}
+
+#logo_image{
+  flex-shrink: 1;
+}
+
+.aheader{
+	width: 100%;
+	height: 25%;
+	display: flex;
+	flex-flow: column;
+	align-items: center;
+	background-size: contain;
+}
+
+.Logo {
+  width: 100%;
+  height: 100%;
+  transition: 1.0s;
+  max-width: 100%;
+  background: url(images/Logo@2xc.png) no-repeat;
+  background-size: contain;
+}
+
+.puv
+{
+	width: 100%;
+  height: 100%;
+  background: white;
+  background-size: contain;
+}
+
+.topov
+{
+	width: 100%;
+  height: 100%;
+  background: white;
+  background-size: contain;
+}
+.seqv
+{
+	width: 100%;
+  height: 100%;
+  background: white;
+  background-size: contain;
+}
+.Logo:hover {
+  transform: scale(0.75) rotate(360deg);
+}
+
+.SearchBar {
+  width: 477px;
+  height: 45px;
+  transition: 0.3s;
+  order: 2;
+  max-width: 100%;
+  background-size: contain;
+}
+
+.SearchBar:hover {
+  transform: scale(1.05);
+}
+
+.HelpButton {
+  width: 25px;
+  height: 25px;
+  opacity: 0.5;
+  transition: 0.3s;
+  max-width: 100%;
+  border-radius: 5px 5px 5px 5px;
+  background: url(images/Help.png) no-repeat;
+  background-size: contain;
+}
+
+.MenuBar {
+  height: 5%;
+  max-width 100%;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-around;
+  align-items: center;
+
+  background-size: contain;
+  z-index: 100;
+}
+
+.PreviousButton {
+  width: 25px;
+  height: 25px;
+  opacity: 0.5;
+  transition: 0.3s;
+  max-width: 100%;
+  border-radius: 5px 5px 5px 5px;
+  background: url(images/Back.png) no-repeat;
+  background-size: contain;
+}
+
+.PreviousButton:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.NextButton {
+  width: 25px;
+  height: 25px;
+  opacity: 0.5;
+  transition: 0.3s;
+  max-width: 100%;
+  border-radius: 5px 5px 5px 5px;
+  background: url(images/Forward.png) no-repeat;
+  background-size: contain;
+}
+
+.NextButton:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.CenterButton {
+  width: 25px;
+  height: 25px;
+  opacity: 0.5;
+  transition: 0.3s;
+  max-width: 100%;
+  border-radius: 5px 5px 5px 5px;
+  background: url(images/Center.png) no-repeat;
+  background-size: contain;
+}
+
+.CenterButton:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.ResetView {
+  width: 25px;
+  height: 25px;
+  opacity: 0.5;
+  transition: 0.3s;
+  border-radius: 5px 5px 5px 5px;
+  background: url(images/ResetView.png) no-repeat;
+  background-size: contain;
+}
+
+.ResetView:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.Settings {
+  width: 25px;
+  height: 25px;
+  opacity: 0.5;
+  transition: 0.3s;
+  border-radius: 5px 5px 5px 5px;
+  background: url(images/Settings.png) no-repeat;
+  background-size: contain;
+}
+
+.Settings:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.LoadFile {
+  width: 65px;
+  height: 25px;
+  opacity: 0.5;
+  transition: 0.3s;
+  border-radius: 5px 5px 5px 5px;
+  background: url(images/LoadFile.png) no-repeat;
+  background-size: contain;
+}
+
+.LoadFile:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.spacer {
+  width: 50px;
+  height: 25px;
+  flex-grow: 0.9;
+}
+
+.ConnectToDb {
+  width: 80px;
+  height: 25px;
+  opacity: 0.5;
+  transition: 0.3s;
+  border-radius: 5px 5px 5px 5px;
+  background: url(images/ConnectToDb.png) no-repeat;
+  background-size: contain;
+}
+
+.ConnectToDb:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.MainContainer {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  height: 100%;
+}
+
+/* Header Elements could be a column direction */
+
+.GlobalView {
+  order: 1;
+  width: 100%;
+  height: 50%;
+  display: flex;
+  justify-content: space-around;
+  flex-grow: 1;
+  border-radius: 25px 25px 25px 25px;
+}
+
+.GlobalView:hover {
+  border: 1px solid black;
+}
+
+.D3Pane {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-flow: wrap row;
+  justify-content: space-between;
+  max-width: 100%;
+}
+
+/*.NGLPane
+{
+	width: 45%;
+	height: 800px;
+	order:3;
+	display: flex;
+	flex-wrap: wrap;
+	max-width: 100%;
+	background: url(images/Pane.png) repeat;
+	border-radius: 25px 25px 25px 25px;
+	box-shadow: 5px 5px 20px LightGrey;
+	background-size: contain;
+}
+*/
+
+.NGLpan {
+  width: 100%;
+  height: 100%; //order:2;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  max-width: 100%; //background: url(images/Pane.png) repeat;
+  //border-radius: 25px 25px 25px 25px;
+  //box-shadow: 5px 5px 20px LightGrey;
+  //background-size: contain;
+  //box-sizing: border-box;
+  //padding: 25px;
+}
+
+.NGLpan:hover {
+  //border: 1px solid black;
+}
+
+.NGLOptions {
+  width:30%;
+  height: 100%;
+  //display: flex;
+  flex-flow: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  max-width: 20%;
+  background-size: contain;
+}
+
+.NGLOptions > label {
+  //font-size:5px;
+}
+
+.NGLOptions > select
+{
+  //font-size:5px;
+  width: 100%;
+  height:100%;
+}
+
+.gridOptions {
+  width: 100%;
+  display: flex;
+  flex-flow: wrap row;
+  align-items: center;
+  max-width: 100%;
+  background-size: contain;
+}
+
+.child_item {
+  flex-grow: 1;
+  /* default 0 */
+}
+
+.NGL {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  overflow: scroll;
+  flex-flow: row wrap;
+  max-width: 100%;
+  background-size: contain; //margin-bottom: 20px;
+}
+
+.protvista{
+	width: 100%;
+  height: 100%;
+overflow: scroll;
+}
+
+.clusterBtn {
+  width: 100%;
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  max-width: 100%;
+  background-size: contain; //margin-bottom: 20px;
+}
+
+.nglgrid {
+  border: 1px solid black;
+  flex-grow: 1;
+  background-color: white; //border-radius: 25px 25px 25px 25px;
+  //box-shadow: 5px 5px 20px LightGrey;
+  //background-size: contain;
+}
+
+.PFV {
+  width: 100%;
+  height: 100%;
+  overflow: scroll; //order:3;
+  //display: flex;
+  //flex-direction:column;
+  max-width: 100%;
+}
+
+.BottomPane {
+  width: 100%;
+  height: 100%; //order:3;
+  max-width: 100%; //background: url(images/Pane.png) repeat;
+  //border-radius: 25px 25px 25px 25px;
+  //box-shadow: 5px 5px 20px LightGrey;
+  //background-size: contain;
+  //padding: 35px;
+  //flex-grow: 1;
+}
+
+.BottomPane:hover {
+  border: 1px solid black;
+}
+
+/* -------- */
+
+footer {
+  height: 25px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: url(images/MenuBar.png) repeat;
+  background-size: contain;
+  margin-left: 50px;
+  border-radius: 12.5px 0px 0px 0px;
+}
+
+/* -------- */
+
+/* Text Format */
+
+section#content {
+  position: relative;
+  margin: 0 auto;
+  text-shadow: 0 1px 0 #FFF;
+}
+
+section#content h3 {
+  margin-bottom: 15px;
+  color: #949691;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+section#content p {
+  margin-bottom: 15px;
+}
+
+.aloader {
+  border: 16px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 16px solid blue;
+  border-right: 16px solid green;
+  border-bottom: 16px solid red;
+  border-left: 16px solid pink;
+  width: 120px;
+  height: 120px;
+  -webkit-animation: aspin 1s linear infinite;
+  animation: aspin 1s linear infinite;
+}
+
+@-webkit-keyframes aspin {
+  0% {
+    -webkit-transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+  }
+}
+
+@keyframes aspin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.dropdown {
+  a {
+    text-decoration: none;
+  }
+  float: left;
+  z-index:100;
+  [data-toggle="dropdown"] {
+    position: relative;
+    display: block;
+    color: white;
+    background: $blue;
+    @include double-shadow($blue);
+    @include hover-style($blue);
+    @include text-shadow(0 -1px 0 rgba(0, 0, 0, 0.3));
+    padding: 10px;
+    z-index: 100;
+  }
+  .icon-arrow {
+    position: absolute;
+    display: block;
+    font-size: 0.7em;
+    color: #fff;
+    top: 14px;
+    right: 10px;
+    z-index: 100;
+    &.open {
+      @include transform(rotate(-180deg));
+      @include transition(transform .6s);
+    }
+    &.close {
+      @include transform(rotate(0deg));
+      @include transition(transform .6s);
+    }
+    &:before {
+      content: '\25BC';
+    }
+  }
+  .dropdown-menu {
+    max-height: 0;
+    overflow: hidden;
+    @include ul-nostyle;
+    z-index: 100;
+    li {
+      padding: 0;
+      z-index: 100;
+      a {
+        display: block;
+        color: darken($gray, 50%);
+        background: $gray;
+        @include double-shadow($gray);
+        @include hover-style($gray);
+        @include text-shadow(0 -1px 0 rgba(255, 255, 255, 0.3));
+        padding: 10px 10px;
+        z-index: 100;
+      }
+    }
+  }
+  .show, .hide {
+    @include transform-origin(50%, 0%);
+  }
+  .show {
+    display: block;
+    max-height: 9999px;
+    @include transform(scaleY(1));
+    @include animation(showAnimation .5s ease-in-out);
+    @include transition(max-height 1s ease-in-out);
+  }
+  .hide {
+    max-height: 0;
+    @include transform(scaleY(0));
+    @include animation(hideAnimation .4s ease-out);
+    @include transition(max-height .6s ease-out);
+  }
+}
+
+@include keyframes(showAnimation) {
+  0% {
+    @include transform(scaleY(0.1));
+  }
+  40% {
+    @include transform(scaleY(1.04));
+  }
+  60% {
+    @include transform(scaleY(0.98));
+  }
+  80% {
+    @include transform(scaleY(1.04));
+  }
+  100% {
+    @include transform(scaleY(0.98));
+  }
+  80% {
+    @include transform(scaleY(1.02));
+  }
+  100% {
+    @include transform(scaleY(1));
+  }
+}
+
+@include keyframes(hideAnimation) {
+  0% {
+    @include transform(scaleY(1));
+  }
+  60% {
+    @include transform(scaleY(0.98));
+  }
+  80% {
+    @include transform(scaleY(1.02));
+  }
+  100% {
+    @include transform(scaleY(0));
+  }
+}
+
+/* *********************** */
+
+/* The Modal (background)  */
+
+/* *********************** */
+
+.modal {
+  display: none;
+  /* Hidden by default */
+  position: fixed;
+  /* Stay in place */
+  z-index: 1;
+  /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%;
+  /* Full width */
+  height: 100%;
+  /* Full height */
+  overflow: auto;
+  /* Enable scroll if needed */
+  background-color: rgb(0, 0, 0);
+  /* Fallback color */
+  background-color: rgba(0, 0, 0, 0.4);
+  /* Black w/ opacity */
+  -webkit-animation-name: fadeIn;
+  /* Fade in the background */
+  -webkit-animation-duration: 0.4s;
+  animation-name: fadeIn;
+  animation-duration: 0.4s
+}
+
+/* Modal Content */
+
+.modal-content {
+  position: fixed;
+  bottom: 0;
+  background-color: #fefefe;
+  width: 100%;
+  -webkit-animation-name: slideIn;
+  -webkit-animation-duration: 0.4s;
+  animation-name: slideIn;
+  animation-duration: 0.4s
+}
+
+/* The Close Button */
+
+.close {
+  color: white;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover, .close:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.modal-header {
+  padding: 2px 16px;
+  background-color: #5cb85c;
+  color: white;
+}
+
+.modal-body {
+  padding: 2px 16px;
+  display: flex;
+  flex-flow: column wrap;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.modal-footer {
+  padding: 2px 16px;
+  background-color: #5cb85c;
+  color: white;
+}
+
+/* Add Animation */
+
+@-webkit-keyframes slideIn {
+  from {
+    bottom: -300px;
+    opacity: 0
+  }
+  to {
+    bottom: 0;
+    opacity: 1
+  }
+}
+
+@keyframes slideIn {
+  from {
+    bottom: -300px;
+    opacity: 0
+  }
+  to {
+    bottom: 0;
+    opacity: 1
+  }
+}
+
+@-webkit-keyframes fadeIn {
+  from {
+    opacity: 0
+  }
+  to {
+    opacity: 1
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0
+  }
+  to {
+    opacity: 1
+  }
+}
+
+</style>
+/* -------- */
+
+/* Footer */
+
+/*footer p {
+	width: 1920px;
+	height: 75px;
+	position: relative;
+	background: url(images/Footer@2x.png) left top no-repeat;
+	background-size: contain;
+}*/
+
+/* -------- */
+
+.spinner {
+  margin: 100px auto;
+  width: 50px;
+  height: 40px;
+  text-align: center;
+  font-size: 10px;
+}
+
+.spinner>div {
+  background-color: #333;
+  height: 100%;
+  width: 6px;
+  display: inline-block;
+  -webkit-animation: sk-stretchdelay 1.2s infinite ease-in-out;
+  animation: sk-stretchdelay 1.2s infinite ease-in-out;
+}
+
+.spinner .rect2 {
+  -webkit-animation-delay: -1.1s;
+  animation-delay: -1.1s;
+}
+
+.spinner .rect3 {
+  -webkit-animation-delay: -1.0s;
+  animation-delay: -1.0s;
+}
+
+.spinner .rect4 {
+  -webkit-animation-delay: -0.9s;
+  animation-delay: -0.9s;
+}
+
+.spinner .rect5 {
+  -webkit-animation-delay: -0.8s;
+  animation-delay: -0.8s;
+}
+
+@-webkit-keyframes sk-stretchdelay {
+  0%, 40%, 100% {
+    -webkit-transform: scaleY(0.4)
+  }
+  20% {
+    -webkit-transform: scaleY(1.0)
+  }
+}
+
+@keyframes sk-stretchdelay {
+  0%, 40%, 100% {
+    transform: scaleY(0.4);
+    -webkit-transform: scaleY(0.4);
+  }
+  20% {
+    transform: scaleY(1.0);
+    -webkit-transform: scaleY(1.0);
+  }
+}
+
+.custom-menu-node {
+  display: none;
+  z-index: 1000;
+  position: absolute;
+  overflow: hidden;
+  border: 1px solid #CCC;
+  white-space: nowrap;
+  font-family: sans-serif;
+  background: #FFF;
+  color: #333;
+  border-radius: 5px;
+}
+
+.custom-menu-node li {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.custom-menu-node li:hover {
+  background-color: #DEF;
+}
+
+.lbl {
+  position: relative;
+  display: block;
+  height: 20px;
+  width: 44px;
+  background: #898989;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  float: right;
+  margin-top: 10px;
+}
+
+.lbl:after {
+  position: absolute;
+  left: -2px;
+  top: -3px;
+  display: block;
+  width: 26px;
+  height: 26px;
+  border-radius: 100px;
+  background: #fff;
+  box-shadow: 0px 3px 3px rgba(0, 0, 0, 0.05);
+  content: '';
+  transition: all 0.3s ease;
+}
+
+.lbl:active:after {
+  transform: scale(1.15, 0.85);
+}
+
+.cbx:checked~label {
+  background: #6fbeb5;
+}
+
+.cbx:checked~label:after {
+  left: 20px;
+  background: #179588;
+}
+
+.cbx:disabled~label {
+  background: #d5d5d5;
+  pointer-events: none;
+}
+
+.cbx:disabled~label:after {
+  background: #bcbdbc;
+}
+
+#overlay {
+  position: fixed;
+  /* Sit on top of the page content */
+  display: none;
+  /* Hidden by default */
+  width: 100%;
+  /* Full width (cover the whole page) */
+  height: 100%;
+  /* Full height (cover the whole page) */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  /* Black background with opacity */
+  z-index: 10;
+  /* Specify a stack order in case you're using a different order for other elements */
+  cursor: pointer;
+  /* Add a pointer on hover */
+}
+
+#overlay_text {
+  position: absolute;
+  width: 100%;
+  /* Full width (cover the whole page) */
+  height: 100%;
+  /* Full height (cover the whole page) */
+  font-size: 50px;
+  padding: 5%;
+  color: white;
+}
+
+#imagepdb {
+  width: 50px;
+  height: 50px;
+}
+
+/*#imagepdb:hover{
+    width:100px;
+    height:100px;
+}*/
+
+.accordion {
+  background-color: #eee;
+  color: #444;
+  cursor: pointer;
+  padding: 18px;
+  width: 100%;
+  height:10%;
+  border: none;
+  text-align: left;
+  outline: none;
+  font-size: 15px;
+  transition: 0.4s;
+}
+
+.active, .accordion:hover {
+  background-color: #ccc;
+}
+
+.accordion:after {
+  content: '\002B';
+  color: #777;
+  font-weight: bold;
+  float: right;
+  margin-left: 5px;
+}
+
+.active:after {
+  content: "\2212";
+}
+
+.accordion_panel {
+  padding: 0 18px;
+  background-color: white;
+  max-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-flow: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  transition: max-height 0.2s ease-out;
+}

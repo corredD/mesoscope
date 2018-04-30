@@ -1,0 +1,62 @@
+@font-face { 
+   font-family: "Roboto";
+   font-style: normal;
+   font-weight: 100;     
+    src: local("Roboto Thin"), local("Roboto-Thin"), url('./roboto/Roboto-Thin.ttf') format("truetype");  
+}
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 300;
+  src: local('Roboto Light'), local('Roboto-Light'), url('./roboto/Roboto-Light.ttf') format('truetype');
+  
+}
+@font-face { 
+   font-family: "Roboto";
+   font-style: normal;
+   font-weight: 400;     
+    src: local("Roboto"), local("Roboto"), url('./roboto/Roboto-Regular.ttf') format("truetype");  
+}
+@font-face { 
+   font-family: "Roboto";
+   font-style: normal;
+   font-weight: 500;     
+    src: local("Roboto Medium"), local("Roboto-Medium"), url('./roboto/Roboto-Medium.ttf') format("truetype");  
+}
+@font-face { 
+   font-family: "Roboto";
+   font-style: normal;
+   font-weight: 700;     
+    src: local("Roboto Bold"), local("Roboto-Bold"), url('./roboto/Roboto-Bold.ttf') format("truetype");  
+}
+@font-face { 
+   font-family: "Roboto";
+   font-style: normal;
+   font-weight: 900;     
+    src: local("Roboto Black"), local("Roboto-Black"), url('./roboto/Roboto-Black.ttf') format("truetype");  
+}
+@font-face { 
+   font-family: "RobotoSlab";
+   font-style: normal;
+   font-weight: 100;     
+    src: local("RobotoSlab Thin"), local("RobotoSlab-Thin"), url('./roboto-slab/RobotoSlab-Thin.ttf') format("truetype");  
+}
+@font-face {
+  font-family: 'RobotoSlab';
+  font-style: normal;
+  font-weight: 300;
+  src: local('Roboto-Slab Light'), local('RobotoSlab-Light'), url('./roboto-slab/RobotoSlab-Light.ttf') format('truetype');
+  
+}
+@font-face { 
+   font-family: "RobotoSlab";
+   font-style: normal;
+   font-weight: 400;     
+    src: local("RobotoSlab"), local("RobotoSlab"), url('./roboto-slab/RobotoSlab-Regular.ttf') format("truetype");  
+}
+@font-face { 
+   font-family: "RobotoSlab";
+   font-style: normal;
+   font-weight: 700;     
+    src: local("RobotoSlab Bold"), local("RobotoSlab-Bold"), url('./roboto-slab/RobotoSlab-Bold.ttf') format("truetype");  
+}

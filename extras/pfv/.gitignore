@@ -1,0 +1,15 @@
+# Build and Release Folders
+bin/
+bin-debug/
+bin-release/
+node_modules/
+build/proteinfeatureview.dbg.js
+build/proteinfeatureview.ver.js
+build/proteinfeatureview.rel.js
+
+# Other files and folders
+.settings/
+proteinfeatureview.rel.js
+
+# intellij files
+.idea

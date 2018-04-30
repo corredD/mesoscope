@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>BioVizJS</title>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, IE=11, IE=10, IE=9, ie=8, ie=7">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link href="css/bioviz-theme/jquery-ui.min.css" rel="stylesheet" type="text/css"/>
+
+        <link href="css/style.css" rel="stylesheet" type="text/css"/>
+
+        <link rel="stylesheet" href="library/jquery-minicolors-master/jquery.minicolors.css" type="text/css" />
+    </head>
+
+    <body>
+        <div id='biovizjs' style="width: 100%; height: 100%;"></div>
+    </body>
+
+    <!-- You must include these dependencies scripts when deploying a bioviz app -->
+    <script type="text/javascript" src="library/jquery.min.js"></script>
+    <script type="text/javascript" src="library/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="library/jquery.ui-contextmenu.min.js"></script>
+    <!-- Unify mousewheel usage between browsers -->
+    <script type="text/javascript" src="library/jquery.mousewheel.js"></script>
+
+    <!-- Touch events library, using a jQuery extension -->
+    <script type="text/javascript" src="library/hammer.min.js"></script>
+    <script type="text/javascript" src="library/jquery.hammer.js"></script>
+
+    <!-- ES6 polyfills (Promises, etc...) -->
+    <script type="text/javascript" src="library/polyfill.js"></script>
+
+    <!-- Minicolor widget for color settings -->
+    <script type="text/javascript" src="library/jquery-minicolors-master/jquery.minicolors.min.js"></script>
+
+    <!-- Recover user system information -->
+    <script type="text/javascript" src="library/client.min.js"></script>
+
+    <!-- Graphics library -->
+    <script type="text/javascript" src="library/three.min.js"></script>
+    <script type="text/javascript" src="library/three/Detector.js"></script>
+
+    <!-- Metrics -->
+    <script type="text/javascript" src="library/stats.min.js"></script>
+    <script type="text/javascript" src="library/numeric-1.2.6.min.js"></script>
+
+    <!-- Includes ThreeJS EffectComposer from ThreeJS example to allow using multiple effects -->
+    <script type="text/javascript" src="library/three/postprocessing/EffectComposer.js"></script>
+
+    <!-- EffectComposer dependencies -->
+    <script type="text/javascript" src="library/three/postprocessing/MaskPass.js"></script>
+    <script type="text/javascript" src="library/three/postprocessing/RenderPass.js"></script>
+    <script type="text/javascript" src="library/three/postprocessing/ShaderPass.js"></script>
+    <script type="text/javascript" src="library/three/postprocessing/ClearPass.js"></script>
+    <script type="text/javascript" src="library/three/postprocessing/SAOPass.js"></script>
+
+    <script type="text/javascript" src="library/three/shaders/CopyShader.js"></script>
+    <script type="text/javascript" src="library/three/shaders/FXAAShader.js"></script>
+    <script type="text/javascript" src="library/three/shaders/SAOShader.js"></script>
+    <script type="text/javascript" src="library/three/shaders/DepthLimitedBlurShader.js"></script>
+    <script type="text/javascript" src="library/three/shaders/UnpackDepthRGBAShader.js"></script>
+
+    <!-- ParrallaxBarrierEffect for stereoscopy provided with ThreeJS example -->
+    <script type="text/javascript" src="library/three/effects/ParallaxBarrierEffect.js"></script>
+    <script type="text/javascript" src="library/three/effects/AnaglyphEffect.js"></script>
+
+    <!-- <script type="text/javascript" src='library/dat.gui.min.js'></script> -->
+
+    <!-- BiovizJS library file -->
+    <script type="text/javascript" src="bioviz.js"></script>
+
+    <!-- Example code with an external toolbar -->
+    <script type="text/javascript">
+        var biovizAPI;
+
+        var parseURLObject = function(urlObject) {
+            var resultMap = new Map();
+            var objects = urlObject.split('&amp');
+            for (var i = 0; i < objects.length; i++) {
+                var param = objects[i];
+                var infos = param.split('=');
+                resultMap.set(infos[0], JSON.parse(decodeURIComponent(infos[1].toLowerCase())));
+            }
+            return resultMap;
+        }
+
+        $(document).ready(function() {
+            // Create API access instance
+            biovizAPI = new BiovizAPI();
+
+            // Create Bioviz App
+            biovizAPI.createBioviz();
+
+            // Append app's canvas to the page
+            $('#biovizjs').append(biovizAPI.getCanvas());
+
+            // Initialize bioviz WebGL context
+            biovizAPI.initBioviz();
+
+            if (!biovizAPI.isAvailable()) {
+                throw 'Unable to initialize BiovizJS';
+            }
+
+            // Parse parameters and initialize BiovizJS features
+            var params = window.location.search;
+            if (params !== '') {
+                params = parseURLObject(params.substring(1));
+            } else {
+                params = new Map();
+            }
+
+            var isInternal = self == top;
+
+            if (isInternal || params.get('widgets') != null) {
+                biovizAPI.initWidgetManager(params.get('widgets'));
+            }
+
+            if (isInternal || params.get('player')) {
+                biovizAPI.initScriptPlayer();
+            }
+
+            if (isInternal || params.get('contextmenu')) {
+                biovizAPI.initContextMenu(params.get('contextmenuload'));
+            }
+
+            // If app not embedded, create debug context
+            if (isInternal) {
+                biovizAPI._setDefaultRepresentations(true);
+                biovizAPI.loadStructure('100D');
+            }
+
+            // Add global variable bioviz to document
+            document.biovizAPI = biovizAPI;
+        });
+    </script>
+</html>

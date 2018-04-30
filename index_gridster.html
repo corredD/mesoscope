@@ -1,0 +1,189 @@
+
+<!DOCTYPE html>
+<html ng-app="pclDemo">
+    <head>
+		<!-- demo css -->
+		<style>
+		code {
+			padding: 2px 4px;
+			font-size: 90%;
+			color: #c7254e;
+			background-color: #f9f2f4;
+			border-radius: 4px;
+		}
+		</style>
+
+    <!--PDB component library-->
+    <!-- Complied & minified library css -->
+    <link rel="stylesheet" href="//www.ebi.ac.uk/pdbe/pdb-component-library/v1.0/css/pdb.component.library.min-1.0.0.css" />
+    <!-- Dependencey scripts (these can be skipped if already included in page) -->
+    <script src="//www.ebi.ac.uk/pdbe/pdb-component-library/libs/d3.min.js"></script>
+    <script src="//www.ebi.ac.uk/pdbe/pdb-component-library/libs/angular.1.4.7.min.js"></script>
+    <!-- Complied & minified library JS -->
+    <script src="//www.ebi.ac.uk/pdbe/pdb-component-library/v1.0/js/pdb.component.library.min-1.0.0.js"></script>
+
+		<!--
+		If you are developing a non-angularJs Application,
+		bootstrap 'pdb.sequence.viewer' module as show below
+		-->
+    <script > baseurl = "http://mentha.uniroma2.it/browser/js/";</script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+    <script type="text/javascript" src="http://mentha.uniroma2.it/browser/js/SPV_v1.0.js"></script>
+    <script type="text/javascript" src="http://mentha.uniroma2.it/browser/js/jquery.mousewheel.js"></script>
+    <script type="text/javascript" src="http://mentha.uniroma2.it/browser/js/jquery.jscrollpane.min.js"></script>
+    <script type="text/javascript" src="http://mentha.uniroma2.it/browser/js/fixOnMouseOut.js"></script>
+
+
+		<script>
+
+    /*(function () {
+    'use strict';
+    angular.element(document).ready(function () {
+        angular.bootstrap(document, ['pdb.component.library']);
+    });
+    }());
+    */
+    $(document).ready(function () {
+      baseurl = "http://mentha.uniroma2.it/browser/js/";
+
+      var links = [
+             {source: "Protein C", idA: "J", typeA: "protein", target: "Complex K (activation)", idB: "K", typeB: "complex", type: "activation", score: 0.1},
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Phenotype L (bind-activation)", idB: "L", typeB: "phenotype", type: "bind-activation", score: 0.2},
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Protein family M (undefined-activation)", idB: "M", typeB: "proteinfamily", type: "undefined-activation", score: 0.3},
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Simulus N (transcription-activation)", idB: "N", typeB: "stimulus", type: "transcription-activation", score: 0.4},
+
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Small molecule O (inhibition)", idB: "O", typeB: "smallmolecule", type: "inhibition", score: 0.5},
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Chemical P (bind-inhibition)", idB: "P", typeB: "chemical", type: "bind-inhibition", score: 0.6},
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Protein Q (undefined-inhibition)", idB: "Q", typeB: "protein", type: "undefined-inhibition", score: 0.7},
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Protein R (transcription-inhibition)", idB: "R", typeB: "protein", type: "transcription-inhibition", score: 0.8},
+
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Protein S (direct)", idB: "S", typeB: "protein", type: "direct", score: 0.1},
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Protein T (indirect)", idB: "T", typeB: "protein", type: "indirect", score: 0.1},
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Protein U (binding)", idB: "U", typeB: "protein", type: "binding", score: 0.1},
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Protein V (none)", idB: "V", typeB: "protein", type: "none", score: 0.1},
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Protein W (undefined)", idB: "W", typeB: "protein", type: "undefined", score: 0.1},
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Protein X (ppi)", idB: "X", typeB: "protein", type: "ppi", score: 0.1},
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Protein Y (complex-formation)", idB: "Y", typeB: "protein", type: "complex-formation", score: 0.1},
+
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Protein Z (unknown)", idB: "Z", typeB: "protein", type: "unknown", score: 0.1},
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Protein AA (bind-unknown)", idB: "AA", typeB: "protein", type: "bind-unknown", score: 0.1},
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Protein AB (undefined-unknown)", idB: "AB", typeB: "protein", type: "undefined-unknown", score: 0.1},
+        {source: "Protein C", idA: "J", typeA: "protein", target: "Protein AC (transcription-unknown)", idB: "AC", typeB: "protein", type: "custominteraction", score: 0.1},
+
+        ];
+      receptors.push("Y");
+      receptors.push("V");
+      factors.push("S");
+      factors.push("W");
+      extracellular.push("N");
+      phenotypesList.push("L");
+      complexesList["A Sample Complex"] = ["J","AC","AB"];
+
+      var showCell = 1;
+      var hideTollBar = 0;
+      var preventOverlap = 1;
+      var a = initGraph(links, null, null, "graphArea", 500, 500, "A", showCell, hideTollBar, preventOverlap);
+
+      var cssn = "path.link-custominteraction {\n\
+        z-index:10000;\n\
+        fill: #ffffff;\n\
+        fill-opacity: 0.01;\n\
+        stroke: purple;\n\
+        stroke-width: 10;\n\
+        stroke-dasharray: 1;\n\
+      }";
+
+      addEntityType("graphArea", cssn);
+
+    });
+
+    function change(){
+        var e = document.getElementById("pdbeComp_psv");
+        console.log(e);
+        e.innerHTML = '&lt;pdb-seq-viewer entry-id="1crn" entity-id="1" height="370"&gt;&lt;/pdb-seq-viewer&gt;';
+        //update ?
+    }
+
+    // Code goes here
+      var app = angular.module('pclDemo',['pdb.component.library']);
+	     app.config(function($locationProvider) {
+        $locationProvider.html5Mode({
+        enabled: true,
+        requireBase: false
+        });
+      });
+
+      app.directive('pdbeComp',function($compile){
+        return {
+          restrict: 'C',
+          link: function(scope, element, attrs){
+
+            var compMainDiv = document.getElementById(attrs.displayIn);
+            var template = element.text();
+            var compContent =  $compile(template)(scope);
+
+            angular.element(compMainDiv).prepend(compContent);
+
+            element.bind('DOMSubtreeModified', function() {
+              console.log("DOMSubtreeModified");
+              template = element.text();
+              compContent =  $compile(template)(scope);
+              angular.element(compMainDiv).html('');
+              angular.element(compMainDiv).prepend(compContent);
+              scope.flag = 1;
+            });
+
+            element.bind('input', function() {
+              console.log("input");
+              template = element.text();
+              compContent =  $compile(template)(scope);
+              angular.element(compMainDiv).html('');
+              angular.element(compMainDiv).prepend(compContent);
+              scope.flag = 1;
+            });
+
+          /*  element.bind('blur', function() {
+              console.log("blur");
+              template = element.text();
+              compContent =  $compile(template)(scope);
+              angular.element(compMainDiv).html('');
+              angular.element(compMainDiv).prepend(compContent);
+              scope.flag = 1;
+            });*/
+          }
+        }
+      });
+
+
+		</script>
+
+    </head>
+    <body>
+		<div style="margin:20px 0 20px 20px">
+			<h3>PDB Sequence Viewer</h3><hr>
+
+      <div id="topov" class="topov"  height="100%" width="100%"></div>
+      <div id="seqv" class="seqv"  height="100%" width="100%"></div>
+      <div id="puv" class="puv"  height="100%" width="100%"></div>
+      <div>
+        <pre style="clear:both"><code id="pdbeComp_topov" class="pdbeComp" display-in="topov" contenteditable="true">&lt;pdb-topology-viewer entry-id="1aqd" entity-id="1" height="500"&gt;&lt;/pdb-topology-viewer&gt;</code></pre>
+      </div>
+      <div>
+        <pre style="clear:both"><code id="pdbeComp_seqv" class="pdbeComp" display-in="seqv" contenteditable="true">&lt;pdb-seq-viewer entry-id="1aqd" entity-id="1" height="500"&gt;&lt;/pdb-seq-viewer&gt;</code></pre>
+      </div>
+      <div>
+        <pre style="clear:both"><code id="pdbeComp_puv" class="pdbeComp" display-in="puv" contenteditable="true">&lt;pdb-uniprot-viewer entry-id="P07550"  height="500"&gt;&lt;/pdb-uniprot-viewer&gt;</code></pre>
+      </div>
+    	<br><strong>Use mouse scroll for zoom-in/out.</strong><br>
+
+			<br><code>&lt;pdb-seq-viewer entry-id="1aqd" entity-id="1" height="370" width="750"'&gt;&lt;/pdb-seq-viewer&gt;</code><br>
+
+			<br>
+
+			The viewer takes the width and height of its parent element on page load. In order to set fixed the dimensions<br>please use the component 'width' and 'height' attribute as demonstrated above.
+      <button onclick="change()">change pdb</button>
+		</div>
+    <br>
+    <div id="graphArea" style="width:500px;height:500px;background:white;overflow: hidden;"></div>
+	</body>
+</html>
