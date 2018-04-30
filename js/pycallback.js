@@ -30,7 +30,7 @@ var all_xmlhttp=[];
  var request = new XMLHttpRequest();
  var remote_url;
 
- 	remote_url = 'http://mgldev.scripps.edu/cgi-bin/cellpack_db_dev.py?key="sqldb"';
+ 	remote_url = 'cgi-bin/cellpack_db_dev.cgi?key="sqldb"';//'http://mgldev.scripps.edu/cgi-bin/cellpack_db_dev.py?key="sqldb"';
  	request.open('GET', remote_url, false);  // false makes the request synchronous
  	request.send(null);
 
@@ -196,7 +196,7 @@ for (var i=0;i< dropdownArray.length;i++){
 			event.preventDefault();
 		}
 	};
- 
+
 	menu.onmouseleave = function(event) {
 		menu = event.target;//.nextElementSibling;
 		console.log(menu);

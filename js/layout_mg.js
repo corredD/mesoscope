@@ -410,8 +410,7 @@ sessionStorage.clear()
 //console.log(savedRecipe);
 console.log("site version ",current_version);
 console.log("stored version ",session_version);
-var v = JSON.parse(session_version);
-console.log("compare ",(v.version === current_version.version))
+
 if (savedState !== null && usesavedState && session_version) {
   //myLayout = new GoldenLayout( JSON.parse( savedState ) );
   var p = JSON.parse(savedState);

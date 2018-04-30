@@ -644,7 +644,7 @@ function AddPartner(ingdic,node,some_links) {
       console.log(formData);
           $.ajax({
               type: "POST",
-              url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
+              url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",//"cgi-bin/get_geom_dev.cgi",//"http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
               success: function (data) {
                   console.log(data);
                   var data_parsed = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
