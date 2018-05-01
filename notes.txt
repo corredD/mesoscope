@@ -1,2 +1,4 @@
 https://www.digitalocean.com/community/tutorials/how-to-set-up-automatic-deployment-with-git-with-a-vps
 use the git --bar system to update the beta and production website
+on mgl2 there is two barre repo in /usr/local/repos/ and they are hook to the www projects/mesoscope and projects/mesoscopebeta
+on push live master and push beta master change are automatically pass 
