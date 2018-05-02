@@ -517,6 +517,7 @@ function changeColumnMapping(aselect) {
 		allfield[aselect.id] = (txt === "Absent")? -1 : parseInt(aselect.value);
 		console.log("change selection to ");
 		console.log(allfield[aselect.id]);
+		//recheck compartment settings ?
 	}
 
 function sharedStart(array){
@@ -637,40 +638,145 @@ function createOneColumnSelect(field1name,allfield2,divparent) {
 		selectList.setAttribute("onchange","changeColumnMapping(this)");
 }
 
+
+//cytoplasm is a keyword and mean no compartment->outside
+/*var some_data = {
+	nodetype: "compartment",
+	name: "newCompartment",
+	size: 150,
+	children: []
+};*/
+function guessCompartmentFromColumn(data, rootName) {
+	var loc_name=[];
+	var comp_name=[];
+	var comp_dic={}
+	var comp_dic_hierarchy={
+		nodetype: "compartment",
+		name: "root",
+		size: 10,
+		children: []
+	};
+	var rootComp = {
+		nodetype: "compartment",
+		name: rootName,
+		size: 10,
+		children: []
+	};
+
+	console.log("indexes ", allfield.location_index, allfield.compartments_index);
+	if ( (!allfield.location_index || allfield.location_index ===-1) && (!allfield.compartments_index || allfield.compartments_index ===-1) ) return comp_dic;
+	console.log("indexes ", allfield.location_index, allfield.compartments_index,start_index,data.length);
+  for (var i=start_index;i<data.length;i++)
+	{
+			var loc = (allfield.location_index && allfield.location_index !==-1)? data[i][allfield.location_index]:null;
+			var comp = (allfield.compartments_index && allfield.compartments_index !==-1)? data[i][allfield.compartments_index]:null;
+			//console.log("loc and comp",loc,comp);
+			if (loc) {
+				//if (loc_name.indexOf(loc) === -1) {
+				//	loc_name.push(loc);
+				//	//comp_dic[comp]={};
+				//	console.log("loc is ",loc);
+				//}
+				if (comp) {
+						if (comp_name.indexOf(comp) === -1) {
+							comp_name.push(comp);
+							var cdata = {
+								nodetype: "compartment",
+								name: comp,
+								size: 10,
+								children: []
+							};
+							comp_dic[comp]=cdata;
+							comp_dic_hierarchy[rootName].children.push(comp_dic[comp]);
+							comp_dic[comp]= comp_dic_hierarchy.children[comp_dic_hierarchy.children.length-1];
+							console.log("comp is ",comp);
+						}
+						if (loc && loc_name.indexOf(loc) === -1) {
+							loc_name.push(loc);
+							var cdata = {
+								nodetype: "compartment",
+								name: loc,
+								size: 10,
+								children: []
+							};
+							comp_dic[comp].children.push(cdata);
+						}
+				}
+				else {
+					if (loc && loc_name.indexOf(loc) === -1) {
+						loc_name.push(loc);
+						var cdata = {
+							nodetype: "compartment",
+							name: loc,
+							size: 10,
+							children: []
+						};
+						rootComp.children.push(cdata);
+					}
+			}
+		}
+	}
+	comp_dic_hierarchy.children.push(rootComp);
+	return comp_dic_hierarchy;
+}
+
+function guessCompartmentList(data_header, jsondic, rootName){
+	var data = getDataFromDic(jsondic);
+	var loc_comp = guessCompartmentFromColumn(data,rootName);
+	return loc_comp;
+}
+
 function getModalMapping(data_header,jsondic,rootName) {
 	  var modal_cont = document.getElementById("slickdetail");
-  	var item_cont = document.getElementById("slickitems");
+  	var item_cont = document.getElementById("modalform");//"slickitems");
+		var canvas_cont = document.getElementById("modalcanvas");//"slickitems");
   	var span = document.getElementById("closeslickdetail");
   	var btn1 = document.getElementById("saveDetail");
   	var btn2 = document.getElementById("cancelDetail");
 
-  	//is it brett format with column per compartments
-  	for (var i = 0; i < data_header.length; i++) {
-  		var h = data_header[i];
-  		if (h.slice(0,2)==="I_"){ //interior
-  				comp_column =true;
-  				//if (!csv_mapping)comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":false});
-  				//else comp_column_names.push({"id":data_header[i],"name":data_header[i].slice(2,data_header[i].length),"surface":false});
+		//is it brett format with column per compartments
+		comp_column_names = [];
+		comp_column = false;
+		for (var i = 0; i < data_header.length; i++) {
+			var h = data_header[i];
+			if (h.slice(0,2)==="I_"){ //interior
+					comp_column =true;
+					//if (!csv_mapping)comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":false});
+					//else comp_column_names.push({"id":data_header[i],"name":data_header[i].slice(2,data_header[i].length),"surface":false});
 					comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":false});
-  		}
-  	  if (h.slice(0,2)==="S_"){ //surface
-  				comp_column =true;
-  				//if (!csv_mapping) comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":true});
-  				//else comp_column_names.push({"id":data_header[i],"name":data_header[i].slice(2,data_header[i].length),"surface":true});
-  				comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":true});
-  		}
-  	}
-  	console.log("found "+comp_column_names.length+" compartments");
-  	item_cont.innerHTML = "found "+comp_column_names.length+" compartments";
+			}
+			if (h.slice(0,2)==="S_"){ //surface
+					comp_column =true;
+					//if (!csv_mapping) comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":true});
+					//else comp_column_names.push({"id":data_header[i],"name":data_header[i].slice(2,data_header[i].length),"surface":true});
+					comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":true});
+			}
+		}
+		console.log("found "+comp_column_names.length+" compartments");
+
+  	var astr = "found "+comp_column_names.length+" compartments";
   	for (var c=0;c < comp_column_names.length;c++) {
-  		item_cont.innerHTML +="<br>"+comp_column_names[c].name+" surface "+comp_column_names[c].surface;
+  		astr +="<br>"+comp_column_names[c].name+" surface "+comp_column_names[c].surface;
   		}
+		var textelem =  addToModalDiv( item_cont, 'alabel', astr);
+
     for(var k in allfield) {
 				if (k==="compartments") continue;
 				createOneColumnSelect(k,data_header,item_cont)
     }
 
+		var loc_comp =guessCompartmentList(data_header, jsondic,rootName);
+		console.log("guessed "+Object.keys(loc_comp).length+" compartments");
+		console.log(loc_comp);
+		astr = "<br>guessed "+Object.keys(loc_comp).length+" compartments";
+		//for (var co in loc_comp) {
+		//	astr +="<br>"+co+" "+loc_comp[co];
+		//}
+		textelem.innerHTML+=astr;
+
     modal_cont.style.display = "block";
+
+		SetupCompartmentModalCanvas(canvas_cont,loc_comp);
 
   	span.onclick = function() {
       modal_cont.style.display = "none";
@@ -780,13 +886,7 @@ function ParseBU(cellvalue)
 		else return elem[1];
 }
 
-function parseSpreadShitRecipe(data_header,jsondic,rootName)
-{
-
-	//why the key are not working properly?
-	console.log(rootName);
-	//console.log(JSON.parse(jsondic));
-	//parse for getting the headr position
+function getDataFromDic(jsondic) {
 	var data;
 	if (!csv_mapping){
 		var sheet_name=[];
@@ -807,6 +907,17 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
 	else {
 		data = jsondic;
 		}
+	return data;
+}
+
+function parseSpreadShitRecipe(data_header,jsondic,rootName)
+{
+  var data = getDataFromDic(jsondic);
+	//why the key are not working properly?
+	console.log(rootName);
+	//console.log(JSON.parse(jsondic));
+	//parse for getting the headr position
+
 	var name_index=allfield.name_index,
     source_index=allfield.source_index,
     count_index=allfield.count_index,
