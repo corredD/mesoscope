@@ -1298,8 +1298,10 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       //console.log(arow);
       document.getElementById('ProteinId').innerHTML = arow.name; //arow.compartment+" "+arow.name+" : "+arow.pdb;
       //change the selected node accordingly
+      clearHighLight();
       node_selected_indice = parseInt(arow.id.split("_")[1]);
       node_selected = graph.nodes[node_selected_indice];
+      nodes_selections=[];
       console.log("clicked on " + node_selected.data.name);
       SetObjectsOptionsDiv(node_selected);
       if ("uniprot" in arow && cid === "uniprot") {
@@ -1393,6 +1395,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
           //ngl_load_params = {"dogeom":false,"geom":null,
           //			"dobeads":false,"beads":null,
           //		"doaxis":false,"axis":null};
+          node_selected.data.visited = true;
           if (node_selected.data.geom) { //arow.geom ||
             console.log(node_selected.data.geom)
             //var geom_name = node_selected.data.geom.split('.')[0];

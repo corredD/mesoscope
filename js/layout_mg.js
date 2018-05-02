@@ -36,6 +36,7 @@ var canvasOption = '' +
   '	<option value="Beads" > missing SphereTree </option>' +
   '	<option value="geom"> missing Geometry </option>' +
   //'	<option value="color" > color </option>' +
+  '	<option value="viewed"> viewed </option>' +
   '	<option value="size"> size </option>' +
   '	<option value="count" > count </option>' +
   '	<option value="molarity" > molarity </option>' +
@@ -175,10 +176,24 @@ var ngloptions = '' +
   '</div>' +
   '</div>'
 
+function getSpinner(spinner_id,callback_close)
+{
+  return ''+
+  '<label id="'+spinner_id+'_lbl" class="hidden"></label>' +
+  '<div class="spinner hidden" id="'+spinner_id+'" style="width:200px;height:20px;" >' +
+  '	  <div class="rect1"></div>' +
+  '	  <div class="rect2"></div>' +
+  '	  <div class="rect3"></div>' +
+  '	  <div class="rect4"></div>' +
+  '	  <div class="rect5"></div>' +
+  '    <button onclick="'+callback_close+'">Stop</button>' +
+  '	</div>'
+}
+
 var gridoptions = ''
   //+'<div class="hover_div" style="position:absolute; width:25px !important; display:block;z-index:9999">   '
   +
-  '						<button onclick="undo()">UnDo</button>' +
+  '					<button onclick="undo()">UnDo</button>' +
   '					<button onclick="addRow()">AddRow</button>' +
   '					<button onclick="removeRow()">RemoveRow</button>' +
   '					<button onclick="gridArray[current_grid].dataView.setGrouping([])">Clear grouping</button>' +
@@ -187,19 +202,24 @@ var gridoptions = ''
   '					<select id="column_type" name="column_type" onchange="groupByElem(this)">' +
   '						<option value="All" selected> All </option>' +
   '					</select>' +
-  '<input type="text"" class="input-medium form-control" placeholder="Uniprot_Query" id="Query_3" onchange="refineQuery(this)"' +
-  '<br><input type="text"" class="input-medium form-control" placeholder="PDB_Query" id="Query_4" onchange="refineQuery(this)"' +
+  '<br><input type="text""  style="width:100%;" placeholder="Uniprot_Query" id="Query_3" onchange="refineQuery(this)"' +//class="input-medium form-control"
+  '<br><input type="text""  style="width:100%;" placeholder="PDB_Query" id="Query_4" onchange="refineQuery(this)"' +
   '<label for="sequence_search"> Use Sequence Blast Search </label><input type="checkbox" name="sequence_search" id="sequence_search">' +
-  '</div> <label id="LoaderTxt" class="hidden" for="aloader"></label>' +
+  '</div>'+
+  '<label id="LoaderTxt" class="hidden" for="aloader"></label>' +
   '<div class="spinner hidden" id="spinner" style="width:200px;height:20px;" >' +
   '	  <div class="rect1"></div>' +
   '	  <div class="rect2"></div>' +
   '	  <div class="rect3"></div>' +
   '	  <div class="rect4"></div>' +
   '	  <div class="rect5"></div>' +
-  '    <button onclick="stopAll()">Stop</button>' +
-  '	</div>' +
-  ' <img wicth="250" height="250" class="hidden" id="imagepdbclone" src=""/>'
+  '   <button onclick="stopAll()">Stop query search</button>' +
+  '	</div>'+
+  ' <img wicth="250" height="250" class="hidden" id="imagepdbclone" src=""/>'+
+  ' <button style="display:block;" onclick="BuildAllBeads()">Build missing Beads</button>' + getSpinner("stopbeads","stopBeads()")+
+  '	<button style="display:block;" onclick="BuildAllGeoms()">Build missing Geoms</button>' + getSpinner("stopgeoms","stopGeoms()")
+
+
 //	+'</div>'
 
 var pfvoptions = '' +

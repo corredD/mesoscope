@@ -1648,6 +1648,34 @@ function NGLLoad(pdbname, bu, sel_str) {
   }
 }
 
+//either use a data provider or a asyncpostrender in slick grid
+//https://github.com/6pac/SlickGrid/blob/master/examples/example10-async-post-render.html
+//https://github.com/6pac/SlickGrid/blob/master/examples/example6-ajax-loading.html
+//let the server do everything in one call that send elem by elem ?
+function BuildAllBeads(){
+  //show the stop button
+  document.getElementById('stopbeads').setAttribute("class", "spinner");
+  document.getElementById("stopbeads_lbl").setAttribute("class", "show");
+}
+
+function stopBeads()
+{
+  document.getElementById('stopbeads').setAttribute("class", "spinner hidden");
+  document.getElementById("stopbeads_lbl").setAttribute("class", "hidden");
+}
+
+function BuildAllGeoms()
+{
+  //show the stop button
+  document.getElementById('stopgeoms').setAttribute("class", "spinner");
+  document.getElementById("stopgeoms_lbl").setAttribute("class", "show");
+}
+
+function stopGeoms()
+{
+  document.getElementById('stopgeoms').setAttribute("class", "spinner hidden");
+  document.getElementById("stopgeoms_lbl").setAttribute("class", "hidden");
+}
 /*var colorMap = new Map()
 var chainNameScheme = NGL.ColorMakerRegistry.getScheme( {scheme: 'chainname', structure: structure})
 

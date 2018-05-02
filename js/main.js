@@ -1720,6 +1720,7 @@ function wakeUpSim(){
 function zoomed() {
   transform = d3v4.event.transform;
   console.log("scale is transform.k",transform.k);
+	//?clearHighLight();
 }
 
 function CenterCanvas()
@@ -1812,35 +1813,39 @@ function colorNode(d) {
 		return (!d.children && "data" in d && "color" in d.data
 			&& d.data.color )? d.data.color : "red";//rgb list ?
 	}
+	else if (colorby === "viewed") {
+		return (!d.children && "data" in d && "visited" in d.data
+	)? ((d.data.visited)?"yellow":"red") : color(d.depth) ;//rgb list ?
+	}
 	//molarity_count using the same kind of linear mapping but with color ?
 	//else if (colorby === "molarity") {}
 	else if (colorby === "count") {
 		var color_mapping = d3v4.scaleLinear()
-			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[property].max])
+			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
 			.range(["hsl(0,100%,100%)", "hsl(228,30%,40%)"])
 			.interpolate(d3v4.interpolateHcl);
-			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby])?color_mapping(d.data[colorby]):"red";
+			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby])?color_mapping(d.data[colorby]):color(d.depth);
 	}
 	else if (colorby === "size") {
 		var color_mapping = d3v4.scaleLinear()
-			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[property].max])
+			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
 			.range(["hsl(0,100%,100%)", "hsl(228,30%,40%)"])
 			.interpolate(d3v4.interpolateHcl);
-			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby])?color_mapping(d.data[colorby]):"red";
+			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby])?color_mapping(d.data[colorby]):color(d.depth);
 	}
 	else if (colorby === "molarity") {
 		var color_mapping = d3v4.scaleLinear()
-			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[property].max])
+			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
 			.range(["hsl(0,100%,100%)", "hsl(228,30%,40%)"])
 			.interpolate(d3v4.interpolateHcl);
-			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby])?color_mapping(d.data[colorby]):"red";
+			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby])?color_mapping(d.data[colorby]):color(d.depth);
 	}
 	else if (colorby === "molecularweight") {
 		var color_mapping = d3v4.scaleLinear()
-			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[property].max])
+			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
 			.range(["hsl(0,100%,100%)", "hsl(228,30%,40%)"])
 			.interpolate(d3v4.interpolateHcl);
-		return ( !d.children && "data" in d && colorby in d.data && d.data[colorby])?color_mapping(d.data[colorby]):"red";
+		return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]) ? color_mapping(d.data[colorby]):color(d.depth);
 	}
 	else {
 						return ( !d.children && "data" in d && "source" in d.data
@@ -2805,6 +2810,7 @@ function dragended() {
   d3v4.event.subject.fx = null;
   d3v4.event.subject.fy = null;
 	SetObjectsOptionsDiv(d3v4.event.subject);
+	d3v4.event.subject.data.visited = true;
   if (!d3v4.event.subject.children && !("source" in d3v4.event.subject)) {
   	//node_selected =  d3v4.event.subject;
   	//node_selected_indice = nodes.indexOf(node_selected);
