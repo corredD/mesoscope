@@ -1,7 +1,7 @@
 var options = {
   enableCellNavigation: true,
   enableColumnReorder: false,
-  forceFitColumns: true//,
+  forceFitColumns: true //,
   //cellHighlightCssClass: "changed",
   //cellFlashingCssClass: "current-server"
 };
@@ -519,9 +519,9 @@ function CreateOptions() {
     autoEdit: false,
     editCommandHandler: queueAndExecuteCommand,
     //enableColumnReorder: false,
-    multiColumnSort: true//,
-  //  cellHighlightCssClass: "changed",
-  //  cellFlashingCssClass: "current-server"
+    multiColumnSort: true //,
+    //  cellHighlightCssClass: "changed",
+    //  cellFlashingCssClass: "current-server"
   };
   return options;
 }
@@ -1305,6 +1305,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       if ("uniprot" in arow && cid === "uniprot") {
         //node_selected = null;
         if (arow.uniprot && arow.uniprot !== "") {
+          console.log("arow.uniprot " + arow.uniprot);
           //update the uniprot table with the stored session
           if (usesavedSession) {
             var rowsids = args.row; //gridArray[0].getSelectedRows();
@@ -1336,7 +1337,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
           console.log(arow.uniprot)
           //update pfv
           //console.log(arow.uniprot + " " + featureView.uniprotId);
-          if (arow.uniprot !== ""){//featureView.uniprotId) {
+          if (arow.uniprot !== "") { //featureView.uniprotId) {
             if (arow.pdb && arow.pdb != "None" && arow.pdb != "") {
               var apdb = arow.pdb.split("_")[0];
               if (apdb.length === 4)
@@ -1352,21 +1353,24 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
             }
             //the pvf features to protvista e.g. pdb,model,pfam...
             if (!protvista_instance) {
-              if (!ProtVista ) ProtVista = require(['ProtVista']);
+              if (!ProtVista) ProtVista = require(['ProtVista']);
               protvista_instance = new ProtVista({
                 el: document.getElementById("protvista"),
                 uniprotacc: arow.uniprot,
-                categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM','SEQUENCE_INFORMATION',
-              'STRUCTURAL','TOPOLOGY']
+                categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM', 'SEQUENCE_INFORMATION',
+                  'STRUCTURAL', 'TOPOLOGY'
+                ]
 
               });
-            } else { //update
-              document.getElementById("protvista").innerHtml ="";
+            }
+            else { //update
+              document.getElementById("protvista").innerHtml = "";
               protvista_instance = new ProtVista({
                 el: document.getElementById("protvista"),
                 uniprotacc: arow.uniprot,
-                categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM','SEQUENCE_INFORMATION',
-              'STRUCTURAL','TOPOLOGY']
+                categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM', 'SEQUENCE_INFORMATION',
+                  'STRUCTURAL', 'TOPOLOGY'
+                ]
               });
             }
             console.log(protvista_instance);
@@ -1375,7 +1379,8 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
             //this overwrite the current NGL
             //featureView.uniprotId = arow.uniprot;
           }
-        } else {
+
+        }else {
           console.log("fetch uniprot " + arow.uniprot)
           //place the query in the text input
           document.getElementById("Query_3").value = arow.name.split("_").join("+");
@@ -1388,15 +1393,15 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
           //ngl_load_params = {"dogeom":false,"geom":null,
           //			"dobeads":false,"beads":null,
           //		"doaxis":false,"axis":null};
-          if (node_selected.data.geom ) {//arow.geom ||
+          if (node_selected.data.geom) { //arow.geom ||
             console.log(node_selected.data.geom)
             //var geom_name = node_selected.data.geom.split('.')[0];
             //var ext = geom_name.split('.').pop();
             if ("geom_type" in node_selected.data) {
-              ngl_load_params.geom = node_selected.data.geom;//geom_purl + geom_name + ".obj"; //NGLLoadAShapeObj(  );
+              ngl_load_params.geom = node_selected.data.geom; //geom_purl + geom_name + ".obj"; //NGLLoadAShapeObj(  );
               ngl_load_params.dogeom = true;
               //if (node_selected.data.geom_type==="raw"){
-                //do the NGL_ShowMeshVFN
+              //do the NGL_ShowMeshVFN
               //  ngl_load_params.geom = node_selected.data.geom;//geom_purl + geom_name + ".obj"; //NGLLoadAShapeObj(  );
               //  ngl_load_params.dogeom = true;
               //}
@@ -1443,7 +1448,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
               console.log(arow.pdb, arow.bu, arow.selection);
               NGLLoad(arow.pdb, arow.bu, arow.selection);
             }
-            UpdatePDBcomponent(arow.pdb);//only work if 4letter
+            UpdatePDBcomponent(arow.pdb); //only work if 4letter
           } else {
             console.log("query PDB for " + arow.name);
             if (arow.name !== "protein_name") {
@@ -1476,28 +1481,30 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       //send the selection to the main recipe
       //var rowsids = gridArray[0].getSelectedRows()[0];
       node_selected = null;
-      if (cid =="Entry") {
+      if (cid == "Entry") {
         //the pvf features to protvista e.g. pdb,model,pfam...
         if (!protvista_instance) {
-          if (!ProtVista ) ProtVista = require(['ProtVista']);
+          if (!ProtVista) ProtVista = require(['ProtVista']);
           protvista_instance = new ProtVista({
             el: document.getElementById("protvista"),
             uniprotacc: arow.uniprot,
-            categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM','SEQUENCE_INFORMATION',
-          'STRUCTURAL','TOPOLOGY']
+            categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM', 'SEQUENCE_INFORMATION',
+              'STRUCTURAL', 'TOPOLOGY'
+            ]
           });
         } else { //update
-          document.getElementById("protvista").innerHtml ="";
+          document.getElementById("protvista").innerHtml = "";
           protvista_instance = new ProtVista({
             el: document.getElementById("protvista"),
             uniprotacc: arow.uniprot,
-            categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM','SEQUENCE_INFORMATION',
-          'STRUCTURAL','TOPOLOGY']
+            categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM', 'SEQUENCE_INFORMATION',
+              'STRUCTURAL', 'TOPOLOGY'
+            ]
           });
         }
         if (featureView) {
-            document.getElementById("up-field").value = arow.Entry;
-            featureView.loadUniprot(arow.Entry);
+          document.getElementById("up-field").value = arow.Entry;
+          featureView.loadUniprot(arow.Entry);
         }
       }
       //if (arow.Entry !== featureView.uniprotId && cid === "Entry") {
@@ -1514,24 +1521,25 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       //send the selection to the main recipe
       if ("uniprotAcc" in arow && cid === "uniprotAcc") {
         if (!protvista_instance) {
-          if (!ProtVista ) ProtVista = require(['ProtVista']);
+          if (!ProtVista) ProtVista = require(['ProtVista']);
           protvista_instance = new ProtVista({
             el: document.getElementById("protvista"),
             uniprotacc: arow.uniprotAcc,
-            categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM','SEQUENCE_INFORMATION',
-          'STRUCTURAL','TOPOLOGY']
+            categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM', 'SEQUENCE_INFORMATION',
+              'STRUCTURAL', 'TOPOLOGY'
+            ]
           });
         } else { //update
-          document.getElementById("protvista").innerHtml ="";
+          document.getElementById("protvista").innerHtml = "";
           protvista_instance = new ProtVista({
             el: document.getElementById("protvista"),
             uniprotacc: arow.uniprotAcc,
-            categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM','SEQUENCE_INFORMATION',
-          'STRUCTURAL','TOPOLOGY']
+            categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM', 'SEQUENCE_INFORMATION',
+              'STRUCTURAL', 'TOPOLOGY'
+            ]
           });
         }
-        if (featureView)
-        {
+        if (featureView) {
           document.getElementById("up-field").value = arow.uniprotAcc;
           featureView.singlePDBmode = false;
           featureView.setUniprotId(arow.uniprotAcc);
@@ -1652,6 +1660,11 @@ function UpdateSelectionPdbFromId(node_id) {
   gridArray[0].gotoCell(test, 7, false);
 }
 
+function SelectRowFromId(node_id) {
+  var test = gridArray[0].dataView.getRowById(node_id);
+  console.log("atest ", test);
+  gridArray[0].setSelectedRows([test]);
+}
 
 function UpdateSelectionInteractionFromId(node_id) {
   console.log(node_id + " update grid selection ?");

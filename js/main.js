@@ -13,7 +13,7 @@ var current_scale = 1;
 //extracellular
 var localisation_tag = ["cytosol","periplasm","inner_membrane","outer_membrane","membrane","cytoplasm","lumen"];
 var surface_tag = ["membrane","x","surface","tm"];
-
+var current_ready_state = 0;//0-1-2
 
 //eukaryote type
 var comp_template_cell = {
@@ -113,6 +113,79 @@ var users;
 var simulation;
 var pack ;
 var HQ = false;
+
+function EvaluateCurrentReadyState(){
+	//check number of names != of default name out of all ingr
+	//check number of sources out of all ingr
+	//check number of beads setup
+	//check number of geometry setup
+	//check number of ingredient actually viewed by the user so far
+	//need 100% for name, sources, beads, geometry for cellPack
+	//rest is optional and can go in onrange states
+	//else go to red
+	var names_state=0;
+	var sources_state=0;
+	var beads_state=0;
+	var geom_state=0;
+	var count_molarity_state=0;
+	var node_view_state=0;
+	var comp_geom_state=0;
+	var ningr=0;
+	var ncomp=0;
+	for (var i=0;i<graph.nodes.length;i++){
+			var d = graph.nodes[i];
+			if (!d.children)
+			{
+				ningr++;
+				if  ( !d.data.name || d.data.name === "" || d.data.name === "protein_name")  names_state++;
+				if  ( "data" in d && "source" in d.data
+							&& "pdb" in d.data.source
+							&& (!d.data.source.pdb || d.data.source.pdb === "None"
+						|| d.data.source.pdb === "null" || d.data.source.pdb === ""))  sources_state++;
+				if ( "data" in d && "source" in d.data
+							&& "pos" in d.data
+							&& (!d.data.pos || d.data.pos === "None"
+							|| d.data.pos === "null" || d.data.pos.length === 0
+							|| d.data.pos === ""))  beads_state++;
+				if ("data" in d && "count" in d.data && "molarity" in d.data
+							&& d.data.count === 0 && d.data.molarity === 0.0) count_molarity_state++;
+				if( "data" in d && "geom" in d.data
+							&& (!d.data.geom || d.data.geom === "None"
+						|| d.data.geom === "null" || d.data.geom === ""))  geom_state++;
+				if ( "data" in d && "visited" in d.data
+									&& !d.data.visited ) node_view_state++;
+			}
+			else {
+				//compartments
+				if (d.parent) {
+					ncomp++;
+					if( "data" in d && "geom" in d.data
+								&& (!d.data.geom || d.data.geom === "None"
+							|| d.data.geom === "null" || d.data.geom === ""))  comp_geom_state++;
+				}
+			}
+	}
+	if (ncomp === 0) ncomp = 1;
+	//sumarize
+	var res = {"names": (ningr-names_state)/ningr,"sources":(ningr-sources_state)/ningr,
+ 							"beads" : (ningr-beads_state)/ningr,"geom":(ningr-geom_state)/ningr,
+						"count":(ningr-count_molarity_state)/ningr,"visited":(ningr-node_view_state)/ningr,
+						"compgeom":(ncomp-comp_geom_state)/ncomp
+					}
+	//need either the beads or the geom
+	var score_critical = (res.geom+res.beads+res.compgeom)/3;//critical part need to yellow
+	var perfect_score =  0;
+	for (var key in res) {
+		console.log(key,res[key]);
+    perfect_score += res[key];
+	};
+	perfect_score/=7;
+	console.log(score_critical);
+	console.log(perfect_score,perfect_score/7);
+	current_ready_state = 0;
+	if (score_critical === 1) current_ready_state = 1;
+	else if (perfect_score === 1) current_ready_state = 2;
+}
 
 function switchMode(e){
 	if (current_mode ===1 ){
@@ -1213,6 +1286,10 @@ function checkAttributes(agraph){
 
 		if (agraph[i].data.count > property_mapping.count.max) property_mapping.count.max = agraph[i].data.count;
 		if (agraph[i].data.count < property_mapping.count.min) property_mapping.count.min = agraph[i].data.count;
+
+		if (!("visited" in agraph[i].data)) agraph[i].data.visited = false;
+		if (!("include" in agraph[i].data)) agraph[i].data.include = true;
+
 		}
 		else {
  			agraph[i].data.nodetype = "compartment";
@@ -1701,6 +1778,11 @@ function colorNode(d) {
 				&& (!d.data.source.pdb || d.data.source.pdb === "None"
 						|| d.data.source.pdb === "null" || d.data.source.pdb === ""))? "red" : color(d.depth);
 	}
+	if (colorby === "geom") {
+				return ( !d.children && "data" in d && "geom" in d.data
+				&& (!d.data.geom || d.data.geom === "None"
+						|| d.data.geom === "null" || d.data.geom === ""))? "red" : color(d.depth);
+	}
 	else if (colorby === "pcpalAxis") {
 						return ( !d.children && "data" in d && "pcpalAxis" in d.data
 				&& (!d.data.pcpalAxis || d.data.pcpalAxis === "None"
@@ -1726,7 +1808,40 @@ function colorNode(d) {
 		return (!d.children && "data" in d && "count" in d.data && "molarity" in d.data
 			&& d.data.count === 0 && d.data.molarity === 0.0)? "red" : color(d.depth);
 	}
+	else if (colorby === "color") {
+		return (!d.children && "data" in d && "color" in d.data
+			&& d.data.color )? d.data.color : "red";//rgb list ?
+	}
+	//molarity_count using the same kind of linear mapping but with color ?
 	//else if (colorby === "molarity") {}
+	else if (colorby === "count") {
+		var color_mapping = d3v4.scaleLinear()
+			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[property].max])
+			.range(["hsl(0,100%,100%)", "hsl(228,30%,40%)"])
+			.interpolate(d3v4.interpolateHcl);
+			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby])?color_mapping(d.data[colorby]):"red";
+	}
+	else if (colorby === "size") {
+		var color_mapping = d3v4.scaleLinear()
+			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[property].max])
+			.range(["hsl(0,100%,100%)", "hsl(228,30%,40%)"])
+			.interpolate(d3v4.interpolateHcl);
+			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby])?color_mapping(d.data[colorby]):"red";
+	}
+	else if (colorby === "molarity") {
+		var color_mapping = d3v4.scaleLinear()
+			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[property].max])
+			.range(["hsl(0,100%,100%)", "hsl(228,30%,40%)"])
+			.interpolate(d3v4.interpolateHcl);
+			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby])?color_mapping(d.data[colorby]):"red";
+	}
+	else if (colorby === "molecularweight") {
+		var color_mapping = d3v4.scaleLinear()
+			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[property].max])
+			.range(["hsl(0,100%,100%)", "hsl(228,30%,40%)"])
+			.interpolate(d3v4.interpolateHcl);
+		return ( !d.children && "data" in d && colorby in d.data && d.data[colorby])?color_mapping(d.data[colorby]):"red";
+	}
 	else {
 						return ( !d.children && "data" in d && "source" in d.data
 				&& "pdb" in d.data.source
@@ -1994,9 +2109,81 @@ function sortNodeByDepth(objects){
     	context.fillStyle = "green";
       context.fill();
       */
+		//draw the traffic light
+		drawTrafficLight();
     context.restore();
   }
 
+function ColorLuminance(hex, lum) {
+
+		// validate hex string
+		hex = String(hex).replace(/[^0-9a-f]/gi, '');
+		if (hex.length < 6) {
+			hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+		}
+		lum = lum || 0;
+
+		// convert to decimal and change luminosity
+		var rgb = "#", c, i;
+		for (i = 0; i < 3; i++) {
+			c = parseInt(hex.substr(i*2,2), 16);
+			c = Math.round(Math.min(Math.max(0, c + (c * lum)), 255)).toString(16);
+			rgb += ("00"+c).substr(c.length);
+		}
+
+		return rgb;
+	}
+
+function drawTrafficLight(){
+	var r = (25/2);
+	var w = (r*2)*3+4;
+	var h = (r*2)+4;
+	var ax = transform.invertX(canvas.width - 5 - w);
+	var ay = transform.invertY(canvas.height - 10 - h);
+	context.roundRect(ax,ay,w/transform.k,h/transform.k,5/transform.k);
+	context.strokeStyle = "#000";
+	context.lineWidth=2/transform.k;
+	context.stroke();
+	context.fillStyle = "#333";
+	context.fill();
+
+	context.beginPath();
+	ax = transform.invertX(canvas.width - 5 - w + r + 2);
+	ay = transform.invertY(canvas.height - 10 - h + r + 2);
+	context.arc(ax,ay,r/transform.k,0,10);//0?
+	context.strokeStyle = "#000";
+	context.lineWidth=2/transform.k;
+	context.stroke();
+	context.fillStyle = ColorLuminance("#FF0000",(current_ready_state===0)?0:-0.5);
+	context.fill();
+
+	context.beginPath();
+	ax = transform.invertX(canvas.width - 5 - w +r*3+2);
+	ay = transform.invertY(canvas.height - 10 - h + r + 2);
+	context.arc(ax,ay,r/transform.k,0,10);//0?
+	context.strokeStyle = "#000";
+	context.lineWidth=2/transform.k;
+	context.stroke();
+	context.fillStyle = ColorLuminance("#FFFF00",(current_ready_state===1)?0:-0.8);
+	context.fill();
+
+	context.beginPath();
+	ax = transform.invertX(canvas.width - 5 - w + r*5+2);
+	ay = transform.invertY(canvas.height - 10 - h + r + 2);
+	context.arc(ax,ay,r/transform.k,0,10);//0?
+	context.strokeStyle = "#000";
+	context.lineWidth=2/transform.k;
+	context.stroke();
+	context.fillStyle = ColorLuminance("#00FF00",(current_ready_state===2)?0:-0.8);
+	context.fill();
+	if (current_ready_state === 2 ) {
+		ax = transform.invertX(canvas.width - 5 - w +r*3+2);
+		ay = transform.invertY(canvas.height - 10 - h -r );
+		context.font=(20/transform.k)+"px Georgia";
+		context.fillStyle = "black";
+		context.fillText("ready!",ax,ay);
+	}
+}
 
 // calculate the point on the line that's
 // nearest to the mouse position
@@ -2220,16 +2407,14 @@ function traverseTreeForCompartmentNameUpdate(anode){
 function RenameNodeOver(){
 	$(".custom-menu-node").hide(100);
 	console.log("rename over",node_over_to_use.data.name);
-	//modal menu or prompt
 	console.log(node_over_to_use);
 	var new_name = prompt("Please enter new name", node_over_to_use.data.name);
 	node_over_to_use.data.name = new_name;
 	if (node_over_to_use.data.nodetype!=="compartment")
-			updateCellValue(gridArray[0],"name",node_over_to_use.id,new_name);
+			updateCellValue(gridArray[0],"name",node_over_to_use.data.id,new_name);
 	else //change the compartment value for all child...
 		traverseTreeForCompartmentNameUpdate(node_over_to_use);
 	//update Grid
-
 	}
 
 function DeleteNodeOver(){
@@ -2401,91 +2586,91 @@ function clearHighLight(){
     }
 }
 
-  function dragsubject() {
-    return simulation.find(d3v4.event.x - width / 2, d3v4.event.y - height / 2);
+function dragsubject() {
+  return simulation.find(d3v4.event.x - width / 2, d3v4.event.y - height / 2);
+}
+
+function MouseMove(x,y) {
+
+	var d = asubject(x,y);
+	//console.log("mousemouve",d);
+	var line = false;
+	if (d && "data" in d) {}//console.log("found "+d.data.name+" at "+x+" "+y);
+	else if (d && "source" in d )
+	{
+		//console.log("found a line");
+	  line = true;
+	}
+	//else console.log("not found");
+	if (!line) clearHighLight();
+  if ((!d || d===null ) )
+  {
+  	clearHighLight();
   }
-
-  function MouseMove(x,y) {
-
-  	var d = asubject(x,y);
-  	//console.log("mousemouve",d);
-  	var line = false;
-  	if (d && "data" in d) {}//console.log("found "+d.data.name+" at "+x+" "+y);
-  	else if (d && "source" in d )
-  	{
-  		//console.log("found a line");
-  	  line = true;
-  	}
-  	//else console.log("not found");
-		if (!line) clearHighLight();
-    if ((!d || d===null ) )
-    {
-    	clearHighLight();
-    }
-    else if (!d.parent && !line) clearHighLight();
-    else {
-    	  if (!line)
-    	  {
-	        if (!node_over){
-	          node_over = d ;
-	          }
-	        else if (node_over != d) {
-	          node_over.highlight=false;
-	          node_over = d;
-	        }
-	        else {
-	          node_over = d;
-	        }
-	        d.highlight=true;
-	        line_over = null;
+  else if (!d.parent && !line) clearHighLight();
+  else {
+  	  if (!line)
+  	  {
+        if (!node_over){
+          node_over = d ;
+          }
+        else if (node_over != d) {
+          node_over.highlight=false;
+          node_over = d;
         }
         else {
-        	node_over = null;
-        	line_over = d;
-        	}
-    }
-    if (simulation.alpha() < 0.01 && HQ) simulation.alphaTarget(1).restart();
-    //console.log(simulation.alpha());
+          node_over = d;
+        }
+        d.highlight=true;
+        line_over = null;
+      }
+      else {
+      	node_over = null;
+      	line_over = d;
+      	}
   }
+  if (simulation.alpha() < 0.01 && HQ) simulation.alphaTarget(1).restart();
+  //console.log(simulation.alpha());
+}
 
-  function mouseEnter(){
-  	//console.log("d3 mouseenter");
-  	if (!d3v4.event.active) simulation.alphaTarget(0.3).restart();
-  	mousein = true;
-  	//console.log(mousein);
-  }
+function mouseEnter(){
+	//console.log("d3 mouseenter");
+	if (!d3v4.event.active) simulation.alphaTarget(0.3).restart();
+	mousein = true;
+	//console.log(mousein);
+}
 
-  function mouseLeave(){
-  	//console.log("d3 mouseleave");
-  	//if (!d3v4.event.active) simulation.alphaTarget(0);
-  	mousein = false;
-  	//console.log(mousein);
-  }
+function mouseLeave(){
+	//console.log("d3 mouseleave");
+	//if (!d3v4.event.active) simulation.alphaTarget(0);
+	mousein = false;
+	//console.log(mousein);
+}
 
-  function mouseMoved(event) {
-    var rect = canvas.getBoundingClientRect(), // abs. size of element
-      scaleX = canvas.width / rect.width,    // relationship bitmap vs. element for X
-      scaleY = canvas.height / rect.height;
-    var mx =  d3v4.event.layerX || d3v4.event.offsetX;//d3v4.event.clientX
-    var my =  d3v4.event.layerY || d3v4.event.offsety;//d3v4.event.clientY
-    var x = mx*scaleX;//(rect.left!=NaN)? (d3v4.event.clientX - rect.left)* scaleX: 0;//d3v4.event.clientX-width/2;
-    var y = my*scaleY;//(rect.top!=NaN)? (d3v4.event.clientY - rect.top)* scaleY : 0;//d3v4.event.clientX-height/2;
-    //console.log("x ",x," y ",y);
-  	//var x = d3v4.event.pageX - canvas.getBoundingClientRect().x;
-    //var y = d3v4.event.pageY - canvas.getBoundingClientRect().y;
-    //mousexy = {"x":x,"y":y};
-  	//console.log("d3 mousemove");
-  	//var mouseX = (d3v4.event.layerX || d3v4.event.offsetX) - canvas.getBoundingClientRect().x;
-    //var mouseY = (d3v4.event.layerY || d3v4.event.offsetY) - canvas.getBoundingClientRect().y;
-  	//console.log(d3v4.event.x,d3v4.event.y);//udefined ?
-  	//if (d3v4.event.subject) console.log(d3v4.event.subject.data.name);
-  	//var m = d3v4.mouse();//or d3v4.event.x?
-    //MouseMove(mouseX,mouseY);//m[0],m[1]);
-    MouseMove(x,y);//nanan
-    mousein = true;
-   // isKeyPressed(event);
-    //console.log(mousein);
-  }
+function mouseMoved(event) {
+  var rect = canvas.getBoundingClientRect(), // abs. size of element
+    scaleX = canvas.width / rect.width,    // relationship bitmap vs. element for X
+    scaleY = canvas.height / rect.height;
+  var mx =  d3v4.event.layerX || d3v4.event.offsetX;//d3v4.event.clientX
+  var my =  d3v4.event.layerY || d3v4.event.offsety;//d3v4.event.clientY
+  var x = mx*scaleX;//(rect.left!=NaN)? (d3v4.event.clientX - rect.left)* scaleX: 0;//d3v4.event.clientX-width/2;
+  var y = my*scaleY;//(rect.top!=NaN)? (d3v4.event.clientY - rect.top)* scaleY : 0;//d3v4.event.clientX-height/2;
+  //console.log("x ",x," y ",y);
+	//var x = d3v4.event.pageX - canvas.getBoundingClientRect().x;
+  //var y = d3v4.event.pageY - canvas.getBoundingClientRect().y;
+  //mousexy = {"x":x,"y":y};
+	//console.log("d3 mousemove");
+	//var mouseX = (d3v4.event.layerX || d3v4.event.offsetX) - canvas.getBoundingClientRect().x;
+  //var mouseY = (d3v4.event.layerY || d3v4.event.offsetY) - canvas.getBoundingClientRect().y;
+	//console.log(d3v4.event.x,d3v4.event.y);//udefined ?
+	//if (d3v4.event.subject) console.log(d3v4.event.subject.data.name);
+	//var m = d3v4.mouse();//or d3v4.event.x?
+  //MouseMove(mouseX,mouseY);//m[0],m[1]);
+  MouseMove(x,y);//nanan
+  mousein = true;
+ // isKeyPressed(event);
+  //console.log(mousein);
+}
 
 
 function dragstarted() {
@@ -2507,7 +2692,7 @@ function dragstarted() {
   	console.log("??",nodes_selections,ctrlKey);
   	node_selected =  d3v4.event.subject;
   	node_selected_indice = graph.nodes.indexOf(node_selected);
-
+		SelectRowFromId(node_selected.data.id);
   	if (ctrlKey){
   		console.log("ctrl",nodes_selections);
   		if (nodes_selections.indexOf(node_selected)===-1) nodes_selections.push(node_selected);
@@ -3005,8 +3190,7 @@ function resizeGridster(){
 	}
 
 function setupGridster() {
-//$(function () {
-		//var log = document.getElementById('log');
+
 		var maxnb = Math.round($(window).width()/50);
 		console.log("max number of column ",maxnb);
     gridster = $(".gridster > ul").gridster({
@@ -3089,6 +3273,45 @@ function setupGridster() {
 
 //http://golden-layout.com/examples/#8a90e7c51e2b8ba6c964e840793d22de
 
+if (window["CanvasRenderingContext2D"]) {
+    /** @expose */
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        if (w < 2*r) r = w/2;
+        if (h < 2*r) r = h/2;
+        this.beginPath();
+        if (r < 1) {
+            this.rect(x, y, w, h);
+        } else {
+            if (window["opera"]) {
+                this.moveTo(x+r, y);
+                this.arcTo(x+r, y, x, y+r, r);
+                this.lineTo(x, y+h-r);
+                this.arcTo(x, y+h-r, x+r, y+h, r);
+                this.lineTo(x+w-r, y+h);
+                this.arcTo(x+w-r, y+h, x+w, y+h-r, r);
+                this.lineTo(x+w, y+r);
+                this.arcTo(x+w, y+r, x+w-r, y, r);
+            } else {
+                this.moveTo(x+r, y);
+                this.arcTo(x+w, y, x+w, y+h, r);
+                this.arcTo(x+w, y+h, x, y+h, r);
+                this.arcTo(x, y+h, x, y, r);
+                this.arcTo(x, y, x+w, y, r);
+            }
+        }
+        this.closePath();
+    };
+    /** @expose */
+    CanvasRenderingContext2D.prototype.fillRoundRect = function(x, y, w, h, r) {
+        this.roundRect(x, y, w, h, r);
+        this.fill();
+    };
+    /** @expose */
+    CanvasRenderingContext2D.prototype.strokeRoundRect = function(x, y, w, h, r) {
+        this.roundRect(x, y, w, h, r);
+        this.stroke();
+    };
+}
 
 // Trigger action when the contexmenu is about to be shown, only on canvas
 $(document).bind("contextmenu", function (event) {

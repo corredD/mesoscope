@@ -34,6 +34,12 @@ var canvasOption = '' +
   '	<option value="offset" > missing Offset </option>' +
   '	<option value="count_molarity" > missing Copy number or molarity </option>' +
   '	<option value="Beads" > missing SphereTree </option>' +
+  '	<option value="geom"> missing Geometry </option>' +
+  //'	<option value="color" > color </option>' +
+  '	<option value="size"> size </option>' +
+  '	<option value="count" > count </option>' +
+  '	<option value="molarity" > molarity </option>' +
+  '	 <option value="mw" > molecularweight </option>' +
   '</select>		' +
   '	<select id="canvas_map_r" name="canvas_map_r" onchange="mapRadiusToProperty(this)" >' +
   '	<option value="Select">Map radius to:</option>' +
@@ -41,9 +47,7 @@ var canvasOption = '' +
   '	<option value="count" > count </option>' +
   '	<option value="molarity" > molarity </option>' +
   '	 <option value="mw" > molecularweight </option>' +
-  '	</select>	'
-
-  +
+  '	</select>	' +
   '<input type="checkbox" id="unchecked" onclick="switchMode(this)" class="cbx hidden" />' +
   '<label for="unchecked" class="lbl"></label>' +
   '<label for="lbl" style="width:70px; float:right; margin-top:10px;">Edit Mode</label>'
@@ -75,63 +79,63 @@ var ngloptions = '' +
   '</div>' +
   '	<label id="ProteinId">protein name</label>' +
   ' <label id="pdb_id">pdb id</label>' +
-  ' <input type="text" id="sel_str"  style="width:100%" placeholder="Selection" onchange="ChangeSelection(this)"/>' +
+  ' <div> <label for="rep_type">Selection</label><input type="text" id="sel_str"  style="width:55%" placeholder="Selection" onchange="ChangeSelection(this)"/></div>' +
   ' <label id="ngl_status"></label>' +
-//  ' <label for="rep_type">Representation'+
-//  ' </label>' +
-  ' <select id="rep_type" name="rep_type" onchange="ChangeRepresentation(this)"  >' +
+   '<div> <label for="rep_type">Representation'+
+  ' </label>' +
+  ' <select id="rep_type" name="rep_type" style="width:55%" onchange="ChangeRepresentation(this)"  >' +
   ' <option value="representation"> Representation: </option>' +
   ' <option value="cartoon" selected> cartoon </option>' +
   ' <option value="spacefill"> spacefill </option>' +
   ' <option value="licorice" > licorice </option>' +
   ' <option value="surface"> surface </option>' +
   //+'  <option value="beads" disabled > beads </option>'
-  ' </select>' +
+  ' </select></div>' +
 
-//  ' <label for="ass_type">Assambly</label>' +
-  '  <select id="ass_type" name="ass_type" onchange="ChangeBiologicalAssambly(this)" >' +
+  '<div> <label for="ass_type">Assambly</label>' +
+  '  <select id="ass_type" name="ass_type" style="width:55%" onchange="ChangeBiologicalAssambly(this)" >' +
   '  <option value="Assambly"> Assambly: </option>' +
   '  <option value="AU" selected> AU </option>' +
-  ' </select>' +
-//  ' <label for="mod_type">Model</label>' +
-  '  <select id="mod_type" name="mod_type" onchange="ChangeModel(this)" >' +
+  ' </select></div>' +
+  ' <div><label for="mod_type">Model</label>' +
+  '  <select id="mod_type" name="mod_type" style="width:55%" onchange="ChangeModel(this)" >' +
   '  <option value="showmodel" selected> Show model: </option>' +
-  ' </select>' +
-//  ' <label for="color_type">Color</label>' +
-  '  <select id="color_type" name="color_type" onchange="ChangeColorScheme(this)" >' +
+  ' </select></div>' +
+  ' <div><label for="color_type">Color</label>' +
+  '  <select id="color_type" name="color_type" style="width:55%" onchange="ChangeColorScheme(this)" >' +
   '  <option value="Colorby"> Color by: </option>' +
-  ' </select>'
+  ' </select></div>'
   //+' <label for="sym_elem">Symmetry :</label>'
   //	+'  <select id="sym_elem" name="sym_elem" onchange="ChangeSymmetr(this)">'
   //	+'  <option value="All" selected> All </option>'
   //	+' </select>'
   +
-//  ' <label for="label_elem">Label</label>' +
-  ' 	<select id="label_elem" name="label_elem" onchange="ChangeNGLlabel(this)" >' +
+  ' <div> <label for="label_elem">Label</label>' +
+  ' 	<select id="label_elem" name="label_elem" style="width:55%" onchange="ChangeNGLlabel(this)" >' +
   '   <option value="showlabel" selected> Show labels for: </option>' +
   '		<option value="None"> None </option>' +
   '		<option value="Chain" > Chain </option>' +
-  '	</select>	' +
+  '	</select></div>' +
   ' <div> <input type="checkbox"  id="showgeom" onclick="NGL_showGeomNode(this)" checked>' +
-  '  <label for="showgeom"> Show geometry </label> <button onclick="buildCMS()">Rebuild</button></div>' +
-//  ' <label for="beads_elem">Show Beads</label>' +
-  ' <select id="beads_elem" name="beads_elem" onchange="showBeadsLevel(this)" >' +
+  ' <label for="showgeom"> Show Geometry used </label> <button onclick="buildCMS()">Rebuild Geometry</button></div>' +
+  ' <div><label for="beads_elem">Show Beads</label>' +
+  ' <select id="beads_elem" name="beads_elem" style="width:55%" onchange="showBeadsLevel(this)" >' +
   ' <option value="showbeads" selected> Show beads for lvl </option>' +
   '  <option value="All" > All </option>' +
   '  <option value="0" > 0 </option>' +
   '  <option value="1" > 1 </option>' +
   '  <option value="2" > 2 </option>' +
   '  <option value="None" > None </option>' +
-  ' </select>' +
+  ' </select></div>' +
   //' <div class="clusterBtn">' +
   //' <select id="cluster_elem" name="cluster_elem" onchange="changeClusterMethod(this)" style="width:100%;height:40px">' +
   //'  <option value="Kmeans" selected>Kmeans </option>' +
   //'  <option value="Optics" disabled> Optics</option>' +
   //'  <option value="DBSCAN" disabled> DBSCAN </option>' +
   //' </select>' +
-//  '<label> number of cluster</label>' +
-  ' <input id="slidercl_params1" style="width:80%" height:"40px" type="range" min="1" max="100"" step="1" value="10" /> ' +
-  ' <label id="cl_params1" for="slidercl_params1" style="width:20%">10</label>' +
+ ' <div> <label> number of cluster</label>' +
+  ' <input id="slidercl_params1" style="width:70%;display:inline" type="range" min="1" max="100"" step="1" value="10" /> ' +
+  ' <label id="cl_params1" for="slidercl_params1">10</label></div>' +
   //'<label> param 2</label>' +
   //' <input id="slidercl_params2" style="width:100px" type="range" min="1" max="100"" step="1" value="10" /> ' +
   //' <label id="cl_params2" for="slidercl_params2" style="width:30px">10</label>' +
@@ -773,7 +777,7 @@ var persistentComponent = function(container, state) {
 };
 
 var setuped = false;
-
+var evaluate_interval;
 myLayout.init();
 
 $(document).ready(function() {
@@ -796,6 +800,7 @@ $(document).ready(function() {
     clearInterval(interval);
     if (savedRecipe !== null && usesavedState) LoadSaveState(JSON.parse(savedRecipe));
     else LoadExampleMpn();
+    evaluate_interval = setInterval(EvaluateCurrentReadyState,10000);
     //setupPDBLib();
 		//'use strict';angular.bootstrap(document, ['pdb.component.library']);
   }.bind(this), 20);

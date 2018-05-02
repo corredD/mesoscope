@@ -152,7 +152,6 @@ function applyPcp() {
 
 
 function buildMB() {
-  console.log("build membrane along", axis);
   var shapemb = new NGL.Shape("mb");
   //two cylinder one red up, one blue down, center is 0,0,0
   //Sign of Z coordinate is negative at the inner (IN) side and positive at the outer side.
@@ -165,6 +164,7 @@ function buildMB() {
 
   var shapembComp = stage.addComponentFromObject(shapemb);
   shapembComp.name = "mb";
+  var r = shapembComp.addRepresentation("membrane");
 }
 
 function updateMBcomp() {
@@ -176,6 +176,7 @@ function updateMBcomp() {
   var q = new NGL.Quaternion();
   q.setFromUnitVectors(new NGL.Vector3(0, 0, 1), new NGL.Vector3(axis[0], axis[1], axis[2]));
   //console.log(q,new NGL.Vector3(axis[0],axis[1],axis[2]));
+  if (!acomp) buildMB();
   acomp.setRotation(q);
   acomp.setPosition([-offset[0], -offset[1], -offset[2]]);
   console.log("updateMBcomp axis ?", axis, offset);
@@ -269,7 +270,7 @@ function setupNGL() {
       if (panel.style.maxHeight) {
         panel.style.maxHeight = null;
       } else {
-        panel.style.maxHeight = pcontainer.scrollHeight + "px"; //parent heigh?
+        panel.style.maxHeight = "100%";//pcontainer.scrollHeight + "px"; //parent heigh?
       }
     });
   }
