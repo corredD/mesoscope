@@ -879,6 +879,11 @@ function download(content, fileName, contentType) {
 
 function SaveRecipeCellPACK(){
 	console.log("save recipe");
+  //current score?
+  if (current_ready_state === 0) {
+    alert( " this is recipe is incomplete, can't export\n missing ??\n"+JSON.stringify(current_ready_state_value) );
+    return;
+  }
 	var jdata = getCurrentNodesAsCP_JSON(graph.nodes,graph.links);
   console.log(jsondic.recipe.name);
   console.log (JSON.stringify(jdata));
@@ -889,6 +894,10 @@ function SaveRecipeCellPACK(){
 function SaveRecipeCellPACK_serialized()
 {
 	console.log("save recipe serialized");
+  if (current_ready_state === 0) {
+    alert( " this is recipe is incomplete, can't export\n missing ??\n"+JSON.stringify(current_ready_state_value) );
+    return;
+  }
 	var jdata = serializedRecipe(graph.nodes,graph.links);
   console.log(jdata);
   console.log (JSON.stringify(jdata));

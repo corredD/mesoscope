@@ -1102,7 +1102,7 @@ function buildWithDBScan(o, center) {
   console.log(clusters); //cluster  is the list of cluster and indices. need a sphere for them
   return clusters;
 }
-
+//https://github.com/EtixLabs/clustering
 function buildWithKmeans(o, center) {
   //slow ?
   var kmeans = new KMEANS();

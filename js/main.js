@@ -14,6 +14,8 @@ var current_scale = 1;
 var localisation_tag = ["cytosol","periplasm","inner_membrane","outer_membrane","membrane","cytoplasm","lumen"];
 var surface_tag = ["membrane","x","surface","tm"];
 var current_ready_state = 0;//0-1-2
+var current_ready_state_value;//0-1-2
+
 var sheet_name=[];
 var current_data_header,
 		current_jsondic,
@@ -189,6 +191,7 @@ function EvaluateCurrentReadyState(){
 	current_ready_state = 0;
 	if (score_critical === 1) current_ready_state = 1;
 	else if (perfect_score === 1) current_ready_state = 2;
+	current_ready_state_value = res;
 }
 
 function switchMode(e){
