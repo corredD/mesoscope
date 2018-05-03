@@ -1,4 +1,5 @@
 var modal_sim,
+  modal_cont,
   modal_nodes,
   modal_canvas,
   modal_transform,
@@ -33,7 +34,7 @@ function childrenToList(parent) {
     astr+='<li>'+parent.children[c].data.name;
     if (parent.children[c].children) astr+=childrenToList(parent.children[c]);
     else {
-      if ("surface" in parent.children[c].data && parent.children[c].data.surface) astr+=' surface ';
+      if ("surface" in parent.children[c].data && parent.children[c].data.surface && parent.parent) astr+=' surface ';
     }
     astr+='</li>';
   }
@@ -57,7 +58,7 @@ function drawHtmlTreeList(atree)
 }
 
 function SetupCompartmentModalCanvas(parentdiv, loc_comp) {
-  var modal_cont = document.getElementById("slickdetail");
+  modal_cont = document.getElementById("slickdetail");
   modal_lisholder = document.getElementById("listholder");
   var positionInfo = modal_cont.getBoundingClientRect();
   var height = positionInfo.height;
@@ -450,7 +451,6 @@ function modal_mouseMoved(event) {
   */
 }
 
-
 function modal_asubject(x,y) {
 	var tolerance=5/2;
 	m_subject = null;
@@ -530,8 +530,8 @@ function modal_dragged() {
   if (!d3v4.event.subject.parent) return;//root
   if (!d3v4.event.active) modal_sim.alphaTarget(1);
   //node_selected =  d3v4.event.subject;
-  d3v4.event.subject.fx = m_start_drag.x  + ((d3v4.event.x - m_start_drag.x ) / transform.k) * scaleX;//d3v4.event.x;
-  d3v4.event.subject.fy = m_start_drag.y  + ((d3v4.event.y - m_start_drag.y ) / transform.k) * scaleY;
+  d3v4.event.subject.fx = m_start_drag.x  + ((d3v4.event.x - m_start_drag.x ) / modal_transform.k) * scaleX;//d3v4.event.x;
+  d3v4.event.subject.fy = m_start_drag.y  + ((d3v4.event.y - m_start_drag.y ) / modal_transform.k) * scaleY;
   //console.log("modal_dragged", d3v4.event.subject.fx,d3v4.event.subject.fy,d3v4.event.subject.x,d3v4.event.subject.y);
   if (d3v4.event.subject.parent){
     var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y,modal_nodes);

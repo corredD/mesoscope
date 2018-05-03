@@ -14,6 +14,7 @@ var current_scale = 1;
 var localisation_tag = ["cytosol","periplasm","inner_membrane","outer_membrane","membrane","cytoplasm","lumen"];
 var surface_tag = ["membrane","x","surface","tm"];
 var current_ready_state = 0;//0-1-2
+var sheet_name=[];
 
 //eukaryote type
 var comp_template_cell = {
@@ -801,7 +802,7 @@ function mainParsingSpreadshit(jsondic,rootName){
 	console.log(jsondic);
 	//console.log(JSON.parse(jsondic));
 	//parse for getting the headr position
-	var sheet_name=[];
+	sheet_name=[];
 	for ( var k in jsondic){
 		sheet_name.push(k);
 	}
@@ -889,7 +890,7 @@ function ParseBU(cellvalue)
 function getDataFromDic(jsondic) {
 	var data;
 	if (!csv_mapping){
-		var sheet_name=[];
+		sheet_name=[];
 		for ( var k in jsondic){
 			sheet_name.push(k);
 		}
