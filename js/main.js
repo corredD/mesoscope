@@ -15,6 +15,9 @@ var localisation_tag = ["cytosol","periplasm","inner_membrane","outer_membrane",
 var surface_tag = ["membrane","x","surface","tm"];
 var current_ready_state = 0;//0-1-2
 var sheet_name=[];
+var current_data_header,
+		current_jsondic,
+		current_rootName;
 
 //eukaryote type
 var comp_template_cell = {
@@ -516,8 +519,13 @@ function changeColumnMapping(aselect) {
 		//if (!csv_mapping) allfield[aselect.id] = (txt === "Absent")? -1 : parseInt(aselect.value);
 		//else allfield[aselect.id] = txt;
 		allfield[aselect.id] = (txt === "Absent")? -1 : parseInt(aselect.value);
-		console.log("change selection to ");
+		console.log("change selection to ",aselect.id);
 		console.log(allfield[aselect.id]);
+		if (aselect.id === "location_index" || aselect.id === "compartment_index" ) {
+			//update the parsing
+			var loc_comp = guessCompartmentList(current_data_header, current_jsondic, current_rootName);
+			UpdateCompartmentModalCanvas(loc_comp);
+		}
 		//recheck compartment settings ?
 	}
 
@@ -664,15 +672,16 @@ function guessCompartmentFromColumn(data, rootName) {
 		children: []
 	};
 
-	console.log("indexes ", allfield.location_index, allfield.compartments_index);
-	if ( (!allfield.location_index || allfield.location_index ===-1) && (!allfield.compartments_index || allfield.compartments_index ===-1) ) return comp_dic;
-	console.log("indexes ", allfield.location_index, allfield.compartments_index,start_index,data.length);
+	//when to use root ?
+	console.log("indexes ", allfield.location_index, allfield.compartment_index);//-1, undefined ?
+	if ( (!allfield.location_index || allfield.location_index ===-1) && (!allfield.compartment_index || allfield.compartment_index ===-1) ) return comp_dic;
+	console.log("indexes ", allfield.location_index, allfield.compartment_index,start_index,data.length);
   for (var i=start_index;i<data.length;i++)
 	{
 			var loc = (allfield.location_index && allfield.location_index !==-1)? data[i][allfield.location_index]:null;
-			var comp = (allfield.compartments_index && allfield.compartments_index !==-1)? data[i][allfield.compartments_index]:null;
+			var comp = (allfield.compartment_index && allfield.compartment_index !==-1)? data[i][allfield.compartment_index]:null;
 			//console.log("loc and comp",loc,comp);
-			if (loc) {
+			if (loc||comp) {
 				//if (loc_name.indexOf(loc) === -1) {
 				//	loc_name.push(loc);
 				//	//comp_dic[comp]={};
@@ -688,11 +697,11 @@ function guessCompartmentFromColumn(data, rootName) {
 								children: []
 							};
 							comp_dic[comp]=cdata;
-							comp_dic_hierarchy[rootName].children.push(comp_dic[comp]);
-							comp_dic[comp]= comp_dic_hierarchy.children[comp_dic_hierarchy.children.length-1];
+							comp_dic_hierarchy.children.push(comp_dic[comp]);//rootComp.children.push(comp_dic[comp]);
+							//comp_dic[comp]= comp_dic_hierarchy.children[comp_dic_hierarchy.children.length-1];
 							console.log("comp is ",comp);
 						}
-						if (loc && loc_name.indexOf(loc) === -1) {
+						if (loc && loc_name.indexOf(loc) === -1 && comp_name.indexOf(loc) === -1) {
 							loc_name.push(loc);
 							var cdata = {
 								nodetype: "compartment",
@@ -700,10 +709,12 @@ function guessCompartmentFromColumn(data, rootName) {
 								size: 10,
 								children: []
 							};
-							comp_dic[comp].children.push(cdata);
+							//rootComp.children[rootComp.children.length-1].children.push(cdata);
+							comp_dic_hierarchy.children[comp_dic_hierarchy.children.length-1].children.push(cdata);
+							//check if surface ?
 						}
 				}
-				else {
+				else {//no comp assume only one big vesicle
 					if (loc && loc_name.indexOf(loc) === -1) {
 						loc_name.push(loc);
 						var cdata = {
@@ -712,12 +723,14 @@ function guessCompartmentFromColumn(data, rootName) {
 							size: 10,
 							children: []
 						};
-						rootComp.children.push(cdata);
+						if (IsSurface(loc)) cdata.surface = true;
+						comp_dic_hierarchy.children.push(cdata);//rootComp.children.push(cdata);
+
 					}
 			}
 		}
 	}
-	comp_dic_hierarchy.children.push(rootComp);
+	//comp_dic_hierarchy.children.push(rootComp);
 	return comp_dic_hierarchy;
 }
 
@@ -736,21 +749,51 @@ function getModalMapping(data_header,jsondic,rootName) {
   	var btn2 = document.getElementById("cancelDetail");
 
 		//is it brett format with column per compartments
+		var comp_column_graph ={
+			nodetype: "compartment",
+			name: "root",
+			size: 10,
+			children: []
+		};
+		var comp_column_graph_key = {};
 		comp_column_names = [];
 		comp_column = false;
 		for (var i = 0; i < data_header.length; i++) {
 			var h = data_header[i];
+			//use the slice ?
 			if (h.slice(0,2)==="I_"){ //interior
 					comp_column =true;
+					var cname = data_header[i].slice(2,data_header[i].length);
 					//if (!csv_mapping)comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":false});
 					//else comp_column_names.push({"id":data_header[i],"name":data_header[i].slice(2,data_header[i].length),"surface":false});
 					comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":false});
+					if (!(cname in comp_column_graph_key) ) {
+						var cdata = {
+							nodetype: "compartment",
+							name: cname,
+							size: 10,
+							children: []
+						};
+						comp_column_graph.children.push(cdata);
+						comp_column_graph_key[cname] = comp_column_graph.children[comp_column_graph.children.length-1];
+				}
 			}
 			if (h.slice(0,2)==="S_"){ //surface
 					comp_column =true;
+					var cname = data_header[i].slice(2,data_header[i].length);
 					//if (!csv_mapping) comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":true});
 					//else comp_column_names.push({"id":data_header[i],"name":data_header[i].slice(2,data_header[i].length),"surface":true});
 					comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":true});
+					if (!(cname in comp_column_graph_key) ) {
+						var cdata = {
+							nodetype: "compartment",
+							name: cname,
+							size: 10,
+							children: []
+						};
+						comp_column_graph.children.push(cdata);
+						comp_column_graph_key[cname] = comp_column_graph.children[comp_column_graph.children.length-1];
+				}
 			}
 		}
 		console.log("found "+comp_column_names.length+" compartments");
@@ -765,8 +808,14 @@ function getModalMapping(data_header,jsondic,rootName) {
 				if (k==="compartments") continue;
 				createOneColumnSelect(k,data_header,item_cont)
     }
-
-		var loc_comp =guessCompartmentList(data_header, jsondic,rootName);
+		current_data_header = data_header;
+		current_jsondic = jsondic;
+	  current_rootName = rootName;
+		var loc_comp;
+		if (!(comp_column))
+				loc_comp = guessCompartmentList(data_header, jsondic,rootName);
+		else
+				loc_comp = comp_column_graph;
 		console.log("guessed "+Object.keys(loc_comp).length+" compartments");
 		console.log(loc_comp);
 		astr = "<br>guessed "+Object.keys(loc_comp).length+" compartments";
@@ -911,6 +960,89 @@ function getDataFromDic(jsondic) {
 	return data;
 }
 
+function getCompartmentDefault(idata,elem){
+	var loc_comp = (location_index!==-1)?idata[location_index]:"";
+	var comp =  (allfield.compartment_index!==-1) ? idata[allfield.compartment_index]: "";
+
+	var comp_elem = null;
+	if (!comp_column) {
+		//not the multicolumn compartment definition
+		if (comp!==""){
+				// a column compartment was set by user
+				//use the modal mapping
+				if (comp in compartments){
+					comp_elem = compartments[comp];
+					}
+				else {
+					compartments[comp]={"name":comp,"children":[],"nodetype":"compartment"};
+					comp_elem = compartments[comp];
+					graph["children"].push(comp_elem);
+					}
+		}
+		else {
+				//use the loc_comp to get the compartment
+				let acomp_elem = GetCompFromLocalisation(loc_comp);
+				if (acomp_elem in compartments) comp_elem = compartments[acomp_elem];
+				else {
+					compartments[acomp_elem]={"name":acomp_elem,"children":[],"nodetype":"compartment"};
+					comp_elem = compartments[acomp_elem];
+					graph["children"].push(comp_elem);
+				}
+		}
+	 }
+	else {
+			//console.log("check "+comp_column_names.length);
+			//look at all the comp_column, adn the one with a concentration define the compartments
+			for (var c=0;c < comp_column_names.length;c++) {
+				var values = idata[comp_column_names[c].id];//can be a count or a molarity
+				//console.log("comp is "+c+" "+comp_column_names[c].id+" "+values);
+				if (values && values!==null && values!=="" && values!==0) {
+						if (isInteger(values)) elem.count = values;
+						else if (isFloat(values)) elem.molarity = values;
+						else if (molarity_index ===-1) elem.molarity = values;
+						elem.surface = comp_column_names[c].surface;
+						comp = comp_column_names[c].name;
+						if (comp in compartments){
+							comp_elem = compartments[comp];
+							}
+						else {
+							compartments[comp]={"name":comp,"children":[],"nodetype":"compartment"};
+							comp_elem = compartments[comp];
+							graph["children"].push(comp_elem);
+						}
+					 // console.log(isInteger(values));
+					 // console.log(isFloat(values))
+						//undefined ?>
+					//  console.log("comp for "+name+" "+values+" "+comp_column_names[c].name+" "+ comp_column_names[c].surface+" "+comp_column_names[c].id+" "+elem.surface);
+				}
+			}
+		}
+	if (comp_elem===null) {
+		if (loc_comp==="cytoplasm"){
+				comp_elem=graph;
+		}
+		else {
+		 comp = rootName+"_compartment";
+		//no compartment provided, use the recipe name as a compartments?
+			if (comp in compartments){
+				comp_elem = compartments[comp];
+				}
+			else {
+				compartments[comp]={"name":comp,"children":[]};
+				comp_elem = compartments[comp];
+				graph["children"].push(comp_elem);
+				}
+		}
+	}
+
+	//alert(comp_elem.name);
+	elem.surface = IsSurface(loc_comp)
+	//console.log("checkforsurface for "+elem.name+" "+loc_comp+" "+elem.surface);
+	comp_elem["children"].push(elem);
+}
+
+
+
 function parseSpreadShitRecipe(data_header,jsondic,rootName)
 {
   var data = getDataFromDic(jsondic);
@@ -937,12 +1069,16 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
   console.log("mapping is ");
   console.log(allfield);
 	var compartments={};
-	var graph ={};//the main graph
-	var ingr_names=[];///so we can check for duplicate->compartments ?
-  graph["name"] = rootName;
-  graph["children"]=[];
-  graph["nodetype"]="compartment";
+	var compgraph = getModalCompGraph() ;//the main graph
+	var graph = compgraph.graph ;//the main graph
+	var float_compartments = compgraph.flat;
 
+	var ingr_names=[];///so we can check for duplicate->compartments ?
+  //graph["name"] = rootName;
+  //graph["children"]=[];
+  //graph["nodetype"]="compartment";
+
+	//setup the graph using the modal
 	/*if ((!comp_column) && (compartments_index==-1)){
 		//need to find out the compartment from localisation
 		graph["children"].push(comp_template_cell);//root->periplasm->cytosol
@@ -990,7 +1126,7 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
         var molarity = (molarity_index!==-1)?idata[molarity_index]:0.0;
 				if (!molarity || molarity ==="") molarity = 0.0;
 
-        var loc_comp = (location_index!==-1)?idata[location_index]:"";
+
         var bu = (biological_unit_index!==-1)? ParseBU(idata[biological_unit_index]):-1;//get bu
         var sele = (string_selection_index!==-1)?idata[string_selection_index]:"";//chain:residues?
 				var uniprot = (uniprot_index!==-1) ? idata[uniprot_index]:"";
@@ -1019,84 +1155,73 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
         	"molarity":molarity, "surface":false,"geom":geom,"geom_type":"file",
         	"uniprot":uniprot,"pcpalAxis":axis,"offset":offset,  "nodetype":"ingredient"};
         //alert(elem.name);
-        var comp =  (allfield.compartment_index!==-1) ? idata[allfield.compartment_index]: "";
-        //console.log("allfield.compartment_index,comp?");
-        //console.log(allfield.compartment_index,comp,comp_column);
-        var comp_elem = null;
-        if (!comp_column) {
+				var loc_comp = (location_index!==-1)?idata[location_index]:"";
+				var surface = IsSurface(loc_comp);
+				var comp =  (allfield.compartment_index!==-1) ? idata[allfield.compartment_index]: "";
+				var comp_elem = null;
+				if (!comp_column) {
 					//not the multicolumn compartment definition
-	        if (comp!==""){
-						  // a column compartment was set by user
-	        	  if (comp in compartments){
-	        	  	comp_elem = compartments[comp];
-	        	  	}
-	        	  else {
-	        	  	compartments[comp]={"name":comp,"children":[],"nodetype":"compartment"};
-	        	  	comp_elem = compartments[comp];
-	        	  	graph["children"].push(comp_elem);
-	        	  	}
-	        }
-					else {
-							//use the loc_comp to get the compartment
-							let acomp_elem = GetCompFromLocalisation(loc_comp);
-							if (acomp_elem in compartments) comp_elem = compartments[acomp_elem];
-							else {
-								compartments[acomp_elem]={"name":acomp_elem,"children":[],"nodetype":"compartment"};
-								comp_elem = compartments[acomp_elem];
-								graph["children"].push(comp_elem);
-							}
+					if (comp!==""){
+							// a column compartment was set by user
+							//use the modal mapping
+							comp_elem = float_compartments[comp];
 					}
-	       }
-	      else {
-	      	  //console.log("check "+comp_column_names.length);
-	        	//look at all the comp_column, adn the one with a concentration define the compartments
-	        	for (var c=0;c < comp_column_names.length;c++) {
-	        		var values = idata[comp_column_names[c].id];//can be a count or a molarity
-	        		//console.log("comp is "+c+" "+comp_column_names[c].id+" "+values);
-	        		if (values && values!==null && values!=="" && values!==0) {
-	        				if (isInteger(values)) elem.count = values;
-	        				else if (isFloat(values)) elem.molarity = values;
+					else {
+							//use location
+							//use the loc_comp to get the compartment
+							comp_elem = float_compartments[loc_comp];
+							}
+				 }
+				else {
+						//console.log("check "+comp_column_names.length);
+						//look at all the comp_column, adn the one with a concentration define the compartments
+						for (var c=0;c < comp_column_names.length;c++) {
+							var values = idata[comp_column_names[c].id];//can be a count or a molarity
+							//console.log("comp is "+c+" "+comp_column_names[c].id+" "+values);
+							if (values && values!==null && values!=="" && values!==0) {
+									if (isInteger(values)) elem.count = values;
+									else if (isFloat(values)) elem.molarity = values;
 									else if (molarity_index ===-1) elem.molarity = values;
-	        				elem.surface = comp_column_names[c].surface;
-	        				comp = comp_column_names[c].name;
-			        	  if (comp in compartments){
-			        	  	comp_elem = compartments[comp];
-			        	  	}
-			        	  else {
-			        	  	compartments[comp]={"name":comp,"children":[],"nodetype":"compartment"};
-			        	  	comp_elem = compartments[comp];
-			        	  	graph["children"].push(comp_elem);
-			        	  }
-			        	 // console.log(isInteger(values));
-			        	 // console.log(isFloat(values))
-			        	  //undefined ?>
-			        	//  console.log("comp for "+name+" "+values+" "+comp_column_names[c].name+" "+ comp_column_names[c].surface+" "+comp_column_names[c].id+" "+elem.surface);
-	        		}
+									elem.surface = comp_column_names[c].surface;
+									comp = comp_column_names[c].name;
+									comp_elem = float_compartments[comp];
+									/*if (comp in compartments){
+										comp_elem = compartments[comp];
+										}
+									else {
+										compartments[comp]={"name":comp,"children":[],"nodetype":"compartment"};
+										comp_elem = compartments[comp];
+										graph["children"].push(comp_elem);
+									}*/
+								 // console.log(isInteger(values));
+								 // console.log(isFloat(values))
+									//undefined ?>
+								//  console.log("comp for "+name+" "+values+" "+comp_column_names[c].name+" "+ comp_column_names[c].surface+" "+comp_column_names[c].id+" "+elem.surface);
+							}
 						}
-	        }
-        if (comp_elem===null) {
+					}
+				if (comp_elem===null) {
 					if (loc_comp==="cytoplasm"){
-	        		comp_elem=graph;
-	        }
+							comp_elem=graph;
+					}
 					else {
 					 comp = rootName+"_compartment";
-        	//no compartment provided, use the recipe name as a compartments?
-        	  if (comp in compartments){
-        	  	comp_elem = compartments[comp];
-        	  	}
-        	  else {
-        	  	compartments[comp]={"name":comp,"children":[]};
-        	  	comp_elem = compartments[comp];
-        	  	graph["children"].push(comp_elem);
-        	  	}
-        	}
+					//no compartment provided, use the recipe name as a compartments?
+						if (comp in compartments){
+							comp_elem = compartments[comp];
+							}
+						else {
+							compartments[comp]={"name":comp,"children":[]};
+							comp_elem = compartments[comp];
+							graph["children"].push(comp_elem);
+							}
+					}
 				}
 
-        //alert(comp_elem.name);
+				//alert(comp_elem.name);
 				elem.surface = IsSurface(loc_comp)
 				//console.log("checkforsurface for "+elem.name+" "+loc_comp+" "+elem.surface);
-        comp_elem["children"].push(elem);
-
+				comp_elem["children"].push(elem);
 	}
 
 	var agraph_links=[];// { source: 0, target: 1, graph: 0 },
@@ -2599,6 +2724,12 @@ function anotherSubject(anode,x,y,allnodes) {
     dy = y  - d.y;
     d2 = Math.sqrt(dx * dx + dy * dy);
     //console.log(d.data.name,d.r,d2)
+		if (!d.parent)
+		{
+			miniD = d2;
+			subject = d;
+			depth_over = d.depth;
+		}
     if (d2  < d.r + anode.r) {//inside
     	if (d.depth > depth_over) { //closest center? problem with nested circle, pick the top circle
     		//if ( d2 < miniD) {
