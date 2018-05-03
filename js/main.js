@@ -176,12 +176,12 @@ function EvaluateCurrentReadyState(){
 	var score_critical = (res.geom+res.beads+res.compgeom)/3;//critical part need to yellow
 	var perfect_score =  0;
 	for (var key in res) {
-		console.log(key,res[key]);
+		//console.log(key,res[key]);
     perfect_score += res[key];
 	};
 	perfect_score/=7;
-	console.log(score_critical);
-	console.log(perfect_score,perfect_score/7);
+	//console.log(score_critical);
+	//console.log(perfect_score,perfect_score/7);
 	current_ready_state = 0;
 	if (score_critical === 1) current_ready_state = 1;
 	else if (perfect_score === 1) current_ready_state = 2;
@@ -2123,12 +2123,12 @@ function sortNodeByDepth(objects){
     if (graph.links.length) {
        graph.links.forEach(function(d){
        	//draw twich with different thickness for highlihg
-          drawLink(d);
+          drawLink(context,d);
           if (d.highlight) {//mouse over
           	context.strokeStyle = "black";
           	context.lineWidth=8;
           	context.stroke();
-          	drawLink(d);
+          	drawLink(context,d);
           	context.strokeStyle = color(d.source.depth+1);
           	context.lineWidth=5;
           	context.stroke();
@@ -2142,7 +2142,7 @@ function sortNodeByDepth(objects){
           	context.strokeStyle = "orange";
           	context.lineWidth=8;
           	context.stroke();
-          	drawLink(d);
+          	drawLink(context,d);
           	context.strokeStyle = "yellow";
           	context.lineWidth=5;
           	context.stroke();
@@ -2161,7 +2161,7 @@ function sortNodeByDepth(objects){
    		}
    	}
    if (current_mode===1 && temp_link) {
-   				drawLink(temp_link);
+   				drawLink(context,temp_link);
    				context.strokeStyle = "grey";
    				context.lineWidth=5;
           context.stroke();
@@ -2569,7 +2569,7 @@ function DeleteNodeOver(){
 	updateForce();
 	}
 
-function anotherSubject(anode,x,y) {
+function anotherSubject(anode,x,y,allnodes) {
 	var tolerance=5/2;
 	subject = null;
 
@@ -2580,7 +2580,7 @@ function anotherSubject(anode,x,y) {
    //return subject;
 	//console.log("mouse is at");
 	//console.log(x,y);
-  var n = graph.nodes.length,
+  var n = allnodes.length,//graph.nodes
       i,
       dx,
       dy,
@@ -2592,7 +2592,7 @@ function anotherSubject(anode,x,y) {
   //var minI = 9999;
   //is this hierarcica
   for (i = 0; i < n; ++i) {
-    d = graph.nodes[i];
+    d = allnodes[i];
     if (d===anode) continue;
     dx = x  - d.x;
     dy = y  - d.y;
@@ -2892,7 +2892,7 @@ function dragged() {
   	//do we hover another object.
   	//if ingredient hovering compartment show it
   	//then on drag end assign the new parent + surface
-  	var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y);
+  	var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y,graph.nodes);
   	if (hovernodes.node && hovernodes.node.data.nodetype === "compartment")
   	{
   		comp_highligh = hovernodes.node;
@@ -2945,7 +2945,7 @@ function dragended() {
   if (current_mode === 1)
   {
   	mousexy = {"x":d3v4.event.subject.x,"y":d3v4.event.subject.y};
-  	var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y);
+  	var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y,graph.nodes);
   	console.log("hover ",hovernodes);
   	//restore depth value
   	d3v4.event.subject.depth = d3v4.event.subject._depth;
@@ -3025,11 +3025,11 @@ function getOffsetTwoNode(d1,d2) {
    return {"sx":sourceX,"sy":sourceY,"tx":targetX,"ty":targetY};
 	}
 
-function drawLink(d) {
-	 context.beginPath();
+function drawLink(acontext,d) {
+	 acontext.beginPath();
 	 var aoffset = getOffsetLink(d);
-   context.moveTo(aoffset.sx, aoffset.sy);
-   context.lineTo(aoffset.tx, aoffset.ty);
+   acontext.moveTo(aoffset.sx, aoffset.sy);
+   acontext.lineTo(aoffset.tx, aoffset.ty);
 }
 
 function drawLinkTwoNode(d1,d2) {

@@ -6,13 +6,59 @@ var modal_sim,
   modal_comp_data,
   modal_pack,
   modal_root,
+  modal_tree,
+  modal_lisholder,
+  modal_treelist,
   m_subject,
   modal_subject;
 
 var m_start_drag = {"x":0,"y":0};
+var comp_hover;
+var comp_hover_surface;
+var comp_link;
+
+
+var updateCompLink = function(draggingNode,selectedNode) {
+    var data = [];
+    if (draggingNode !== null && selectedNode !== null) {
+        // have to flip the source coordinates since we did this for the existing connectors on the original tree
+        comp_link = {"source" : selectedNode,"target" : draggingNode};
+        }
+    else comp_link = null;
+};
+
+function childrenToList(parent) {
+  var astr = '<ul>';
+  for (var c in parent.children) {
+    astr+='<li>'+parent.children[c].data.name;
+    if (parent.children[c].children) astr+=childrenToList(parent.children[c]);
+    else {
+      if ("surface" in parent.children[c].data && parent.children[c].data.surface) astr+=' surface ';
+    }
+    astr+='</li>';
+  }
+  astr+='</ul>';
+  return astr;
+}
+
+function drawHtmlTreeList(atree)
+{
+  console.log("atree",atree);
+  var aStr=''
+  aStr+='<ul class="d3ez htmlList">';
+  //follow the graph. can use the first node that should be root
+  var root = atree[0];
+  aStr+='<li>'+root.data.name;
+  if (root.children) aStr += childrenToList(root);
+  aStr+='</li>';
+  aStr+='</ul>';
+  console.log("astr",aStr);
+  modal_lisholder.innerHTML = aStr;
+}
 
 function SetupCompartmentModalCanvas(parentdiv, loc_comp) {
   var modal_cont = document.getElementById("slickdetail");
+  modal_lisholder = document.getElementById("listholder");
   var positionInfo = modal_cont.getBoundingClientRect();
   var height = positionInfo.height;
   var width = positionInfo.width;
@@ -31,6 +77,7 @@ function SetupCompartmentModalCanvas(parentdiv, loc_comp) {
   //setup simulation->ticked function
   setupModalD3();
   setupModalSimulation();
+
 }
 
 function resetAllModalNodePos(agraph) {
@@ -124,6 +171,25 @@ function setupModalSimulation() {
   modal_sim.alpha(1).alphaTarget(0).restart();
 }
 
+function updateGraph(loc_comp)
+{
+    modal_comp_data = loc_comp;
+    //before packing do the mapping on size ?
+    modal_root = d3v4.hierarchy(modal_comp_data)
+      .sum(function(d) {
+        return d.size;
+      })
+      .sort(function(a, b) {
+        return b.value - a.value;
+      });
+    console.log("root", modal_root);
+    modal_nodes = modal_pack(modal_root).descendants();
+    console.log("nodes", modal_nodes);
+    modal_nodes = resetAllModalNodePos(modal_nodes);
+    modal_nodes = centerAllModalNodePos(modal_nodes);
+    drawHtmlTreeList(modal_root);
+}
+
 function setupModalD3() {
   //prepare the node using modal_comp_data
   modal_pack = d3v4.pack()
@@ -143,7 +209,13 @@ function setupModalD3() {
   console.log("nodes", modal_nodes);
   modal_nodes = resetAllModalNodePos(modal_nodes);
   modal_nodes = centerAllModalNodePos(modal_nodes);
+  modal_tree = d3v4.tree()
+  .nodeSize([15, 75])
+  .separation((a, b) => a.parent === b.parent ? 1 : 1)(modal_root)
 
+  drawHtmlTreeList(modal_nodes);
+
+  console.log(modal_tree.descendants());
   d3v4.select(modal_canvas)
     .on("mousemove", modal_mouseMoved) //or mouseover - mousemove
     .on("mouseout", modal_mouseLeave)
@@ -218,24 +290,67 @@ function drawModalNode(d) {
   //console.log(ndx,ndy);
 }
 
+var drawModalTreeNode = (anode) => {
+  modal_ctx.beginPath()
+  modal_ctx.moveTo(anode.x, anode.y)
+  modal_ctx.arc(anode.x, anode.y, 4, 0, 2 * Math.PI)
+  modal_ctx.fillStyle = color(anode.depth)
+  modal_ctx.fill()
+
+  modal_ctx.beginPath()
+  modal_ctx.fillStyle = '#000'
+  modal_ctx.fillText(anode.depth, anode.x - 4, anode.y + 20)
+}
+
+var linkGenerator = d3v4.linkVertical()
+    .x(d => d.x)
+    .y(d => d.y)
+    .context(modal_ctx)
+
+var drawModalTreeLink = (alink) => {
+  modal_ctx.beginPath()
+  linkGenerator(alink)
+  modal_ctx.strokeStyle = color(alink.target.depth)
+  modal_ctx.stroke()
+}
+
 function modal_draw() {
-  modal_nodes.forEach(function(d) {
+  var new_array = modal_nodes.slice(0);
+  //var maping = graph.nodes.forEach(function(d,ind){ return {"ind":ind,"depth":d.depth};});
+  new_array.sort(function(a,b){return a.depth-b.depth});
+  new_array.forEach(function(d) {
     //for (var i = 0; i < graph.nodes.length; i++) {
     //user.values.forEach(drawNode);
     //var ind = i;//nodetodraw[i].index;
     //var d = graph.nodes[el.ind];
     //console.log("Draw ",i,d.data.name,d.depth);
     drawModalNode(d);
-    modal_ctx.fillStyle = colorNode(d);
-    modal_ctx.fill();
-    modal_ctx.strokeStyle = "black";
-    modal_ctx.stroke();
+    if (d===comp_hover_surface) {
+      modal_ctx.strokeStyle = "yellow";
+      modal_ctx.lineWidth=8;
+      modal_ctx.stroke();
+      modal_ctx.fillStyle = colorNode(d);
+      modal_ctx.fill();
+      }
+    else if (d===comp_hover) {
+      modal_ctx.strokeStyle = "black";
+      modal_ctx.lineWidth=8;
+      modal_ctx.stroke();
+      modal_ctx.fillStyle = "grey";//colorNode(d);
+      modal_ctx.fill();
+      }
+    else {
+      modal_ctx.fillStyle = (d.depth===6)? "rgba(55, 55, 255, 0.3)" : color(d.depth);
+      modal_ctx.fill();
+      modal_ctx.strokeStyle = color(d.depth+1);
+      modal_ctx.stroke();
+  }
   });
   //label
   var offset = 0;
   modal_nodes.forEach(function(d) {
     if (d.parent) {
-      var fontSizeTitle = Math.round(d.r / 10);
+      var fontSizeTitle = Math.round(d.r / 5);
       if (fontSizeTitle <= 4) fontSizeTitle = 10;
       if (fontSizeTitle > 4) {
         drawCircularText(modal_ctx, d.data.name,
@@ -244,6 +359,26 @@ function modal_draw() {
       offset += 1;
     }
   });
+  if (comp_link) {
+     drawLink(modal_ctx,comp_link);
+     modal_ctx.strokeStyle = "grey";
+     modal_ctx.lineWidth=5;
+     modal_ctx.stroke();
+  }
+  /*
+  //draw Tree ?
+  const mlinks = modal_tree.links()
+  const mnodes = modal_tree.descendants()
+  modal_ctx.beginPath()
+  for(const link of mlinks) {
+    drawModalTreeLink(link)
+  }
+
+  modal_ctx.beginPath()
+  for(const anode of mnodes) {
+    drawModalTreeNode(anode)
+  }
+  */
 }
 
 function modal_ticked() {
@@ -289,6 +424,7 @@ function modal_mouseLeave() {
 }
 
 function modal_mouseMoved(event) {
+  if ( simulation.alpha() < 0.01 ) simulation.alphaTarget(1).restart();
   /*var rect = canvas.getBoundingClientRect(), // abs. size of element
     scaleX = canvas.width / rect.width,    // relationship bitmap vs. element for X
     scaleY = canvas.height / rect.height;
@@ -313,7 +449,6 @@ function modal_mouseMoved(event) {
   //console.log(mousein);
   */
 }
-
 
 
 function modal_asubject(x,y) {
@@ -377,7 +512,7 @@ function modal_dragstarted()
       scaleY = modal_canvas.height / rect.height;
 	m_start_drag.x =  d3v4.event.x* scaleX;
 	m_start_drag.y =  d3v4.event.y* scaleY;
-  if (!d3v4.event.active) modal_sim.alphaTarget(0.3).restart();
+  modal_sim.alphaTarget(2).restart();
   if (d3v4.event.subject.parent)
   {
     var depth = d3v4.event.subject.depth;
@@ -393,33 +528,30 @@ function modal_dragged() {
       scaleX = modal_canvas.width / rect.width,    // relationship bitmap vs. element for X
       scaleY = modal_canvas.height / rect.height;
   if (!d3v4.event.subject.parent) return;//root
+  if (!d3v4.event.active) modal_sim.alphaTarget(1);
   //node_selected =  d3v4.event.subject;
   d3v4.event.subject.fx = m_start_drag.x  + ((d3v4.event.x - m_start_drag.x ) / transform.k) * scaleX;//d3v4.event.x;
   d3v4.event.subject.fy = m_start_drag.y  + ((d3v4.event.y - m_start_drag.y ) / transform.k) * scaleY;
   //console.log("modal_dragged", d3v4.event.subject.fx,d3v4.event.subject.fy,d3v4.event.subject.x,d3v4.event.subject.y);
   if (d3v4.event.subject.parent){
-    //do we hover another object.
-    //if ingredient hovering compartment show it
-    //then on drag end assign the new parent + surface
-    /*var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y);
+    var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y,modal_nodes);
+    console.log("hovernodes ",hovernodes);
     if (hovernodes.node && hovernodes.node.data.nodetype === "compartment")
     {
-      comp_highligh = hovernodes.node;
+      comp_hover = hovernodes.node;
       //highlghed surface
       //hovernodes.node.highlight = true;
       if ( Math.abs(hovernodes.node.r - hovernodes.distance) < d3v4.event.subject.r )
-          comp_highligh_surface = hovernodes.node;
+          comp_hover_surface = hovernodes.node;
       else
-          comp_highligh_surface = null;
-      updateTempLink(d3v4.event.subject,hovernodes.node);
+          comp_hover_surface = null;
+      updateCompLink(d3v4.event.subject,hovernodes.node);
     }
     else {
-      temp_link = null;
-      comp_highligh = null;
-      comp_highligh_surface = null;
+      comp_link = null;
+      comp_hover = null;
+      comp_hover_surface = null;
     }
-    //testsort();
-  */
   }
 }
 
@@ -429,7 +561,46 @@ function modal_dragended()
   if (!d3v4.event.active) modal_sim.alphaTarget(0);
   d3v4.event.subject.fx = null;
   d3v4.event.subject.fy = null;
-  d3v4.event.subject.depth = d3v4.event.subject._depth;
   //change relationship
+  var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y,modal_nodes);
+  console.log("hover ",hovernodes);
+  //restore depth value
+  d3v4.event.subject.depth = d3v4.event.subject._depth;
+  //if subject is an ingredient and hover is compartment change graph
+  if (hovernodes.node )
+  {
+    console.log (hovernodes.node.data.nodetype);
+    if ( hovernodes.node.data.nodetype === "compartment") {
+      var index = d3v4.event.subject.parent.children.indexOf(d3v4.event.subject);
+      if (d3v4.event.subject.parent!=hovernodes.node) {
+        if (d3v4.event.subject.children && d3v4.event.subject.children.indexOf(hovernodes.node)!==-1){}
+        else {
+          if (index > -1) {
+            d3v4.event.subject.parent.children.splice(index, 1);
+          }
+          hovernodes.node.children.push(d3v4.event.subject);
+          d3v4.event.subject.parent = hovernodes.node;
+          d3v4.event.subject.depth = hovernodes.node.depth+1;
+          hovernodes.node.r += d3v4.event.subject.r/2;
+          var cname = d3v4.event.subject.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/').slice(0,-1);
+          console.log("update ? ",d3v4.event.subject,cname);
+          //if (d3v4.event.subject.nodetype !== "compartment")
+          //  updateCellValue(gridArray[0],"compartment",d3v4.event.subject.data.id,cname);
+          //else {
+          //
+          //}//need to change all child
+        }
+      }
+      if ( Math.abs(hovernodes.node.r - hovernodes.distance) < d3v4.event.subject.r )
+        d3v4.event.subject.data.surface = true;
+      else
+        d3v4.event.subject.data.surface = false;
+      }
+      drawHtmlTreeList(modal_nodes);
+    }
+  //update the table ?
   updateModalForce();
+  comp_link = null;
+  comp_hover = null;
+  comp_hover_surface = null;
 }

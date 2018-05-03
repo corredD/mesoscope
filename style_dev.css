@@ -735,6 +735,11 @@ section#content p {
     display: flex;
 }
 
+.modal-list
+{
+  display: flex;
+}
+
 .modal-form {
   padding: 2px 16px;
   display: flex;
