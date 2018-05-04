@@ -426,7 +426,7 @@ function modal_draw() {
   }
   */
   //if (!d.parent) {//root label
-    var ax = modal_transform.invertX(5);
+    var ax = modal_transform.invertX(25);
     var ay = modal_transform.invertY(modal_canvas.height-20);
     modal_ctx.font=(20/modal_transform.k)+"px Georgia";
     modal_ctx.fillStyle = "black";

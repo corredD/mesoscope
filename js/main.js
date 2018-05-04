@@ -249,6 +249,8 @@ var allfield={
 	    pcpalvector_index:-1,
 			molecularweight_index:-1,
 			confidence_index:-1,
+			include_index:-1,
+			color_index:-1,
 	    compartments:-1//special case where one column per comnpartment
 	    };
 var allfield_labels={
@@ -266,6 +268,8 @@ var allfield_labels={
 	    pcpalvector_index:"protein principal axis which will be align to the compartment surface",
 			molecularweight_index:"protein molecular weight",
 			confidence_index:"overall confidence score",
+			include_index:"include the ingredient (x,null,true,false)",
+			color_index:"predefined color for ingredient (r,g,b)",
 	    compartments:""//special case where one column per comnpartment
 	    };
 var allfield_query={
@@ -283,6 +287,8 @@ var allfield_query={
 	    pcpalvector_index:["pcpalVector","principalvector","principalaxis","axis","vector"],
 			molecularweight_index:["weight","molecularweight","molecular"],
 			confidence_index:["confidence","score"],
+			include_index:["include"],
+			color_index:["color","rgb"],
 	    compartments:""//special case where one column per comnpartment
 	    };
 
@@ -622,11 +628,11 @@ function GuessColumnSingle(field1name,allfield2){
 
 function createOneColumnSelect(field1name,allfield2,divparent) {
 		//Create and append select list
-    var elem =  addToModalDiv( divparent, 'alabel', allfield_labels[field1name]);
+    var elem =  addToModalDiv( divparent, 'modal-content-elem', allfield_labels[field1name]);
 		var selectList = document.createElement("select");
 		//onchange="myCallback();" onfocus="this.selectedIndex=-1;this.blur();"
 		selectList.id = field1name;
-		divparent.appendChild(selectList);
+		elem.appendChild(selectList);
 		//Create and append the options
 		var aind = GuessColumn(field1name,allfield2);
     var sopt;
@@ -811,7 +817,6 @@ function getModalMapping(data_header,jsondic,rootName) {
   	for (var c=0;c < comp_column_names.length;c++) {
   		astr +="<br>"+comp_column_names[c].name+" surface "+comp_column_names[c].surface;
   		}
-		var textelem =  addToModalDiv( item_cont, 'alabel', astr);
 
     for(var k in allfield) {
 				if (k==="compartments") continue;
@@ -827,11 +832,12 @@ function getModalMapping(data_header,jsondic,rootName) {
 				loc_comp = comp_column_graph;
 		console.log("guessed "+Object.keys(loc_comp).length+" compartments");
 		console.log(loc_comp);
-		astr = "<br>guessed "+Object.keys(loc_comp).length+" compartments";
+		astr += "<br>guessed "+Object.keys(loc_comp).length+" compartments";
 		//for (var co in loc_comp) {
 		//	astr +="<br>"+co+" "+loc_comp[co];
 		//}
-		textelem.innerHTML+=astr;
+		var textelem =  addToModalDiv( item_cont, 'modal-content-elem', astr);
+		//textelem.innerHTML+=astr;
 
     modal_cont.style.display = "block";
 
@@ -1050,8 +1056,6 @@ function getCompartmentDefault(idata,elem){
 	comp_elem["children"].push(elem);
 }
 
-
-
 function parseSpreadShitRecipe(data_header,jsondic,rootName)
 {
   var data = getDataFromDic(jsondic);
@@ -1157,11 +1161,24 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
         	if (idata[model_index]!=="")
         	   model = idata[model_index];
         }
-
+				var include = true;
+				if (allfield.include_index!==-1) {
+					var tmp = idata[allfield.include_index];
+					console.log("include is ",include);
+					if (tmp === "x") include = true;
+					if (tmp === "" || tmp === 'undefined') include = false;
+					if (tmp === true) include = true;
+					if (tmp === false) include = false;
+				}
+				var color;
+				if (allfield.color_index !==-1) {
+					if (idata[allfield.color_index]) color = idata[allfield.color_index].split(',').map(Number);//chain:residues?
+				}
         sele = GetNGLSelection(sele,model);
-        var elem = {"name":name,"size":25,"molecularweight":mw,"confidence":confidence,
+        var elem = {
+					"name":name,"size":25,"molecularweight":mw,"confidence":confidence,"color":color,
         	"source":{"pdb":source,"bu":bu,"selection":sele,"model":model},"count":acount,
-        	"molarity":molarity, "surface":false,"geom":geom,"geom_type":"file",
+        	"molarity":molarity, "surface":false,"geom":geom,"geom_type":"file","include":include,
         	"uniprot":uniprot,"pcpalAxis":axis,"offset":offset,  "nodetype":"ingredient"};
         //alert(elem.name);
 				var loc_comp = (location_index!==-1)?idata[location_index]:"";
@@ -1503,7 +1520,7 @@ function checkAttributes(agraph){
 	property_mapping.size = {"min":999999,"max":0};
 	property_mapping.molarity = {"min":999999,"max":0};
 	property_mapping.count = {"min":999999,"max":0};
-
+	property_mapping.confidence = {"min":999999,"max":0};
 	for (var i=0;i<agraph.length;i++){
 		if (!agraph[i].children) {
 		agraph[i].data.nodetype = "ingredient";
@@ -1513,12 +1530,13 @@ function checkAttributes(agraph){
 		//if (agraph[i].children && agraph[i].parent) agraph[i].r = agraph[i].r/2;
     //agraph[i].r = agraph[i].r/2;
     if (!("uniprot" in agraph[i].data)) agraph[i].data.uniprot = "";
-		if (!("pcpalAxis" in agraph[i].data)) agraph[i].data.pcpalAxis ="";
-		if (!("offset" in agraph[i].data)) agraph[i].data.offset = "";
+		if (!("pcpalAxis" in agraph[i].data)) agraph[i].data.pcpalAxis =[0,0,1];
+		if (!("offset" in agraph[i].data)) agraph[i].data.offset = [0,0,0];
 		if (!("pos" in agraph[i].data)) agraph[i].data.pos = [];
 		if (!("radii" in agraph[i].data)) agraph[i].data.radii = [];
 		if (!("molecularweight" in agraph[i].data)) agraph[i].data.molecularweight = 0.0;
 		if (!("confidence" in agraph[i].data)) agraph[i].data.confidence = 0.0;
+		//if (!("color" in agraph[i].data)) agraph[i].data.color = [0,0,0];
 
 		//if (!("color" in agraph[i].data)) agraph[i].data.color = [];
 		if (agraph[i].data.molecularweight > property_mapping.molecularweight.max) property_mapping.molecularweight.max = agraph[i].data.molecularweight;
@@ -1532,6 +1550,9 @@ function checkAttributes(agraph){
 
 		if (agraph[i].data.count > property_mapping.count.max) property_mapping.count.max = agraph[i].data.count;
 		if (agraph[i].data.count < property_mapping.count.min) property_mapping.count.min = agraph[i].data.count;
+
+		if (agraph[i].data.confidence > property_mapping.confidence.max) property_mapping.confidence.max = agraph[i].data.confidence;
+		if (agraph[i].data.confidence < property_mapping.confidence.min) property_mapping.confidence.min = agraph[i].data.confidence;
 
 		if (!("visited" in agraph[i].data)) agraph[i].data.visited = false;
 		if (!("include" in agraph[i].data)) agraph[i].data.include = true;
@@ -2057,7 +2078,17 @@ function colorNode(d) {
 	}
 	else if (colorby === "color") {
 		return (!d.children && "data" in d && "color" in d.data
-			&& d.data.color )? d.data.color : "red";//rgb list ?
+			&& d.data.color )? 'rgb('+ Math.floor(d.data.color[0]*255)
+															 + Math.floor(d.data.color[1]*255)
+															 + Math.floor(d.data.color[2]*255)+')' : color(d.depth);//rgb list ?
+	}
+	else if (colorby === "confidence") {
+		var color_mapping = d3v4.scaleLinear()
+			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
+			.range(["hsl(0,100%,100%)", "hsl(228,30%,40%)"])
+			.interpolate(d3v4.interpolateHcl);
+		return (!d.children && "data" in d && "confidence" in d.data
+			&& d.data.confidence )? color_mapping(d.data[colorby]):color(d.depth);//rgb list ?
 	}
 	else if (colorby === "viewed") {
 		return (!d.children && "data" in d && "visited" in d.data

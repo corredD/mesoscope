@@ -896,8 +896,10 @@ function getCurrentNodesAsCP_JSON(some_data,some_links){
       	  }
       	  continue;
       }
-      if (!node.children) //ingredient
+      if (!node.children && node.data.nodetype!=="compartment") //ingredient
       {
+        //check if include else continue
+        if ("include" in node.data && node.data.include === false) continue;
       	var cname = node.parent.data.name;
         if (cname === "cytoplasm") cname = "cytoplasme";//outside ?
         if (!(cname in jsondic["compartments"]) && (node.parent!==aroot)) {
@@ -957,7 +959,63 @@ function getCurrentNodesAsCP_SER_JSON(some_data){
 		return jsondic;
 }
 
-function saveCurrentCVJSON(){}
+function saveCurrentCVJSON(){
+    var agrid = gridArray[0];//gridArray[0].dataView
+    var processRow = function (row) {
+          var finalVal = '';
+          for (var j = 0; j < row.length; j++) {
+              if (row[1] === false) continue;//include column
+              var innerValue = row[j] === null || typeof row[j] == 'undefined' ? '' : row[j].toString();
+              if (row[j] instanceof Date) {
+                  innerValue = row[j].toLocaleString();
+              };
+              var result = innerValue.replace(/"/g, '""');
+              if (result.search(/("|,|;|\n)/g) >= 0)
+                  result = '"' + result + '"';
+              if (j > 0)
+                  finalVal += ',';
+                  finalVal += result;
+          }
+          return finalVal + '\n';
+      };
+
+      var csvFile = '';
+      var rows = [];
+      var colname = [];
+      for (var j = 0, len = agrid.getColumns().length; j < len; j++) {
+          colname.push(agrid.getColumns()[j].name);
+      }
+      rows.push(colname);
+      var singlerow = [];
+      for (var i = 0, l = agrid.dataView.getLength(); i < l; i++) {
+          for (var j = 0, len = agrid.getColumns().length; j < len; j++) {
+              singlerow.push(agrid.getDataItem(i)[agrid.getColumns()[j].field]);
+          }
+          rows.push(singlerow);
+          singlerow = [];
+      }
+
+      for (var i = 0; i < rows.length; i++) {
+          csvFile += processRow(rows[i]);
+      }
+      var filename = graph.nodes[0].data.name +"_meso.csv";
+      var blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });
+      if (navigator.msSaveBlob) { // IE 10+
+          navigator.msSaveBlob(blob, filename);
+      } else {
+          var link = document.createElement("a");
+          if (link.download !== undefined) { // feature detection
+              // Browsers that support HTML5 download attribute
+              var url = URL.createObjectURL(blob);
+              link.setAttribute("href", url);
+              link.setAttribute("download", filename);
+              link.style.visibility = 'hidden';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+          }
+      }
+}
 
 function download(content, fileName, contentType) {
     var a = document.createElement("a");

@@ -850,6 +850,14 @@ function CreateNodeColumns() {
       sortable: true,
     },
     {
+      id: "include",
+      name: "include",
+      field: "include",
+      sortable: true,
+      formatter: Slick.Formatters.Checkmark,
+      editor: Slick.Editors.Checkbox
+    }, //YesNoSelect
+    {
       id: "uniprot",
       name: "uniprot",
       field: "uniprot",
@@ -2001,7 +2009,9 @@ function openDetailsOld(newone) {
 function addToModalDiv(parentContainer, divclass, innerHtml) {
   var div = document.createElement("div");
   div.setAttribute("class", divclass);
-  div.innerHTML = innerHtml;
+  var label = document.createElement("label");
+  label.innerHTML = innerHtml;
+  div.appendChild(label);
   parentContainer.appendChild(div);
   return div;
 }

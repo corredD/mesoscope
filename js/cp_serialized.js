@@ -172,6 +172,7 @@ function serializedRecipe(some_data,some_links){
 	      }
 	      if (!node.children && node.data.nodetype!=="compartment") //ingredient
 	      {
+          if ("include" in node.data && node.data.include === false) continue;
 	      	var cname = node.parent.data.name;
 	      	var sing = new sIngredient(node.data.name,0,sIngredient_static_id);sIngredient_static_id+=1;
 	      	sing = oneIngredient(sing,node);//assign the attributes

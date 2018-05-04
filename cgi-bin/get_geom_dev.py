@@ -85,9 +85,9 @@ def getBiologicalUnit(app,mol,selstr,bu):
         import prody
         mol.pdbHeader = prody.parsePDB(mol.filename, model=0, header=True)
     print ("bu header biomt")
-    print mol.pdbHeader['biomoltrans'].keys()
+    #print mol.pdbHeader['biomoltrans'].keys()
     biotrans = mol.pdbHeader['biomoltrans'][str(bu)][0]
-    print len(biotrans),biotrans
+    #print len(biotrans),biotrans
     selStr = "chain "+' '.join(biotrans[0])
     # select the atom set to which to apply the transformation
     nbTrans = (len(biotrans)-1)/3
@@ -138,6 +138,7 @@ def getCoarseMolSurf(app, mol, selstr, bu="", surfName='coarseMolSurf', perMol=T
             v.extend(ncoords[:, :3].flatten().tolist())
             f.extend( (faces + (offset*i) ).flatten().tolist() )
             n.extend(vnorms.flatten().tolist())
+            #center ?
         if len(v):
             geomDict = {"verts": v, "faces":f, "normals": n}
         else:
@@ -244,8 +245,8 @@ def main():
     print astr[:-1]+'}}'
 
 try:
-    print 'Content-type: text/html\n\n'
     print "Access-Control-Allow-Origin: *"
+    print 'Content-type: text/html\n'
     #print "Hello"
     main()
 except:

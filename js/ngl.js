@@ -1666,6 +1666,7 @@ function BuildAll(){
   document.getElementById("stopbeads_lbl").setAttribute("class", "show");
   document.getElementById("stopbeads_lbl").innerHTML = "building "+current_compute_index+" / " + graph.nodes.length;
   //use getItem(index)
+  //for all compartment get a geom. default sphere of 500A
   current_compute_node=-1;
   NextComputeIgredient();
   buildLoopAsync();
