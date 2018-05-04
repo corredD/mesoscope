@@ -364,15 +364,21 @@ function OneIngredient(ing_dic,surface) {
 	  var elem = {};
 	  var size = ("encapsulatingRadius" in ing_dic)? ing_dic["encapsulatingRadius"] : 40;
 	  var name = ing_dic["name"];
-	  var source = ("pdb" in ing_dic)? ing_dic["pdb"] : "None";
-	  if ("source" in ing_dic && source === "None") {
-	  	if ("pdb" in ing_dic["source"])
-	  	{
-	  		source = ing_dic["source"]["pdb"];
-	  		}
-	  	}
-	  if (source && source.length!=4){
-	     if ( (source.slice(-4,source.length) !== ".pdb" )&&(!source.startsWith("EMD"))) source = source+".pdb";
+	  var pdb = ("pdb" in ing_dic)? ing_dic["pdb"] : "None";
+		var source = {"pdb":pdb,"bu":"","model":"","selection":""};
+	  if ("source" in ing_dic){//} && pdb === "None") {
+			source = ing_dic["source"];
+			if (!("pdb" in source)) source.pdb = "None";
+			if (!("bu" in source)) source.bu = "";
+			if (!("model" in source)) source.model = "";
+			if (!("selection" in source)) source.selection = "";
+			//if ("pdb" in ing_dic["source"])
+	  	//{
+	  	//	p = ing_dic["source"]["pdb"];
+	  	//	}
+	  }
+	  if (source.pdb && source.pdb.length!=4){
+	     if ( (source.pdb.slice(-4,source.pdb.length) !== ".pdb" )&&(!source.pdb.startsWith("EMD"))) source.pdb = source.pdb+".pdb";
 	  }
 	  var label = ("label" in ing_dic)? ing_dic["label"] : name;
 	  var uniprot = ("uniprot" in ing_dic)? ing_dic["uniprot"] : "";
@@ -399,7 +405,7 @@ function OneIngredient(ing_dic,surface) {
 		//console.log(offset);
 		//console.log(principalVector);
 	  var elem ={"name":name,"size":size,"molecularweight":mw,"confidence":confidence,
-	  	"source":{"pdb":source},"count":acount,
+	  	"source":source,"count":acount,
 	  	"molarity":molarity, "surface":surface,"geom":geom,"geom_type":geom_type,"label":label,
 	  	"uniprot":uniprot,"pcpalAxis":principalVector,"offset":offset,"pos":p,"radii":r,"nodetype":"ingredient"};
 	  //console.log(JSON.stringify(elem));
@@ -1154,7 +1160,7 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
 
         sele = GetNGLSelection(sele,model);
         var elem = {"name":name,"size":25,"molecularweight":mw,"confidence":confidence,
-        	"source":{"pdb":source,"bu":bu,"selection":sele},"count":acount,
+        	"source":{"pdb":source,"bu":bu,"selection":sele,"model":model},"count":acount,
         	"molarity":molarity, "surface":false,"geom":geom,"geom_type":"file",
         	"uniprot":uniprot,"pcpalAxis":axis,"offset":offset,  "nodetype":"ingredient"};
         //alert(elem.name);

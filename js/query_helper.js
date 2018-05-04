@@ -606,14 +606,14 @@ function AddPartner(ingdic,node,some_links) {
   function buildCMS(){
     var d = node_selected;//or node_selected.data.bu
     var pdb = d.data.source.pdb;//document.getElementById("pdb_str");
-    var bu = (d.data.bu)?d.data.bu:"";//document.getElementById("bu_str");
+    var bu = (d.data.source.bu)?d.data.source.bu:"";//document.getElementById("bu_str");
     //selection need to be pmv string
-    var sele = (d.data.selection)?d.data.selection:"";//document.getElementById("sel_str");
+    var sele = (d.data.source.selection)?d.data.source.selection:"";//document.getElementById("sel_str");
     sele = sele.replace(":","");
     //selection is in NGL format. Need to go in pmv format
     //every :C is a chainNameScheme
-    var model = model_elem.selectedOptions[0].value;
-    if ( model.startsWith("S") || model.startsWith("a") ) model = "";
+    var model = (d.data.source.model)?d.data.source.model:"";//model_elem.selectedOptions[0].value;
+    if ( (!model) || model.startsWith("S") || model.startsWith("a") ) model = "";
     if ( sele.startsWith("/") ) sele = "";
     //depending on the pdb we will have a file or not
     var thefile = null;

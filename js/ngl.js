@@ -635,6 +635,7 @@ function ChangeModel(model_elem) {
 
   if (node_selected) {
     node_selected.data.selection = curr_sel + "/" + model_elem.value;
+    node_selected.data.model = model_elem.value;
   }
 }
 
