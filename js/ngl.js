@@ -534,6 +534,7 @@ function ChangeBiologicalAssambly(selected0) {
   }
   if (node_selected) {
     node_selected.data.bu = selected0.value;
+    node_selected.data.source.bu = selected0.value;
     console.log("node_selected.data.bu ", node_selected.data.bu);
   }
 
@@ -583,6 +584,7 @@ function ChangeSelection(astr_elem) {
   stage.autoView(1000);
   if (node_selected) {
     node_selected.data.selection = astr_elem.value;
+    node_selected.data.source.selection = astr_elem.value;
   }
   /*var rep = stage.getRepresentationsByName( "polymer" );
 	rep.setParameters(
@@ -634,8 +636,8 @@ function ChangeModel(model_elem) {
   if (ngl_current_item_id) updateDataGridRowElem(0, ngl_current_item_id, "selection", curr_sel + "/" + model_elem.value);
 
   if (node_selected) {
-    node_selected.data.selection = curr_sel + "/" + model_elem.value;
-    node_selected.data.model = model_elem.value;
+    node_selected.data.source.selection = curr_sel + "/" + model_elem.value;
+    node_selected.data.source.model = model_elem.value;
   }
 }
 

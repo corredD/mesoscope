@@ -87,7 +87,8 @@ def getBiologicalUnit(app,mol,selstr,bu):
     print ("bu header biomt")
     print mol.pdbHeader['biomoltrans'].keys()
     biotrans = mol.pdbHeader['biomoltrans'][str(bu)][0]
-    selStr = "chain "+' '.join(biotrans)
+    print len(biotrans),biotrans
+    selStr = "chain "+' '.join(biotrans[0])
     # select the atom set to which to apply the transformation
     nbTrans = (len(biotrans)-1)/3
     nmol = None
@@ -107,15 +108,16 @@ def getCoarseMolSurf(app, mol, selstr, bu="", surfName='coarseMolSurf', perMol=T
         molSel = mol.selectMolKit(selstr)
     else:
         selstr = ""
-        molSel = mol.selectMolKit("")
+        molSel = mol.select()
     app.lazyLoad("coarseMolecularSurfaceCmds", commands=["computeCoarseMolecularSurface"], package="PmvApp")
     #before computing check ger the biomt
     biomt=[]
     if bu is not None and bu!="":
         biomt,selStr = getBiologicalUnit(app,mol,selstr,bu)
         molSel = mol.select(selStr)
+    #print mol,biomt,molSel,surfName
     app.computeCoarseMolecularSurface(molSel, surfName= surfName, gridSize=gridSize, padding=padding, resolution=resolution, bind_surface_to_molecule=False, isovalue=isovalue)
-    mol = molSel.getAtomGroup().getMolecule()
+    #mol = molSel.getAtomGroup().getMolecule()
     geom = mol.geomContainer.geoms[surfName]
     verts = geom.getVertices()
     faces = geom.getFaces()
@@ -178,7 +180,7 @@ def main():
     if form.has_key("model"):
         model = int(form.getvalue("model"))
     mol = None
-
+    print selstr,bu,model
     if form.has_key('inputfile'):
         fileitem = form['inputfile']
         if fileitem.filename != "":
@@ -222,7 +224,7 @@ def main():
             gsize = int(form["gsize"])
         # compute the surface and print the json string with faces and verts:
         geomDict = getCoarseMolSurf(app, mol, selstr, bu = bu, surfName="coarseSurf_1", gridSize=gsize,
-        padding=0., resolution=iso, isovalue=res)
+        padding=0., resolution=res, isovalue=iso)
         import json
         jsonstr = json.dumps(geomDict)
         #print "<br> <br> <br>"
