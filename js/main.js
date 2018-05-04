@@ -1604,7 +1604,7 @@ function getcomphtml(anode) {
 			//callback onchange ?
 			//htmlStr+=' <input id="comp_slider" style="width:80%" height:"40px" type="range" min="1" max="10000"" step="1" value="500" oninput="updateLabel(this)" onchange="resizeSphere(this)" /> ';
 			//htmlStr+=' <label id="comp_slider_label" for="comp_slider" style="width:20%">10A</label>';
-			htmlStr+='<div style="display:flex;flex-flow: row wrap;"><input id="comp_slider" type="range" min="1" max="10000" step="1" value="10"style="width:70%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/>';
+			htmlStr+='<div style="display:flex;flex-flow: row wrap;"><label>Radius(A):</label><input id="comp_slider" type="range" min="1" max="10000" step="1" value="10"style="width:70%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/>';
 		  htmlStr+='<input  id="comp_slider_num" min="1" max="10000" type="number" value="10" style="width:30%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/></div>';
 	}
 	else if (comptype === "mb") {

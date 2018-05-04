@@ -707,7 +707,7 @@ function buildLoopAsync(){
     if ( sele.startsWith("/") ) sele = "";
     //depending on the pdb we will have a file or not
     var thefile = null;
-    if ( d.data.source.pdb.length !== 4 ){
+    if ( pdb && d.data.source.pdb.length !== 4 ){
       pdb="";
       if (folder_elem && folder_elem.files.length !=""){
         thefile = pathList_[d.data.source.pdb];
@@ -716,6 +716,18 @@ function buildLoopAsync(){
         pdb = d.data.source.pdb;
         //its a blob we want ?
       }
+    }
+    if (!pdb || pdb === "")
+    {
+      if (NextComputeIgredient() && (!(stop_current_compute))) {
+          //update label_elem
+          buildLoopAsync();
+      }
+      else {
+        document.getElementById("stopbeads_lbl").innerHTML = "finished "+current_compute_index + " / " + graph.nodes.length;
+        stopBeads();
+      }
+      return;
     }
     var formData = new FormData();
     //console.log(thefile)
@@ -736,7 +748,7 @@ function buildLoopAsync(){
               type: "POST",
               url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",//"cgi-bin/get_geom_dev.cgi",//"http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
               success: function (data) {
-                  console.log(data);
+                  //console.log(data);
                   var data_parsed = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
                   var mesh = data_parsed.results;
                   current_compute_node.data.geom = mesh;//v,f,n directly

@@ -537,7 +537,10 @@ function ChangeBiologicalAssambly(selected0) {
     node_selected.data.source.bu = selected0.value;
     console.log("node_selected.data.bu ", node_selected.data.bu);
   }
+  //update the center
+  //o.setPosition([-center.x, -center.y, -center.z]); //center molecule
 
+  //recenter ?
   /*
 	stage.getRepresentationsByName("polymer").dispose();
 	stage.eachComponent(function (o) {
@@ -1658,6 +1661,26 @@ function NGLLoad(pdbname, bu, sel_str) {
 //https://github.com/6pac/SlickGrid/blob/master/examples/example10-async-post-render.html
 //https://github.com/6pac/SlickGrid/blob/master/examples/example6-ajax-loading.html
 //let the server do everything in one call that send elem by elem ?
+function BuildDefaultCompartmentsRep(){
+  console.log("build default compartment",graph.nodes.length);
+  for (var i=0;i< graph.nodes.length;i++){//.forEach(function(d){
+    var d = graph.nodes[i];
+    if (d.data.nodetype!=="compartment") continue;
+    var comptype = ("geom_type" in d.data)? d.data.geom_type: "None";
+    var geom = ("geom" in d.data)? d.data.geom: "None";
+    if ( !comptype || comptype === "None" || !geom || geom === "None"){
+  		  var name = d.data.name+"_geom";
+  			var radius = 500.0;
+  			d.data.geom = {
+          "name": name,
+          "radius": radius
+        };
+        d.data.geom_type = "sphere";
+  	}
+    console.log("comp geom ",comptype,geom,d.data.name,d.data.geom,d.data.geom_type);
+  }
+  console.log
+}
 
 function BuildAll(){
   //show the stop button
@@ -1667,6 +1690,7 @@ function BuildAll(){
   document.getElementById("stopbeads_lbl").innerHTML = "building "+current_compute_index+" / " + graph.nodes.length;
   //use getItem(index)
   //for all compartment get a geom. default sphere of 500A
+  BuildDefaultCompartmentsRep();
   current_compute_node=-1;
   NextComputeIgredient();
   buildLoopAsync();
