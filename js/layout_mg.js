@@ -216,8 +216,8 @@ var gridoptions = ''
   '   <button onclick="stopAll()">Stop query search</button>' +
   '	</div>'+
   ' <img wicth="250" height="250" class="hidden" id="imagepdbclone" src=""/>'+
-  ' <button style="display:block;" onclick="BuildAllBeads()">Build missing Beads</button>' + getSpinner("stopbeads","stopBeads()")+
-  '	<button style="display:block;" onclick="BuildAllGeoms()">Build missing Geoms</button>' + getSpinner("stopgeoms","stopGeoms()")
+  ' <button style="display:block;" onclick="BuildAll()">AutoFix Recipe</button>' + getSpinner("stopbeads","stopBeads()")
+  //'	<button style="display:block;" onclick="BuildAllGeoms()">Build missing Geoms</button>' + getSpinner("stopgeoms","stopGeoms()")
 
 
 //	+'</div>'

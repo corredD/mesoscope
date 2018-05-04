@@ -28,6 +28,9 @@ var ngl_force_build_beads = false;
 var current_annotation;
 var title_annotation = document.getElementById("pdb_title");
 
+var current_compute_index=0;
+var current_compute_node;
+var stop_current_compute = false;
 //var beads_checkbox = document.getElementById("beads_check");
 //var labels_checkbox = document.getElementById("label_check");
 
@@ -1652,6 +1655,21 @@ function NGLLoad(pdbname, bu, sel_str) {
 //https://github.com/6pac/SlickGrid/blob/master/examples/example10-async-post-render.html
 //https://github.com/6pac/SlickGrid/blob/master/examples/example6-ajax-loading.html
 //let the server do everything in one call that send elem by elem ?
+
+function BuildAll(){
+  //show the stop button
+  stop_current_compute = false;
+  document.getElementById('stopbeads').setAttribute("class", "spinner");
+  document.getElementById("stopbeads_lbl").setAttribute("class", "show");
+  document.getElementById("stopbeads_lbl").innerHTML = "building "+current_compute_index+" / " + graph.nodes.length;
+  //use getItem(index)
+  current_compute_node=-1;
+  NextComputeIgredient();
+  buildLoopAsync();
+  //build geom for compartment by default
+  //build beads
+}
+
 function BuildAllBeads(){
   //show the stop button
   document.getElementById('stopbeads').setAttribute("class", "spinner");
@@ -1662,6 +1680,7 @@ function stopBeads()
 {
   document.getElementById('stopbeads').setAttribute("class", "spinner hidden");
   document.getElementById("stopbeads_lbl").setAttribute("class", "hidden");
+  stop_current_compute = true;
 }
 
 function BuildAllGeoms()

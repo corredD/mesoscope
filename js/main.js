@@ -3298,7 +3298,7 @@ function MapLinkToNode(some_nodes,some_links) {
 }
 
 function update_graph(agraph,alink){
-
+	console.log("agraph",agraph);
 	var mapping = d3v4.scaleLinear()
     .domain([Math.min(0,property_mapping["size"].min), property_mapping["size"].max])
     .range([0, 25]);

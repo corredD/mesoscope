@@ -670,6 +670,100 @@ function AddPartner(ingdic,node,some_links) {
           });
   }
 
+function NextComputeIgredient(){
+    //filter is geom for now
+  	var icurrent = current_compute_index;
+  	//find previous
+  	var found = false;
+  	var i=(icurrent)? icurrent : 0;
+    while (!found){
+       i=i+1;
+       var d = graph.nodes[i];
+       if (i===graph.nodes.length) { break;}
+       if ( !d.children && "data" in d && "geom" in d.data
+            && (!d.data.geom || d.data.geom === "None"
+            || d.data.geom === "null" || d.data.geom === "") ){
+       //if (!graph.nodes[i].children){
+       	found = true;
+       	current_compute_index = i;
+       	current_compute_node = graph.nodes[i];
+       }
+    }
+    return found;
+  }
+
+function buildLoopAsync(){
+    var d = current_compute_node;//or node_selected.data.bu
+    var pdb = d.data.source.pdb;//document.getElementById("pdb_str");
+    var bu = (d.data.bu)?d.data.bu:"";//document.getElementById("bu_str");
+    //selection need to be pmv string
+    if (bu===-1) bu="";
+    var sele = (d.data.selection)?d.data.selection:"";//document.getElementById("sel_str");
+    sele = sele.replace(":","");
+    //selection is in NGL format. Need to go in pmv format
+    //every :C is a chainNameScheme
+    var model = (d.data.model)?d.data.model:"";
+    if   ( model.startsWith("S") || model.startsWith("a") ) model = "";
+    if ( sele.startsWith("/") ) sele = "";
+    //depending on the pdb we will have a file or not
+    var thefile = null;
+    if ( d.data.source.pdb.length !== 4 ){
+      pdb="";
+      if (folder_elem && folder_elem.files.length !=""){
+        thefile = pathList_[d.data.source.pdb];
+      }
+      else {
+        pdb = d.data.source.pdb;
+        //its a blob we want ?
+      }
+    }
+    var formData = new FormData();
+    //console.log(thefile)
+    // add assoc key values, this will be posts values
+      if (thefile !== null) {
+        //console.log("use input file",thefile);
+        formData.append("inputfile", thefile, thefile.name);
+        formData.append("upload_file", true);
+      }
+      else if (pdb && pdb!=="") formData.append("pdbId", pdb);
+      if (bu && bu!=="") formData.append("bu", bu);
+      if (sele && sele!=="") formData.append("selection", sele);
+      if (model && model!=="") formData.append("modelId", model);
+      //formData.append(name, value);
+      console.log("query geom with ",[pdb,bu,sele,model,thefile]);
+      //console.log(formData);
+          $.ajax({
+              type: "POST",
+              url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",//"cgi-bin/get_geom_dev.cgi",//"http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
+              success: function (data) {
+                  console.log(data);
+                  var data_parsed = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
+                  var mesh = data_parsed.results;
+                  current_compute_node.data.geom = mesh;//v,f,n directly
+                  current_compute_node.data.geom_type = "raw";//mean that it provide the v,f,n directly
+                  document.getElementById("stopbeads_lbl").innerHTML = "building "+ current_compute_index + " / " + graph.nodes.length;
+                  if (NextComputeIgredient() && (!(stop_current_compute))) {
+                      //update label_elem
+                      buildLoopAsync();
+                  }
+                  else {
+                    document.getElementById("stopbeads_lbl").innerHTML = "finished "+current_compute_index + " / " + graph.nodes.length;
+                    stopBeads();
+                  }
+              },
+              error: function (error) {
+                  console.log(error);
+              },
+              async: true,
+              data: formData,
+              cache: false,
+              contentType: false,
+              processData: false,
+              timeout: 60000
+          });
+  }
+
+
 function buildCMS1(e){
     //query the server for a cms given a PDB - see template.html for example and the cgi-bin
     //need afile or PDB id, bu, sele, model

@@ -690,7 +690,7 @@ function CreateDataColumnFromD3Nodes(agraph) {
   var columns = [];
   console.log(agraph.length);
   for (var i = 0; i < agraph.length; i++) {
-    if (!agraph[i].children && "source" in agraph[i].data) {
+    if (!agraph[i].children && "source" in agraph[i].data && "nodetype" in agraph[i].data && agraph[i].data.nodetype === "ingredient") {
       var elem = JSON.parse(JSON.stringify(agraph[i].data));
       if ("source" in elem) {
         elem.bu = ("bu" in elem.source) ? elem.source.bu : "";
@@ -712,7 +712,7 @@ function CreateDataColumnFromD3Nodes(agraph) {
       data.push(elem);
     }
   }
-  console.log("build data for grid");
+  console.log("build data for grid",agraph);
   //console.log(JSON.stringify(data));
   return {
     "data": data,
