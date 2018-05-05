@@ -1044,6 +1044,9 @@ function download(content, fileName, contentType) {
 function SaveRecipeCellPACK(){
 	console.log("save recipe");
   //current score?
+  console.log(current_ready_state);
+  console.log(current_ready_state_value);
+
   if (current_ready_state === 0) {
     alert( " this is recipe is incomplete, can't export\n missing ??\n"+JSON.stringify(current_ready_state_value) );
     return;

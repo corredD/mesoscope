@@ -148,16 +148,16 @@ function EvaluateCurrentReadyState(){
 							&& "pdb" in d.data.source
 							&& (!d.data.source.pdb || d.data.source.pdb === "None"
 						|| d.data.source.pdb === "null" || d.data.source.pdb === ""))  sources_state++;
-				if ( "data" in d && "source" in d.data
-							&& "pos" in d.data
-							&& (!d.data.pos || d.data.pos === "None"
+				//if ( "data" in d && "source" in d.data
+				//			&& "pos" in d.data
+				if (!d.data.pos || d.data.pos === "None"
 							|| d.data.pos === "null" || d.data.pos.length === 0
-							|| d.data.pos === ""))  beads_state++;
+							|| d.data.pos === "")  beads_state++;
 				if ("data" in d && "count" in d.data && "molarity" in d.data
 							&& d.data.count === 0 && d.data.molarity === 0.0) count_molarity_state++;
-				if( "data" in d && "geom" in d.data
-							&& (!d.data.geom || d.data.geom === "None"
-						|| d.data.geom === "null" || d.data.geom === ""))  geom_state++;
+				//if ( "data" in d && "geom" in d.data
+				if (!d.data.geom || d.data.geom === "None"
+						|| d.data.geom === "null" || d.data.geom === "")  geom_state++;
 				if ( "data" in d && "visited" in d.data
 									&& !d.data.visited ) node_view_state++;
 			}
@@ -2580,7 +2580,7 @@ function addIngredient(){
 	var grid = gridArray[0];
   var row_to_edit;
   var columns = grid.getColumns();
-  var		item_id = 0;
+  var	item_id = 0;
   //add an empty row data
 	var newId = graph.nodes.length;//grid.dataView.getLength();
 	//var arow = grid.dataView.getItem(0);
@@ -2600,15 +2600,17 @@ function addIngredient(){
   row_to_edit.pdb = "";
   row_to_edit.offset = [0,0,0];
   row_to_edit.pcpalAxis = [0,0,1];
+	row_to_edit.confidence = 0;
   row_to_edit.compartment = graph.nodes[0].data.name;//should be root
 	grid.dataView.beginUpdate();
-	grid.dataView.insertItem(0, row_to_edit);
+	//grid.dataView.insertItem(0, row_to_edit);
+	grid.dataView.addItem(row_to_edit);
   grid.dataView.endUpdate();
   grid.dataView.setGrouping([])
   grid.render();
   grid.dataView.refresh();
-  grid.setSelectedRows([0]);
-  grid.setActiveCell(0,0);
+  //grid.setSelectedRows([0]);
+	//grid.setActiveCell(0,0);
   AddANode(JSON.parse(JSON.stringify(row_to_edit)));
 }
 
@@ -2636,7 +2638,7 @@ function AddANode(some_data){
    newNode.x = canvas.width/2;
    newNode.y = canvas.height/2;
    newNode.r = 30;
-   newNode.source = {"pdb":newNode.pdb};
+   newNode.source = {"pdb":newNode.pdb,"bu":newNode.bu,"selection":newNode.selection,"model":""};
    graph.nodes[0].children.push(newNode);
    graph.nodes.push(newNode);
    console.log(newNode);
@@ -3125,9 +3127,9 @@ function dragended() {
   	if (hovernodes.node )
   	{
   		console.log (hovernodes.node.data.nodetype);
-  		if ( hovernodes.node.data.nodetype === "compartment") {
+  		if ( hovernodes.node.data.nodetype === "compartment" || (!(hovernodes.node.parent))) {
   			var index = d3v4.event.subject.parent.children.indexOf(d3v4.event.subject);
-  			if (d3v4.event.subject.parent!=hovernodes.node) {
+  			if (d3v4.event.subject.parent!==hovernodes.node) {
   				if (d3v4.event.subject.children && d3v4.event.subject.children.indexOf(hovernodes.node)!==-1){}
 	  			else {
 	  				if (index > -1) {
@@ -3139,12 +3141,12 @@ function dragended() {
 		  		  hovernodes.node.r += d3v4.event.subject.r/2;
 		  		  var cname = d3v4.event.subject.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/').slice(0,-1);
 		  		  console.log("update ? ",d3v4.event.subject);
-		  		  if (d3v4.event.subject.nodetype !== "compartment")
+		  		  if (d3v4.event.subject.data.nodetype !== "compartment")
 		  		  	updateCellValue(gridArray[0],"compartment",d3v4.event.subject.data.id,cname);
 		  		  else {}//need to change all child
 		  		}
 		  	}
-	  		if (d3v4.event.subject.nodetype !== "compartment")
+	  		if (d3v4.event.subject.data.nodetype !== "compartment")
 	  		{
 	  			if ( Math.abs(hovernodes.node.r - hovernodes.distance) < d3v4.event.subject.r )
 	  				d3v4.event.subject.data.surface = true;
