@@ -844,6 +844,10 @@ function NGLLoadAShapeObj(gpath) {
         }
         //Collada.load( thefile, getCollada_cb );
       }
+      else if (ext === "mmtf") {
+          stage.loadFile( "rcsb://"+gname, { defaultRepresentation: true } );
+          //build the geom ?
+      }
     }
 		else {//should be a file
 				NGL_LoadShapeFile(gpath);
@@ -1722,6 +1726,13 @@ function stopGeoms()
 {
   document.getElementById('stopgeoms').setAttribute("class", "spinner hidden");
   document.getElementById("stopgeoms_lbl").setAttribute("class", "hidden");
+}
+
+function stopGeom()
+{
+  document.getElementById('stopbuildgeom').setAttribute("class", "spinner hidden");
+  document.getElementById("stopbuildgeom_lbl").setAttribute("class", "hidden");
+  //stop waiting ?
 }
 /*var colorMap = new Map()
 var chainNameScheme = NGL.ColorMakerRegistry.getScheme( {scheme: 'chainname', structure: structure})

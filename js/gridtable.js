@@ -670,6 +670,7 @@ function CreateDataColumnFromD3Links(alinks) {
   var columns = [];
   console.log(alinks.length);
   for (var i = 0; i < alinks.length; i++) {
+    var jlink = JSON.stringify(alinks[i]);
     var elem = JSON.parse(JSON.stringify(alinks[i]));
     //elem.id = "id_"+i;
     if (columns.length === 0) {
@@ -1187,7 +1188,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       n.data.count = arow.count;
       n.data.molarity = arow.molarity;
       n.data.label = arow.label;
-      n.data.geom = arow.geom;
+      //n.data.geom = arow.geom;
       n.data.bu = arow.bu;
       n.data.selection = arow.selection;
       n.data.uniprot = arow.uniprot;
@@ -1718,17 +1719,18 @@ function refineQuery(e) {
   console.log(e.id); //type of query e.g. uniprot or pdb,if PDb can be a text or a sequence!
   var isseq = document.getElementById("sequence_search").checked;
   var qtype = parseInt(e.id.split("_")[1]);
+  var elem = document.getElementById("Query_"+qtype).value;
   if (qtype === 3) //uniprot
   {
-    queryUniportKBfromName(e.value);
+    queryUniportKBfromName(elem);
   } else if (qtype === 4) {
-    if (e.value.slice(0, 2) === "S:" || isseq) {
+    if (elem.slice(0, 2) === "S:" || isseq) {
       console.log("query PDB blast search");
-      queryPDBfromSequence(e.value);
+      queryPDBfromSequence(elem);
     } else {
-      console.log("query PDB for " + e.value);
+      console.log("query PDB for " + elem);
       //check if sequence search
-      queryPDBfromName(e.value);
+      queryPDBfromName(elem);
     }
   }
 }

@@ -1,3 +1,6 @@
+var ingr_uniq_id;
+
+
 class sCompartment{
     constructor( name,static_id){
         this.local_id = 0;  //# ;// The id of the compartment relative only to the parent
@@ -129,6 +132,30 @@ function OneIngredientSerializedPartner(singr,link_node){
 	return linkdata;
 	}
 
+function oneCompartment(scomp,node)
+{
+  var gtype = (node.data.geom_type)? node.data.geom_type : "None";
+  var geom = (node.data.geom)? node.data.geom : "";
+  scomp["geom_type"]=gtype;//file,sphere,mb
+  if (gtype === "raw")
+  {
+    scomp["mesh"] = geom;
+  }
+  else if (gtype === "file") {
+    scomp["filename"] = geom;//extension give the type
+  }
+  else if (gtype === "sphere") {
+    scomp["radius"] = ("radius" in geom)? geom.radius : 500.0;
+  }
+  else if (gtype === "mb") {
+    scomp["mb"] = geom;
+  }
+  else if (gtype === "None") {
+  }
+  else {}
+  return scomp;
+}
+
 function serializedRecipe(some_data,some_links){
 	  var list_comp={};
 	  var sCompartment_static_id = 0,
@@ -159,10 +186,7 @@ function serializedRecipe(some_data,some_links){
 	      	  //add a compartment
 	      	  if (!(cname in list_comp)) {
 								comp = new sCompartment(cname, sCompartment_static_id);
-                var gtype = (node.data.geom_type)? node.data.geom_type : "None";
-                var gname = (node.data.geom)? node.data.geom : "";
-                comp["geom_type"]=gtype;
-                comp["geom"]=gname;
+                comp = oneCompartment(comp,node);
     						sCompartment_static_id+=1;
 								list_comp[cname] = comp;
 								if (!(node.parent.name in list_comp)) console.log(node.data.name,node.parent.data.name);
@@ -246,13 +270,14 @@ function OneIngredientDeserialized(ing_dic,surface,comp) {
       //{
       //	p = ing_dic["source"]["pdb"];
       //	}
+      if ('emdb' in source) source.pdb = "EMD-"+source.emdb+".map";//"EMD-5241.map"
     }
 
     if (source.pdb && source.pdb.length!=4){
 	     if ( (source.pdb.slice(-4,source.pdb.length) !== ".pdb" )&&(!source.pdb.startsWith("EMD"))) source.pdb = source.pdb+".pdb";
 	  }
 
-	  var label = ("description"in ing_dic)? ing_dic["description"] : "";
+	  var label = ("description" in ing_dic)? ing_dic["description"] : "";
 	  var acount = ("nbMol" in ing_dic)? ing_dic["nbMol"] : 0;
 	  if (!acount ) acount = 0;
 	  var molarity = ("molarity" in ing_dic)? ing_dic["molarity"] : 0.0;
@@ -265,14 +290,41 @@ function OneIngredientDeserialized(ing_dic,surface,comp) {
 	  var offset = ("offset" in ing_dic.source.transform)? ing_dic.source.transform.offset : [0,0,0];
     var confidence = ("confidence" in ing_dic ) ? ing_dic["confidence"]:0.0;//overall confidence
 	  //var spheres = getSpheres(ing_dic);
-	  var p = ing_dic.positions;
-	  var r = ing_dic.radii_lod;
-	  var id = "id_"+ing_dic.ingredient_id;//unique ingredient id
+	  var p = ("positions" in ing_dic) ? ing_dic.positions : null;
+    var r = ("radii_lod" in ing_dic)? ing_dic.radii_lod : null;
+    if (!r) {
+      r = ("radii" in ing_dic)? ing_dic.radii : null;
+    }
+    if (p.length!==0) {
+      if (!("coords" in p[0])) {
+        var pos = [];
+        var rad = [];
+        for (var lod=0; lod < p.length;lod++)
+        {
+          pos.push({"coords":[]});
+          rad.push({"radii":[]});
+          for (var i=0;i<p[lod].length;i++)
+          {
+              pos[lod].coords.push(p[lod][i][0]);
+              pos[lod].coords.push(p[lod][i][1]);
+              pos[lod].coords.push(p[lod][i][2]);
+              rad[lod].radii.push(r[lod][i]);
+          }
+        }
+        p = pos;
+        r = rad;
+      }
+    }
 
+	  var id = "id_"+ingr_uniq_id;//ing_dic.ingredient_id;//unique ingredient id
+    ingr_uniq_id+=1;
     var elem ={"name":name,"size":size,"molecularweight":mw,"confidence":confidence,
-	  	"source":{"pdb":source},"count":acount,
-	  	"molarity":molarity, "surface":surface,"geom":geom,"geom_type":geom_type,"label":label,
-	  	"uniprot":"","pcpalAxis":principalVector,"offset":offset,"pos":p,"radii":r,"nodetype":"ingredient","id":id};
+	  	"source":source,"count":acount,
+	  	"molarity":molarity, "surface":surface,"geom":geom,
+      "geom_type":geom_type,"label":label,
+	  	"uniprot":"","pcpalAxis":principalVector,
+      "offset":offset,"pos":p,"radii":r,
+      "nodetype":"ingredient"};//,"id":id};
 	  return elem;
 	}
 
@@ -298,6 +350,19 @@ function parseIngredientsGroups(groupdic,comp,surface,linkdata){
 		return {"comp":comp,"link":linkdata};
 }
 
+function SetupOneCompartment(acomp,acompdic)
+{
+  acomp["children"]=[];
+  acomp["nodetype"]="compartment";
+  acomp["geom_type"] = ("geom_type" in acompdic)?acompdic.geom_type:"None";
+  if (acomp.geom_type === "raw") {acomp["geom"] = acompdic.mesh;}
+  if (acomp.geom_type === "file") {acomp["geom"] = acompdic.filename;}
+  if (acomp.geom_type === "sphere") {acomp["geom"] = {"name":acompdic.name,"radius":acompdic.radius};}
+  if (acomp.geom_type === "mb") {acomp["geom"] = acompdic.mb;}
+  if (acomp.geom_type === "None") {acomp["geom"] = "None";}
+  return acomp;
+}
+
 function parseOneCompartment(compdic,graph,parent_comp,linkdata) {
 	//recursive to child compartments
 	//need to loop through the different ingredient group
@@ -307,15 +372,14 @@ function parseOneCompartment(compdic,graph,parent_comp,linkdata) {
 	var comp = {};
 	var newcomp = false;
 	var surface = (compdic.name === "surface");
-	if (compdic.name === "surface" || compdic.name === "interior")
+	if (compdic.name === "surface" || compdic.name === "interior" || compdic.name === "cytoplasme")
 	{//use parent comp
 		comp = parent_comp;
 	}
 	else {
 	  comp["name"] = compdic.name;
-	  comp["children"]=[];
-	  comp["nodetype"]="compartment";
-	  newcomp = true;
+	  comp = SetupOneCompartment(comp,compdic);
+    newcomp = true;
 	}
 	if (compdic.IngredientGroups.length!==0) {
 			for (var i=0;i<compdic.IngredientGroups.length;i++){
@@ -352,10 +416,11 @@ function parseCellPackRecipeSerialized(jsondic){
 		var graph ={};//the main graph
     var interaction = {};//name1,name2,id1,id2,data // pdb, beads, etc...
     var rootName=jsondic.name;
-
+    ingr_uniq_id = 0;
 		//use cytoplasme or not ?
     //beads position/radius
     //recursive on compartment
-    var res = parseOneCompartment(jsondic,graph,interaction);
+    //parseOneCompartment(compdic,graph,parent_comp,linkdata)
+    var res = parseOneCompartment(jsondic,graph,null,interaction);
     return {"nodes":res.comp,"links":res.link};
 	}

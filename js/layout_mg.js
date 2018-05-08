@@ -15,11 +15,11 @@ console.log("angular is defined ?",app);
 //https://websvc.biocyc.org/getxml?id=META:MONOMER-584
 //-><component-of><Protein resource="getxml?META:CPLX-2022" orgid="META" frameid="CPLX-2022"/></component-of>
 
-
+//hover_div//style="position:absolute; width:100% !important; display:block;"
 var canvasOption = '' +
-  '<div class="hover_div" style="position:absolute; width:100% !important; display:block;">' //z-index:50
+  '<div class="canvas_head" >' //z-index:50
   +
-  '<select id="canvas_label" name="canvas_label" onchange="ChangeCanvasLabel(this)" >' +
+  '<div><select id="canvas_label" name="canvas_label" onchange="ChangeCanvasLabel(this)" >' +
   '<option value="Select">Label for:</option>' +
   '	<option value="None" > None </option>' +
   '	<option value="label" > label </option>' +
@@ -49,19 +49,16 @@ var canvasOption = '' +
   '	<option value="count" > count </option>' +
   '	<option value="molarity" > molarity </option>' +
   '	 <option value="mw" > molecularweight </option>' +
-  '	</select>	' +
-  '<input type="checkbox" id="unchecked" onclick="switchMode(this)" class="cbx hidden" />' +
-  '<label for="unchecked" class="lbl"></label>' +
-  '<label for="lbl" style="width:70px; float:right; margin-top:10px;">Edit Mode</label>'
-
-  +
+  '	</select></div>' +
   '<button id="addingr" class="hidden" onclick="addIngredient()">Add ingredient</button>' +
   '<button id="addcomp" class="hidden" onclick="addCompartment()">Add compartment</button>' +
-  '<button id="addlink" class="hidden" onclick="addLink()">Add interaction</button>'
+  '<button id="addlink" class="hidden" onclick="addLink()">Add interaction</button>'+
+  '<div>'+
+  '<input type="checkbox" id="unchecked" onclick="switchMode(this)" class="cbx hidden" />' +
+  '<label for="unchecked" class="lbl"></label>' +
+  '<label for="lbl" style="width:70px; float:right; margin-top:10px;">Edit Mode</label>' +
   //	+'<div class="row demo">'
-
-  //	+'</div>'
-  +
+  '</div>'+
   '</div>'
 
 //
@@ -75,9 +72,9 @@ var ngloptions = '' +
   '<div class="accordion_panel">'+
 //
   ' <div class="clusterBtn">' +
-  '<button onclick="CenterNGL()" style="">Center</button>' +
-  '<button onclick="PreviousIgredient()" style="">Previous</button>' +
-  '<button onclick="NextIgredient()" style="">Next</button>' +
+  '<button onclick="CenterNGL()" style="">Center Camera</button>' +
+  '<button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
+  '<button onclick="NextIgredient()" style="">Next Ingredient</button>' +
   '</div>' +
   '	<label id="ProteinId">protein name</label>' +
   ' <label id="pdb_id">pdb id</label>' +
@@ -119,7 +116,9 @@ var ngloptions = '' +
   '		<option value="Chain" > Chain </option>' +
   '	</select></div>' +
   ' <div> <input type="checkbox"  id="showgeom" onclick="NGL_showGeomNode(this)" checked>' +
-  ' <label for="showgeom"> Show Geometry used </label> <button onclick="buildCMS()">Rebuild Geometry</button></div>' +
+  ' <label for="showgeom"> Show Geometry used </label> '+
+  ' <button onclick="buildCMS()">Rebuild Geometry</button>'+getSpinner("stopbuildgeom","stopGeom()")+
+  '</div>' +
   ' <div><label for="beads_elem">Show Beads</label>' +
   ' <select id="beads_elem" name="beads_elem" style="width:55%" onchange="showBeadsLevel(this)" >' +
   ' <option value="showbeads" selected> Show beads for lvl </option>' +
@@ -198,14 +197,16 @@ var gridoptions = ''
   '					<button onclick="addRow()">AddRow</button>' +
   '					<button onclick="removeRow()">RemoveRow</button>' +
   '					<button onclick="gridArray[current_grid].dataView.setGrouping([])">Clear grouping</button>' +
-  '					 <button onclick="groupByCompartmentSurface()">Group by compartment then surface</button>' +
-  '					 <label for="column_type">Group By :</label>' +
+  '					<button onclick="groupByCompartmentSurface()">Group by compartment then surface</button>' +
+  '					<label for="column_type">Group By :</label>' +
   '					<select id="column_type" name="column_type" onchange="groupByElem(this)">' +
   '						<option value="All" selected> All </option>' +
   '					</select>' +
-  '<br><input type="text""  style="width:100%;" placeholder="Uniprot_Query" id="Query_3" onchange="refineQuery(this)"' +//class="input-medium form-control"
-  '<br><input type="text""  style="width:100%;" placeholder="PDB_Query" id="Query_4" onchange="refineQuery(this)"' +
-  '<label for="sequence_search"> Use Sequence Blast Search </label><input type="checkbox" name="sequence_search" id="sequence_search">' +
+  '<div style="display:flex"><input type="text"" style="width:100%;" placeholder="Uniprot_Query" id="Query_3" onchange="refineQuery(this)"/>' +//class="input-medium form-control"
+  '<button style="width:20%;" id="QueryBtn_3" onclick="refineQuery(this)">search</button></div>'+
+  '<div style="display:flex"><input type="text""  style="width:100%;" placeholder="PDB_Query" id="Query_4" onchange="refineQuery(this)"/>' +
+  '<button style="width:20%;" id="QueryBtn_4" onclick="refineQuery(this)">search</button></div>'+
+  '<label for="sequence_search"> Use Sequence Blast PDB Search </label><input type="checkbox" name="sequence_search" id="sequence_search">' +
   '</div>'+
   '<label id="LoaderTxt" class="hidden" for="aloader"></label>' +
   '<div class="spinner hidden" id="spinner" style="width:200px;height:20px;" >' +
@@ -217,7 +218,7 @@ var gridoptions = ''
   '   <button onclick="stopAll()">Stop query search</button>' +
   '	</div>'+
   ' <img wicth="250" height="250" class="hidden" id="imagepdbclone" src=""/>'+
-  ' <button style="display:block;" onclick="BuildAll()">AutoFix Recipe</button>' + getSpinner("stopbeads","stopBeads()")
+  ' <button style="display:block;" onclick="BuildAll()">AutoFix Recipe (geometry, beads, ...) </button>' + getSpinner("stopbeads","stopBeads()")
   //'	<button style="display:block;" onclick="BuildAllGeoms()">Build missing Geoms</button>' + getSpinner("stopgeoms","stopGeoms()")
 
 

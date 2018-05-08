@@ -466,8 +466,10 @@ function parseCellPackRecipe(jsondic) {
             for (var cname in jsondic["compartments"]){
                 var comp_dic = jsondic["compartments"][cname];
 								var comp_geom = comp_dic['geom'];
+								var comp_type = comp_dic['geom_type'];
 								console.log("geom in comp ? ",comp_geom)
-                var comp = {"name":cname,"children":[],"nodetype":"compartment","geom":comp_geom,"geom_type":"file"};
+                var comp = {"name":cname,"children":[],"nodetype":"compartment",
+														"geom":comp_geom,"geom_type":comp_type};
                 if ("surface" in comp_dic){
                     var snode = comp_dic["surface"];
                     var ingrs_dic = snode["ingredients"];
@@ -1515,6 +1517,23 @@ function LoadExampleMpn(){
 		            })
 			}
 
+function LoadExampleBloodHIV(){
+		//file is in data
+		var url = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
+		//var url = "./data/BloodPlasmaHIV_serialzed.json";
+		csv_mapping= false;
+		comp_column = false;
+		console.log(url);
+		d3v4.json(url, function (json) {
+						console.log(json);
+						var adata = parseCellPackRecipeSerialized(json)
+						//var alink =[]
+						//alert("worked??");
+						//alert(JSON.stringify(adata));
+						update_graph(adata.nodes,adata.links);
+						})
+}
+
 function checkAttributes(agraph){
 	property_mapping.molecularweight = {"min":999999,"max":0};
 	property_mapping.size = {"min":999999,"max":0};
@@ -1581,14 +1600,14 @@ function getcomphtml(anode) {
 	htmlStr+='<label> Nb of children: '+anode.children.length+'</label><br>'
 	//htmlStr+= '<input type="checkbox" id="unchecked" onclick="toggleLipids(this)" class="cbx hidden" />' ;
 	var comptype = ("geom_type" in anode.data)? anode.data.geom_type: "None";
-	htmlStr+=''+//'<label>Source : </label>'+
-	' <select id="comp_source" name="comp_source" onchange="changeCompSource(this)" >' +
-	'  <option value="compsource" selected> Source: </option>' +
-	'  <option value="file" > File (.dae,.obj,.map) </option>' +
-	'  <option value="sphere" > Sphere </option>' +
-	'  <option value="mb" > MetaBalls (multiple spheres) </option>' +
-	'  <option value="None" > None </option>' +
-	' </select>'
+	htmlStr+=' <label>Source : </label>'
+	htmlStr+=' <select id="comp_source" name="comp_source" onchange="changeCompSource(this)" >'
+	htmlStr+='  <option value="compsource"> Source: </option>'
+	htmlStr+='  <option value="file'+(comptype==="file")?"selected":""+'"> File (.dae,.obj,.map) </option>'
+	htmlStr+='  <option value="sphere'+(comptype==="sphere")?"selected":""+'"> Sphere </option>'
+	htmlStr+='  <option value="mb'+(comptype==="mb")?"selected":""+'"> MetaBalls (multiple spheres) </option>'
+	htmlStr+='  <option value="None'+(comptype==="None")?"selected":""+'"> None </option>'
+	htmlStr+=' </select>'
 	if (comptype === "None") {}
 	else if (comptype === "file") {
 		//add input file
@@ -1604,8 +1623,9 @@ function getcomphtml(anode) {
 			//callback onchange ?
 			//htmlStr+=' <input id="comp_slider" style="width:80%" height:"40px" type="range" min="1" max="10000"" step="1" value="500" oninput="updateLabel(this)" onchange="resizeSphere(this)" /> ';
 			//htmlStr+=' <label id="comp_slider_label" for="comp_slider" style="width:20%">10A</label>';
-			htmlStr+='<div style="display:flex;flex-flow: row wrap;"><label>Radius(A):</label><input id="comp_slider" type="range" min="1" max="10000" step="1" value="10"style="width:70%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/>';
-		  htmlStr+='<input  id="comp_slider_num" min="1" max="10000" type="number" value="10" style="width:30%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/></div>';
+			var cradius = ("radius" in anode.data.geom)? anode.data.geom.radius : 10;
+			htmlStr+='<div style="display:flex;flex-flow: row wrap;"><label>Radius(A):</label><input id="comp_slider" type="range" min="1" max="10000" step="1" value="'+cradius+'"style="width:70%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/>';
+		  htmlStr+='<input  id="comp_slider_num" min="1" max="10000" type="number" value="'+cradius+'" style="width:30%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/></div>';
 	}
 	else if (comptype === "mb") {
 		htmlStr+=' <input id="comp_slider" style="width:80%" height:"40px" type="range" min="1" max="10000"" step="1" value="500" /> ';
@@ -2543,23 +2563,40 @@ function addLink(){
 			var s = graph.nodes.indexOf(nodes_selections[i]);
 			var t = graph.nodes.indexOf(nodes_selections[i+1]);
 			console.log(name1,name2);
+
 			var id = graph.links.length;
-			var alink = {"source":nodes_selections[i],"target":nodes_selections[i+1],"name1":name1,"name2":name2,"pdb1":"","sel1":"","sel2":"","id":id};
+			var alink = {"source":nodes_selections[i],"target":nodes_selections[i+1],
+			"name1":name1,"name2":name2,"pdb1":"",
+			"sel1":"","sel2":"","id":id};
 			console.log(alink);
 			graph.links.push(alink);
-			alink = {"source":s,"target":t,"name1":name1,"name2":name2,"pdb1":"","sel1":"","sel2":"","id":id};
+			alink = {"source":s,"target":t,"name1":name1,"name2":name2,
+			"pdb1":"","sel1":"","sel2":"","id":id};
 
 			//update the table
 			updateForce();
+			if ( id === 0 ) {
+				//setup the Table
+				UpdateGridFromD3Links([alink],1);
+			}
+			else {
 			//update the grid
 		  gridArray[1].dataView.beginUpdate();
-		  gridArray[1].dataView.insertItem(0, alink);
+		  gridArray[1].dataView.addItem(alink);
 	    gridArray[1].dataView.endUpdate();
 	    gridArray[1].dataView.setGrouping([])
 	    gridArray[1].render();
 	    gridArray[1].dataView.refresh();
-	    gridArray[1].setSelectedRows([0]);
-	    gridArray[1].setActiveCell(0,0);
+			//this is not enought ?
+			gridArray[1].resizeCanvas();
+			gridArray[1].autosizeColumns();
+			gridArray[1].render();
+			gridArray[1].dataView.refresh();
+			gridArray[1].resizeCanvas();
+			gridArray[1].autosizeColumns();
+	    //gridArray[1].setSelectedRows([0]);
+	    //gridArray[1].setActiveCell(0,0);
+		}
 	  }
 		}
 	}
@@ -3000,6 +3037,8 @@ function dragstarted() {
 		if (current_mode !== 1) {
 			node_selected =  d3v4.event.subject;
 	  	node_selected_indice = graph.nodes.indexOf(node_selected);
+			nodes_selections=[]
+			nodes_selections.push(node_selected);
 		}
 		else {
 			node_selected = null;
@@ -3114,7 +3153,7 @@ function dragended() {
 	  	UpdateSelectionInteractionFromId(d3v4.event.subject.id);//undefined ?
 	  	if (current_mode===0) updateNGLPair(d3v4.event.subject);
 	  	//if pdb1 and pdb2 -> updateNGL with all info...
-  }
+  	}
   }
   if (current_mode === 1)
   {
@@ -3409,6 +3448,7 @@ function PreviousIgredient(){
   if (found)
   {
   	//find the row
+		node_selected.data.visited = true;
   	UpdateSelectionPdbFromId(node_selected.data.id);
   	updateNGL(node_selected);
   	wakeUpSim();

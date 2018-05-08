@@ -349,6 +349,22 @@ li {
   max-width: 100%;
 }
 
+.canvas_head
+{
+  width:100% !important;
+  //height: 100%;
+  display: flex;
+  position:absolute;
+  flex-flow: wrap row;
+  align-items: center;
+  align-content: center;
+  justify-content: space-between;
+  max-width: 100%;
+  border-style: solid;
+  border-width:1px;
+  background-color: rgba(100, 100, 100, 0.3);
+}
+
 /*.NGLPane
 {
 	width: 45%;
