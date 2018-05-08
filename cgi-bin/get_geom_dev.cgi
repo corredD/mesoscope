@@ -1,4 +1,3 @@
-#!C:\Program Files (x86)\MGLTools2-1.1\python.exe
 #!/usr/bin/env /usr/local/www/projects/mgltools2/bin/pythonsh
 
 import os
@@ -28,6 +27,154 @@ import numpy as np
 ## print "<br>"
 ## print '%s\n' % (time.asctime())
 ## print "<br>"
+
+
+## KMEANS clustering
+## adopted from https://raw.githubusercontent.com/EtixLabs/clustering/master/dist/clustering.js  by  Lukasz Krawczyk <contact@lukaszkrawczyk.eu>
+ 
+class KMEANS:
+
+    def __init__(self, dataset, k=3, distance=None):
+        """ dataset - array of points
+        k - number of clusters
+        distance - distance function
+        """
+        
+        self.k = k              # number of clusters
+        self.dataset = np.array(dataset)  # set of feature vectors
+        if distance is not None:
+            self.distance = distance
+
+
+    def run(self, k=None):
+        datalen = len(self.dataset)
+        if k is not None:
+            self.k = k
+        self.assignments = {}   # set of associated clusters for each feature vector
+        self.centroids = []     # vectors for our clusters
+        maxDim = self.dataset.shape[1]
+        # initialize centroids
+        for i in range(self.k):
+            self.centroids.append(self.randomCentroid())
+        change = True
+        nn = 0
+        while(change):
+            # assign feature vectors to clusters
+            change = self.assign()
+            print "change 1", change, self.centroids
+            # adjust location of centroids
+            for centroidId in range(self.k):
+                mean = np.zeros(maxDim)
+                count = 0
+                for j in range(datalen):
+                    maxDim = len(self.dataset[j])
+                    # if current cluster id is assigned to point
+                    if centroidId == self.assignments[j]: 
+                        for dim in range(maxDim):
+                            mean[dim] += self.dataset[j][dim]
+                        count += 1
+                if count > 0: 
+                    # if cluster contains points, adjust centroid position
+                    for dim in range(maxDim):
+                        mean[dim] = mean[dim] / count
+
+                    self.centroids[centroidId] = mean
+                else:
+                    # if cluster is empty, generate new random centroid
+                    self.centroids[centroidId] = self.randomCentroid()
+                    change = True
+                    print "change 2", change, self.centroids
+            nn += 1
+            #if nn == 50: break
+        return self.getClusters()
+
+
+    def randomCentroid(self):
+        """Generate random centroid """
+        maxId = len(self.dataset) -1
+        centroid = None
+
+        import random
+        while centroid is None:
+            # random index
+            ind = int(round(random.random() * maxId))
+            _centroid = self.dataset[ind]
+            inarr = False
+            # find if _centroid is in the centroids list (select it if it is not found)
+            for cc in self.centroids:
+                if np.allclose(cc, _centroid):
+                    inarr = True
+                    break
+            if not inarr:
+                centroid = _centroid
+        return centroid
+
+    def distance(self, p, q):
+        """Euclidean distance
+        p - vector
+        q - vector
+        """
+        assert len(p) == len(q)
+        if type(p) != np.ndarray:
+            p = np.array(p)
+        if type(q) != np.ndarray:
+            q = np.array(q)
+        return np.sqrt(np.sum((p-q)**2))
+
+
+    def argmin (self, point, pointset, func):
+        # return index of a pointset item whith the minimal distance from point 
+        minval = func(point, pointset[0])
+        arg = 0
+        i = 1
+        for item in pointset[1:]:
+            d = func(point, item)
+            if (d < minval):
+                minval = d
+                arg = i
+            i += 1
+        return arg
+
+    def getClusterRad(self):
+        clusters = self.getClusters()
+        radii = []
+        for i, center in enumerate(self.centroids):
+            pointset = self.dataset[clusters[i]]
+            maxval = self.distance(center, pointset[0])
+            for item in pointset[1:]:
+                dist  = self.distance(center, item)
+                if (dist > maxval):
+                    maxval = dist
+            radii.append(maxval)
+        return radii
+            
+    def assign(self):
+        """Assign points to clusters"""
+        change = False
+        datalen = len(self.dataset)
+        for i in range(datalen):
+            closestCentroid = self.argmin(self.dataset[i], self.centroids, self.distance)
+            if not self.assignments.has_key(i):
+                self.assignments[i] = closestCentroid
+                change = True
+            else:
+                if (closestCentroid != self.assignments[i]):
+                    self.assignments[i] = closestCentroid
+                    change = True
+        return change
+
+    def getClusters(self):
+        """ Extract information about clusters"""
+        clusters = []
+        for i in range(self.k):
+            clusters.append([])
+
+        for pointId, centroidId in self.assignments.items():
+            clusters[centroidId].append(pointId)
+           
+        return clusters
+
+
 
 
 from PmvApp.Pmv import MolApp
