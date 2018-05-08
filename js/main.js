@@ -1519,7 +1519,8 @@ function LoadExampleMpn(){
 
 function LoadExampleBloodHIV(){
 		//file is in data
-		var url = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
+		//https://raw.githubusercontent.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json
+		var url = "https://raw.githubusercontent.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
 		//var url = "./data/BloodPlasmaHIV_serialzed.json";
 		csv_mapping= false;
 		comp_column = false;
