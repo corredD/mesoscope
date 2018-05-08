@@ -35,7 +35,8 @@ var canvasOption = '' +
   '	<option value="count_molarity" > missing Copy number or molarity </option>' +
   '	<option value="Beads" > missing SphereTree </option>' +
   '	<option value="geom"> missing Geometry </option>' +
-  //'	<option value="color" > color </option>' +
+  '	<option value="confidence" > confidence </option>' +
+  '	<option value="color" > color </option>' +
   '	<option value="viewed"> viewed </option>' +
   '	<option value="size"> size </option>' +
   '	<option value="count" > count </option>' +
@@ -216,8 +217,8 @@ var gridoptions = ''
   '   <button onclick="stopAll()">Stop query search</button>' +
   '	</div>'+
   ' <img wicth="250" height="250" class="hidden" id="imagepdbclone" src=""/>'+
-  ' <button style="display:block;" onclick="BuildAllBeads()">Build missing Beads</button>' + getSpinner("stopbeads","stopBeads()")+
-  '	<button style="display:block;" onclick="BuildAllGeoms()">Build missing Geoms</button>' + getSpinner("stopgeoms","stopGeoms()")
+  ' <button style="display:block;" onclick="BuildAll()">AutoFix Recipe</button>' + getSpinner("stopbeads","stopBeads()")
+  //'	<button style="display:block;" onclick="BuildAllGeoms()">Build missing Geoms</button>' + getSpinner("stopgeoms","stopGeoms()")
 
 
 //	+'</div>'

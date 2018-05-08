@@ -606,14 +606,14 @@ function AddPartner(ingdic,node,some_links) {
   function buildCMS(){
     var d = node_selected;//or node_selected.data.bu
     var pdb = d.data.source.pdb;//document.getElementById("pdb_str");
-    var bu = (d.data.bu)?d.data.bu:"";//document.getElementById("bu_str");
+    var bu = (d.data.source.bu)?d.data.source.bu:"";//document.getElementById("bu_str");
     //selection need to be pmv string
-    var sele = (d.data.selection)?d.data.selection:"";//document.getElementById("sel_str");
+    var sele = (d.data.source.selection)?d.data.source.selection:"";//document.getElementById("sel_str");
     sele = sele.replace(":","");
     //selection is in NGL format. Need to go in pmv format
     //every :C is a chainNameScheme
-    var model = model_elem.selectedOptions[0].value;
-    if ( model.startsWith("S") || model.startsWith("a") ) model = "";
+    var model = (d.data.source.model)?d.data.source.model:"";//model_elem.selectedOptions[0].value;
+    if ( (!model) || model.startsWith("S") || model.startsWith("a") ) model = "";
     if ( sele.startsWith("/") ) sele = "";
     //depending on the pdb we will have a file or not
     var thefile = null;
@@ -669,6 +669,112 @@ function AddPartner(ingdic,node,some_links) {
               timeout: 60000
           });
   }
+
+function NextComputeIgredient(){
+    //filter is geom for now
+  	var icurrent = current_compute_index;
+  	//find previous
+  	var found = false;
+  	var i=(icurrent)? icurrent : 0;
+    while (!found){
+       i=i+1;
+       var d = graph.nodes[i];
+       if (i===graph.nodes.length) { break;}
+       if ( !d.children && "data" in d && "geom" in d.data
+            && (!d.data.geom || d.data.geom === "None"
+            || d.data.geom === "null" || d.data.geom === "") ){
+       //if (!graph.nodes[i].children){
+       	found = true;
+       	current_compute_index = i;
+       	current_compute_node = graph.nodes[i];
+       }
+    }
+    return found;
+  }
+
+function buildLoopAsync(){
+    var d = current_compute_node;//or node_selected.data.bu
+    var pdb = d.data.source.pdb;//document.getElementById("pdb_str");
+    var bu = (d.data.bu)?d.data.bu:"";//document.getElementById("bu_str");
+    //selection need to be pmv string
+    if (bu===-1) bu="";
+    var sele = (d.data.selection)?d.data.selection:"";//document.getElementById("sel_str");
+    sele = sele.replace(":","");
+    //selection is in NGL format. Need to go in pmv format
+    //every :C is a chainNameScheme
+    var model = (d.data.model)?d.data.model:"";
+    if   ( model.startsWith("S") || model.startsWith("a") ) model = "";
+    if ( sele.startsWith("/") ) sele = "";
+    //depending on the pdb we will have a file or not
+    var thefile = null;
+    if ( pdb && d.data.source.pdb.length !== 4 ){
+      pdb="";
+      if (folder_elem && folder_elem.files.length !=""){
+        thefile = pathList_[d.data.source.pdb];
+      }
+      else {
+        pdb = d.data.source.pdb;
+        //its a blob we want ?
+      }
+    }
+    if (!pdb || pdb === "")
+    {
+      if (NextComputeIgredient() && (!(stop_current_compute))) {
+          //update label_elem
+          buildLoopAsync();
+      }
+      else {
+        document.getElementById("stopbeads_lbl").innerHTML = "finished "+current_compute_index + " / " + graph.nodes.length;
+        stopBeads();
+      }
+      return;
+    }
+    var formData = new FormData();
+    //console.log(thefile)
+    // add assoc key values, this will be posts values
+      if (thefile !== null) {
+        //console.log("use input file",thefile);
+        formData.append("inputfile", thefile, thefile.name);
+        formData.append("upload_file", true);
+      }
+      else if (pdb && pdb!=="") formData.append("pdbId", pdb);
+      if (bu && bu!=="") formData.append("bu", bu);
+      if (sele && sele!=="") formData.append("selection", sele);
+      if (model && model!=="") formData.append("modelId", model);
+      //formData.append(name, value);
+      console.log("query geom with ",[pdb,bu,sele,model,thefile]);
+      //console.log(formData);
+          $.ajax({
+              type: "POST",
+              url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",//"cgi-bin/get_geom_dev.cgi",//"http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
+              success: function (data) {
+                  //console.log(data);
+                  var data_parsed = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
+                  var mesh = data_parsed.results;
+                  current_compute_node.data.geom = mesh;//v,f,n directly
+                  current_compute_node.data.geom_type = "raw";//mean that it provide the v,f,n directly
+                  document.getElementById("stopbeads_lbl").innerHTML = "building "+ current_compute_index + " / " + graph.nodes.length;
+                  if (NextComputeIgredient() && (!(stop_current_compute))) {
+                      //update label_elem
+                      buildLoopAsync();
+                  }
+                  else {
+                    document.getElementById("stopbeads_lbl").innerHTML = "finished "+current_compute_index + " / " + graph.nodes.length;
+                    stopBeads();
+                  }
+              },
+              error: function (error) {
+                  console.log(error);
+              },
+              async: true,
+              data: formData,
+              cache: false,
+              contentType: false,
+              processData: false,
+              timeout: 60000
+          });
+  }
+
 
 function buildCMS1(e){
     //query the server for a cms given a PDB - see template.html for example and the cgi-bin
@@ -802,8 +908,10 @@ function getCurrentNodesAsCP_JSON(some_data,some_links){
       	  }
       	  continue;
       }
-      if (!node.children) //ingredient
+      if (!node.children && node.data.nodetype!=="compartment") //ingredient
       {
+        //check if include else continue
+        if ("include" in node.data && node.data.include === false) continue;
       	var cname = node.parent.data.name;
         if (cname === "cytoplasm") cname = "cytoplasme";//outside ?
         if (!(cname in jsondic["compartments"]) && (node.parent!==aroot)) {
@@ -863,7 +971,63 @@ function getCurrentNodesAsCP_SER_JSON(some_data){
 		return jsondic;
 }
 
-function saveCurrentCVJSON(){}
+function saveCurrentCVJSON(){
+    var agrid = gridArray[0];//gridArray[0].dataView
+    var processRow = function (row) {
+          var finalVal = '';
+          for (var j = 0; j < row.length; j++) {
+              if (row[1] === false) continue;//include column
+              var innerValue = row[j] === null || typeof row[j] == 'undefined' ? '' : row[j].toString();
+              if (row[j] instanceof Date) {
+                  innerValue = row[j].toLocaleString();
+              };
+              var result = innerValue.replace(/"/g, '""');
+              if (result.search(/("|,|;|\n)/g) >= 0)
+                  result = '"' + result + '"';
+              if (j > 0)
+                  finalVal += ',';
+                  finalVal += result;
+          }
+          return finalVal + '\n';
+      };
+
+      var csvFile = '';
+      var rows = [];
+      var colname = [];
+      for (var j = 0, len = agrid.getColumns().length; j < len; j++) {
+          colname.push(agrid.getColumns()[j].name);
+      }
+      rows.push(colname);
+      var singlerow = [];
+      for (var i = 0, l = agrid.dataView.getLength(); i < l; i++) {
+          for (var j = 0, len = agrid.getColumns().length; j < len; j++) {
+              singlerow.push(agrid.getDataItem(i)[agrid.getColumns()[j].field]);
+          }
+          rows.push(singlerow);
+          singlerow = [];
+      }
+
+      for (var i = 0; i < rows.length; i++) {
+          csvFile += processRow(rows[i]);
+      }
+      var filename = graph.nodes[0].data.name +"_meso.csv";
+      var blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });
+      if (navigator.msSaveBlob) { // IE 10+
+          navigator.msSaveBlob(blob, filename);
+      } else {
+          var link = document.createElement("a");
+          if (link.download !== undefined) { // feature detection
+              // Browsers that support HTML5 download attribute
+              var url = URL.createObjectURL(blob);
+              link.setAttribute("href", url);
+              link.setAttribute("download", filename);
+              link.style.visibility = 'hidden';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+          }
+      }
+}
 
 function download(content, fileName, contentType) {
     var a = document.createElement("a");
@@ -879,6 +1043,14 @@ function download(content, fileName, contentType) {
 
 function SaveRecipeCellPACK(){
 	console.log("save recipe");
+  //current score?
+  console.log(current_ready_state);
+  console.log(current_ready_state_value);
+
+  if (current_ready_state === 0) {
+    alert( " this is recipe is incomplete, can't export\n missing ??\n"+JSON.stringify(current_ready_state_value) );
+    return;
+  }
 	var jdata = getCurrentNodesAsCP_JSON(graph.nodes,graph.links);
   console.log(jsondic.recipe.name);
   console.log (JSON.stringify(jdata));
@@ -889,6 +1061,10 @@ function SaveRecipeCellPACK(){
 function SaveRecipeCellPACK_serialized()
 {
 	console.log("save recipe serialized");
+  if (current_ready_state === 0) {
+    alert( " this is recipe is incomplete, can't export\n missing ??\n"+JSON.stringify(current_ready_state_value) );
+    return;
+  }
 	var jdata = serializedRecipe(graph.nodes,graph.links);
   console.log(jdata);
   console.log (JSON.stringify(jdata));

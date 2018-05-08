@@ -1,5 +1,4 @@
 #!/usr/bin/env /usr/local/www/projects/mgltools2/bin/pythonsh
-
 import os
 import time
 import cgi
@@ -233,9 +232,10 @@ def getBiologicalUnit(app,mol,selstr,bu):
     if not hasattr(mol, 'pdbHeader'):
         import prody
         mol.pdbHeader = prody.parsePDB(mol.filename, model=0, header=True)
-    print "bu header biomt"
+    print ("bu header biomt")
     print mol.pdbHeader['biomoltrans'].keys()
     biotrans = mol.pdbHeader['biomoltrans'][str(bu)][0]
+    selStr = "chain "+' '.join(biotrans)
     # select the atom set to which to apply the transformation
     nbTrans = (len(biotrans)-1)/3
     nmol = None
@@ -246,7 +246,7 @@ def getBiologicalUnit(app,mol,selstr,bu):
                       [float(x) for x in biotrans[i*3+2].split()],
                       [float(x) for x in biotrans[i*3+3].split()]]
         biomt.append(mat.tolist())
-    return biomt
+    return [biomt,selStr]
 
 def getCoarseMolSurf(app, mol, selstr, bu="", surfName='coarseMolSurf', perMol=True,
              gridSize=32, padding=0., resolution=-0.3, isovalue='fast approximation'):
@@ -257,6 +257,11 @@ def getCoarseMolSurf(app, mol, selstr, bu="", surfName='coarseMolSurf', perMol=T
         selstr = ""
         molSel = mol.selectMolKit("")
     app.lazyLoad("coarseMolecularSurfaceCmds", commands=["computeCoarseMolecularSurface"], package="PmvApp")
+    #before computing check ger the biomt
+    biomt=[]
+    if bu is not None and bu!="":
+        biomt,selStr = getBiologicalUnit(app,mol,selstr,bu)
+        molSel = mol.select(selStr)
     app.computeCoarseMolecularSurface(molSel, surfName= surfName, gridSize=gridSize, padding=padding, resolution=resolution, bind_surface_to_molecule=False, isovalue=isovalue)
     mol = molSel.getAtomGroup().getMolecule()
     geom = mol.geomContainer.geoms[surfName]
@@ -269,7 +274,6 @@ def getCoarseMolSurf(app, mol, selstr, bu="", surfName='coarseMolSurf', perMol=T
     n=[]
     offset = len(verts)
     if bu is not None and bu!="":
-        biomt = getBiologicalUnit(app,mol,selstr,bu)
         #transform the verts with biomt and accumulate faces and normal_src
         for i in range(len(biomt)) :
             #apply the transformation for all vertex
@@ -314,7 +318,7 @@ def main():
     bu = None
     if form.has_key("bu"):
         bu = form.getvalue("bu")# get AU,BUi,SUPERCELL,UNITCELL
-        if (bu[:2].lower() == "bu") : bu = bu[2:]
+        if (bu[:2].lower() == "bu" or bu[:2].lower() == "ba") : bu = bu[2:]
         if (bu == "UNITCELL" or bu == "SUPERCELL"): bu = None
         if (bu == "AU"): bu=None
     #get model from the form
@@ -355,9 +359,18 @@ def main():
         # resolution and isovalue need to be change in case of alpha-carbon structure only.
         default_iso = 'fast approximation'
         default_res = -0.3 #-0.1 for Calpah
+        iso = 1.0
+        res = -0.1
+        gsize = 16
+        if form.has_key("iso"):
+            iso = float(form["iso"])
+        if form.has_key("res"):
+            res = float(form["res"])
+        if form.has_key("gsize"):
+            gsize = int(form["gsize"])
         # compute the surface and print the json string with faces and verts:
-        geomDict = getCoarseMolSurf(app, mol, selstr, bu = bu, surfName="coarseSurf_1", gridSize=16,
-        padding=0., resolution=-0.1, isovalue=1.0)
+        geomDict = getCoarseMolSurf(app, mol, selstr, bu = bu, surfName="coarseSurf_1", gridSize=gsize,
+        padding=0., resolution=iso, isovalue=res)
         import json
         jsonstr = json.dumps(geomDict)
         #print "<br> <br> <br>"
@@ -378,6 +391,7 @@ def main():
 
 try:
     print 'Content-type: text/html\n\n'
+    print "Access-Control-Allow-Origin: *"
     #print "Hello"
     main()
 except:

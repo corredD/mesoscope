@@ -133,6 +133,10 @@
 <script src="https://d3js.org/d3-geo.v1.min.js"></script-->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js"></script>
 
+ <!--d3 to html easy -->
+ <!--script src="http://cdn.rawgit.com/jamesleesaunders/d3-ez/master/build/d3-ez.js"></script-->
+ <link rel="stylesheet" type="text/css" href="http://cdn.rawgit.com/jamesleesaunders/d3.ez/master/build/d3-ez.css" />
+
   <!-- NGL  -->
   <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js"></script>
 
@@ -469,10 +473,9 @@
         <h2>Column Mapping</h2>
       </div>
       <div class="modal-body" id="slickitems">
-        <!--div class="modal-canvas" id="modalcanvasdiv"-->
-        <canvas class="modal-canvas" id="modalcanvas"  width="400" height="400"></canvas>
-        <!--/div-->
         <div class="modal-form" id="modalform"></div>
+        <canvas class="modal-canvas" id="modalcanvas"  width="400" height="400"></canvas>
+        <div id="listholder"  class="modal-list"></div>
       </div>
       <hr/>
       <div class="modal-footer">

@@ -690,7 +690,7 @@ function CreateDataColumnFromD3Nodes(agraph) {
   var columns = [];
   console.log(agraph.length);
   for (var i = 0; i < agraph.length; i++) {
-    if (!agraph[i].children && "source" in agraph[i].data) {
+    if (!agraph[i].children && "source" in agraph[i].data && "nodetype" in agraph[i].data && agraph[i].data.nodetype === "ingredient") {
       var elem = JSON.parse(JSON.stringify(agraph[i].data));
       if ("source" in elem) {
         elem.bu = ("bu" in elem.source) ? elem.source.bu : "";
@@ -712,7 +712,7 @@ function CreateDataColumnFromD3Nodes(agraph) {
       data.push(elem);
     }
   }
-  console.log("build data for grid");
+  console.log("build data for grid",agraph);
   //console.log(JSON.stringify(data));
   return {
     "data": data,
@@ -849,6 +849,14 @@ function CreateNodeColumns() {
       field: "id",
       sortable: true,
     },
+    {
+      id: "include",
+      name: "include",
+      field: "include",
+      sortable: true,
+      formatter: Slick.Formatters.Checkmark,
+      editor: Slick.Editors.Checkbox
+    }, //YesNoSelect
     {
       id: "uniprot",
       name: "uniprot",
@@ -2001,7 +2009,9 @@ function openDetailsOld(newone) {
 function addToModalDiv(parentContainer, divclass, innerHtml) {
   var div = document.createElement("div");
   div.setAttribute("class", divclass);
-  div.innerHTML = innerHtml;
+  var label = document.createElement("label");
+  label.innerHTML = innerHtml;
+  div.appendChild(label);
   parentContainer.appendChild(div);
   return div;
 }

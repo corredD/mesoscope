@@ -14,6 +14,12 @@ var current_scale = 1;
 var localisation_tag = ["cytosol","periplasm","inner_membrane","outer_membrane","membrane","cytoplasm","lumen"];
 var surface_tag = ["membrane","x","surface","tm"];
 var current_ready_state = 0;//0-1-2
+var current_ready_state_value;//0-1-2
+
+var sheet_name=[];
+var current_data_header,
+		current_jsondic,
+		current_rootName;
 
 //eukaryote type
 var comp_template_cell = {
@@ -142,16 +148,16 @@ function EvaluateCurrentReadyState(){
 							&& "pdb" in d.data.source
 							&& (!d.data.source.pdb || d.data.source.pdb === "None"
 						|| d.data.source.pdb === "null" || d.data.source.pdb === ""))  sources_state++;
-				if ( "data" in d && "source" in d.data
-							&& "pos" in d.data
-							&& (!d.data.pos || d.data.pos === "None"
+				//if ( "data" in d && "source" in d.data
+				//			&& "pos" in d.data
+				if (!d.data.pos || d.data.pos === "None"
 							|| d.data.pos === "null" || d.data.pos.length === 0
-							|| d.data.pos === ""))  beads_state++;
+							|| d.data.pos === "")  beads_state++;
 				if ("data" in d && "count" in d.data && "molarity" in d.data
 							&& d.data.count === 0 && d.data.molarity === 0.0) count_molarity_state++;
-				if( "data" in d && "geom" in d.data
-							&& (!d.data.geom || d.data.geom === "None"
-						|| d.data.geom === "null" || d.data.geom === ""))  geom_state++;
+				//if ( "data" in d && "geom" in d.data
+				if (!d.data.geom || d.data.geom === "None"
+						|| d.data.geom === "null" || d.data.geom === "")  geom_state++;
 				if ( "data" in d && "visited" in d.data
 									&& !d.data.visited ) node_view_state++;
 			}
@@ -176,15 +182,16 @@ function EvaluateCurrentReadyState(){
 	var score_critical = (res.geom+res.beads+res.compgeom)/3;//critical part need to yellow
 	var perfect_score =  0;
 	for (var key in res) {
-		console.log(key,res[key]);
+		//console.log(key,res[key]);
     perfect_score += res[key];
 	};
 	perfect_score/=7;
-	console.log(score_critical);
-	console.log(perfect_score,perfect_score/7);
+	//console.log(score_critical);
+	//console.log(perfect_score,perfect_score/7);
 	current_ready_state = 0;
 	if (score_critical === 1) current_ready_state = 1;
 	else if (perfect_score === 1) current_ready_state = 2;
+	current_ready_state_value = res;
 }
 
 function switchMode(e){
@@ -242,6 +249,8 @@ var allfield={
 	    pcpalvector_index:-1,
 			molecularweight_index:-1,
 			confidence_index:-1,
+			include_index:-1,
+			color_index:-1,
 	    compartments:-1//special case where one column per comnpartment
 	    };
 var allfield_labels={
@@ -259,6 +268,8 @@ var allfield_labels={
 	    pcpalvector_index:"protein principal axis which will be align to the compartment surface",
 			molecularweight_index:"protein molecular weight",
 			confidence_index:"overall confidence score",
+			include_index:"include the ingredient (x,null,true,false)",
+			color_index:"predefined color for ingredient (r,g,b)",
 	    compartments:""//special case where one column per comnpartment
 	    };
 var allfield_query={
@@ -276,6 +287,8 @@ var allfield_query={
 	    pcpalvector_index:["pcpalVector","principalvector","principalaxis","axis","vector"],
 			molecularweight_index:["weight","molecularweight","molecular"],
 			confidence_index:["confidence","score"],
+			include_index:["include"],
+			color_index:["color","rgb"],
 	    compartments:""//special case where one column per comnpartment
 	    };
 
@@ -357,15 +370,21 @@ function OneIngredient(ing_dic,surface) {
 	  var elem = {};
 	  var size = ("encapsulatingRadius" in ing_dic)? ing_dic["encapsulatingRadius"] : 40;
 	  var name = ing_dic["name"];
-	  var source = ("pdb" in ing_dic)? ing_dic["pdb"] : "None";
-	  if ("source" in ing_dic && source === "None") {
-	  	if ("pdb" in ing_dic["source"])
-	  	{
-	  		source = ing_dic["source"]["pdb"];
-	  		}
-	  	}
-	  if (source && source.length!=4){
-	     if ( (source.slice(-4,source.length) !== ".pdb" )&&(!source.startsWith("EMD"))) source = source+".pdb";
+	  var pdb = ("pdb" in ing_dic)? ing_dic["pdb"] : "None";
+		var source = {"pdb":pdb,"bu":"","model":"","selection":""};
+	  if ("source" in ing_dic){//} && pdb === "None") {
+			source = ing_dic["source"];
+			if (!("pdb" in source)) source.pdb = "None";
+			if (!("bu" in source)) source.bu = "";
+			if (!("model" in source)) source.model = "";
+			if (!("selection" in source)) source.selection = "";
+			//if ("pdb" in ing_dic["source"])
+	  	//{
+	  	//	p = ing_dic["source"]["pdb"];
+	  	//	}
+	  }
+	  if (source.pdb && source.pdb.length!=4){
+	     if ( (source.pdb.slice(-4,source.pdb.length) !== ".pdb" )&&(!source.pdb.startsWith("EMD"))) source.pdb = source.pdb+".pdb";
 	  }
 	  var label = ("label" in ing_dic)? ing_dic["label"] : name;
 	  var uniprot = ("uniprot" in ing_dic)? ing_dic["uniprot"] : "";
@@ -392,7 +411,7 @@ function OneIngredient(ing_dic,surface) {
 		//console.log(offset);
 		//console.log(principalVector);
 	  var elem ={"name":name,"size":size,"molecularweight":mw,"confidence":confidence,
-	  	"source":{"pdb":source},"count":acount,
+	  	"source":source,"count":acount,
 	  	"molarity":molarity, "surface":surface,"geom":geom,"geom_type":geom_type,"label":label,
 	  	"uniprot":uniprot,"pcpalAxis":principalVector,"offset":offset,"pos":p,"radii":r,"nodetype":"ingredient"};
 	  //console.log(JSON.stringify(elem));
@@ -515,8 +534,13 @@ function changeColumnMapping(aselect) {
 		//if (!csv_mapping) allfield[aselect.id] = (txt === "Absent")? -1 : parseInt(aselect.value);
 		//else allfield[aselect.id] = txt;
 		allfield[aselect.id] = (txt === "Absent")? -1 : parseInt(aselect.value);
-		console.log("change selection to ");
+		console.log("change selection to ",aselect.id);
 		console.log(allfield[aselect.id]);
+		if (aselect.id === "location_index" || aselect.id === "compartment_index" ) {
+			//update the parsing
+			var loc_comp = guessCompartmentList(current_data_header, current_jsondic, current_rootName);
+			UpdateCompartmentModalCanvas(loc_comp);
+		}
 		//recheck compartment settings ?
 	}
 
@@ -604,11 +628,11 @@ function GuessColumnSingle(field1name,allfield2){
 
 function createOneColumnSelect(field1name,allfield2,divparent) {
 		//Create and append select list
-    var elem =  addToModalDiv( divparent, 'alabel', allfield_labels[field1name]);
+    var elem =  addToModalDiv( divparent, 'modal-content-elem', allfield_labels[field1name]);
 		var selectList = document.createElement("select");
 		//onchange="myCallback();" onfocus="this.selectedIndex=-1;this.blur();"
 		selectList.id = field1name;
-		divparent.appendChild(selectList);
+		elem.appendChild(selectList);
 		//Create and append the options
 		var aind = GuessColumn(field1name,allfield2);
     var sopt;
@@ -663,15 +687,16 @@ function guessCompartmentFromColumn(data, rootName) {
 		children: []
 	};
 
-	console.log("indexes ", allfield.location_index, allfield.compartments_index);
-	if ( (!allfield.location_index || allfield.location_index ===-1) && (!allfield.compartments_index || allfield.compartments_index ===-1) ) return comp_dic;
-	console.log("indexes ", allfield.location_index, allfield.compartments_index,start_index,data.length);
+	//when to use root ?
+	console.log("indexes ", allfield.location_index, allfield.compartment_index);//-1, undefined ?
+	if ( (!allfield.location_index || allfield.location_index ===-1) && (!allfield.compartment_index || allfield.compartment_index ===-1) ) return comp_dic;
+	console.log("indexes ", allfield.location_index, allfield.compartment_index,start_index,data.length);
   for (var i=start_index;i<data.length;i++)
 	{
 			var loc = (allfield.location_index && allfield.location_index !==-1)? data[i][allfield.location_index]:null;
-			var comp = (allfield.compartments_index && allfield.compartments_index !==-1)? data[i][allfield.compartments_index]:null;
+			var comp = (allfield.compartment_index && allfield.compartment_index !==-1)? data[i][allfield.compartment_index]:null;
 			//console.log("loc and comp",loc,comp);
-			if (loc) {
+			if (loc||comp) {
 				//if (loc_name.indexOf(loc) === -1) {
 				//	loc_name.push(loc);
 				//	//comp_dic[comp]={};
@@ -687,11 +712,11 @@ function guessCompartmentFromColumn(data, rootName) {
 								children: []
 							};
 							comp_dic[comp]=cdata;
-							comp_dic_hierarchy[rootName].children.push(comp_dic[comp]);
-							comp_dic[comp]= comp_dic_hierarchy.children[comp_dic_hierarchy.children.length-1];
+							comp_dic_hierarchy.children.push(comp_dic[comp]);//rootComp.children.push(comp_dic[comp]);
+							//comp_dic[comp]= comp_dic_hierarchy.children[comp_dic_hierarchy.children.length-1];
 							console.log("comp is ",comp);
 						}
-						if (loc && loc_name.indexOf(loc) === -1) {
+						if (loc && loc_name.indexOf(loc) === -1 && comp_name.indexOf(loc) === -1) {
 							loc_name.push(loc);
 							var cdata = {
 								nodetype: "compartment",
@@ -699,10 +724,12 @@ function guessCompartmentFromColumn(data, rootName) {
 								size: 10,
 								children: []
 							};
-							comp_dic[comp].children.push(cdata);
+							//rootComp.children[rootComp.children.length-1].children.push(cdata);
+							comp_dic_hierarchy.children[comp_dic_hierarchy.children.length-1].children.push(cdata);
+							//check if surface ?
 						}
 				}
-				else {
+				else {//no comp assume only one big vesicle
 					if (loc && loc_name.indexOf(loc) === -1) {
 						loc_name.push(loc);
 						var cdata = {
@@ -711,12 +738,14 @@ function guessCompartmentFromColumn(data, rootName) {
 							size: 10,
 							children: []
 						};
-						rootComp.children.push(cdata);
+						if (IsSurface(loc)) cdata.surface = true;
+						comp_dic_hierarchy.children.push(cdata);//rootComp.children.push(cdata);
+
 					}
 			}
 		}
 	}
-	comp_dic_hierarchy.children.push(rootComp);
+	//comp_dic_hierarchy.children.push(rootComp);
 	return comp_dic_hierarchy;
 }
 
@@ -735,21 +764,51 @@ function getModalMapping(data_header,jsondic,rootName) {
   	var btn2 = document.getElementById("cancelDetail");
 
 		//is it brett format with column per compartments
+		var comp_column_graph ={
+			nodetype: "compartment",
+			name: "root",
+			size: 10,
+			children: []
+		};
+		var comp_column_graph_key = {};
 		comp_column_names = [];
 		comp_column = false;
 		for (var i = 0; i < data_header.length; i++) {
 			var h = data_header[i];
+			//use the slice ?
 			if (h.slice(0,2)==="I_"){ //interior
 					comp_column =true;
+					var cname = data_header[i].slice(2,data_header[i].length);
 					//if (!csv_mapping)comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":false});
 					//else comp_column_names.push({"id":data_header[i],"name":data_header[i].slice(2,data_header[i].length),"surface":false});
 					comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":false});
+					if (!(cname in comp_column_graph_key) ) {
+						var cdata = {
+							nodetype: "compartment",
+							name: cname,
+							size: 10,
+							children: []
+						};
+						comp_column_graph.children.push(cdata);
+						comp_column_graph_key[cname] = comp_column_graph.children[comp_column_graph.children.length-1];
+				}
 			}
 			if (h.slice(0,2)==="S_"){ //surface
 					comp_column =true;
+					var cname = data_header[i].slice(2,data_header[i].length);
 					//if (!csv_mapping) comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":true});
 					//else comp_column_names.push({"id":data_header[i],"name":data_header[i].slice(2,data_header[i].length),"surface":true});
 					comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":true});
+					if (!(cname in comp_column_graph_key) ) {
+						var cdata = {
+							nodetype: "compartment",
+							name: cname,
+							size: 10,
+							children: []
+						};
+						comp_column_graph.children.push(cdata);
+						comp_column_graph_key[cname] = comp_column_graph.children[comp_column_graph.children.length-1];
+				}
 			}
 		}
 		console.log("found "+comp_column_names.length+" compartments");
@@ -758,21 +817,27 @@ function getModalMapping(data_header,jsondic,rootName) {
   	for (var c=0;c < comp_column_names.length;c++) {
   		astr +="<br>"+comp_column_names[c].name+" surface "+comp_column_names[c].surface;
   		}
-		var textelem =  addToModalDiv( item_cont, 'alabel', astr);
 
     for(var k in allfield) {
 				if (k==="compartments") continue;
 				createOneColumnSelect(k,data_header,item_cont)
     }
-
-		var loc_comp =guessCompartmentList(data_header, jsondic,rootName);
+		current_data_header = data_header;
+		current_jsondic = jsondic;
+	  current_rootName = rootName;
+		var loc_comp;
+		if (!(comp_column))
+				loc_comp = guessCompartmentList(data_header, jsondic,rootName);
+		else
+				loc_comp = comp_column_graph;
 		console.log("guessed "+Object.keys(loc_comp).length+" compartments");
 		console.log(loc_comp);
-		astr = "<br>guessed "+Object.keys(loc_comp).length+" compartments";
+		astr += "<br>guessed "+Object.keys(loc_comp).length+" compartments";
 		//for (var co in loc_comp) {
 		//	astr +="<br>"+co+" "+loc_comp[co];
 		//}
-		textelem.innerHTML+=astr;
+		var textelem =  addToModalDiv( item_cont, 'modal-content-elem', astr);
+		//textelem.innerHTML+=astr;
 
     modal_cont.style.display = "block";
 
@@ -801,7 +866,7 @@ function mainParsingSpreadshit(jsondic,rootName){
 	console.log(jsondic);
 	//console.log(JSON.parse(jsondic));
 	//parse for getting the headr position
-	var sheet_name=[];
+	sheet_name=[];
 	for ( var k in jsondic){
 		sheet_name.push(k);
 	}
@@ -889,7 +954,7 @@ function ParseBU(cellvalue)
 function getDataFromDic(jsondic) {
 	var data;
 	if (!csv_mapping){
-		var sheet_name=[];
+		sheet_name=[];
 		for ( var k in jsondic){
 			sheet_name.push(k);
 		}
@@ -908,6 +973,87 @@ function getDataFromDic(jsondic) {
 		data = jsondic;
 		}
 	return data;
+}
+
+function getCompartmentDefault(idata,elem){
+	var loc_comp = (location_index!==-1)?idata[location_index]:"";
+	var comp =  (allfield.compartment_index!==-1) ? idata[allfield.compartment_index]: "";
+
+	var comp_elem = null;
+	if (!comp_column) {
+		//not the multicolumn compartment definition
+		if (comp!==""){
+				// a column compartment was set by user
+				//use the modal mapping
+				if (comp in compartments){
+					comp_elem = compartments[comp];
+					}
+				else {
+					compartments[comp]={"name":comp,"children":[],"nodetype":"compartment"};
+					comp_elem = compartments[comp];
+					graph["children"].push(comp_elem);
+					}
+		}
+		else {
+				//use the loc_comp to get the compartment
+				let acomp_elem = GetCompFromLocalisation(loc_comp);
+				if (acomp_elem in compartments) comp_elem = compartments[acomp_elem];
+				else {
+					compartments[acomp_elem]={"name":acomp_elem,"children":[],"nodetype":"compartment"};
+					comp_elem = compartments[acomp_elem];
+					graph["children"].push(comp_elem);
+				}
+		}
+	 }
+	else {
+			//console.log("check "+comp_column_names.length);
+			//look at all the comp_column, adn the one with a concentration define the compartments
+			for (var c=0;c < comp_column_names.length;c++) {
+				var values = idata[comp_column_names[c].id];//can be a count or a molarity
+				//console.log("comp is "+c+" "+comp_column_names[c].id+" "+values);
+				if (values && values!==null && values!=="" && values!==0) {
+						if (isInteger(values)) elem.count = values;
+						else if (isFloat(values)) elem.molarity = values;
+						else if (molarity_index ===-1) elem.molarity = values;
+						elem.surface = comp_column_names[c].surface;
+						comp = comp_column_names[c].name;
+						if (comp in compartments){
+							comp_elem = compartments[comp];
+							}
+						else {
+							compartments[comp]={"name":comp,"children":[],"nodetype":"compartment"};
+							comp_elem = compartments[comp];
+							graph["children"].push(comp_elem);
+						}
+					 // console.log(isInteger(values));
+					 // console.log(isFloat(values))
+						//undefined ?>
+					//  console.log("comp for "+name+" "+values+" "+comp_column_names[c].name+" "+ comp_column_names[c].surface+" "+comp_column_names[c].id+" "+elem.surface);
+				}
+			}
+		}
+	if (comp_elem===null) {
+		if (loc_comp==="cytoplasm"){
+				comp_elem=graph;
+		}
+		else {
+		 comp = rootName+"_compartment";
+		//no compartment provided, use the recipe name as a compartments?
+			if (comp in compartments){
+				comp_elem = compartments[comp];
+				}
+			else {
+				compartments[comp]={"name":comp,"children":[]};
+				comp_elem = compartments[comp];
+				graph["children"].push(comp_elem);
+				}
+		}
+	}
+
+	//alert(comp_elem.name);
+	elem.surface = IsSurface(loc_comp)
+	//console.log("checkforsurface for "+elem.name+" "+loc_comp+" "+elem.surface);
+	comp_elem["children"].push(elem);
 }
 
 function parseSpreadShitRecipe(data_header,jsondic,rootName)
@@ -936,12 +1082,16 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
   console.log("mapping is ");
   console.log(allfield);
 	var compartments={};
-	var graph ={};//the main graph
-	var ingr_names=[];///so we can check for duplicate->compartments ?
-  graph["name"] = rootName;
-  graph["children"]=[];
-  graph["nodetype"]="compartment";
+	var compgraph = getModalCompGraph() ;//the main graph
+	var graph = compgraph.graph ;//the main graph
+	var float_compartments = compgraph.flat;
 
+	var ingr_names=[];///so we can check for duplicate->compartments ?
+  //graph["name"] = rootName;
+  //graph["children"]=[];
+  //graph["nodetype"]="compartment";
+
+	//setup the graph using the modal
 	/*if ((!comp_column) && (compartments_index==-1)){
 		//need to find out the compartment from localisation
 		graph["children"].push(comp_template_cell);//root->periplasm->cytosol
@@ -989,7 +1139,7 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
         var molarity = (molarity_index!==-1)?idata[molarity_index]:0.0;
 				if (!molarity || molarity ==="") molarity = 0.0;
 
-        var loc_comp = (location_index!==-1)?idata[location_index]:"";
+
         var bu = (biological_unit_index!==-1)? ParseBU(idata[biological_unit_index]):-1;//get bu
         var sele = (string_selection_index!==-1)?idata[string_selection_index]:"";//chain:residues?
 				var uniprot = (uniprot_index!==-1) ? idata[uniprot_index]:"";
@@ -1011,91 +1161,93 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
         	if (idata[model_index]!=="")
         	   model = idata[model_index];
         }
-
+				var include = true;
+				if (allfield.include_index!==-1) {
+					var tmp = idata[allfield.include_index];
+					console.log("include is ",include);
+					if (tmp === "x") include = true;
+					if (tmp === "" || tmp === 'undefined') include = false;
+					if (tmp === true) include = true;
+					if (tmp === false) include = false;
+				}
+				var color;
+				if (allfield.color_index !==-1) {
+					if (idata[allfield.color_index]) color = idata[allfield.color_index].split(',').map(Number);//chain:residues?
+				}
         sele = GetNGLSelection(sele,model);
-        var elem = {"name":name,"size":25,"molecularweight":mw,"confidence":confidence,
-        	"source":{"pdb":source,"bu":bu,"selection":sele},"count":acount,
-        	"molarity":molarity, "surface":false,"geom":geom,"geom_type":"file",
+        var elem = {
+					"name":name,"size":25,"molecularweight":mw,"confidence":confidence,"color":color,
+        	"source":{"pdb":source,"bu":bu,"selection":sele,"model":model},"count":acount,
+        	"molarity":molarity, "surface":false,"geom":geom,"geom_type":"file","include":include,
         	"uniprot":uniprot,"pcpalAxis":axis,"offset":offset,  "nodetype":"ingredient"};
         //alert(elem.name);
-        var comp =  (allfield.compartment_index!==-1) ? idata[allfield.compartment_index]: "";
-        //console.log("allfield.compartment_index,comp?");
-        //console.log(allfield.compartment_index,comp,comp_column);
-        var comp_elem = null;
-        if (!comp_column) {
+				var loc_comp = (location_index!==-1)?idata[location_index]:"";
+				var surface = IsSurface(loc_comp);
+				var comp =  (allfield.compartment_index!==-1) ? idata[allfield.compartment_index]: "";
+				var comp_elem = null;
+				if (!comp_column) {
 					//not the multicolumn compartment definition
-	        if (comp!==""){
-						  // a column compartment was set by user
-	        	  if (comp in compartments){
-	        	  	comp_elem = compartments[comp];
-	        	  	}
-	        	  else {
-	        	  	compartments[comp]={"name":comp,"children":[],"nodetype":"compartment"};
-	        	  	comp_elem = compartments[comp];
-	        	  	graph["children"].push(comp_elem);
-	        	  	}
-	        }
-					else {
-							//use the loc_comp to get the compartment
-							let acomp_elem = GetCompFromLocalisation(loc_comp);
-							if (acomp_elem in compartments) comp_elem = compartments[acomp_elem];
-							else {
-								compartments[acomp_elem]={"name":acomp_elem,"children":[],"nodetype":"compartment"};
-								comp_elem = compartments[acomp_elem];
-								graph["children"].push(comp_elem);
-							}
+					if (comp!==""){
+							// a column compartment was set by user
+							//use the modal mapping
+							comp_elem = float_compartments[comp];
 					}
-	       }
-	      else {
-	      	  //console.log("check "+comp_column_names.length);
-	        	//look at all the comp_column, adn the one with a concentration define the compartments
-	        	for (var c=0;c < comp_column_names.length;c++) {
-	        		var values = idata[comp_column_names[c].id];//can be a count or a molarity
-	        		//console.log("comp is "+c+" "+comp_column_names[c].id+" "+values);
-	        		if (values && values!==null && values!=="" && values!==0) {
-	        				if (isInteger(values)) elem.count = values;
-	        				else if (isFloat(values)) elem.molarity = values;
+					else {
+							//use location
+							//use the loc_comp to get the compartment
+							comp_elem = float_compartments[loc_comp];
+							}
+				 }
+				else {
+						//console.log("check "+comp_column_names.length);
+						//look at all the comp_column, adn the one with a concentration define the compartments
+						for (var c=0;c < comp_column_names.length;c++) {
+							var values = idata[comp_column_names[c].id];//can be a count or a molarity
+							//console.log("comp is "+c+" "+comp_column_names[c].id+" "+values);
+							if (values && values!==null && values!=="" && values!==0) {
+									if (isInteger(values)) elem.count = values;
+									else if (isFloat(values)) elem.molarity = values;
 									else if (molarity_index ===-1) elem.molarity = values;
-	        				elem.surface = comp_column_names[c].surface;
-	        				comp = comp_column_names[c].name;
-			        	  if (comp in compartments){
-			        	  	comp_elem = compartments[comp];
-			        	  	}
-			        	  else {
-			        	  	compartments[comp]={"name":comp,"children":[],"nodetype":"compartment"};
-			        	  	comp_elem = compartments[comp];
-			        	  	graph["children"].push(comp_elem);
-			        	  }
-			        	 // console.log(isInteger(values));
-			        	 // console.log(isFloat(values))
-			        	  //undefined ?>
-			        	//  console.log("comp for "+name+" "+values+" "+comp_column_names[c].name+" "+ comp_column_names[c].surface+" "+comp_column_names[c].id+" "+elem.surface);
-	        		}
+									elem.surface = comp_column_names[c].surface;
+									comp = comp_column_names[c].name;
+									comp_elem = float_compartments[comp];
+									/*if (comp in compartments){
+										comp_elem = compartments[comp];
+										}
+									else {
+										compartments[comp]={"name":comp,"children":[],"nodetype":"compartment"};
+										comp_elem = compartments[comp];
+										graph["children"].push(comp_elem);
+									}*/
+								 // console.log(isInteger(values));
+								 // console.log(isFloat(values))
+									//undefined ?>
+								//  console.log("comp for "+name+" "+values+" "+comp_column_names[c].name+" "+ comp_column_names[c].surface+" "+comp_column_names[c].id+" "+elem.surface);
+							}
 						}
-	        }
-        if (comp_elem===null) {
+					}
+				if (comp_elem===null) {
 					if (loc_comp==="cytoplasm"){
-	        		comp_elem=graph;
-	        }
+							comp_elem=graph;
+					}
 					else {
 					 comp = rootName+"_compartment";
-        	//no compartment provided, use the recipe name as a compartments?
-        	  if (comp in compartments){
-        	  	comp_elem = compartments[comp];
-        	  	}
-        	  else {
-        	  	compartments[comp]={"name":comp,"children":[]};
-        	  	comp_elem = compartments[comp];
-        	  	graph["children"].push(comp_elem);
-        	  	}
-        	}
+					//no compartment provided, use the recipe name as a compartments?
+						if (comp in compartments){
+							comp_elem = compartments[comp];
+							}
+						else {
+							compartments[comp]={"name":comp,"children":[]};
+							comp_elem = compartments[comp];
+							graph["children"].push(comp_elem);
+							}
+					}
 				}
 
-        //alert(comp_elem.name);
+				//alert(comp_elem.name);
 				elem.surface = IsSurface(loc_comp)
 				//console.log("checkforsurface for "+elem.name+" "+loc_comp+" "+elem.surface);
-        comp_elem["children"].push(elem);
-
+				comp_elem["children"].push(elem);
 	}
 
 	var agraph_links=[];// { source: 0, target: 1, graph: 0 },
@@ -1368,7 +1520,7 @@ function checkAttributes(agraph){
 	property_mapping.size = {"min":999999,"max":0};
 	property_mapping.molarity = {"min":999999,"max":0};
 	property_mapping.count = {"min":999999,"max":0};
-
+	property_mapping.confidence = {"min":999999,"max":0};
 	for (var i=0;i<agraph.length;i++){
 		if (!agraph[i].children) {
 		agraph[i].data.nodetype = "ingredient";
@@ -1378,12 +1530,13 @@ function checkAttributes(agraph){
 		//if (agraph[i].children && agraph[i].parent) agraph[i].r = agraph[i].r/2;
     //agraph[i].r = agraph[i].r/2;
     if (!("uniprot" in agraph[i].data)) agraph[i].data.uniprot = "";
-		if (!("pcpalAxis" in agraph[i].data)) agraph[i].data.pcpalAxis ="";
-		if (!("offset" in agraph[i].data)) agraph[i].data.offset = "";
+		if (!("pcpalAxis" in agraph[i].data)) agraph[i].data.pcpalAxis =[0,0,1];
+		if (!("offset" in agraph[i].data)) agraph[i].data.offset = [0,0,0];
 		if (!("pos" in agraph[i].data)) agraph[i].data.pos = [];
 		if (!("radii" in agraph[i].data)) agraph[i].data.radii = [];
 		if (!("molecularweight" in agraph[i].data)) agraph[i].data.molecularweight = 0.0;
 		if (!("confidence" in agraph[i].data)) agraph[i].data.confidence = 0.0;
+		//if (!("color" in agraph[i].data)) agraph[i].data.color = [0,0,0];
 
 		//if (!("color" in agraph[i].data)) agraph[i].data.color = [];
 		if (agraph[i].data.molecularweight > property_mapping.molecularweight.max) property_mapping.molecularweight.max = agraph[i].data.molecularweight;
@@ -1397,6 +1550,9 @@ function checkAttributes(agraph){
 
 		if (agraph[i].data.count > property_mapping.count.max) property_mapping.count.max = agraph[i].data.count;
 		if (agraph[i].data.count < property_mapping.count.min) property_mapping.count.min = agraph[i].data.count;
+
+		if (agraph[i].data.confidence > property_mapping.confidence.max) property_mapping.confidence.max = agraph[i].data.confidence;
+		if (agraph[i].data.confidence < property_mapping.confidence.min) property_mapping.confidence.min = agraph[i].data.confidence;
 
 		if (!("visited" in agraph[i].data)) agraph[i].data.visited = false;
 		if (!("include" in agraph[i].data)) agraph[i].data.include = true;
@@ -1448,7 +1604,7 @@ function getcomphtml(anode) {
 			//callback onchange ?
 			//htmlStr+=' <input id="comp_slider" style="width:80%" height:"40px" type="range" min="1" max="10000"" step="1" value="500" oninput="updateLabel(this)" onchange="resizeSphere(this)" /> ';
 			//htmlStr+=' <label id="comp_slider_label" for="comp_slider" style="width:20%">10A</label>';
-			htmlStr+='<div style="display:flex;flex-flow: row wrap;"><input id="comp_slider" type="range" min="1" max="10000" step="1" value="10"style="width:70%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/>';
+			htmlStr+='<div style="display:flex;flex-flow: row wrap;"><label>Radius(A):</label><input id="comp_slider" type="range" min="1" max="10000" step="1" value="10"style="width:70%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/>';
 		  htmlStr+='<input  id="comp_slider_num" min="1" max="10000" type="number" value="10" style="width:30%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/></div>';
 	}
 	else if (comptype === "mb") {
@@ -1922,7 +2078,17 @@ function colorNode(d) {
 	}
 	else if (colorby === "color") {
 		return (!d.children && "data" in d && "color" in d.data
-			&& d.data.color )? d.data.color : "red";//rgb list ?
+			&& d.data.color )? 'rgb('+ Math.floor(d.data.color[0]*255)
+															 + Math.floor(d.data.color[1]*255)
+															 + Math.floor(d.data.color[2]*255)+')' : color(d.depth);//rgb list ?
+	}
+	else if (colorby === "confidence") {
+		var color_mapping = d3v4.scaleLinear()
+			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
+			.range(["hsl(0,100%,100%)", "hsl(228,30%,40%)"])
+			.interpolate(d3v4.interpolateHcl);
+		return (!d.children && "data" in d && "confidence" in d.data
+			&& d.data.confidence )? color_mapping(d.data[colorby]):color(d.depth);//rgb list ?
 	}
 	else if (colorby === "viewed") {
 		return (!d.children && "data" in d && "visited" in d.data
@@ -2123,12 +2289,12 @@ function sortNodeByDepth(objects){
     if (graph.links.length) {
        graph.links.forEach(function(d){
        	//draw twich with different thickness for highlihg
-          drawLink(d);
+          drawLink(context,d);
           if (d.highlight) {//mouse over
           	context.strokeStyle = "black";
           	context.lineWidth=8;
           	context.stroke();
-          	drawLink(d);
+          	drawLink(context,d);
           	context.strokeStyle = color(d.source.depth+1);
           	context.lineWidth=5;
           	context.stroke();
@@ -2142,7 +2308,7 @@ function sortNodeByDepth(objects){
           	context.strokeStyle = "orange";
           	context.lineWidth=8;
           	context.stroke();
-          	drawLink(d);
+          	drawLink(context,d);
           	context.strokeStyle = "yellow";
           	context.lineWidth=5;
           	context.stroke();
@@ -2161,7 +2327,7 @@ function sortNodeByDepth(objects){
    		}
    	}
    if (current_mode===1 && temp_link) {
-   				drawLink(temp_link);
+   				drawLink(context,temp_link);
    				context.strokeStyle = "grey";
    				context.lineWidth=5;
           context.stroke();
@@ -2414,7 +2580,7 @@ function addIngredient(){
 	var grid = gridArray[0];
   var row_to_edit;
   var columns = grid.getColumns();
-  var		item_id = 0;
+  var	item_id = 0;
   //add an empty row data
 	var newId = graph.nodes.length;//grid.dataView.getLength();
 	//var arow = grid.dataView.getItem(0);
@@ -2434,15 +2600,17 @@ function addIngredient(){
   row_to_edit.pdb = "";
   row_to_edit.offset = [0,0,0];
   row_to_edit.pcpalAxis = [0,0,1];
+	row_to_edit.confidence = 0;
   row_to_edit.compartment = graph.nodes[0].data.name;//should be root
 	grid.dataView.beginUpdate();
-	grid.dataView.insertItem(0, row_to_edit);
+	//grid.dataView.insertItem(0, row_to_edit);
+	grid.dataView.addItem(row_to_edit);
   grid.dataView.endUpdate();
   grid.dataView.setGrouping([])
   grid.render();
   grid.dataView.refresh();
-  grid.setSelectedRows([0]);
-  grid.setActiveCell(0,0);
+  //grid.setSelectedRows([0]);
+	//grid.setActiveCell(0,0);
   AddANode(JSON.parse(JSON.stringify(row_to_edit)));
 }
 
@@ -2470,7 +2638,7 @@ function AddANode(some_data){
    newNode.x = canvas.width/2;
    newNode.y = canvas.height/2;
    newNode.r = 30;
-   newNode.source = {"pdb":newNode.pdb};
+   newNode.source = {"pdb":newNode.pdb,"bu":newNode.bu,"selection":newNode.selection,"model":""};
    graph.nodes[0].children.push(newNode);
    graph.nodes.push(newNode);
    console.log(newNode);
@@ -2569,7 +2737,7 @@ function DeleteNodeOver(){
 	updateForce();
 	}
 
-function anotherSubject(anode,x,y) {
+function anotherSubject(anode,x,y,allnodes) {
 	var tolerance=5/2;
 	subject = null;
 
@@ -2580,7 +2748,7 @@ function anotherSubject(anode,x,y) {
    //return subject;
 	//console.log("mouse is at");
 	//console.log(x,y);
-  var n = graph.nodes.length,
+  var n = allnodes.length,//graph.nodes
       i,
       dx,
       dy,
@@ -2592,12 +2760,18 @@ function anotherSubject(anode,x,y) {
   //var minI = 9999;
   //is this hierarcica
   for (i = 0; i < n; ++i) {
-    d = graph.nodes[i];
+    d = allnodes[i];
     if (d===anode) continue;
     dx = x  - d.x;
     dy = y  - d.y;
     d2 = Math.sqrt(dx * dx + dy * dy);
     //console.log(d.data.name,d.r,d2)
+		if (!d.parent)
+		{
+			miniD = d2;
+			subject = d;
+			depth_over = d.depth;
+		}
     if (d2  < d.r + anode.r) {//inside
     	if (d.depth > depth_over) { //closest center? problem with nested circle, pick the top circle
     		//if ( d2 < miniD) {
@@ -2892,7 +3066,7 @@ function dragged() {
   	//do we hover another object.
   	//if ingredient hovering compartment show it
   	//then on drag end assign the new parent + surface
-  	var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y);
+  	var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y,graph.nodes);
   	if (hovernodes.node && hovernodes.node.data.nodetype === "compartment")
   	{
   		comp_highligh = hovernodes.node;
@@ -2945,7 +3119,7 @@ function dragended() {
   if (current_mode === 1)
   {
   	mousexy = {"x":d3v4.event.subject.x,"y":d3v4.event.subject.y};
-  	var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y);
+  	var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y,graph.nodes);
   	console.log("hover ",hovernodes);
   	//restore depth value
   	d3v4.event.subject.depth = d3v4.event.subject._depth;
@@ -2953,9 +3127,9 @@ function dragended() {
   	if (hovernodes.node )
   	{
   		console.log (hovernodes.node.data.nodetype);
-  		if ( hovernodes.node.data.nodetype === "compartment") {
+  		if ( hovernodes.node.data.nodetype === "compartment" || (!(hovernodes.node.parent))) {
   			var index = d3v4.event.subject.parent.children.indexOf(d3v4.event.subject);
-  			if (d3v4.event.subject.parent!=hovernodes.node) {
+  			if (d3v4.event.subject.parent!==hovernodes.node) {
   				if (d3v4.event.subject.children && d3v4.event.subject.children.indexOf(hovernodes.node)!==-1){}
 	  			else {
 	  				if (index > -1) {
@@ -2967,12 +3141,12 @@ function dragended() {
 		  		  hovernodes.node.r += d3v4.event.subject.r/2;
 		  		  var cname = d3v4.event.subject.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/').slice(0,-1);
 		  		  console.log("update ? ",d3v4.event.subject);
-		  		  if (d3v4.event.subject.nodetype !== "compartment")
+		  		  if (d3v4.event.subject.data.nodetype !== "compartment")
 		  		  	updateCellValue(gridArray[0],"compartment",d3v4.event.subject.data.id,cname);
 		  		  else {}//need to change all child
 		  		}
 		  	}
-	  		if (d3v4.event.subject.nodetype !== "compartment")
+	  		if (d3v4.event.subject.data.nodetype !== "compartment")
 	  		{
 	  			if ( Math.abs(hovernodes.node.r - hovernodes.distance) < d3v4.event.subject.r )
 	  				d3v4.event.subject.data.surface = true;
@@ -3025,11 +3199,11 @@ function getOffsetTwoNode(d1,d2) {
    return {"sx":sourceX,"sy":sourceY,"tx":targetX,"ty":targetY};
 	}
 
-function drawLink(d) {
-	 context.beginPath();
+function drawLink(acontext,d) {
+	 acontext.beginPath();
 	 var aoffset = getOffsetLink(d);
-   context.moveTo(aoffset.sx, aoffset.sy);
-   context.lineTo(aoffset.tx, aoffset.ty);
+   acontext.moveTo(aoffset.sx, aoffset.sy);
+   acontext.lineTo(aoffset.tx, aoffset.ty);
 }
 
 function drawLinkTwoNode(d1,d2) {
@@ -3163,7 +3337,7 @@ function MapLinkToNode(some_nodes,some_links) {
 }
 
 function update_graph(agraph,alink){
-
+	console.log("agraph",agraph);
 	var mapping = d3v4.scaleLinear()
     .domain([Math.min(0,property_mapping["size"].min), property_mapping["size"].max])
     .range([0, 25]);

@@ -735,12 +735,18 @@ section#content p {
     display: flex;
 }
 
+.modal-list
+{
+  display: flex;
+}
+
 .modal-form {
   padding: 2px 16px;
-  display: flex;
-  flex-flow: column wrap;
-  justify-content: space-around;
-  align-items: center;
+  display: grid;
+  //flex-flow: column wrap;
+  //justify-content: space-around;
+  //align-items: center;
+  //align-content: center;
 }
 
 .modal-footer {
@@ -749,6 +755,15 @@ section#content p {
   color: white;
 }
 
+.modal-content-elem
+{
+  //padding: 2px 16px;
+  display: flex;
+  flex-flow: row;
+  justify-content: space-between;
+  align-items: center;
+  align-content: center;
+}
 /* Add Animation */
 
 @-webkit-keyframes slideIn {

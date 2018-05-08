@@ -172,6 +172,7 @@ function serializedRecipe(some_data,some_links){
 	      }
 	      if (!node.children && node.data.nodetype!=="compartment") //ingredient
 	      {
+          if ("include" in node.data && node.data.include === false) continue;
 	      	var cname = node.parent.data.name;
 	      	var sing = new sIngredient(node.data.name,0,sIngredient_static_id);sIngredient_static_id+=1;
 	      	sing = oneIngredient(sing,node);//assign the attributes
@@ -233,17 +234,24 @@ function OneIngredientDeserialized(ing_dic,surface,comp) {
 	  var elem = {};
 	  var size = ("encapsulatingRadius" in ing_dic)? ing_dic["encapsulatingRadius"] : 40;
 	  var name = ing_dic["name"];
-	  var source = "";
-	  if ("source" in ing_dic )
-	  {
-	  	if ("pdb" in ing_dic["source"])
-	  	{
-	  		source = ing_dic["source"]["pdb"];
-	  		}
+    var pdb = ("pdb" in ing_dic)? ing_dic["pdb"] : "None";
+    var source = {"pdb":pdb,"bu":"","model":"","selection":""};
+    if ("source" in ing_dic){//} && pdb === "None") {
+      source = ing_dic["source"];
+      if (!("pdb" in source)) source.pdb = "None";
+      if (!("bu" in source)) source.bu = "";
+      if (!("model" in source)) source.model = "";
+      if (!("selection" in source)) source.selection = "";
+      //if ("pdb" in ing_dic["source"])
+      //{
+      //	p = ing_dic["source"]["pdb"];
+      //	}
+    }
+
+    if (source.pdb && source.pdb.length!=4){
+	     if ( (source.pdb.slice(-4,source.pdb.length) !== ".pdb" )&&(!source.pdb.startsWith("EMD"))) source.pdb = source.pdb+".pdb";
 	  }
-	  if (source && source.length!=4){
-	      if (source.slice(-4,source.length) !== ".pdb" ) source = source+".pdb";
-	  }
+
 	  var label = ("description"in ing_dic)? ing_dic["description"] : "";
 	  var acount = ("nbMol" in ing_dic)? ing_dic["nbMol"] : 0;
 	  if (!acount ) acount = 0;
