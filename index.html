@@ -420,7 +420,7 @@
    <ul>
       <li class='has-sub'><a href='#'><span>Setup From</span></a>
         <ul>
-          <li><a href="#" onclick="selectDB()">Current database</a></li>
+          <!--li><a href="#" onclick="selectDB()">Current database</a></li-->
           <li class='has-sub'><a href="#">Examples</a>
               <ul>
                   <li><a href="#" onclick="LoadExampleBloodHIV()">HIV and Blood Plasma</a>
@@ -457,7 +457,7 @@
 
 
   <!--/div<input class="togglePFV" id="togglePFV" type="checkbox">-->
-  <input class="hidden" type="file" id="jsfile_input" accept=".csv,.json,.xlsx" type="file" onchange="selectFile(event)" />
+  <input class="hidden" type="file" id="jsfile_input" accept=".csv,.json,.xlsx" type="file" onclick="forceSelect(this)" onchange="selectFile(event)" />
   <input class="hidden" type="file" id="file_input" onchange="selectFolder(event)" webkitdirectory mozdirectory msdirectory odirectory directory multiple />
 
 
@@ -495,11 +495,11 @@
     <li onclick="RenameNodeOver()">rename</li>
     <li onclick="DeleteNodeOver()">delete</li>
   </ul>
-
+  <div hidden>
   <div id="topov" class="topov"  height="100%" width="100%"></div>
   <div id="seqv" class="seqv"  height="100%" width="100%"></div>
   <div id="puv" class="puv"  height="100%" width="100%"></div>
-
+  </div>
 </body>
 
 <script src="extras/clustering.min.js"></script>

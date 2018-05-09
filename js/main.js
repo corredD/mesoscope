@@ -227,6 +227,7 @@ function CreateNew(){
   nodes[0].children=[];
   graph.nodes=nodes;
 	graph.links=[];
+	if (stage) stage.removeAllComponents();
 	}
 
 
@@ -279,13 +280,13 @@ var allfield_query={
 	    compartment_index:["compartment"],
 	    biological_unit_index:["biological","bu","assambly","stoichiometry"],
 	    string_selection_index:["selection","chain"],
-	    location_index:["localisation","localization","location","membrane"],
+	    location_index:["membrane", "localisation","localization","location"],
 	    model_index:["model"],
 	    molarity_index:["contentration","molarity"],
 	    uniprot_index:["uniprot"],
 	    offset_index:["offset"],
 	    pcpalvector_index:["pcpalVector","principalvector","principalaxis","axis","vector"],
-			molecularweight_index:["weight","molecularweight","molecular"],
+			molecularweight_index:["mw","weight","molecularweight","molecular"],
 			confidence_index:["confidence","score"],
 			include_index:["include"],
 			color_index:["color","rgb"],
@@ -540,8 +541,10 @@ function changeColumnMapping(aselect) {
 		console.log(allfield[aselect.id]);
 		if (aselect.id === "location_index" || aselect.id === "compartment_index" ) {
 			//update the parsing
-			var loc_comp = guessCompartmentList(current_data_header, current_jsondic, current_rootName);
-			UpdateCompartmentModalCanvas(loc_comp);
+			if (!(comp_column)) {
+				var loc_comp = guessCompartmentList(current_data_header, current_jsondic, current_rootName);
+				UpdateCompartmentModalCanvas(loc_comp);
+			}
 		}
 		//recheck compartment settings ?
 	}
@@ -695,8 +698,13 @@ function guessCompartmentFromColumn(data, rootName) {
 	console.log("indexes ", allfield.location_index, allfield.compartment_index,start_index,data.length);
   for (var i=start_index;i<data.length;i++)
 	{
+			if ((data[i][0]) && (data[i][0].toLowerCase()==="end")) break;
 			var loc = (allfield.location_index && allfield.location_index !==-1)? data[i][allfield.location_index]:null;
 			var comp = (allfield.compartment_index && allfield.compartment_index !==-1)? data[i][allfield.compartment_index]:null;
+			if (!loc) //meaning empty cell and not cytoplasme
+			{
+				loc = rootName;
+			}
 			//console.log("loc and comp",loc,comp);
 			if (loc||comp) {
 				//if (loc_name.indexOf(loc) === -1) {
@@ -742,7 +750,6 @@ function guessCompartmentFromColumn(data, rootName) {
 						};
 						if (IsSurface(loc)) cdata.surface = true;
 						comp_dic_hierarchy.children.push(cdata);//rootComp.children.push(cdata);
-
 					}
 			}
 		}
@@ -760,11 +767,11 @@ function guessCompartmentList(data_header, jsondic, rootName){
 function getModalMapping(data_header,jsondic,rootName) {
 	  var modal_cont = document.getElementById("slickdetail");
   	var item_cont = document.getElementById("modalform");//"slickitems");
+		item_cont.innerHTML = "";
 		var canvas_cont = document.getElementById("modalcanvas");//"slickitems");
   	var span = document.getElementById("closeslickdetail");
   	var btn1 = document.getElementById("saveDetail");
   	var btn2 = document.getElementById("cancelDetail");
-
 		//is it brett format with column per compartments
 		var comp_column_graph ={
 			nodetype: "compartment",
@@ -1085,7 +1092,7 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
   console.log(allfield);
 	var compartments={};
 	var compgraph = getModalCompGraph() ;//the main graph
-	var graph = compgraph.graph ;//the main graph
+	var newgraph = compgraph.graph ;//the main graph
 	var float_compartments = compgraph.flat;
 
 	var ingr_names=[];///so we can check for duplicate->compartments ?
@@ -1197,8 +1204,9 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
 					else {
 							//use location
 							//use the loc_comp to get the compartment
-							comp_elem = float_compartments[loc_comp];
-							}
+							if (!loc_comp) comp_elem = float_compartments[rootName];
+							else comp_elem = float_compartments[loc_comp];
+						}
 				 }
 				else {
 						//console.log("check "+comp_column_names.length);
@@ -1230,10 +1238,10 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
 					}
 				if (comp_elem===null) {
 					if (loc_comp==="cytoplasm"){
-							comp_elem=graph;
+							comp_elem=newgraph;
 					}
 					else {
-					 comp = rootName+"_compartment";
+					 comp = rootName;//+"_compartment";
 					//no compartment provided, use the recipe name as a compartments?
 						if (comp in compartments){
 							comp_elem = compartments[comp];
@@ -1241,14 +1249,14 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
 						else {
 							compartments[comp]={"name":comp,"children":[]};
 							comp_elem = compartments[comp];
-							graph["children"].push(comp_elem);
+							newgraph["children"].push(comp_elem);
 							}
 					}
 				}
 
 				//alert(comp_elem.name);
 				elem.surface = IsSurface(loc_comp)
-				//console.log("checkforsurface for "+elem.name+" "+loc_comp+" "+elem.surface);
+				console.log("checkforsurface for "+elem.name+" "+loc_comp+" "+elem.surface);
 				comp_elem["children"].push(elem);
 	}
 
@@ -1276,7 +1284,7 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
 	//console.log("afterModal");
 	//console.log(graph);
 	//console.log(agraph_links);
-	update_graph(graph,agraph_links);
+	update_graph(newgraph,agraph_links);
   //return {"graph":graph,"link":graph_links};
 }
 
@@ -1344,6 +1352,10 @@ function selectCompFile (e) {
 	stage.removeAllComponents();
 	NGL_LoadShapeFile(thefile);
 	stage.autoView();
+}
+
+function forceSelect(e) {
+	e.value = '';
 }
 
 //first/second sheet is the current graph/link, next is the original data -> up to 4 Grid
@@ -2068,8 +2080,8 @@ function colorNode(d) {
 						|| d.data.source.pdb === "null" || d.data.source.pdb === ""))? "red" : color(d.depth);
 	}
 	if (colorby === "geom") {
-				return ( !d.children && "data" in d && "geom" in d.data
-				&& (!d.data.geom || d.data.geom === "None"
+				return ( !d.children && "data" in d
+						&& (!d.data.geom || d.data.geom === "None"
 						|| d.data.geom === "null" || d.data.geom === ""))? "red" : color(d.depth);
 	}
 	else if (colorby === "pcpalAxis") {
@@ -2087,7 +2099,6 @@ function colorNode(d) {
 			}
 	else if (colorby === "Beads") {
 				return ( !d.children && "data" in d && "source" in d.data
-				&& "pos" in d.data
 				&& (!d.data.pos || d.data.pos === "None"
 				|| d.data.pos === "null" || d.data.pos.length === 0
 				|| d.data.pos === ""))? "red" : color(d.depth);

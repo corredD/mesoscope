@@ -64,6 +64,7 @@ function drawHtmlTreeList(atree)
 
 function getModalCompGraph() {
   //skip surface one ?
+  console.log("modal_nodes ",modal_nodes);
   var agraph = modal_nodes[0] ;//the main graph
   var new_graph = {"name":"root","children":[],"nodetype":"compartment"};
   var float_compartments = {"root":new_graph};
@@ -74,14 +75,17 @@ function getModalCompGraph() {
   while(stack.length!==0){
     var element = stack.pop();
     var new_elemt = {"name":element.data.name,"children":[],"nodetype":"compartment"};
+    console.log("new element is",element.data.name,element);
     if (element.data.name !== "root")
     {
       if ("surface" in element.data && element.data.surface) {
+          console.log("skip surface ",element.data.name,element.data.surface);
           if (!(element.data.name in float_compartments )) {
             float_compartments[element.data.name] = float_compartments[element.parent.data.name];
           }
       }
       else {
+          console.log("parent is ",element.parent.data.name);
           if (!(element.data.name in float_compartments )) float_compartments[element.data.name] = new_elemt;
           if (element.parent.data.name in float_compartments) float_compartments[element.parent.data.name].children.push(float_compartments[element.data.name]);
       }
@@ -138,6 +142,7 @@ function resetAllModalNodePos(agraph) {
     agraph[i].x = agraph[i].x - offx / 2; // - rect.width/2;
     agraph[i].y = agraph[i].y - offy / 2; // - rect.height/2;
     //console.log(agraph[i].x,agraph[i].y);//+ rect.top
+    agraph[i].data.surface = false;
   }
   return agraph;
 }
@@ -564,7 +569,8 @@ function modal_dragstarted()
       scaleY = modal_canvas.height / rect.height;
 	m_start_drag.x =  d3v4.event.x* scaleX;
 	m_start_drag.y =  d3v4.event.y* scaleY;
-  modal_sim.alphaTarget(2).restart();
+  //modal_sim.alphaTarget(2).restart();
+  if (!d3v4.event.subject.parent) return;//root
   if (d3v4.event.subject.parent)
   {
     var depth = d3v4.event.subject.depth;
@@ -598,7 +604,7 @@ function modal_dragged() {
       comp_hover_distance = hovernodes.distance;
       //highlghed surface
       //hovernodes.node.highlight = true;
-      if ( Math.abs(hovernodes.node.r - hovernodes.distance) < d3v4.event.subject.r )
+      if ( hovernodes.node.parent && Math.abs(hovernodes.node.r - hovernodes.distance) < d3v4.event.subject.r )
           comp_hover_surface = hovernodes.node;
       else
           comp_hover_surface = null;
@@ -614,6 +620,7 @@ function modal_dragged() {
 
 function modal_dragended()
 {
+  if (!d3v4.event.subject.parent) return;//root
   console.log("modal_dragended");
   if (!d3v4.event.active) modal_sim.alphaTarget(0);
   d3v4.event.subject.fx = null;
@@ -669,11 +676,11 @@ function modal_dragended()
         d3v4.event.subject.data.surface = false;
         if (surface_tag.indexOf(d3v4.event.subject.data.name) !== -1) surface_tag.pop(d3v4.event.subject.data.name);
       }
-      console.log("issurface ?",d3v4.event.subject.data.surface)
     }
     drawHtmlTreeList(modal_nodes);
   }
   //update the table ?
+  console.log("issurface ?",d3v4.event.subject.data.surface)
   updateModalForce();
   comp_link = null;
   comp_hover = null;

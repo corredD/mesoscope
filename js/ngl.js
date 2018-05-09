@@ -1695,7 +1695,7 @@ function BuildAll(){
   //use getItem(index)
   //for all compartment get a geom. default sphere of 500A
   BuildDefaultCompartmentsRep();
-  current_compute_node=-1;
+  current_compute_index=-1;
   NextComputeIgredient();
   buildLoopAsync();
   //build geom for compartment by default

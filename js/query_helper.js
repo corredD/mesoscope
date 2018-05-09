@@ -678,10 +678,12 @@ function NextComputeIgredient(){
   	var i=(icurrent)? icurrent : 0;
     while (!found){
        i=i+1;
+       if (i===graph.nodes.length) { found = false;break;}
        var d = graph.nodes[i];
-       if (i===graph.nodes.length) { break;}
-       if ( !d.children && "data" in d && "geom" in d.data
-            && (!d.data.geom || d.data.geom === "None"
+       console.log(i,graph.nodes.length,d);
+       if (!d) {found = false;break;}
+       if ( !d.children && "data" in d &&
+            (!d.data.geom || d.data.geom === "None"
             || d.data.geom === "null" || d.data.geom === "") ){
        //if (!graph.nodes[i].children){
        	found = true;
@@ -689,11 +691,13 @@ function NextComputeIgredient(){
        	current_compute_node = graph.nodes[i];
        }
     }
+    console.log("return found ",found,current_compute_index,current_compute_node);
     return found;
   }
 
 function buildLoopAsync(){
     var d = current_compute_node;//or node_selected.data.bu
+    console.log("d is ",d);
     var pdb = d.data.source.pdb;//document.getElementById("pdb_str");
     var bu = (d.data.bu)?d.data.bu:"";//document.getElementById("bu_str");
     //selection need to be pmv string
