@@ -1613,14 +1613,23 @@ function getcomphtml(anode) {
 	htmlStr+='<label> Nb of children: '+anode.children.length+'</label><br>'
 	//htmlStr+= '<input type="checkbox" id="unchecked" onclick="toggleLipids(this)" class="cbx hidden" />' ;
 	var comptype = ("geom_type" in anode.data)? anode.data.geom_type: "None";
-	htmlStr+=' <label>Source : </label>'
-	htmlStr+=' <select id="comp_source" name="comp_source" onchange="changeCompSource(this)" >'
-	htmlStr+='  <option value="compsource"> Source: </option>'
-	htmlStr+='  <option value="file'+(comptype==="file")?"selected":""+'"> File (.dae,.obj,.map) </option>'
-	htmlStr+='  <option value="sphere'+(comptype==="sphere")?"selected":""+'"> Sphere </option>'
-	htmlStr+='  <option value="mb'+(comptype==="mb")?"selected":""+'"> MetaBalls (multiple spheres) </option>'
-	htmlStr+='  <option value="None'+(comptype==="None")?"selected":""+'"> None </option>'
-	htmlStr+=' </select>'
+	htmlStr+=' <label>Source : </label>';
+	htmlStr+=' <select id="comp_source" name="comp_source" onchange="changeCompSource(this)" >';
+	htmlStr+='  <option value="compsource"> Source: </option>';
+	htmlStr+='  <option value="file';
+	htmlStr+= (comptype==="file")?"selected":"";
+	htmlStr+='"> File (.dae,.obj,.map) </option>';
+	htmlStr+='  <option value="sphere';
+	htmlStr+= (comptype==="sphere")?"selected":"";
+	htmlStr+='"> Sphere </option>';
+	htmlStr+='  <option value="mb';
+	htmlStr+= (comptype==="mb")?"selected":"";
+	htmlStr+='"> MetaBalls (multiple spheres) </option>';
+	htmlStr+='  <option value="None';
+	htmlStr+= (comptype==="None")?"selected":"";
+	htmlStr+='"> None </option>';
+	htmlStr+=' </select>';
+
 	if (comptype === "None") {}
 	else if (comptype === "file") {
 		//add input file
@@ -1636,7 +1645,7 @@ function getcomphtml(anode) {
 			//callback onchange ?
 			//htmlStr+=' <input id="comp_slider" style="width:80%" height:"40px" type="range" min="1" max="10000"" step="1" value="500" oninput="updateLabel(this)" onchange="resizeSphere(this)" /> ';
 			//htmlStr+=' <label id="comp_slider_label" for="comp_slider" style="width:20%">10A</label>';
-			var cradius = ("radius" in anode.data.geom)? anode.data.geom.radius : 10;
+			var cradius = (anode.data.geom.radius)? anode.data.geom.radius : 500;
 			htmlStr+='<div style="display:flex;flex-flow: row wrap;"><label>Radius(A):</label><input id="comp_slider" type="range" min="1" max="10000" step="1" value="'+cradius+'"style="width:70%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/>';
 		  htmlStr+='<input  id="comp_slider_num" min="1" max="10000" type="number" value="'+cradius+'" style="width:30%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/></div>';
 	}
