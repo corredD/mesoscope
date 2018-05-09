@@ -574,11 +574,12 @@ function OneCPIngredient(node,surface) {
 	  aing_dic["offset"] = node.data.offset;
 	  aing_dic["uniprot"] = node.data.uniprot;
 	  aing_dic["label"] = node.data.label;
-	  aing_dic["Type"] = "MultiSphere";
+	  aing_dic["Type"] = (node.data.ingtype==="fiber")?"Grow":"MultiSphere";
 	  if (node.data.pos && node.data.radii) {
 	  	aing_dic["positions"] = node.data.pos;
 	  	aing_dic["radii"] = node.data.radii;
 	  }
+    aing_dic["packingMode"] = node.data.buildtype;//random, file etc...
 	  //description=label,organism,score,
 	  return aing_dic;
 	}
@@ -907,8 +908,15 @@ function getCurrentNodesAsCP_JSON(some_data,some_links){
       	  if (!(cname in jsondic["compartments"])) {
             var gtype = (node.data.geom_type)? node.data.geom_type : "None";
             var gname = (node.data.geom)? node.data.geom : "";
+            var thickness = (node.data.thickness)? node.data.thickness : 7.5;
             //if metaball geom should be array of xyzr/
-      	  	jsondic["compartments"][cname] = {"geom_type":gtype,"geom":gname,"name":cname,"surface":{"ingredients":{}},"interior":{"ingredients":{}}};
+      	  	jsondic["compartments"][cname] = {
+              "geom_type":gtype,
+              "geom":gname,
+              "name":cname,
+              "thickness":thickness,
+              "surface":{"ingredients":{}},
+              "interior":{"ingredients":{}}};
       	  }
       	  continue;
       }
@@ -921,8 +929,15 @@ function getCurrentNodesAsCP_JSON(some_data,some_links){
         if (!(cname in jsondic["compartments"]) && (node.parent!==aroot)) {
           var gtype = (node.data.geom_type)? node.data.geom_type : "None";
           var gname = (node.data.geom)? node.data.geom : "";
+          var thickness = (node.data.thickness)? node.data.thickness : 7.5;
           //if metaball geom should be array of xyzr/
-          jsondic["compartments"][cname] = {"geom_type":gtype,"geom":gname,"name":cname,"surface":{"ingredients":{}},"interior":{"ingredients":{}}};
+          jsondic["compartments"][cname] = {
+            "geom_type":gtype,
+            "geom":gname,
+            "name":cname,
+            "thickness":thickness,
+            "surface":{"ingredients":{}},
+            "interior":{"ingredients":{}}};
         }
       	var ingdic = OneCPIngredient(node);
       	if (some_links.length) {

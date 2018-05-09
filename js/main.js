@@ -411,14 +411,30 @@ function OneIngredient(ing_dic,surface) {
 	  //console.log(JSON.stringify(p));
 		//console.log(offset);
 		//console.log(principalVector);
-	  var elem ={"name":name,"size":size,"molecularweight":mw,"confidence":confidence,
-	  	"source":source,"count":acount,
+		//check the type
+		var atype = ("Type" in ing_dic)? ing_dic["Type"] :"";//Grow,MultiSphere,etc...
+		var packingMode = ("packingMode" in ing_dic)? ing_dic["packingMode"] :"";//random,close,etc...
+		var btype = GetIngredientTypeAndBuildType(ing_dic);//"ingtype":btype.type,"buildtype":btype.build,
+		var elem ={"name":name,"size":size,"molecularweight":mw,"confidence":confidence,
+	  	"source":source,"count":acount,"ingtype":btype.type,"buildtype":btype.build,
 	  	"molarity":molarity, "surface":surface,"geom":geom,"geom_type":geom_type,"label":label,
 	  	"uniprot":uniprot,"pcpalAxis":principalVector,"offset":offset,"pos":p,"radii":r,"nodetype":"ingredient"};
 	  //console.log(JSON.stringify(elem));
 	  //console.log(elem);
 	  return elem;
 	}
+
+function GetIngredientTypeAndBuildType(an_ing_dic)
+{
+	var atype = ("Type" in an_ing_dic)? an_ing_dic["Type"] :"";//Grow,MultiSphere,etc...
+	var packingMode = ("packingMode" in an_ing_dic)? an_ing_dic["packingMode"] :"";//random,close,etc...
+	var ingType = "protein";//protein
+	var buildType = packingMode;//random
+	if (atype === "Grow") {
+		ingType = "fiber";
+	}
+	return {"type":ingType,"build":buildType};
+}
 
 function parseCellPackRecipe(jsondic) {
 		var graph ={};//the main graph
@@ -468,9 +484,10 @@ function parseCellPackRecipe(jsondic) {
                 var comp_dic = jsondic["compartments"][cname];
 								var comp_geom = comp_dic['geom'];
 								var comp_type = comp_dic['geom_type'];
+								var thickness =  ("thickness" in comp_dic) ? comp_dic.thickness:7.5;
 								console.log("geom in comp ? ",comp_geom)
                 var comp = {"name":cname,"children":[],"nodetype":"compartment",
-														"geom":comp_geom,"geom_type":comp_type};
+														"geom":comp_geom,"geom_type":comp_type,"thickness":thickness};
                 if ("surface" in comp_dic){
                     var snode = comp_dic["surface"];
                     var ingrs_dic = snode["ingredients"];
@@ -1569,7 +1586,8 @@ function checkAttributes(agraph){
 		if (!("molecularweight" in agraph[i].data)) agraph[i].data.molecularweight = 0.0;
 		if (!("confidence" in agraph[i].data)) agraph[i].data.confidence = 0.0;
 		//if (!("color" in agraph[i].data)) agraph[i].data.color = [0,0,0];
-
+		if (!("ingtype" in agraph[i].data)) agraph[i].data.ingtype = "protein";
+		if (!("buildtype" in agraph[i].data)) agraph[i].data.buildtype = "random";
 		//if (!("color" in agraph[i].data)) agraph[i].data.color = [];
 		if (agraph[i].data.molecularweight > property_mapping.molecularweight.max) property_mapping.molecularweight.max = agraph[i].data.molecularweight;
 		if (agraph[i].data.molecularweight < property_mapping.molecularweight.min) property_mapping.molecularweight.min = agraph[i].data.molecularweight;
@@ -1602,34 +1620,36 @@ function checkAttributes(agraph){
 	}
 
 function getcomphtml(anode) {
-  var htmlStr='';
+  var htmlStr='<div style="display:flex;flex-flow: column;">';
 	for (var e in anode.data)
 	{
 			if (e==="children") continue;
-			htmlStr+= '<label>'+ e + ' : ' + anode.data[e] +'</label><br>'
+			htmlStr+= '<label>'+ e + ' : ' + anode.data[e] +'</label>'
 	}
 	var cname = anode.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/');
-	htmlStr+='<label> path : '+cname+'</label><br>'
-	htmlStr+='<label> Nb of children: '+anode.children.length+'</label><br>'
+	htmlStr+='<label> path : '+cname+'</label>'
+	htmlStr+='<label> Nb of children: '+anode.children.length+'</label>'
+	htmlStr+='</div>';
 	//htmlStr+= '<input type="checkbox" id="unchecked" onclick="toggleLipids(this)" class="cbx hidden" />' ;
 	var comptype = ("geom_type" in anode.data)? anode.data.geom_type: "None";
-	htmlStr+=' <label>Source : </label>';
-	htmlStr+=' <select id="comp_source" name="comp_source" onchange="changeCompSource(this)" >';
+	htmlStr+='<div style="display:flex;">';
+	htmlStr+=' <label style="width:20%">Source : </label>';
+	htmlStr+=' <select id="comp_source" style="width:80%" name="comp_source" onchange="changeCompSource(this)" >';
 	htmlStr+='  <option value="compsource"> Source: </option>';
-	htmlStr+='  <option value="file';
-	htmlStr+= (comptype==="file")?"selected":"";
-	htmlStr+='"> File (.dae,.obj,.map) </option>';
-	htmlStr+='  <option value="sphere';
-	htmlStr+= (comptype==="sphere")?"selected":"";
-	htmlStr+='"> Sphere </option>';
-	htmlStr+='  <option value="mb';
-	htmlStr+= (comptype==="mb")?"selected":"";
-	htmlStr+='"> MetaBalls (multiple spheres) </option>';
-	htmlStr+='  <option value="None';
-	htmlStr+= (comptype==="None")?"selected":"";
-	htmlStr+='"> None </option>';
+	htmlStr+='  <option value="file"';
+	htmlStr+= (comptype==="file")?" selected ":"";
+	htmlStr+='> File (.dae,.obj,.map) </option>';
+	htmlStr+='  <option value="sphere"';
+	htmlStr+= (comptype==="sphere")?" selected ":"";
+	htmlStr+='> Sphere </option>';
+	htmlStr+='  <option value="mb"';
+	htmlStr+= (comptype==="mb")?" selected ":"";
+	htmlStr+='> MetaBalls (multiple spheres) </option>';
+	htmlStr+='  <option value="None"';
+	htmlStr+= (comptype==="None")?" selected ":"";
+	htmlStr+='> None </option>';
 	htmlStr+=' </select>';
-
+	htmlStr+='</div><br>';
 	if (comptype === "None") {}
 	else if (comptype === "file") {
 		//add input file
@@ -1646,14 +1666,22 @@ function getcomphtml(anode) {
 			//htmlStr+=' <input id="comp_slider" style="width:80%" height:"40px" type="range" min="1" max="10000"" step="1" value="500" oninput="updateLabel(this)" onchange="resizeSphere(this)" /> ';
 			//htmlStr+=' <label id="comp_slider_label" for="comp_slider" style="width:20%">10A</label>';
 			var cradius = (anode.data.geom.radius)? anode.data.geom.radius : 500;
-			htmlStr+='<div style="display:flex;flex-flow: row wrap;"><label>Radius(A):</label><input id="comp_slider" type="range" min="1" max="10000" step="1" value="'+cradius+'"style="width:70%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/>';
+			htmlStr+='<div style="display:flex;"><label>Radius(A):</label><input id="comp_slider" type="range" min="1" max="10000" step="1" value="'+cradius+'"style="width:70%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/>';
 		  htmlStr+='<input  id="comp_slider_num" min="1" max="10000" type="number" value="'+cradius+'" style="width:30%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/></div>';
 	}
 	else if (comptype === "mb") {
 		htmlStr+=' <input id="comp_slider" style="width:80%" height:"40px" type="range" min="1" max="10000"" step="1" value="500" /> ';
 		htmlStr+=' <label id="comp_slider_label" for="comp_slider" style="width:20%">10</label>';
 	}
-	return htmlStr;
+	//add thickness dataset
+	if (comptype !== "None") {
+		var thickness = (anode.data.thickness)? anode.data.thickness : 7.5;
+		htmlStr+='<div style="display:flex;">';
+		htmlStr+='<label>Thickness(A):</label>';
+		htmlStr+='<input id="comp_thick_slider" type="range" min="1" max="500" step="1" value="'+thickness+'"style="width:70%" oninput="updateLabelThickness(this)" onchange="updateThickness(this)"/>';
+		htmlStr+='<input  id="comp_thick_slider_num" min="1" max="500" type="number" value="'+thickness+'" style="width:30%" oninput="updateLabelThickness(this)" onchange="updateThickness(this)"/></div>';
+	}
+return htmlStr;
 }
 
 function changeCompSource(compelem){
@@ -1687,6 +1715,25 @@ function resizeSphere(e){
 		var radius = e.value;
 		node_selected.data.geom = compartmentSphere(name,radius);
 		document.getElementById('comp_slider_num').value = e.value;
+		//document.getElementById('comp_slider_label').innerHTML = radius+"A";
+}
+
+function updateLabelThickness(e)
+{
+//document.getElementById('comp_slider_label').innerHTML = e.value+"A";
+document.getElementById('comp_slider_thick_num').value = e.value;
+document.getElementById('comp_slider_thick').value = e.value;
+}
+
+function updateThickness(e){
+		//how to now the current spheres_array
+		//or update the current compartmentSphere
+		var name = (node_selected.data.geom)?node_selected.data.geom.name:node_selected.data.name+"_geom";
+		var thickness = e.value;
+		node_selected.data.thickness = thickness;
+		//node_selected.data.geom = compartmentSphere(name,radius);
+		document.getElementById('comp_slider_thick_num').value = e.value;
+		document.getElementById('comp_slider_thick').value = e.value;
 		//document.getElementById('comp_slider_label').innerHTML = radius+"A";
 }
 

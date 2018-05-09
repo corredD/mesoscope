@@ -786,7 +786,8 @@ function LoadShapeObj(d) {
 function NGLLoadAShapeObj(gpath) {
   if (node_selected.data.geom_type === "raw") {
     NGL_ShowMeshVFN(gpath);
-  } else if (node_selected.data.geom_type === "None") {
+  } else if (node_selected.data.geom_type === "None"
+              && node_selected.data.nodeType !=="compartment") {
     //build it ?
 		buildCMS();
   } else if (node_selected.data.geom_type === "file") {

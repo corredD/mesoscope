@@ -114,6 +114,8 @@ function oneIngredient(singr,node){
 	  if (!singr.name)  singr.name = node.data.name;
     singr["meshFile"] = node.data.geom;//meshfile or v,f,n?
     singr["meshType"] = node.data.geom_type;//meshfile or v,f,n?
+    singr["ingtype"] = node.data.ingtype;
+    singr["buildtype"] = node.data.buildtype;
 	  //parse
 	  //description=label,organism,score,
 	  //partners_properties
@@ -153,6 +155,7 @@ function oneCompartment(scomp,node)
   else if (gtype === "None") {
   }
   else {}
+  scomp["thickness"] = ("thickness" in node.data)?node.data.thickness:7.5;
   return scomp;
 }
 
@@ -315,7 +318,8 @@ function OneIngredientDeserialized(ing_dic,surface,comp) {
         r = rad;
       }
     }
-
+    var ingtype = ("ingtype" in ing_dic)? ing_dic.ingtype : "protein";
+    var buildtype = ("buildtype" in ing_dic)? ing_dic.buildtype : "random";
 	  var id = "id_"+ingr_uniq_id;//ing_dic.ingredient_id;//unique ingredient id
     ingr_uniq_id+=1;
     var elem ={"name":name,"size":size,"molecularweight":mw,"confidence":confidence,
@@ -324,9 +328,11 @@ function OneIngredientDeserialized(ing_dic,surface,comp) {
       "geom_type":geom_type,"label":label,
 	  	"uniprot":"","pcpalAxis":principalVector,
       "offset":offset,"pos":p,"radii":r,
+      "ingtype":ingtype,"buildtype":buildtype,
       "nodetype":"ingredient"};//,"id":id};
 	  return elem;
 	}
+
 
 function OneIngredientDeserializedPartner(ing_dic,linkdata){
 	var pproperty = ing_dic.partners_properties;
@@ -361,6 +367,7 @@ function SetupOneCompartment(acomp,acompdic)
   if (acomp.geom_type === "mb") {acomp["geom"] = acompdic.mb;}
   if (acomp.geom_type === "None") {acomp["geom"] = "None";}
   //could have both a source file and a mesh ? if the source is a map or pdb ?
+  acomp["thickness"] = ("thickness" in acompdic)?acompdic.thickness:7.5;
   return acomp;
 }
 
