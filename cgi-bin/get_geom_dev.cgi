@@ -1,183 +1,130 @@
-#!/usr/bin/env /usr/local/www/projects/mgltools2/bin/pythonsh
+# #!/usr/bin/env /usr/local/www/projects/mgltools2/bin/pythonsh
+
 import os
 import time
 import cgi
 import numpy as np
-#print 'Content-type: text/html\n\n'
-#print 'Hello!\n'
-## try:
-##     from mslib import msms
-##     import PmvApp
-##     from bhtree import bhtreelib
-##     import numpy
+import json
+from copy import deepcopy
 
-## except:
-##     cgi.print_exception()
+def dist(a, b, ax=1):
+    # Euclidean Distance Caculator
+    return np.linalg.norm(a - b, axis=ax)
 
-
-
-## print "<br>"
-## #print "Msms imported from %s" % msms.__file__
-## print "imported PmvApp from %s \n\n" % PmvApp.__file__
-## print "<br>"
-## print "imported bhtree from %s \n\n" % bhtreelib.__file__
-## print "<br>"
-## print "imported numpy from %s \n\n" % numpy.__file__
-## print "<br>"
-## print '%s\n' % (time.asctime())
-## print "<br>"
-
-
-## KMEANS clustering
-## adopted from https://raw.githubusercontent.com/EtixLabs/clustering/master/dist/clustering.js  by  Lukasz Krawczyk <contact@lukaszkrawczyk.eu>
- 
-class KMEANS:
-
-    def __init__(self, dataset, k=3, distance=None):
-        """ dataset - array of points
-        k - number of clusters
-        distance - distance function
-        """
-        
-        self.k = k              # number of clusters
-        self.dataset = np.array(dataset)  # set of feature vectors
-        if distance is not None:
-            self.distance = distance
-
-
-    def run(self, k=None):
-        datalen = len(self.dataset)
-        if k is not None:
-            self.k = k
-        self.assignments = {}   # set of associated clusters for each feature vector
-        self.centroids = []     # vectors for our clusters
-        maxDim = self.dataset.shape[1]
-        # initialize centroids
-        for i in range(self.k):
-            self.centroids.append(self.randomCentroid())
-        change = True
-        nn = 0
-        while(change):
-            # assign feature vectors to clusters
-            change = self.assign()
-            print "change 1", change, self.centroids
-            # adjust location of centroids
-            for centroidId in range(self.k):
-                mean = np.zeros(maxDim)
-                count = 0
-                for j in range(datalen):
-                    maxDim = len(self.dataset[j])
-                    # if current cluster id is assigned to point
-                    if centroidId == self.assignments[j]: 
-                        for dim in range(maxDim):
-                            mean[dim] += self.dataset[j][dim]
-                        count += 1
-                if count > 0: 
-                    # if cluster contains points, adjust centroid position
-                    for dim in range(maxDim):
-                        mean[dim] = mean[dim] / count
-
-                    self.centroids[centroidId] = mean
-                else:
-                    # if cluster is empty, generate new random centroid
-                    self.centroids[centroidId] = self.randomCentroid()
-                    change = True
-                    print "change 2", change, self.centroids
-            nn += 1
-            #if nn == 50: break
-        return self.getClusters()
-
-
-    def randomCentroid(self):
-        """Generate random centroid """
-        maxId = len(self.dataset) -1
+def initializeCentroids(dataset, k):
+    """Generate random centroids """
+    #print "randomCentroid"
+    centroids = []
+    import random
+    inds = []
+    maxId = len(dataset) -1
+    for i in range(k):
         centroid = None
-
-        import random
         while centroid is None:
             # random index
             ind = int(round(random.random() * maxId))
-            _centroid = self.dataset[ind]
+            if ind not in inds:
+                centroid = dataset[ind]
+                centroids.append(centroid)
+                inds.append(ind)
+    return centroids
+
+def randomCentroid(dataset, k, centroids=[]):
+    """Generate random centroid"""
+    #print "randomCentroid"
+    import random
+    maxId = len(dataset) -1
+    for i in range(k):
+        centroid = None
+        while centroid is None:
+            # random index
+            ind = int(round(random.random() * maxId))
+            _centroid = dataset[ind]
             inarr = False
             # find if _centroid is in the centroids list (select it if it is not found)
-            for cc in self.centroids:
+            for cc in centroids:
                 if np.allclose(cc, _centroid):
                     inarr = True
                     break
             if not inarr:
                 centroid = _centroid
-        return centroid
+        centroids.append(centroid)
+    return centroids
 
-    def distance(self, p, q):
-        """Euclidean distance
-        p - vector
-        q - vector
-        """
-        assert len(p) == len(q)
-        if type(p) != np.ndarray:
-            p = np.array(p)
-        if type(q) != np.ndarray:
-            q = np.array(q)
-        return np.sqrt(np.sum((p-q)**2))
+def cluster(data, k=3):
+    #k -  Number of clusters
+    # data -  coordinates of random centroids
+    C = np.array(initializeCentroids(data, k), dtype=np.float32)
+    #print("Initial Centroids")
+    #print(C)
 
-
-    def argmin (self, point, pointset, func):
-        # return index of a pointset item whith the minimal distance from point 
-        minval = func(point, pointset[0])
-        arg = 0
-        i = 1
-        for item in pointset[1:]:
-            d = func(point, item)
-            if (d < minval):
-                minval = d
-                arg = i
-            i += 1
-        return arg
-
-    def getClusterRad(self):
-        clusters = self.getClusters()
-        radii = []
-        for i, center in enumerate(self.centroids):
-            pointset = self.dataset[clusters[i]]
-            maxval = self.distance(center, pointset[0])
-            for item in pointset[1:]:
-                dist  = self.distance(center, item)
-                if (dist > maxval):
-                    maxval = dist
-            radii.append(maxval)
-        return radii
-            
-    def assign(self):
-        """Assign points to clusters"""
-        change = False
-        datalen = len(self.dataset)
-        for i in range(datalen):
-            closestCentroid = self.argmin(self.dataset[i], self.centroids, self.distance)
-            if not self.assignments.has_key(i):
-                self.assignments[i] = closestCentroid
-                change = True
+    # To store the value of centroids when it updates
+    C_old = np.zeros(C.shape)
+    # Cluster Lables(0, 1, 2)
+    clusters = np.zeros(len(data))
+    # Error func. - Distance between new centroids and old centroids
+    error = dist(C, C_old, None)
+    # Loop will run till the error becomes zero
+    count = 0
+    while error != 0:
+        count += 1
+        # Assigning each value to its closest cluster
+        for i in range(len(data)):
+            distances = dist(data[i], C)
+            cluster = np.argmin(distances)
+            clusters[i] = cluster
+        # Storing the old centroid values
+        C_old = deepcopy(C)
+        # Finding the new centroids by taking the average value
+        
+        for i in range(k):
+            points = [data[j] for j in range(len(data)) if clusters[j] == i]
+            #print "points" , len(points)
+            if len(points):
+                C[i] = np.mean(points, axis=0)
             else:
-                if (closestCentroid != self.assignments[i]):
-                    self.assignments[i] = closestCentroid
-                    change = True
-        return change
+                # no points for the centroid: get new random one:
+                C[i] = np.array(randomCentroid(data,1, C), dtype=np.float32)
+        error = dist(C, C_old, None)
+    cpoints = []
+    for i in range(k):
+        cpoints.append(np.array([data[j] for j in range(len(data)) if clusters[j] == i]))
+    return  C, cpoints #points, clusters
 
-    def getClusters(self):
-        """ Extract information about clusters"""
-        clusters = []
-        for i in range(self.k):
-            clusters.append([])
+def getClusterRad(clusters, centroids):
+    radii = []
+    for i, center in enumerate(centroids):
+        pointset = clusters[i]
+        dd = dist(center, pointset)
+        maxval = np.max(dd)
+        radii.append(maxval)
+    return radii
 
-        for pointId, centroidId in self.assignments.items():
-            clusters[centroidId].append(pointId)
-           
-        return clusters
-
-
-
+def getBeads(mol, nbeads, selstr=None):
+    if selstr is not None :
+        molSel = mol.selectMolKit(selstr)
+    else:
+        selstr = ""
+        molSel = mol.select()
+    if not molSel:
+        return {"centers": [], "radii":[]}
+    #print "MOL SELECTION in BEADS:", selstr, molSel
+    data = molSel.getCoords()
+    centers, clusters = cluster(data, nbeads)
+    if len(centers):
+        radii = getClusterRad(clusters, centers)
+        nc = len(centers)
+        cc = np.sum(centers, axis=0)/nc
+        centers = centers - cc
+        geomDict = {"centers": centers.flatten().tolist(), "radii":radii}
+    else:
+        geomDict = {"centers": [], "radii":[]}
+    return geomDict
+    
 
 from PmvApp.Pmv import MolApp
 def fetchMol(app, pdbId, model=None, pdbFolder=None):
+    """fetch a pdb file from web """
     app.lazyLoad('fileCmds', commands=['readMolecules', 'fetch'], package='PmvApp')
     app.lazyLoad("coarseMolecularSurfaceCmds", commands=["computeCoarseMolecularSurface"], package="PmvApp")
     res = app.fetchFile(pdbId, "pdb", model=model, pdbFolder=pdbFolder, addToRecent=False)
@@ -186,6 +133,7 @@ def fetchMol(app, pdbId, model=None, pdbFolder=None):
     return mol
 
 def readMolStr(app, lines, filename, model=None, chain=None,subset=None, altloc='A', format="PDB", header=False, secondary=None):
+    """create a MolKit2(prody) molecule object from pdb string (lines) """
     from prody.proteins.header import getHeaderDict
     from prody.proteins.pdbfile import _parsePDBLines
     from prody.atomic import AtomGroup
@@ -233,9 +181,10 @@ def getBiologicalUnit(app,mol,selstr,bu):
         import prody
         mol.pdbHeader = prody.parsePDB(mol.filename, model=0, header=True)
     print ("bu header biomt")
-    print mol.pdbHeader['biomoltrans'].keys()
+    #print mol.pdbHeader['biomoltrans'].keys()
     biotrans = mol.pdbHeader['biomoltrans'][str(bu)][0]
-    selStr = "chain "+' '.join(biotrans)
+    #print len(biotrans),biotrans
+    selStr = "chain "+' '.join(biotrans[0])
     # select the atom set to which to apply the transformation
     nbTrans = (len(biotrans)-1)/3
     nmol = None
@@ -250,20 +199,21 @@ def getBiologicalUnit(app,mol,selstr,bu):
 
 def getCoarseMolSurf(app, mol, selstr, bu="", surfName='coarseMolSurf', perMol=True,
              gridSize=32, padding=0., resolution=-0.3, isovalue='fast approximation'):
-
+    """Compute coarse molecular surface """
     if selstr is not None :
         molSel = mol.selectMolKit(selstr)
     else:
         selstr = ""
-        molSel = mol.selectMolKit("")
+        molSel = mol.select()
     app.lazyLoad("coarseMolecularSurfaceCmds", commands=["computeCoarseMolecularSurface"], package="PmvApp")
-    #before computing check ger the biomt
+    #before computing check for the biomt
     biomt=[]
     if bu is not None and bu!="":
         biomt,selStr = getBiologicalUnit(app,mol,selstr,bu)
         molSel = mol.select(selStr)
+    #print mol,biomt,molSel,surfName
     app.computeCoarseMolecularSurface(molSel, surfName= surfName, gridSize=gridSize, padding=padding, resolution=resolution, bind_surface_to_molecule=False, isovalue=isovalue)
-    mol = molSel.getAtomGroup().getMolecule()
+    #mol = molSel.getAtomGroup().getMolecule()
     geom = mol.geomContainer.geoms[surfName]
     verts = geom.getVertices()
     faces = geom.getFaces()
@@ -276,7 +226,7 @@ def getCoarseMolSurf(app, mol, selstr, bu="", surfName='coarseMolSurf', perMol=T
     if bu is not None and bu!="":
         #transform the verts with biomt and accumulate faces and normal_src
         for i in range(len(biomt)) :
-            #apply the transformation for all vertex
+            #apply the transformation for all vertices
             vtmp = np.ones( (len(verts), 4), 'f')
             vtmp[:, :3] = verts
             mat = np.array(biomt[i])
@@ -284,22 +234,24 @@ def getCoarseMolSurf(app, mol, selstr, bu="", surfName='coarseMolSurf', perMol=T
             v.extend(ncoords[:, :3].flatten().tolist())
             f.extend( (faces + (offset*i) ).flatten().tolist() )
             n.extend(vnorms.flatten().tolist())
+            #center ?
         if len(v):
             geomDict = {"verts": v, "faces":f, "normals": n}
         else:
             geomDict = {"verts":[], "faces":[], "normals":[]}
     else :
-        import numpy
         coords = molSel.getCoords()
         ncoords = len(coords)
-        center = numpy.sum(coords, axis=0)/ncoords
+        center = np.sum(coords, axis=0)/ncoords
         verts = verts - center
 
         if len(verts):
             geomDict = {"verts": verts.flatten().tolist(), "faces":faces.flatten().tolist(), "normals": vnorms.flatten().tolist()}
         else:
             geomDict = {"verts":[], "faces":[], "normals":[]}
+            
     return geomDict
+
 
 
 def main():
@@ -326,7 +278,7 @@ def main():
     if form.has_key("model"):
         model = int(form.getvalue("model"))
     mol = None
-
+    print selstr,bu,model
     if form.has_key('inputfile'):
         fileitem = form['inputfile']
         if fileitem.filename != "":
@@ -356,28 +308,43 @@ def main():
             app.lazyLoad('fileCmds', commands=['readMolecules'], package='PmvApp')
             mol = app.readMolecule(filename,addToRecent=False)
     if mol:
-        # resolution and isovalue need to be change in case of alpha-carbon structure only.
-        default_iso = 'fast approximation'
-        default_res = -0.3 #-0.1 for Calpah
-        iso = 1.0
-        res = -0.1
-        gsize = 16
-        if form.has_key("iso"):
-            iso = float(form["iso"])
-        if form.has_key("res"):
-            res = float(form["res"])
-        if form.has_key("gsize"):
-            gsize = int(form["gsize"])
-        # compute the surface and print the json string with faces and verts:
-        geomDict = getCoarseMolSurf(app, mol, selstr, bu = bu, surfName="coarseSurf_1", gridSize=gsize,
-        padding=0., resolution=iso, isovalue=res)
-        import json
-        jsonstr = json.dumps(geomDict)
-        #print "<br> <br> <br>"
-        print "SURFACE COMPUTED", "&nbsp; Num faces: %d"%len(geomDict['faces']), "&nbsp; Num verts: %d <br>" % len(geomDict['verts'])
-        print '","results":'
-        print jsonstr
-        print ',"inputs":{'#<br> <br>"
+        results = []
+        if form.has_key("cms"): # coarse mol surface
+            # resolution and isovalue need to be change in case of alpha-carbon structure only.
+            default_iso = 'fast approximation'
+            default_res = -0.3 #-0.1 for Calpah
+            iso = 1.0
+            res = -0.1
+            gsize = 16
+            if form.has_key("iso"):
+                iso = float(form["iso"])
+            if form.has_key("res"):
+                res = float(form["res"])
+            if form.has_key("gsize"):
+                gsize = int(form["gsize"])
+            # compute the surface and print the json string with faces and verts:
+            geomDict = getCoarseMolSurf(app, mol, selstr, bu = bu, surfName="coarseSurf_1", gridSize=gsize,
+            padding=0., resolution=res, isovalue=iso)
+            import json
+            jsonstr = json.dumps(geomDict)
+            #print "<br> <br> <br>"
+            print "SURFACE COMPUTED !!!", "&nbsp; Num faces: %d"%len(geomDict['faces']), "&nbsp; Num verts: %d <br>" % len(geomDict['verts'])
+            results.append(jsonstr)
+            
+        if form.has_key("beads"): # clustering
+            nbeads = 3
+            if form.has_key("nbeads"):
+                nbeads = int(form.getvalue("nbeads"))
+            geomDict = getBeads(mol, nbeads, selstr)
+            import json
+            jsonstr = json.dumps(geomDict)
+            results.append(jsonstr)
+            
+        print '", "results":'         # this closes "log" and starts "results"
+
+        for st in results:
+            print st
+    print ',"inputs":{'#<br> <br>"
     astr=''
     for k in form :
         if k == "inputfile": continue
@@ -390,8 +357,8 @@ def main():
     print astr[:-1]+'}}'
 
 try:
-    print 'Content-type: text/html\n\n'
     print "Access-Control-Allow-Origin: *"
+    print 'Content-type: text/html\n'
     #print "Hello"
     main()
 except:

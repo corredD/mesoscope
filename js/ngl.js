@@ -368,7 +368,8 @@ function toggleOriginVisibility(e) {
     .setVisibility(e.target.checked);
 }
 
-async function updateCurrentBeadsLevel() {
+async function updateCurrentBeadsLevelClient() {
+//async function updateCurrentBeadsLevel() {
   console.log("update beads", beads_elem.selectedOptions[0].value); //undefined?//lod level
   var ngl_sele = new NGL.Selection(sele_elem.value);
   var center = GetGeometricCenter(ngl_current_structure, ngl_sele).center;
@@ -415,6 +416,148 @@ async function updateCurrentBeadsLevel() {
     visibility: true
   });
   nbBeads_elem.textContent = '' + ngl_load_params.beads.pos[lod].coords.length / 3 + ' beads';
+}
+
+// server side function for computing beads
+
+async function updateCurrentBeadsLevel() {
+    console.log("update beads", beads_elem.selectedOptions[0].value); //undefined?//lod level
+    console.log("num clusters", slidercluster_elem.value);
+    var d = node_selected;//or node_selected.data.bu
+    var pdb = d.data.source.pdb;//document.getElementById("pdb_str");
+    var bu = (d.data.source.bu)?d.data.source.bu:"";//document.getElementById("bu_str");
+    //selection need to be pmv string
+    var sele = (d.data.source.selection)?d.data.source.selection:"";//document.getElementById("sel_str");
+    sele = sele.replace(":","");
+    //selection is in NGL format. Need to go in pmv format
+    //every :C is a chainNameScheme
+    var model = (d.data.source.model)?d.data.source.model:"";//model_elem.selectedOptions[0].value;
+    if ( (!model) || model.startsWith("S") || model.startsWith("a") ) model = "";
+    if ( sele.startsWith("/") ) sele = "";
+    //depending on the pdb we will have a file or not
+    var thefile = null;
+    if ( d.data.source.pdb.length !== 4 ){
+      pdb="";
+      if (folder_elem && folder_elem.files.length !=""){
+        thefile = pathList_[d.data.source.pdb];
+      }
+      else {
+        pdb = d.data.source.pdb;
+        //its a blob we want ?
+      }
+    }
+      var formData = new FormData();
+    formData.append("beads", true);
+    formData.append("nbeads", slidercluster_elem.value)
+    //console.log(thefile)
+    // add assoc key values, this will be posts values
+      if (thefile !== null) {
+        console.log("use input file",thefile);
+        formData.append("inputfile", thefile, thefile.name);
+        formData.append("upload_file", true);
+      }
+      else if (pdb && pdb!=="") formData.append("pdbId", pdb);
+      if (bu && bu!=="") formData.append("bu", bu);
+      if (sele && sele!=="") formData.append("selection", sele);
+      if (model && model!=="") formData.append("modelId", model);
+      //formData.append(name, value);
+      console.log([pdb,bu,sele,model,thefile]);
+    console.log(formData);
+    var lod = beads_elem.selectedOptions[0].value;
+    var comp = stage.getComponentsByName("beads_" + lod);
+    var rep = stage.getRepresentationsByName("beads_" + lod);
+    var assambly = assambly_elem.selectedOptions[0].value;
+    if (!assambly || assambly === "") assambly = "AU";
+    ngl_current_structure.assambly = assambly;
+    $.ajax({
+              type: "POST",
+              //url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
+	      url: "cgi-bin/get_geom_dev.cgi",
+              success: function (data) {
+		  console.log("##BEADS###");
+                  console.log("DATA:", data);
+		  
+                  var data_parsed = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
+                  var clusters = data_parsed.results;//verts, faces,normals
+		  console.log("CLUSTERS:", clusters);
+		  var _pos = {
+		      "coords": clusters.centers
+		  };
+		  var _rad = {
+		      "radii": clusters.radii
+		  };
+		  console.log("POS:", _pos);
+		  console.log("RADII:", _rad);
+		  if (!ngl_load_params.beads.pos) ngl_load_params.beads.pos = [];
+		  if (!ngl_load_params.beads.rad) ngl_load_params.beads.rad = [];
+		  ngl_load_params.beads.pos[lod] = _pos; //{"pos":[lvl0_pos,lvl1_pos],"rad":[lvl0_rad,lvl1_rad]};
+		  ngl_load_params.beads.rad[lod] = _rad;
+		  if (node_selected) {
+		      console.log("update node ", node_selected.data.name)
+		      node_selected.data.pos = JSON.parse(JSON.stringify(ngl_load_params.beads.pos));
+		      node_selected.data.radii = JSON.parse(JSON.stringify(ngl_load_params.beads.rad));
+		  }
+		  if (comp.list) {
+		      for (var i = 0; i < comp.list.length; i++) {
+			  stage.removeComponent(comp.list[i]);
+		      }
+		  }
+		  var col = Array(ngl_load_params.beads.pos[lod].coords.length).fill(0).map(makeARandomNumber);
+
+		  var sphereBuffer = new NGL.SphereBuffer({
+		      position: new Float32Array(ngl_load_params.beads.pos[lod].coords),
+		      color: new Float32Array(col),
+		      radius: new Float32Array(ngl_load_params.beads.rad[lod].radii)
+		      //labelType:"text",
+		      //labelText:labels
+		  })
+		  //update the component buffer ?
+		  var shape = new NGL.Shape("beads_" + lod);
+		  shape.addBuffer(sphereBuffer)
+		  var shapeComp = stage.addComponentFromObject(shape)
+		  var rep = shapeComp.addRepresentation("beads_" + lod, {
+		      opacity: 0.6,
+		      visibility: true
+		  });
+		  nbBeads_elem.textContent = '' + ngl_load_params.beads.pos[lod].coords.length / 3 + ' beads';
+              },
+              error: function (error) {
+                  console.log(error);
+              },
+              async: true,
+              data: formData,
+              cache: false,
+              contentType: false,
+              processData: false,
+              timeout: 60000
+          });
+  /***var ngl_sele = new NGL.Selection(sele_elem.value);
+  var center = GetGeometricCenter(ngl_current_structure, ngl_sele).center;
+  ngl_current_structure.ngl_sele = ngl_sele;
+  var lod = beads_elem.selectedOptions[0].value;
+  var comp = stage.getComponentsByName("beads_" + lod);
+  var rep = stage.getRepresentationsByName("beads_" + lod);
+  var assambly = assambly_elem.selectedOptions[0].value;
+  if (!assambly || assambly === "") assambly = "AU";
+  ngl_current_structure.assambly = assambly;
+  //stage.removeComponent(rep);
+  //rep.dispose();
+  //console.log("found rep beads_"+lod);
+  //console.log(rep);
+  //console.log("found component beads_"+lod);
+  //console.log(comp);
+  if (comp.list) {
+    //console.log(comp.list[0]);
+    //console.log(comp.list[0].reprList);
+    stage.removeComponent(comp.list[0]);
+    //comp.list[0].reprList[0].dispose();
+    //comp.list[0].dispose();
+  }
+    console.log("input", center, lod, ngl_current_structure);
+  var res = await _buildBeads(lod, ngl_current_structure, center);
+  console.log("finsihed building beads", res);
+  
+**/
 }
 
 function changeClusterMethod(e) {

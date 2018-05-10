@@ -628,7 +628,8 @@ function AddPartner(ingdic,node,some_links) {
         //its a blob we want ?
       }
     }
-    var formData = new FormData();
+      var formData = new FormData();
+      formData.append("cms", true);
     //console.log(thefile)
     // add assoc key values, this will be posts values
       if (thefile !== null) {
@@ -645,11 +646,14 @@ function AddPartner(ingdic,node,some_links) {
       console.log(formData);
           $.ajax({
               type: "POST",
-              url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",//"cgi-bin/get_geom_dev.cgi",//"http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
+              //url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
+	      url: "cgi-bin/get_geom_dev.cgi",
               success: function (data) {
+		  console.log("##CMS###");
                   console.log(data);
                   var data_parsed = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
                   var mesh = data_parsed.results;//verts, faces,normals
+		  console.log("MESH:", mesh);
                   NGL_ShowMeshVFN(mesh);
                   if (node_selected) {
                     node_selected.data.geom = mesh;//v,f,n directly
