@@ -1,5 +1,5 @@
 #!python2.7
-#/usr/local/bin/python2.7
+#!/usr/local/bin/python2.7
 import sys,os
 import json
 #import MySQLdb
@@ -13,7 +13,7 @@ cgitb.enable()
 
 import sqlite3
 
-database = "./data/cellPackDatabase.db"
+database = "../data/cellPackDatabase.db"
 
 def print_tree(conn, rootName="BloodHIVMycoRB.1.0"):
     #print "Content-type: text/plain\n"
@@ -1081,7 +1081,7 @@ function cpData() {
     print aStr
 
 import imp
-jsonRecipeDB = imp.load_source("jsonRecipeDB", "./python/jsonRecipeDB.py")
+jsonRecipeDB = imp.load_source("jsonRecipeDB", "../python/jsonRecipeDB.py")
 
 from jsonRecipeDB import  create_connection , list_table_columns, list_table_names, sql_query, add_row, JsonRecipeParser
 

@@ -4,14 +4,32 @@ var cumulative_res = {
   "pdbs": null,
   "mols": null
 };
-var local_host_dev = false;
-if (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") {
-  alert("It's a local server!");
-  local_host_dev = false;
-}
 
 var pmv_server = "cgi-bin/get_geom_dev.cgi"; //(local_host_dev)?"cgi-bin/get_geom_dev.cgi":
 var sql_server = "cgi-bin/cellpack_db_dev.cgi"; //(local_host_dev)?"cgi-bin/cellpack_db_dev.cgi":
+
+var local_host_dev = false;
+if (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "")
+{
+  alert("It's a local server!");
+  local_host_dev = false;
+  ClientDetection(this);
+  alert(
+      'OS: ' + jscd.os +' '+ jscd.osVersion + '\n' +
+      'Browser: ' + jscd.browser +' '+ jscd.browserMajorVersion +
+        ' (' + jscd.browserVersion + ')\n' +
+      'Mobile: ' + jscd.mobile + '\n' +
+      'Flash: ' + jscd.flashVersion + '\n' +
+      'Cookies: ' + jscd.cookies + '\n' +
+      'Screen Size: ' + jscd.screen + '\n\n' +
+      'Full User Agent: ' + navigator.userAgent
+  );
+  if (jscd.os === "Windows") {
+    pmv_server = "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.cgi"; //(local_host_dev)?"cgi-bin/get_geom_dev.cgi":
+    sql_server = "http://mgldev.scripps.edu/cgi-bin/cellpack_db_dev.cgi"; //(local_host_dev)?"cgi-bin/cellpack_db_dev.cgi":
+  }
+}
+
 
 function BuildQuery(textQuery) {
   var query = "<orgPdbQuery>";
@@ -800,7 +818,7 @@ function buildLoopAsync() {
   var d = current_compute_node;
   if (!d.children && "data" in d &&
     (!d.data.geom || d.data.geom === "None" ||
-      d.data.geom === "null" || d.data.geom === "") {
+      d.data.geom === "null" || d.data.geom === "")) {
       formData.append("cms", true);
     }
 
