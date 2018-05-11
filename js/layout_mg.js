@@ -391,9 +391,9 @@ var config = {
 										type:'stack',
 										content:[
 											//get_comp_defintion_pfv(),
+                      get_new_single_component("Sequence features","show sequence features","seq_feature_viewer",{"entry":"","entity":"1","type":"pdb-seq-viewer"}),
                       get_new_single_component("protvista","show protvista","protvista",{"entry":"","entity":"1"}),
 											get_new_single_component("Topology","show topology 2d","topology_viewer",{"entry":"","entity":"1","type":"pdb-topology-viewer"}),
-										 	get_new_single_component("Sequence features","show sequence features","seq_feature_viewer",{"entry":"","entity":"1","type":"pdb-seq-viewer"}),
 										  get_new_single_component("Uniprot mapping","show uniprot coverage","uniprot_viewer",{"entry":"","entity":"1","type":"pdb-uniprot-viewer"})
 									    ]
 									}
@@ -426,7 +426,7 @@ var myLayout,
 var usesavedState = true;
 var usesavedSession = true;
 var savedRecipe = localStorage.getItem('savedRecipe');
-var current_version = {"version":1.004};
+var current_version = {"version":1.006};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()
@@ -456,6 +456,7 @@ if (savedState !== null && usesavedState && session_version) {
     //myLayout = new GoldenLayout( config );
     myLayout = new window.GoldenLayout(config, $('#layoutContainer'));
     localStorage.setItem('session_version', JSON.stringify(current_version));
+    savedRecipe = null;
   }
 } else {
   //myLayout = new GoldenLayout( config );
@@ -500,12 +501,14 @@ myLayout.on('stateChanged', function() {
     state = JSON.stringify(config);
   }
   localStorage.setItem('savedState', state);
-  var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links); //Links?
+  var jdata = serializedRecipe(graph.nodes, graph.links);
+  //var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links); //Links?
   localStorage.setItem('savedRecipe', JSON.stringify(jdata));
 });
 
 function saveCurrentState() {
-  var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links); //Links?
+  var jdata = serializedRecipe(graph.nodes, graph.links);
+  //var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links); //Links?
   localStorage.setItem('savedRecipe', JSON.stringify(jdata));
 }
 
