@@ -28,7 +28,7 @@ var ngl_force_build_beads = false;
 var current_annotation;
 var title_annotation = document.getElementById("pdb_title");
 
-var current_compute_index=0;
+var current_compute_index = 0;
 var current_compute_node;
 var stop_current_compute = false;
 //var beads_checkbox = document.getElementById("beads_check");
@@ -273,7 +273,7 @@ function setupNGL() {
       if (panel.style.maxHeight) {
         panel.style.maxHeight = null;
       } else {
-        panel.style.maxHeight = "100%";//pcontainer.scrollHeight + "px"; //parent heigh?
+        panel.style.maxHeight = "100%"; //pcontainer.scrollHeight + "px"; //parent heigh?
       }
     });
   }
@@ -369,7 +369,7 @@ function toggleOriginVisibility(e) {
 }
 
 async function updateCurrentBeadsLevelClient() {
-//async function updateCurrentBeadsLevel() {
+  //async function updateCurrentBeadsLevel() {
   console.log("update beads", beads_elem.selectedOptions[0].value); //undefined?//lod level
   var ngl_sele = new NGL.Selection(sele_elem.value);
   var center = GetGeometricCenter(ngl_current_structure, ngl_sele).center;
@@ -420,117 +420,115 @@ async function updateCurrentBeadsLevelClient() {
 
 // server side function for computing beads
 
-async function updateCurrentBeadsLevel() {
-    console.log("update beads", beads_elem.selectedOptions[0].value); //undefined?//lod level
-    console.log("num clusters", slidercluster_elem.value);
-    var d = node_selected;//or node_selected.data.bu
-    var pdb = d.data.source.pdb;//document.getElementById("pdb_str");
-    var bu = (d.data.source.bu)?d.data.source.bu:"";//document.getElementById("bu_str");
-    //selection need to be pmv string
-    var sele = (d.data.source.selection)?d.data.source.selection:"";//document.getElementById("sel_str");
-    sele = sele.replace(":","");
-    //selection is in NGL format. Need to go in pmv format
-    //every :C is a chainNameScheme
-    var model = (d.data.source.model)?d.data.source.model:"";//model_elem.selectedOptions[0].value;
-    if ( (!model) || model.startsWith("S") || model.startsWith("a") ) model = "";
-    if ( sele.startsWith("/") ) sele = "";
-    //depending on the pdb we will have a file or not
-    var thefile = null;
-    if ( d.data.source.pdb.length !== 4 ){
-      pdb="";
-      if (folder_elem && folder_elem.files.length !=""){
-        thefile = pathList_[d.data.source.pdb];
-      }
-      else {
-        pdb = d.data.source.pdb;
-        //its a blob we want ?
-      }
+function updateCurrentBeadsLevel() {
+  console.log("update beads", beads_elem.selectedOptions[0].value); //undefined?//lod level
+  console.log("num clusters", slidercluster_elem.value);
+  var d = node_selected; //or node_selected.data.bu
+  var pdb = d.data.source.pdb; //document.getElementById("pdb_str");
+  var bu = (d.data.source.bu) ? d.data.source.bu : ""; //document.getElementById("bu_str");
+  //selection need to be pmv string
+  var sele = (d.data.source.selection) ? d.data.source.selection : ""; //document.getElementById("sel_str");
+  sele = sele.replace(":", "");
+  //selection is in NGL format. Need to go in pmv format
+  //every :C is a chainNameScheme
+  var model = (d.data.source.model) ? d.data.source.model : ""; //model_elem.selectedOptions[0].value;
+  if ((!model) || model.startsWith("S") || model.startsWith("a")) model = "";
+  if (sele.startsWith("/")) sele = "";
+  //depending on the pdb we will have a file or not
+  var thefile = null;
+  if (d.data.source.pdb.length !== 4) {
+    pdb = "";
+    if (folder_elem && folder_elem.files.length != "") {
+      thefile = pathList_[d.data.source.pdb];
+    } else {
+      pdb = d.data.source.pdb;
+      //its a blob we want ?
     }
-      var formData = new FormData();
-    formData.append("beads", true);
-    formData.append("nbeads", slidercluster_elem.value)
-    //console.log(thefile)
-    // add assoc key values, this will be posts values
-      if (thefile !== null) {
-        console.log("use input file",thefile);
-        formData.append("inputfile", thefile, thefile.name);
-        formData.append("upload_file", true);
-      }
-      else if (pdb && pdb!=="") formData.append("pdbId", pdb);
-      if (bu && bu!=="") formData.append("bu", bu);
-      if (sele && sele!=="") formData.append("selection", sele);
-      if (model && model!=="") formData.append("modelId", model);
-      //formData.append(name, value);
-      console.log([pdb,bu,sele,model,thefile]);
-    console.log(formData);
-    var lod = beads_elem.selectedOptions[0].value;
-    var comp = stage.getComponentsByName("beads_" + lod);
-    var rep = stage.getRepresentationsByName("beads_" + lod);
-    var assambly = assambly_elem.selectedOptions[0].value;
-    if (!assambly || assambly === "") assambly = "AU";
-    ngl_current_structure.assambly = assambly;
-    $.ajax({
-              type: "POST",
-              //url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
-	      url: "cgi-bin/get_geom_dev.cgi",
-              success: function (data) {
-		  console.log("##BEADS###");
-                  console.log("DATA:", data);
-		  
-                  var data_parsed = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
-                  var clusters = data_parsed.results;//verts, faces,normals
-		  console.log("CLUSTERS:", clusters);
-		  var _pos = {
-		      "coords": clusters.centers
-		  };
-		  var _rad = {
-		      "radii": clusters.radii
-		  };
-		  console.log("POS:", _pos);
-		  console.log("RADII:", _rad);
-		  if (!ngl_load_params.beads.pos) ngl_load_params.beads.pos = [];
-		  if (!ngl_load_params.beads.rad) ngl_load_params.beads.rad = [];
-		  ngl_load_params.beads.pos[lod] = _pos; //{"pos":[lvl0_pos,lvl1_pos],"rad":[lvl0_rad,lvl1_rad]};
-		  ngl_load_params.beads.rad[lod] = _rad;
-		  if (node_selected) {
-		      console.log("update node ", node_selected.data.name)
-		      node_selected.data.pos = JSON.parse(JSON.stringify(ngl_load_params.beads.pos));
-		      node_selected.data.radii = JSON.parse(JSON.stringify(ngl_load_params.beads.rad));
-		  }
-		  if (comp.list) {
-		      for (var i = 0; i < comp.list.length; i++) {
-			  stage.removeComponent(comp.list[i]);
-		      }
-		  }
-		  var col = Array(ngl_load_params.beads.pos[lod].coords.length).fill(0).map(makeARandomNumber);
+  }
+  var formData = new FormData();
+  formData.append("beads", true);
+  formData.append("nbeads", slidercluster_elem.value)
+  //console.log(thefile)
+  // add assoc key values, this will be posts values
+  if (thefile !== null) {
+    console.log("use input file", thefile);
+    formData.append("inputfile", thefile, thefile.name);
+    formData.append("upload_file", true);
+  } else if (pdb && pdb !== "") formData.append("pdbId", pdb);
+  if (bu && bu !== "") formData.append("bu", bu);
+  if (sele && sele !== "") formData.append("selection", sele);
+  if (model && model !== "") formData.append("modelId", model);
+  //formData.append(name, value);
+  console.log([pdb, bu, sele, model, thefile]);
+  console.log(formData);
+  var lod = beads_elem.selectedOptions[0].value;
+  var comp = stage.getComponentsByName("beads_" + lod);
+  var rep = stage.getRepresentationsByName("beads_" + lod);
+  var assambly = assambly_elem.selectedOptions[0].value;
+  if (!assambly || assambly === "") assambly = "AU";
+  ngl_current_structure.assambly = assambly;
+  $.ajax({
+    type: "POST",
+    //url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
+    url: "cgi-bin/get_geom_dev.cgi",
+    success: function(data) {
+      console.log("##BEADS###");
+      console.log("DATA:", data);
 
-		  var sphereBuffer = new NGL.SphereBuffer({
-		      position: new Float32Array(ngl_load_params.beads.pos[lod].coords),
-		      color: new Float32Array(col),
-		      radius: new Float32Array(ngl_load_params.beads.rad[lod].radii)
-		      //labelType:"text",
-		      //labelText:labels
-		  })
-		  //update the component buffer ?
-		  var shape = new NGL.Shape("beads_" + lod);
-		  shape.addBuffer(sphereBuffer)
-		  var shapeComp = stage.addComponentFromObject(shape)
-		  var rep = shapeComp.addRepresentation("beads_" + lod, {
-		      opacity: 0.6,
-		      visibility: true
-		  });
-		  nbBeads_elem.textContent = '' + ngl_load_params.beads.pos[lod].coords.length / 3 + ' beads';
-              },
-              error: function (error) {
-                  console.log(error);
-              },
-              async: true,
-              data: formData,
-              cache: false,
-              contentType: false,
-              processData: false,
-              timeout: 60000
-          });
+      var data_parsed = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
+      var clusters = data_parsed.results; //verts, faces,normals
+      console.log("CLUSTERS:", clusters);
+      var _pos = {
+        "coords": clusters.centers
+      };
+      var _rad = {
+        "radii": clusters.radii
+      };
+      console.log("POS:", _pos);
+      console.log("RADII:", _rad);
+      if (!ngl_load_params.beads.pos) ngl_load_params.beads.pos = [];
+      if (!ngl_load_params.beads.rad) ngl_load_params.beads.rad = [];
+      ngl_load_params.beads.pos[lod] = _pos; //{"pos":[lvl0_pos,lvl1_pos],"rad":[lvl0_rad,lvl1_rad]};
+      ngl_load_params.beads.rad[lod] = _rad;
+      if (node_selected) {
+        console.log("update node ", node_selected.data.name)
+        node_selected.data.pos = JSON.parse(JSON.stringify(ngl_load_params.beads.pos));
+        node_selected.data.radii = JSON.parse(JSON.stringify(ngl_load_params.beads.rad));
+      }
+      if (comp.list) {
+        for (var i = 0; i < comp.list.length; i++) {
+          stage.removeComponent(comp.list[i]);
+        }
+      }
+      var col = Array(ngl_load_params.beads.pos[lod].coords.length).fill(0).map(makeARandomNumber);
+
+      var sphereBuffer = new NGL.SphereBuffer({
+        position: new Float32Array(ngl_load_params.beads.pos[lod].coords),
+        color: new Float32Array(col),
+        radius: new Float32Array(ngl_load_params.beads.rad[lod].radii)
+        //labelType:"text",
+        //labelText:labels
+      })
+      //update the component buffer ?
+      var shape = new NGL.Shape("beads_" + lod);
+      shape.addBuffer(sphereBuffer)
+      var shapeComp = stage.addComponentFromObject(shape)
+      var rep = shapeComp.addRepresentation("beads_" + lod, {
+        opacity: 0.6,
+        visibility: true
+      });
+      nbBeads_elem.textContent = '' + ngl_load_params.beads.pos[lod].coords.length / 3 + ' beads';
+    },
+    error: function(error) {
+      console.log(error);
+    },
+    async: true,
+    data: formData,
+    cache: false,
+    contentType: false,
+    processData: false,
+    timeout: 60000
+  });
   /***var ngl_sele = new NGL.Selection(sele_elem.value);
   var center = GetGeometricCenter(ngl_current_structure, ngl_sele).center;
   ngl_current_structure.ngl_sele = ngl_sele;
@@ -556,7 +554,7 @@ async function updateCurrentBeadsLevel() {
     console.log("input", center, lod, ngl_current_structure);
   var res = await _buildBeads(lod, ngl_current_structure, center);
   console.log("finsihed building beads", res);
-  
+
 **/
 }
 
@@ -908,9 +906,9 @@ function NGL_LoadShapeFile(afile) {
     reader.onload = function(event) {
       //console.log(event.target);
       var data = event.target.result;
-    //  stage.removeAllComponents();
+      //  stage.removeAllComponents();
       getCollada_cb(Collada.parse(data, null, filename));
-    //  stage.autoView();
+      //  stage.autoView();
     };
     //read data
     //var type = thefile.type.split("/")[0];
@@ -929,10 +927,10 @@ function LoadShapeObj(d) {
 function NGLLoadAShapeObj(gpath) {
   if (node_selected.data.geom_type === "raw") {
     NGL_ShowMeshVFN(gpath);
-  } else if (node_selected.data.geom_type === "None"
-              && node_selected.data.nodeType !=="compartment") {
+  } else if (node_selected.data.geom_type === "None" &&
+    node_selected.data.nodeType !== "compartment") {
     //build it ?
-		buildCMS();
+    buildCMS();
   } else if (node_selected.data.geom_type === "file") {
     //gpath may be different as we pass data.geom
     if (typeof gpath === 'string') {
@@ -949,16 +947,16 @@ function NGLLoadAShapeObj(gpath) {
       if (folder_elem && folder_elem.files.length != "") {
         //ftp://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-5239/map/emd_5239.map.gz
         ftoload = pathList_[gname];
-				node_selected.data.geom = ftoload;
+        node_selected.data.geom = ftoload;
       } else {
         ftoload = geom_purl + gname;
         isurl = true;
-				node_selected.data.geom = gname;
+        node_selected.data.geom = gname;
       }
       console.log("try loading geom at " + ftoload);
-			console.log(geom_purl);
-			console.log(gname);
-			if (!ftoload) return;
+      console.log(geom_purl);
+      console.log(gname);
+      if (!ftoload) return;
       if (ext === "obj" || ext === "ply") {
         //stage.removeAllComponents();
         stage.loadFile(ftoload).then(function(o) {
@@ -987,16 +985,16 @@ function NGLLoadAShapeObj(gpath) {
           Collada.load(file, getCollada_cb);
         }
         //Collada.load( thefile, getCollada_cb );
+      } else if (ext === "mmtf") {
+        stage.loadFile("rcsb://" + gname, {
+          defaultRepresentation: true
+        });
+        //build the geom ?
       }
-      else if (ext === "mmtf") {
-          stage.loadFile( "rcsb://"+gname, { defaultRepresentation: true } );
-          //build the geom ?
-      }
+    } else { //should be a file
+      NGL_LoadShapeFile(gpath);
+      NGL_showGeomNode_cb(document.getElementById("showgeom").checked);
     }
-		else {//should be a file
-				NGL_LoadShapeFile(gpath);
-				NGL_showGeomNode_cb(document.getElementById("showgeom").checked);
-		}
   }
 }
 
@@ -1648,11 +1646,10 @@ function updateNGL(d) {
   stage.removeAllComponents();
   ngl_force_build_beads = false;
   if (d.data.geom) {
-		if ("geom_type" in d.data) {
-			ngl_load_params.geom = d.data.geom;//geom_purl + geom_name + ".obj"; //NGLLoadAShapeObj(  );
-			ngl_load_params.dogeom = true;
-		}
-		else ngl_load_params.dogeom = false;
+    if ("geom_type" in d.data) {
+      ngl_load_params.geom = d.data.geom; //geom_purl + geom_name + ".obj"; //NGLLoadAShapeObj(  );
+      ngl_load_params.dogeom = true;
+    } else ngl_load_params.dogeom = false;
   }
   if ("pos" in d.data && d.data.pos && d.data.pos.length !== 0) {
     console.log("found some position", JSON.stringify(d.data.pos));
@@ -1809,71 +1806,67 @@ function NGLLoad(pdbname, bu, sel_str) {
 //https://github.com/6pac/SlickGrid/blob/master/examples/example10-async-post-render.html
 //https://github.com/6pac/SlickGrid/blob/master/examples/example6-ajax-loading.html
 //let the server do everything in one call that send elem by elem ?
-function BuildDefaultCompartmentsRep(){
-  console.log("build default compartment",graph.nodes.length);
-  for (var i=0;i< graph.nodes.length;i++){//.forEach(function(d){
+function BuildDefaultCompartmentsRep() {
+  console.log("build default compartment", graph.nodes.length);
+  for (var i = 0; i < graph.nodes.length; i++) { //.forEach(function(d){
     var d = graph.nodes[i];
-    if (d.data.nodetype!=="compartment") continue;
-    var comptype = ("geom_type" in d.data)? d.data.geom_type: "None";
-    var geom = ("geom" in d.data)? d.data.geom: "None";
-    if ( !comptype || comptype === "None" || !geom || geom === "None"){
-  		  var name = d.data.name+"_geom";
-  			var radius = 500.0;
-  			d.data.geom = {
-          "name": name,
-          "radius": radius
-        };
-        d.data.geom_type = "sphere";
-  	}
-    console.log("comp geom ",comptype,geom,d.data.name,d.data.geom,d.data.geom_type);
+    if (d.data.nodetype !== "compartment") continue;
+    var comptype = ("geom_type" in d.data) ? d.data.geom_type : "None";
+    var geom = ("geom" in d.data) ? d.data.geom : "None";
+    if (!comptype || comptype === "None" || !geom || geom === "None") {
+      var name = d.data.name + "_geom";
+      var radius = 500.0;
+      d.data.geom = {
+        "name": name,
+        "radius": radius
+      };
+      d.data.geom_type = "sphere";
+    }
+    console.log("comp geom ", comptype, geom, d.data.name, d.data.geom, d.data.geom_type);
   }
   console.log
 }
 
-function BuildAll(){
+function BuildAll() {
   //show the stop button
   stop_current_compute = false;
   document.getElementById('stopbeads').setAttribute("class", "spinner");
   document.getElementById("stopbeads_lbl").setAttribute("class", "show");
-  document.getElementById("stopbeads_lbl").innerHTML = "building "+current_compute_index+" / " + graph.nodes.length;
+  document.getElementById("stopbeads_lbl").innerHTML = "building " + current_compute_index + " / " + graph.nodes.length;
   //use getItem(index)
   //for all compartment get a geom. default sphere of 500A
   BuildDefaultCompartmentsRep();
-  current_compute_index=-1;
+  current_compute_index = -1;
   NextComputeIgredient();
   buildLoopAsync();
   //build geom for compartment by default
   //build beads
 }
 
-function BuildAllBeads(){
+function BuildAllBeads() {
   //show the stop button
   document.getElementById('stopbeads').setAttribute("class", "spinner");
   document.getElementById("stopbeads_lbl").setAttribute("class", "show");
 }
 
-function stopBeads()
-{
+function stopBeads() {
   document.getElementById('stopbeads').setAttribute("class", "spinner hidden");
   document.getElementById("stopbeads_lbl").setAttribute("class", "hidden");
   stop_current_compute = true;
 }
 
-function BuildAllGeoms()
-{
+function BuildAllGeoms() {
   //show the stop button
   document.getElementById('stopgeoms').setAttribute("class", "spinner");
   document.getElementById("stopgeoms_lbl").setAttribute("class", "show");
 }
 
-function stopGeoms()
-{
+function stopGeoms() {
   document.getElementById('stopgeoms').setAttribute("class", "spinner hidden");
   document.getElementById("stopgeoms_lbl").setAttribute("class", "hidden");
 }
 
-function stopGeom()
-{
+function stopGeom() {
   document.getElementById('stopbuildgeom').setAttribute("class", "spinner hidden");
   document.getElementById("stopbuildgeom_lbl").setAttribute("class", "hidden");
   //stop waiting ?
