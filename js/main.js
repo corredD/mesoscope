@@ -1574,7 +1574,8 @@ function LoadExampleBloodHIV(){
 		csv_mapping= false;
 		comp_column = false;
 		console.log(url);
-		d3v4.json(url, function (json) {
+		d3v4.json(url, function (error,json) {
+						console.log(error)
 						console.log(json);
 						var adata = parseCellPackRecipeSerialized(json)
 						//var alink =[]
