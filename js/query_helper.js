@@ -9,9 +9,8 @@ if (location.hostname === "localhost" || location.hostname === "127.0.0.1" || lo
   alert("It's a local server!");
   local_host_dev = false;
 }
-//url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
-url: "cgi-bin/get_geom_dev.cgi",
-  var pmv_server = "cgi-bin/get_geom_dev.cgi"; //(local_host_dev)?"cgi-bin/get_geom_dev.cgi":
+
+var pmv_server = "cgi-bin/get_geom_dev.cgi"; //(local_host_dev)?"cgi-bin/get_geom_dev.cgi":
 var sql_server = "cgi-bin/cellpack_db_dev.cgi"; //(local_host_dev)?"cgi-bin/cellpack_db_dev.cgi":
 
 function BuildQuery(textQuery) {
