@@ -136,7 +136,9 @@ var ngloptions = '' +
   //' </select>' +
  ' <div> <label> number of cluster</label>' +
   ' <input id="slidercl_params1" style="width:70%;display:inline" type="range" min="1" max="100"" step="1" value="10" /> ' +
-  ' <label id="cl_params1" for="slidercl_params1">10</label></div>' +
+  ' <label id="cl_params1" for="slidercl_params1">10</label>' +
+  +  getSpinner("stopkmeans","stopKmeans()")+
+  '</div>'+
   //'<label> param 2</label>' +
   //' <input id="slidercl_params2" style="width:100px" type="range" min="1" max="100"" step="1" value="10" /> ' +
   //' <label id="cl_params2" for="slidercl_params2" style="width:30px">10</label>' +

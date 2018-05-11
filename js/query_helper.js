@@ -9,24 +9,23 @@ var pmv_server = "cgi-bin/get_geom_dev.cgi"; //(local_host_dev)?"cgi-bin/get_geo
 var sql_server = "cgi-bin/cellpack_db_dev.cgi"; //(local_host_dev)?"cgi-bin/cellpack_db_dev.cgi":
 
 var local_host_dev = false;
-if (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "")
-{
+if (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") {
   alert("It's a local server!");
   local_host_dev = false;
   ClientDetection(this);
   alert(
-      'OS: ' + jscd.os +' '+ jscd.osVersion + '\n' +
-      'Browser: ' + jscd.browser +' '+ jscd.browserMajorVersion +
-        ' (' + jscd.browserVersion + ')\n' +
-      'Mobile: ' + jscd.mobile + '\n' +
-      'Flash: ' + jscd.flashVersion + '\n' +
-      'Cookies: ' + jscd.cookies + '\n' +
-      'Screen Size: ' + jscd.screen + '\n\n' +
-      'Full User Agent: ' + navigator.userAgent
+    'OS: ' + jscd.os + ' ' + jscd.osVersion + '\n' +
+    'Browser: ' + jscd.browser + ' ' + jscd.browserMajorVersion +
+    ' (' + jscd.browserVersion + ')\n' +
+    'Mobile: ' + jscd.mobile + '\n' +
+    'Flash: ' + jscd.flashVersion + '\n' +
+    'Cookies: ' + jscd.cookies + '\n' +
+    'Screen Size: ' + jscd.screen + '\n\n' +
+    'Full User Agent: ' + navigator.userAgent
   );
   if (jscd.os === "Windows") {
-    pmv_server = "http://mgldev.scripps.edu/projects/mesoscope/cgi-bin/get_geom_dev.cgi"; //(local_host_dev)?"cgi-bin/get_geom_dev.cgi":
-    sql_server = "http://mgldev.scripps.edu/projects/mesoscope/cgi-bin/cellpack_db_dev.cgi"; //(local_host_dev)?"cgi-bin/cellpack_db_dev.cgi":
+    pmv_server = "http://mgldev.scripps.edu/projects/mesoscopebeta/cgi-bin/get_geom_dev.cgi"; //(local_host_dev)?"cgi-bin/get_geom_dev.cgi":
+    sql_server = "http://mgldev.scripps.edu/projects/mesoscopebeta/cgi-bin/cellpack_db_dev.cgi"; //(local_host_dev)?"cgi-bin/cellpack_db_dev.cgi":
   }
 }
 
@@ -713,10 +712,12 @@ function buildCMS() {
   //formData.append(name, value);
   console.log([pdb, bu, sele, model, thefile]);
   console.log(formData);
+  document.getElementById('stopbuildgeom').setAttribute("class", "spinner");
+  document.getElementById("stopbuildgeom_lbl").setAttribute("class", "show");
   $.ajax({
     type: "POST",
     //url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
-    url: "cgi-bin/get_geom_dev.cgi",
+    url: pmv_server,
     success: function(data) {
       console.log("##CMS###");
       console.log(data);
@@ -728,6 +729,8 @@ function buildCMS() {
         node_selected.data.geom = mesh; //v,f,n directly
         node_selected.data.geom_type = "raw"; //mean that it provide the v,f,n directly
       }
+      document.getElementById('stopbuildgeom').setAttribute("class", "spinner hidden");
+      document.getElementById("stopbuildgeom_lbl").setAttribute("class", "hidden");
       //update the slicktable ? especially if none were specified
       //just ignore it in the table ? like the offset and pcp. they should be hidden in the table.
       //more room  for molecular weight and other information
@@ -769,9 +772,12 @@ function NextComputeIgredient() {
           d.data.pos === "null" || d.data.pos.length === 0 ||
           d.data.pos === ""))) {
       //if (!graph.nodes[i].children){
-      found = true;
-      current_compute_index = i;
-      current_compute_node = graph.nodes[i];
+      var fileExt = d.data.source.pdb.split('.').pop();
+      if (fileExt !== "map") {
+        found = true;
+        current_compute_index = i;
+        current_compute_node = graph.nodes[i];
+      }
     }
   }
   console.log("return found ", found, current_compute_index, current_compute_node);
@@ -819,393 +825,401 @@ function buildLoopAsync() {
   if (!d.children && "data" in d &&
     (!d.data.geom || d.data.geom === "None" ||
       d.data.geom === "null" || d.data.geom === "")) {
-      formData.append("cms", true);
-    }
+    formData.append("cms", true);
+  }
 
-    if (!d.children && "data" in d &&
-      (!d.data.pos || d.data.pos === "None" ||
-        d.data.pos === "null" || d.data.pos.length === 0 ||
-        d.data.pos === "")) {
-      formData.append("beads", true);
-      formData.append("nbeads", 5);//default is 5 beads
-    }
-    //console.log(thefile)
-    // add assoc key values, this will be posts values
-    if (thefile !== null) {
-      //console.log("use input file",thefile);
-      formData.append("inputfile", thefile, thefile.name);
-      formData.append("upload_file", true);
-    } else if (pdb && pdb !== "") formData.append("pdbId", pdb);
-    if (bu && bu !== "") formData.append("bu", bu);
-    if (sele && sele !== "") formData.append("selection", sele);
-    if (model && model !== "") formData.append("modelId", model);
-    //formData.append(name, value);
-    console.log("query geom with ", [pdb, bu, sele, model, thefile]);
-    //console.log(formData);
-    $.ajax({
-      type: "POST",
-      url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py", //"cgi-bin/get_geom_dev.cgi",//"http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
-      success: function(data) {
-        //console.log(data);
-        var data_parsed = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
-        var results = data_parsed.results;
-        if ("verts" in results) {
-        current_compute_node.data.geom = {"verts":mesh.verts,"faces":mesh.faces,"normals":mesh.normals}; //v,f,n directly
+  if (!d.children && "data" in d &&
+    (!d.data.pos || d.data.pos === "None" ||
+      d.data.pos === "null" || d.data.pos.length === 0 ||
+      d.data.pos === "")) {
+    formData.append("beads", true);
+    formData.append("nbeads", 5); //default is 5 beads
+  }
+  //console.log(thefile)
+  // add assoc key values, this will be posts values
+  if (thefile !== null) {
+    //console.log("use input file",thefile);
+    formData.append("inputfile", thefile, thefile.name);
+    formData.append("upload_file", true);
+  } else if (pdb && pdb !== "") formData.append("pdbId", pdb);
+  if (bu && bu !== "") formData.append("bu", bu);
+  if (sele && sele !== "") formData.append("selection", sele);
+  if (model && model !== "") formData.append("modelId", model);
+  //formData.append(name, value);
+  console.log("query geom with ", [pdb, bu, sele, model, thefile]);
+  //console.log(formData);
+  $.ajax({
+    type: "POST",
+    url: pmv_server, //"cgi-bin/get_geom_dev.cgi",//"http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
+    success: function(data) {
+      //console.log(data);
+      var data_parsed = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
+      var results = data_parsed.results;
+      if ("verts" in results) {
+        current_compute_node.data.geom = {
+          "verts": results.verts,
+          "faces": results.faces,
+          "normals": results.normals
+        }; //v,f,n directly
         current_compute_node.data.geom_type = "raw"; //mean that it provide the v,f,n directly
-        }
-        if ("centers" in results) {
-          current_compute_node.data.pos = [{"coords": clusters.centers}];
-          current_compute_node.data.radii = [{"radii": clusters.radii}];
-        }
-        document.getElementById("stopbeads_lbl").innerHTML = "building " + current_compute_index + " / " + graph.nodes.length;
-        if (NextComputeIgredient() && (!(stop_current_compute))) {
-          //update label_elem
-          buildLoopAsync();
-        } else {
-          document.getElementById("stopbeads_lbl").innerHTML = "finished " + current_compute_index + " / " + graph.nodes.length;
-          stopBeads();
-        }
-      },
-      error: function(error) {
-        console.log(error);
-      },
-      async: true,
-      data: formData,
-      cache: false,
-      contentType: false,
-      processData: false,
-      timeout: 60000
-    });
-  }
-
-
-  function buildCMS1(e) {
-    //query the server for a cms given a PDB - see template.html for example and the cgi-bin
-    //need afile or PDB id, bu, sele, model
-    var d = ngl_current_node;
-    var pdb = d.data.source.pdb; //document.getElementById("pdb_str");
-    var bu = (d.data.source.bu) ? d.data.source.bu : ""; //document.getElementById("bu_str");
-    var sele = (d.data.source.selection) ? d.data.source.selection : ""; //document.getElementById("sel_str");
-    var model = "" //document.getElementById("mo_str");
-    //depending on the pdb we will have a file or not
-    var thefile = null;
-    if (d.data.source.pdb.length !== 4) {
-      pdb = "";
-      if (folder_elem && folder_elem.files.length != "") {
-        thefile = pathList_[d.data.source.pdb];
-      } else pdb = d.data.source.pdb;
-    }
-    var formData = new FormData();
-    // add assoc key values, this will be posts values
-    if (thefile !== null) {
-      formData.append("file", thefile, thefile.name);
-      formData.append("upload_file", true);
-    }
-    if (pdb !== "") formData.append("pdbId", pdb);
-    if (bu !== "") formData.append("bu", bu);
-    if (sele !== "") formData.append("selection", sele);
-    if (model !== "") formData.append("modelId", model);
-    console.log(pdb, bu, sele, model, thefile);
-    //formData.append(name, value);
-    $.ajax({
-      type: "POST",
-      url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
-      success: function(data) {
-        console.log(data);
-        var data_parsed = JSON.parse(data);
-        var mesh = data_parsed.results; //verts, faces,normals
-        NGL_ShowMeshVFN(mesh);
-        if (node_selected) {
-          node_selected.data.geom = mesh; //v,f,n directly
-          node_selected.data.geom_type = "raw"; //mean that it provide the v,f,n directly
-        }
-        //var e = document.getElementById("server_result");
-        //e.innerHTML = data;
-        //console.log(e);
-      },
-      error: function(error) {
-        console.log(error);
-      },
-      async: true,
-      data: formData,
-      cache: false,
-      contentType: false,
-      processData: false,
-      timeout: 60000
-    });
-
-  }
-
-  function getCurrentNodesAsCP_JSON(some_data, some_links) {
-    //convert some_data to recipe.json
-    jsondic = {
-      "recipe": {
-        "paths": [
-          [
-            "autoPACKserver",
-            "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0"
-          ]
-        ],
-        "name": "",
-        "version": "1.0"
       }
-    };
-    //options dictionary
-    jsondic["options"] = {
-      "cancelDialog": false,
-      "_hackFreepts": false,
-      "windowsSize": 50,
-      "use_gradient": false,
-      "placeMethod": "jitter",
-      "saveResult": false,
-      "runTimeDisplay": false,
-      "overwritePlaceMethod": true,
-      "innerGridMethod": "jordan3",
-      "boundingBox": [
-        [-800, -1272, -1734],
+      if ("centers" in results) {
+        current_compute_node.data.pos = [{
+          "coords": results.centers
+        }];
+        current_compute_node.data.radii = [{
+          "radii": results.radii
+        }];
+      }
+      document.getElementById("stopbeads_lbl").innerHTML = "building " + current_compute_index + " / " + graph.nodes.length;
+      if (NextComputeIgredient() && (!(stop_current_compute))) {
+        //update label_elem
+        buildLoopAsync();
+      } else {
+        document.getElementById("stopbeads_lbl").innerHTML = "finished " + current_compute_index + " / " + graph.nodes.length;
+        stopBeads();
+      }
+    },
+    error: function(error) {
+      console.log(error);
+    },
+    async: true,
+    data: formData,
+    cache: false,
+    contentType: false,
+    processData: false,
+    timeout: 60000
+  });
+}
+
+
+function buildCMS1(e) {
+  //query the server for a cms given a PDB - see template.html for example and the cgi-bin
+  //need afile or PDB id, bu, sele, model
+  var d = ngl_current_node;
+  var pdb = d.data.source.pdb; //document.getElementById("pdb_str");
+  var bu = (d.data.source.bu) ? d.data.source.bu : ""; //document.getElementById("bu_str");
+  var sele = (d.data.source.selection) ? d.data.source.selection : ""; //document.getElementById("sel_str");
+  var model = "" //document.getElementById("mo_str");
+  //depending on the pdb we will have a file or not
+  var thefile = null;
+  if (d.data.source.pdb.length !== 4) {
+    pdb = "";
+    if (folder_elem && folder_elem.files.length != "") {
+      thefile = pathList_[d.data.source.pdb];
+    } else pdb = d.data.source.pdb;
+  }
+  var formData = new FormData();
+  // add assoc key values, this will be posts values
+  if (thefile !== null) {
+    formData.append("file", thefile, thefile.name);
+    formData.append("upload_file", true);
+  }
+  if (pdb !== "") formData.append("pdbId", pdb);
+  if (bu !== "") formData.append("bu", bu);
+  if (sele !== "") formData.append("selection", sele);
+  if (model !== "") formData.append("modelId", model);
+  console.log(pdb, bu, sele, model, thefile);
+  //formData.append(name, value);
+  $.ajax({
+    type: "POST",
+    url: pmv_server,
+    success: function(data) {
+      console.log(data);
+      var data_parsed = JSON.parse(data);
+      var mesh = data_parsed.results; //verts, faces,normals
+      NGL_ShowMeshVFN(mesh);
+      if (node_selected) {
+        node_selected.data.geom = mesh; //v,f,n directly
+        node_selected.data.geom_type = "raw"; //mean that it provide the v,f,n directly
+      }
+      //var e = document.getElementById("server_result");
+      //e.innerHTML = data;
+      //console.log(e);
+    },
+    error: function(error) {
+      console.log(error);
+    },
+    async: true,
+    data: formData,
+    cache: false,
+    contentType: false,
+    processData: false,
+    timeout: 60000
+  });
+
+}
+
+function getCurrentNodesAsCP_JSON(some_data, some_links) {
+  //convert some_data to recipe.json
+  jsondic = {
+    "recipe": {
+      "paths": [
         [
-          881.659,
-          1272,
-          1734
+          "autoPACKserver",
+          "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0"
         ]
       ],
-      "gradients": [],
-      "smallestProteinSize": 0,
-      "computeGridParams": true,
-      "freePtsUpdateThrehod": 0.0,
-      "pickWeightedIngr": true,
-      "_timer": false,
-      "ingrLookForNeighbours": false,
-      "pickRandPt": true,
-      "largestProteinSize": 0,
-      "resultfile": "",
-      "use_periodicity": false,
-      "EnviroOnly": false
+      "name": "",
+      "version": "1.0"
     }
-    //cytoplasme
-    //for all nodes that don't have parent !== from root
-    jsondic["cytoplasme"] = {
-      "ingredients": {}
-    };
-    jsondic["compartments"] = {}; //compartmentname:{"geom":g,"name":n}
-    var aroot;
-    for (var i = 0; i < some_data.length; i++) {
-      var node = some_data[i];
-      if (!node.parent) //root
-      {
-        aroot = node;
-        jsondic.recipe.name = node.data.name;
-        continue;
-      }
-      if (node.children && node !== root) //compartment
-      {
-        var cname = node.data.name;
-        if (cname === "cytoplasm") cname = "cytoplasme"; //outside ?
-        if (!(cname in jsondic["compartments"])) {
-          var gtype = (node.data.geom_type) ? node.data.geom_type : "None";
-          var gname = (node.data.geom) ? node.data.geom : "";
-          var thickness = (node.data.thickness) ? node.data.thickness : 7.5;
-          //if metaball geom should be array of xyzr/
-          jsondic["compartments"][cname] = {
-            "geom_type": gtype,
-            "geom": gname,
-            "name": cname,
-            "thickness": thickness,
-            "surface": {
-              "ingredients": {}
-            },
-            "interior": {
-              "ingredients": {}
-            }
-          };
-        }
-        continue;
-      }
-      if (!node.children && node.data.nodetype !== "compartment") //ingredient
-      {
-        //check if include else continue
-        if ("include" in node.data && node.data.include === false) continue;
-        var cname = node.parent.data.name;
-        if (cname === "cytoplasm") cname = "cytoplasme"; //outside ?
-        if (!(cname in jsondic["compartments"]) && (node.parent !== aroot)) {
-          var gtype = (node.data.geom_type) ? node.data.geom_type : "None";
-          var gname = (node.data.geom) ? node.data.geom : "";
-          var thickness = (node.data.thickness) ? node.data.thickness : 7.5;
-          //if metaball geom should be array of xyzr/
-          jsondic["compartments"][cname] = {
-            "geom_type": gtype,
-            "geom": gname,
-            "name": cname,
-            "thickness": thickness,
-            "surface": {
-              "ingredients": {}
-            },
-            "interior": {
-              "ingredients": {}
-            }
-          };
-        }
-        var ingdic = OneCPIngredient(node);
-        if (some_links.length) {
-          console.log("check links", some_links.length)
-          ingdic = AddPartner(ingdic, node, some_links);
-        }
-        //console.log(node.data.name,node.parent.data.name,jsondic.recipe.name,cname, (node.parent.data.name === jsondic.recipe.name ));
-        if ((node.parent.data.name === jsondic.recipe.name) || (cname === "cytoplasme")) jsondic["cytoplasme"].ingredients[node.data.name] = ingdic;
-        else if (node.data.surface) jsondic["compartments"][cname].surface.ingredients[node.data.name] = ingdic;
-        else jsondic["compartments"][cname].interior.ingredients[node.data.name] = ingdic;
-      }
-    }
-    return jsondic;
+  };
+  //options dictionary
+  jsondic["options"] = {
+    "cancelDialog": false,
+    "_hackFreepts": false,
+    "windowsSize": 50,
+    "use_gradient": false,
+    "placeMethod": "jitter",
+    "saveResult": false,
+    "runTimeDisplay": false,
+    "overwritePlaceMethod": true,
+    "innerGridMethod": "jordan3",
+    "boundingBox": [
+      [-800, -1272, -1734],
+      [
+        881.659,
+        1272,
+        1734
+      ]
+    ],
+    "gradients": [],
+    "smallestProteinSize": 0,
+    "computeGridParams": true,
+    "freePtsUpdateThrehod": 0.0,
+    "pickWeightedIngr": true,
+    "_timer": false,
+    "ingrLookForNeighbours": false,
+    "pickRandPt": true,
+    "largestProteinSize": 0,
+    "resultfile": "",
+    "use_periodicity": false,
+    "EnviroOnly": false
   }
-
-  function getCurrentNodesAsCP_SER_JSON(some_data) {
-    //convert some_data to recipe.json
-    jsondic = {}; //"recipe": {"name": "", "version": "1.0"}};
-    //cytoplasme
-    //for all nodes that don't have parent !== from root
-    jsondic["cytoplasme"] = {
-      "ingredients": []
-    };
-    jsondic["compartments"] = {}; //compartmentname:{"geom":g,"name":n}
-    var aroot;
-    for (var i = 0; i < some_data.length; i++) {
-      var node = some_data[i];
-      if (!node.parent) //root
-      {
-        aroot = node;
-        jsondic.recipe.name = node.data.name;
-        continue;
-      }
-      if (node.children && node !== root) //compartment
-      {
-        var cname = node.data.name;
-        if (!(cname in jsondic["compartments"])) {
-          jsondic["compartments"][cname] = {
-            "geom": cname + "_geom",
-            "name": cname,
-            "surface": {
-              "ingredients": {}
-            },
-            "interior": {
-              "ingredients": {}
-            }
-          };
-        }
-        continue;
-      }
-      if (!node.children) //ingredient
-      {
-        var cname = node.parent.data.name;
-        var ingdic = OneCPIngredient(node);
-        if (node.parent === aroot) jsondic["cytoplasme"].ingredients[node.data.name] = ingdic;
-        else if (node.data.surface) jsondic["compartments"][cname].surface.ingredients[node.data.name] = ingdic;
-        else jsondic["compartments"][cname].interior.ingredients[node.data.name] = ingdic;
-      }
+  //cytoplasme
+  //for all nodes that don't have parent !== from root
+  jsondic["cytoplasme"] = {
+    "ingredients": {}
+  };
+  jsondic["compartments"] = {}; //compartmentname:{"geom":g,"name":n}
+  var aroot;
+  for (var i = 0; i < some_data.length; i++) {
+    var node = some_data[i];
+    if (!node.parent) //root
+    {
+      aroot = node;
+      jsondic.recipe.name = node.data.name;
+      continue;
     }
-    return jsondic;
-  }
-
-  function saveCurrentCVJSON() {
-    var agrid = gridArray[0]; //gridArray[0].dataView
-    var processRow = function(row) {
-      var finalVal = '';
-      for (var j = 0; j < row.length; j++) {
-        if (row[1] === false) continue; //include column
-        var innerValue = row[j] === null || typeof row[j] == 'undefined' ? '' : row[j].toString();
-        if (row[j] instanceof Date) {
-          innerValue = row[j].toLocaleString();
+    if (node.children && node !== root) //compartment
+    {
+      var cname = node.data.name;
+      if (cname === "cytoplasm") cname = "cytoplasme"; //outside ?
+      if (!(cname in jsondic["compartments"])) {
+        var gtype = (node.data.geom_type) ? node.data.geom_type : "None";
+        var gname = (node.data.geom) ? node.data.geom : "";
+        var thickness = (node.data.thickness) ? node.data.thickness : 7.5;
+        //if metaball geom should be array of xyzr/
+        jsondic["compartments"][cname] = {
+          "geom_type": gtype,
+          "geom": gname,
+          "name": cname,
+          "thickness": thickness,
+          "surface": {
+            "ingredients": {}
+          },
+          "interior": {
+            "ingredients": {}
+          }
         };
-        var result = innerValue.replace(/"/g, '""');
-        if (result.search(/("|,|;|\n)/g) >= 0)
-          result = '"' + result + '"';
-        if (j > 0)
-          finalVal += ',';
-        finalVal += result;
       }
-      return finalVal + '\n';
-    };
+      continue;
+    }
+    if (!node.children && node.data.nodetype !== "compartment") //ingredient
+    {
+      //check if include else continue
+      if ("include" in node.data && node.data.include === false) continue;
+      var cname = node.parent.data.name;
+      if (cname === "cytoplasm") cname = "cytoplasme"; //outside ?
+      if (!(cname in jsondic["compartments"]) && (node.parent !== aroot)) {
+        var gtype = (node.data.geom_type) ? node.data.geom_type : "None";
+        var gname = (node.data.geom) ? node.data.geom : "";
+        var thickness = (node.data.thickness) ? node.data.thickness : 7.5;
+        //if metaball geom should be array of xyzr/
+        jsondic["compartments"][cname] = {
+          "geom_type": gtype,
+          "geom": gname,
+          "name": cname,
+          "thickness": thickness,
+          "surface": {
+            "ingredients": {}
+          },
+          "interior": {
+            "ingredients": {}
+          }
+        };
+      }
+      var ingdic = OneCPIngredient(node);
+      if (some_links.length) {
+        console.log("check links", some_links.length)
+        ingdic = AddPartner(ingdic, node, some_links);
+      }
+      //console.log(node.data.name,node.parent.data.name,jsondic.recipe.name,cname, (node.parent.data.name === jsondic.recipe.name ));
+      if ((node.parent.data.name === jsondic.recipe.name) || (cname === "cytoplasme")) jsondic["cytoplasme"].ingredients[node.data.name] = ingdic;
+      else if (node.data.surface) jsondic["compartments"][cname].surface.ingredients[node.data.name] = ingdic;
+      else jsondic["compartments"][cname].interior.ingredients[node.data.name] = ingdic;
+    }
+  }
+  return jsondic;
+}
 
-    var csvFile = '';
-    var rows = [];
-    var colname = [];
+function getCurrentNodesAsCP_SER_JSON(some_data) {
+  //convert some_data to recipe.json
+  jsondic = {}; //"recipe": {"name": "", "version": "1.0"}};
+  //cytoplasme
+  //for all nodes that don't have parent !== from root
+  jsondic["cytoplasme"] = {
+    "ingredients": []
+  };
+  jsondic["compartments"] = {}; //compartmentname:{"geom":g,"name":n}
+  var aroot;
+  for (var i = 0; i < some_data.length; i++) {
+    var node = some_data[i];
+    if (!node.parent) //root
+    {
+      aroot = node;
+      jsondic.recipe.name = node.data.name;
+      continue;
+    }
+    if (node.children && node !== root) //compartment
+    {
+      var cname = node.data.name;
+      if (!(cname in jsondic["compartments"])) {
+        jsondic["compartments"][cname] = {
+          "geom": cname + "_geom",
+          "name": cname,
+          "surface": {
+            "ingredients": {}
+          },
+          "interior": {
+            "ingredients": {}
+          }
+        };
+      }
+      continue;
+    }
+    if (!node.children) //ingredient
+    {
+      var cname = node.parent.data.name;
+      var ingdic = OneCPIngredient(node);
+      if (node.parent === aroot) jsondic["cytoplasme"].ingredients[node.data.name] = ingdic;
+      else if (node.data.surface) jsondic["compartments"][cname].surface.ingredients[node.data.name] = ingdic;
+      else jsondic["compartments"][cname].interior.ingredients[node.data.name] = ingdic;
+    }
+  }
+  return jsondic;
+}
+
+function saveCurrentCVJSON() {
+  var agrid = gridArray[0]; //gridArray[0].dataView
+  var processRow = function(row) {
+    var finalVal = '';
+    for (var j = 0; j < row.length; j++) {
+      if (row[1] === false) continue; //include column
+      var innerValue = row[j] === null || typeof row[j] == 'undefined' ? '' : row[j].toString();
+      if (row[j] instanceof Date) {
+        innerValue = row[j].toLocaleString();
+      };
+      var result = innerValue.replace(/"/g, '""');
+      if (result.search(/("|,|;|\n)/g) >= 0)
+        result = '"' + result + '"';
+      if (j > 0)
+        finalVal += ',';
+      finalVal += result;
+    }
+    return finalVal + '\n';
+  };
+
+  var csvFile = '';
+  var rows = [];
+  var colname = [];
+  for (var j = 0, len = agrid.getColumns().length; j < len; j++) {
+    colname.push(agrid.getColumns()[j].name);
+  }
+  rows.push(colname);
+  var singlerow = [];
+  for (var i = 0, l = agrid.dataView.getLength(); i < l; i++) {
     for (var j = 0, len = agrid.getColumns().length; j < len; j++) {
-      colname.push(agrid.getColumns()[j].name);
+      singlerow.push(agrid.getDataItem(i)[agrid.getColumns()[j].field]);
     }
-    rows.push(colname);
-    var singlerow = [];
-    for (var i = 0, l = agrid.dataView.getLength(); i < l; i++) {
-      for (var j = 0, len = agrid.getColumns().length; j < len; j++) {
-        singlerow.push(agrid.getDataItem(i)[agrid.getColumns()[j].field]);
-      }
-      rows.push(singlerow);
-      singlerow = [];
-    }
-
-    for (var i = 0; i < rows.length; i++) {
-      csvFile += processRow(rows[i]);
-    }
-    var filename = graph.nodes[0].data.name + "_meso.csv";
-    var blob = new Blob([csvFile], {
-      type: 'text/csv;charset=utf-8;'
-    });
-    if (navigator.msSaveBlob) { // IE 10+
-      navigator.msSaveBlob(blob, filename);
-    } else {
-      var link = document.createElement("a");
-      if (link.download !== undefined) { // feature detection
-        // Browsers that support HTML5 download attribute
-        var url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", filename);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-    }
+    rows.push(singlerow);
+    singlerow = [];
   }
 
-  function download(content, fileName, contentType) {
-    var a = document.createElement("a");
-    var file = new Blob([content], {
-      type: contentType
-    });
-    saveAs(file, fileName);
-    //a.href = URL.createObjectURL(file);
-    //a.download = fileName;
-    //console.log(a);
-    //a.click().click();
-    //a.trigger('click');
-    //window.open(a.href );
+  for (var i = 0; i < rows.length; i++) {
+    csvFile += processRow(rows[i]);
   }
-
-  function SaveRecipeCellPACK() {
-    console.log("save recipe");
-    //current score?
-    console.log(current_ready_state);
-    console.log(current_ready_state_value);
-
-    if (current_ready_state === 0) {
-      alert(" this is recipe is incomplete, can't export\n missing ??\n" + JSON.stringify(current_ready_state_value));
-      return;
+  var filename = graph.nodes[0].data.name + "_meso.csv";
+  var blob = new Blob([csvFile], {
+    type: 'text/csv;charset=utf-8;'
+  });
+  if (navigator.msSaveBlob) { // IE 10+
+    navigator.msSaveBlob(blob, filename);
+  } else {
+    var link = document.createElement("a");
+    if (link.download !== undefined) { // feature detection
+      // Browsers that support HTML5 download attribute
+      var url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
-    var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links);
-    console.log(jsondic.recipe.name);
-    console.log(JSON.stringify(jdata));
-    download(JSON.stringify(jdata), jsondic.recipe.name + '.json', 'text/plain');
-    console.log("saved");
   }
+}
 
-  function SaveRecipeCellPACK_serialized() {
-    console.log("save recipe serialized");
-    if (current_ready_state === 0) {
-      alert(" this is recipe is incomplete, can't export\n missing ??\n" + JSON.stringify(current_ready_state_value));
-      return;
-    }
-    var jdata = serializedRecipe(graph.nodes, graph.links);
-    console.log(jdata);
-    console.log(JSON.stringify(jdata));
-    download(JSON.stringify(jdata), jdata.name + '_serialized.json', 'text/plain');
-    console.log("saved");
+function download(content, fileName, contentType) {
+  var a = document.createElement("a");
+  var file = new Blob([content], {
+    type: contentType
+  });
+  saveAs(file, fileName);
+  //a.href = URL.createObjectURL(file);
+  //a.download = fileName;
+  //console.log(a);
+  //a.click().click();
+  //a.trigger('click');
+  //window.open(a.href );
+}
+
+function SaveRecipeCellPACK() {
+  console.log("save recipe");
+  //current score?
+  console.log(current_ready_state);
+  console.log(current_ready_state_value);
+
+  if (current_ready_state === 0) {
+    alert(" this is recipe is incomplete, can't export\n missing ??\n" + JSON.stringify(current_ready_state_value));
+    return;
   }
+  var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links);
+  console.log(jsondic.recipe.name);
+  console.log(JSON.stringify(jdata));
+  download(JSON.stringify(jdata), jsondic.recipe.name + '.json', 'text/plain');
+  console.log("saved");
+}
+
+function SaveRecipeCellPACK_serialized() {
+  console.log("save recipe serialized");
+  if (current_ready_state === 0) {
+    alert(" this is recipe is incomplete, can't export\n missing ??\n" + JSON.stringify(current_ready_state_value));
+    return;
+  }
+  var jdata = serializedRecipe(graph.nodes, graph.links);
+  console.log(jdata);
+  console.log(JSON.stringify(jdata));
+  download(JSON.stringify(jdata), jdata.name + '_serialized.json', 'text/plain');
+  console.log("saved");
+}

@@ -467,10 +467,14 @@ function updateCurrentBeadsLevel() {
   var assambly = assambly_elem.selectedOptions[0].value;
   if (!assambly || assambly === "") assambly = "AU";
   ngl_current_structure.assambly = assambly;
+
+  document.getElementById('stopkmeans').setAttribute("class", "spinner");
+  document.getElementById("stopkmeans_lbl").setAttribute("class", "show");
+
   $.ajax({
     type: "POST",
     //url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
-    url: "cgi-bin/get_geom_dev.cgi",
+    url: pmv_server,
     success: function(data) {
       console.log("##BEADS###");
       console.log("DATA:", data);
@@ -518,6 +522,8 @@ function updateCurrentBeadsLevel() {
         visibility: true
       });
       nbBeads_elem.textContent = '' + ngl_load_params.beads.pos[lod].coords.length / 3 + ' beads';
+      document.getElementById('stopkmeans').setAttribute("class", "spinner hidden");
+      document.getElementById("stopkmeans_lbl").setAttribute("class", "hidden");
     },
     error: function(error) {
       console.log(error);
@@ -1869,6 +1875,12 @@ function stopGeoms() {
 function stopGeom() {
   document.getElementById('stopbuildgeom').setAttribute("class", "spinner hidden");
   document.getElementById("stopbuildgeom_lbl").setAttribute("class", "hidden");
+  //stop waiting ?
+}
+
+function stopKmeans() {
+  document.getElementById('stopkmeans').setAttribute("class", "spinner hidden");
+  document.getElementById("stopkmeans_lbl").setAttribute("class", "hidden");
   //stop waiting ?
 }
 /*var colorMap = new Map()

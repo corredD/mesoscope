@@ -1476,10 +1476,29 @@ function selectFile(e){
     else reader.readAsText(thefile, 'UTF-8');
 	}
 
+function selectDBcallback (response,query) {
+	var adata = JSON.parse(response);
+	//
+	//alert(adata.length);
+	//alert(data);
+	root = d3v4.hierarchy(adata)
+	.sum(function(d) { return d.size; })//this is 10
+	.sort(function(a, b) { return b.value - a.value; });
+	nodes = pack(root).descendants();//this pack and flatten the data
+	nodes = checkAttributes(nodes);
+	var links = [];
+	//UpdateGridFromD3Nodes(nodes,"slickGrid","tabs-1");//create or update ?
+	//alert(nodes.length);
+	update_graph(adata,links);
+}
+
 function selectDB(){
 		//alert("SQLDB");
 		//pyRequestSQL(update_graph);
-    var result = syncpyRequestSQL(update_graph);
+		callAjax(sql_server+'?key="sqldb"', selectDBcallback,"sqldb");
+		/*
+		var result = syncpyRequestSQL(update_graph);
+
     var adata = JSON.parse(result);
     //
     //alert(adata.length);
@@ -1493,6 +1512,7 @@ function selectDB(){
     //UpdateGridFromD3Nodes(nodes,"slickGrid","tabs-1");//create or update ?
     //alert(nodes.length);
     update_graph(adata,links);
+		*/
 }
 
 function LoadSaveState(ajson){
@@ -1876,7 +1896,7 @@ function setupD3(){
 		height = canvas.height;
 		console.log("init ",width,height,container,context);
 
-		var result = syncpyRequestSQL();
+		//var result = syncpyRequestSQL();
 		//console.log(result);
     var agraph = {};//JSON.parse(result);
 

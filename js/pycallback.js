@@ -11,7 +11,7 @@ var all_xmlhttp=[];
  var remote_url;
 
   alert(spdq_myData);
- 	remote_url = 'http://mgldev.scripps.edu/cgi-bin/cellpack_db_dev.py?file=' +spdq_myData; //encodeURIComponent(spdq_myData);
+ 	remote_url = sql_server+'?file=' +spdq_myData; //encodeURIComponent(spdq_myData);
  	alert(remote_url);
  	request.open('GET', remote_url, false);  // false makes the request synchronous
  	//request.setRequestHeader('Content-Type', 'multipart/form-data');
@@ -24,17 +24,20 @@ var all_xmlhttp=[];
  	return(remote);
  }
 
+
  function syncpyRequestSQL()
  {
  var remote = '__Unset__';
- var request = new XMLHttpRequest();
+ var arequest = new XMLHttpRequest();
  var remote_url;
 
- 	remote_url = 'cgi-bin/cellpack_db_dev.cgi?key="sqldb"';//'http://mgldev.scripps.edu/cgi-bin/cellpack_db_dev.py?key="sqldb"';
- 	request.open('GET', remote_url, false);  // false makes the request synchronous
- 	request.send(null);
+ 	remote_url = sql_server+'?key="sqldb"';//'http://mgldev.scripps.edu/cgi-bin/cellpack_db_dev.py?key="sqldb"';
+  console.log(remote_url);
 
- 	if (request.status === 200)
+  arequest.open('GET', 'http://mgldev.scripps.edu/projects/mesoscope/cgi-bin/cellpack_db_dev.cgi?key="sqldb"', false);  // false makes the request synchronous
+  arequest.send();
+
+ 	if (arequest.status === 200)
  	{
  		remote = request.responseText;
  	}
@@ -133,7 +136,7 @@ function stopAll(){
  {
   var cd_url;
  	//cd_url = '/cgi-bin/myPython.py?myData=' + encodeURIComponent(upd_data);
- 	cd_url = 'http://mgldev.scripps.edu/cgi-bin/cellpack_db_dev.py?file=' + encodeURIComponent(upd_data);
+ 	cd_url = sql_server+'?file=' + encodeURIComponent(upd_data);
  	callAjax(cd_url,upd_callback);
  }
 
@@ -141,7 +144,7 @@ function stopAll(){
  {
   var cd_url;
  	//cd_url = '/cgi-bin/myPython.py?myData=' + encodeURIComponent(upd_data);
- 	cd_url = 'http://mgldev.scripps.edu/cgi-bin/cellpack_db_dev.py';
+ 	cd_url = sql_server;
  	callAjax(cd_url,upd_callback);
  }
  //pyRequest("Ben",cb_myCallback);
