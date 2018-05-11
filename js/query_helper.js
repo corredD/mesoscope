@@ -25,8 +25,8 @@ if (location.hostname === "localhost" || location.hostname === "127.0.0.1" || lo
       'Full User Agent: ' + navigator.userAgent
   );
   if (jscd.os === "Windows") {
-    pmv_server = "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.cgi"; //(local_host_dev)?"cgi-bin/get_geom_dev.cgi":
-    sql_server = "http://mgldev.scripps.edu/cgi-bin/cellpack_db_dev.cgi"; //(local_host_dev)?"cgi-bin/cellpack_db_dev.cgi":
+    pmv_server = "http://mgldev.scripps.edu/projects/mesoscope/cgi-bin/get_geom_dev.cgi"; //(local_host_dev)?"cgi-bin/get_geom_dev.cgi":
+    sql_server = "http://mgldev.scripps.edu/projects/mesoscope/cgi-bin/cellpack_db_dev.cgi"; //(local_host_dev)?"cgi-bin/cellpack_db_dev.cgi":
   }
 }
 
