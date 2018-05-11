@@ -1538,7 +1538,7 @@ function LoadExampleMpn(){
 	}
 
 	function LoadExampleHIV(){
-		  var url = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasma1.0.json";
+		  var url = cellpack_repo+"recipes/BloodPlasma1.0.json";
 		  csv_mapping= false;
 		  comp_column = false;
 
@@ -1553,7 +1553,7 @@ function LoadExampleMpn(){
 		}
 
 		function LoadExampleBlood(){
-			  var url = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasma1.0.json";
+			  var url = cellpack_repo+"recipes/BloodPlasma1.0.json";
 			  csv_mapping= false;
 			  comp_column = false;
 		    d3v4.json(url, function (json) {
@@ -1569,7 +1569,7 @@ function LoadExampleMpn(){
 function LoadExampleBloodHIV(){
 		//file is in data
 		//https://raw.githubusercontent.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json
-		var url = "https://raw.githubusercontent.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
+		var url = "data/BloodPlasmaHIV_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
 		//var url = "./data/BloodPlasmaHIV_serialzed.json";
 		csv_mapping= false;
 		comp_column = false;

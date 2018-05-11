@@ -5,6 +5,7 @@ var cumulative_res = {
   "mols": null
 };
 
+//so we can use the mgl2 copy and put there some computed geometry
 var pmv_server = "cgi-bin/get_geom_dev.cgi"; //(local_host_dev)?"cgi-bin/get_geom_dev.cgi":
 var sql_server = "cgi-bin/cellpack_db_dev.cgi"; //(local_host_dev)?"cgi-bin/cellpack_db_dev.cgi":
 var cellpack_repo = "http://mgldev.scripps.edu/projects/autoPACK/data/cellPACK_data/cellPACK_database_1.1.0/"//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/other/";

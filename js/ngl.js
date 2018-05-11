@@ -83,7 +83,7 @@ var available_color_schem = [
 
 //var available_representation = Object.keys( NGL.representationTypes );
 //available_representation.push("beads");
-var geom_purl = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/geometries/"
+var geom_purl = cellpack_repo+"geometries/"
 
 
 /*
@@ -101,7 +101,7 @@ function GetPDBURL(aname) {
     if (folder_elem && folder_elem.files.length != "") {
       return pathList_[aname]; //alert(pathList_[d.data.source]),
     } else {
-      var purl = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/other/" + aname;
+      var purl = cellpack_repo+"other/" + aname;
       return purl;
     }
   }
@@ -1711,7 +1711,7 @@ function updateNGL(d) {
           //ftp://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-5239/map/emd_5239.map.gz
           stage.loadFile(pathList_[pdbname], params);
         } else {
-          var purl = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/other/" + pdbname;
+          var purl = cellpack_repo+"other/" + pdbname;
           stage.loadFile(purl, params);
         }
       } else {
@@ -1719,7 +1719,7 @@ function updateNGL(d) {
           //alert(pathList_[d.data.source]),
           LoadOneProtein(pathList_[d.data.source.pdb], d.data.source.pdb, bu, sel_str);
         } else {
-          var purl = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/other/" + d.data.source.pdb;
+          var purl = cellpack_repo+"other/" + d.data.source.pdb;
           LoadOneProtein(purl, d.data.source.pdb, bu, sel_str);
         }
       }
@@ -1792,7 +1792,7 @@ function NGLLoad(pdbname, bu, sel_str) {
         //ftp://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-5239/map/emd_5239.map.gz
         stage.loadFile(pathList_[pdbname], params);
       } else {
-        var purl = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/other/" + pdbname;
+        var purl = cellpack_repo+"other/" + pdbname;
         stage.loadFile(purl, params);
       }
     } else {
@@ -1801,7 +1801,7 @@ function NGLLoad(pdbname, bu, sel_str) {
         //alert(pathList_[d.data.source]),
         LoadOneProtein(pathList_[pdbname], pdbname, bu, sel_str);
       } else {
-        var purl = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/other/" + pdbname;
+        var purl = cellpack_repo+"other/" + pdbname;
         LoadOneProtein(purl, pdbname, bu, sel_str);
       }
     }
