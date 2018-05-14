@@ -1155,6 +1155,7 @@ def main():
         rootName=""
         if "recipe" in jsondic:
            rootName = jsondic["recipe"]["name"]
+        print "Access-Control-Allow-Origin: *"
         print("Content-type: application/json\n")
         print "<br>"
         print form['file'].filename+"<br>"
