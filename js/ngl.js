@@ -937,7 +937,9 @@ function NGLLoadAShapeObj(gpath) {
   } else if (node_selected.data.geom_type === "None" &&
     node_selected.data.nodeType !== "compartment") {
     //build it ?
-    buildCMS();
+    //buildCMS();
+    //test from atomCoords directly
+    buildFromServer(gpath,true,false,null);
   } else if (node_selected.data.geom_type === "file") {
     //gpath may be different as we pass data.geom
     if (typeof gpath === 'string') {

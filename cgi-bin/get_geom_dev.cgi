@@ -293,6 +293,26 @@ def computeCoarseMolSurf(coords, radii, XYZd =[16,16,16], isovalue=1.0,resolutio
     geomDict = {"verts": vert.flatten().tolist(), "faces":tri.flatten().tolist(), "normals": norm.flatten().tolist()}
     return geomDict
 
+def getellipse(coords, cov_scale=1.75, ell_scale=1.0):
+     if type(coords) != np.ndarray:
+         coords = np.array(coords, "f")
+     else:
+         coords = coords.astype("f")
+     from geomutils import efitlib
+     # create an ellipsoid structure
+     ellipse = efitlib.ellipsoid()
+     # create an ellipsoidInfo structure
+     ellipseInfo = efitlib.efit_info()
+     # compute the ellipsoid
+     status = efitlib.fitEllipse(coords, ell_scale, cov_scale,
+                                 ellipseInfo, ellipse)
+     if status==0: # OK
+         elData = {"orient": ellipse.getOrientation().flatten().tolist(),
+                   "size" :  ellipse.getAxis().tolist(),
+                   "center": ellipse.getPosition().tolist()}
+         return elData
+     return {}
+
 def main():
     #can be used directly as http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py?pdbId=1crn&selection=A
     # or use formData POST query
