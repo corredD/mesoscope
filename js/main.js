@@ -1476,10 +1476,29 @@ function selectFile(e){
     else reader.readAsText(thefile, 'UTF-8');
 	}
 
+function selectDBcallback (response,query) {
+	var adata = JSON.parse(response);
+	//
+	//alert(adata.length);
+	//alert(data);
+	root = d3v4.hierarchy(adata)
+	.sum(function(d) { return d.size; })//this is 10
+	.sort(function(a, b) { return b.value - a.value; });
+	nodes = pack(root).descendants();//this pack and flatten the data
+	nodes = checkAttributes(nodes);
+	var links = [];
+	//UpdateGridFromD3Nodes(nodes,"slickGrid","tabs-1");//create or update ?
+	//alert(nodes.length);
+	update_graph(adata,links);
+}
+
 function selectDB(){
 		//alert("SQLDB");
 		//pyRequestSQL(update_graph);
-    var result = syncpyRequestSQL(update_graph);
+		callAjax(sql_server+'?key="sqldb"', selectDBcallback,"sqldb");
+		/*
+		var result = syncpyRequestSQL(update_graph);
+
     var adata = JSON.parse(result);
     //
     //alert(adata.length);
@@ -1493,20 +1512,21 @@ function selectDB(){
     //UpdateGridFromD3Nodes(nodes,"slickGrid","tabs-1");//create or update ?
     //alert(nodes.length);
     update_graph(adata,links);
+		*/
 }
 
 function LoadSaveState(ajson){
 	  csv_mapping= false;
 	  comp_column = false;
-    var adata = parseCellPackRecipe(ajson);
+    //var adata = parseCellPackRecipe(ajson);
+		var adata = parseCellPackRecipeSerialized(ajson)
     update_graph(adata.nodes,adata.links);
 	}
 
 function LoadExampleMpn(){
-	  var url = "http://mgldev.scripps.edu/projects/cellPackDB/Mpn_1.0_2.json";
+	  var url = "data/Mpn_1.0_2.json";
 	  csv_mapping= false;
 	  comp_column = false;
-
     d3v4.json(url, function (json) {
     	      console.log(json);
 			      var adata = parseCellPackRecipe(json)
@@ -1517,8 +1537,8 @@ function LoadExampleMpn(){
             })
 	}
 
-	function LoadExampleHIV(){
-		  var url = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasma1.0.json";
+function LoadExampleHIV(){
+		  var url = cellpack_repo+"recipes/BloodPlasma1.0.json";
 		  csv_mapping= false;
 		  comp_column = false;
 
@@ -1533,7 +1553,7 @@ function LoadExampleMpn(){
 		}
 
 		function LoadExampleBlood(){
-			  var url = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasma1.0.json";
+			  var url = cellpack_repo+"recipes/BloodPlasma1.0.json";
 			  csv_mapping= false;
 			  comp_column = false;
 		    d3v4.json(url, function (json) {
@@ -1549,12 +1569,13 @@ function LoadExampleMpn(){
 function LoadExampleBloodHIV(){
 		//file is in data
 		//https://raw.githubusercontent.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json
-		var url = "https://raw.githubusercontent.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
+		var url = "data/BloodPlasmaHIV_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
 		//var url = "./data/BloodPlasmaHIV_serialzed.json";
 		csv_mapping= false;
 		comp_column = false;
 		console.log(url);
-		d3v4.json(url, function (json) {
+		d3v4.json(url, function (error,json) {
+						console.log(error)
 						console.log(json);
 						var adata = parseCellPackRecipeSerialized(json)
 						//var alink =[]
@@ -1619,23 +1640,46 @@ function checkAttributes(agraph){
 	return agraph;
 	}
 
+function updateAttributesNode(anode,new_data) {
+		for (var key in new_data) {
+			 if(!(key in anode.data)) continue;
+			 console.log("update ",key,anode.data[key],new_data[key]);
+			 if (key === "offset"){
+				 anode.data.offset = (Array.isArray(new_data.offset)) ? new_data.offset : new_data.offset.split(",").map(function(d) {
+	         return parseFloat(d);
+	       });
+			 }
+			 else if (key ==="pcpalAxis") {
+				 anode.data.pcpalAxis = (Array.isArray(new_data.pcpalAxis)) ? new_data.pcpalAxis : new_data.pcpalAxis.split(",").map(function(d) {
+	         return parseFloat(d);
+	       });
+			 }
+			 else if (key === "pdb") {
+				 anode.data.source.pdb = new_data.pdb;
+			 }
+			 else {
+				 anode.data[key] = new_data[key];
+			 }
+		}
+		return anode;
+}
+
 function getcomphtml(anode) {
   var htmlStr='<div style="display:flex;flex-flow: column;">';
 	for (var e in anode.data)
 	{
 			if (e==="children") continue;
-			htmlStr+= '<label>'+ e + ' : ' + anode.data[e] +'</label>'
+			htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>'
 	}
 	var cname = anode.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/');
-	htmlStr+='<label> path : '+cname+'</label>'
+	htmlStr+='<label> path: '+cname+'</label>'
 	htmlStr+='<label> Nb of children: '+anode.children.length+'</label>'
 	htmlStr+='</div>';
 	//htmlStr+= '<input type="checkbox" id="unchecked" onclick="toggleLipids(this)" class="cbx hidden" />' ;
 	var comptype = ("geom_type" in anode.data)? anode.data.geom_type: "None";
-	htmlStr+='<div style="display:flex;">';
-	htmlStr+=' <label style="width:20%">Source : </label>';
+	htmlStr+='<div style="display:flex;align-items: baseline;">';
+	htmlStr+=' <label style="width:20%">Source:</label>';
 	htmlStr+=' <select id="comp_source" style="width:80%" name="comp_source" onchange="changeCompSource(this)" >';
-	htmlStr+='  <option value="compsource"> Source: </option>';
 	htmlStr+='  <option value="file"';
 	htmlStr+= (comptype==="file")?" selected ":"";
 	htmlStr+='> File (.dae,.obj,.map) </option>';
@@ -1742,7 +1786,7 @@ function UpdateCompartmentRep(anode){
 	var comptype = ("geom_type" in anode.data)? anode.data.geom_type: "None";
 	if (comptype === "file"||(comptype === "None")){
 
-		if ( anode.data.geom ) {
+		if ( anode.data.geom && anode.data.geom!== "None") {
 				//display in ngl
 				stage.removeAllComponents();
 				NGLLoadAShapeObj(anode.data.geom);
@@ -1779,10 +1823,10 @@ function SetObjectsOptionsDiv(anode) {
 	else {
 		//list all property ? use the grid editor ?
 		for (var e in anode.data)
-			htmlStr+= '<label>'+ e + ' : ' + anode.data[e] +'</label><br>'
+			htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>'
 		//htmlStr+=-'<label> Parent Name '+anode.parent.name+'</label>'
 		var cname = anode.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/');
-		htmlStr+='<label> path : '+cname+'</label><br>'
+		htmlStr+='<label> path: '+cname+'</label>'
 	}
 	var container_ = document.getElementById("objectOptions");
 	if (container_) {
@@ -1876,7 +1920,7 @@ function setupD3(){
 		height = canvas.height;
 		console.log("init ",width,height,container,context);
 
-		var result = syncpyRequestSQL();
+		//var result = syncpyRequestSQL();
 		//console.log(result);
     var agraph = {};//JSON.parse(result);
 

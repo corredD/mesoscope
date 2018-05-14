@@ -1,4 +1,5 @@
-#!/usr/local/bin/python2.7
+#!python2.7
+#/usr/local/bin/python2.7
 import sys,os
 import json
 #import MySQLdb
@@ -12,9 +13,7 @@ cgitb.enable()
 
 import sqlite3
 
-database = "/usr/local/www/projects/cellPackDB/cellPackDatabase.db"
-
-
+database = "./data/cellPackDatabase.db"
 
 def print_tree(conn, rootName="BloodHIVMycoRB.1.0"):
     #print "Content-type: text/plain\n"
@@ -65,7 +64,7 @@ def print_tree(conn, rootName="BloodHIVMycoRB.1.0"):
                     name = ingred[1]
                     msg = msg + str(ingred)+"<br>"#" %s" %(name)
                 print msg
-                                                   
+
             inter_ing = sql_query(conn, sql, (comp_id, 2),)
             if len(inter_ing):
                 print "<br>"
@@ -124,7 +123,7 @@ Select localisation: &nbsp;<br>
         if not len(res):
             data = [["name", ingredName],["localisation_id", loc_id]]
             add_row("ingredients", data, conn)
-        
+
         sql = "SELECT id, name, localisation_id FROM ingredients WHERE name=?"
         newRecord = sql_query(conn, sql, (ingredName,))
         msg = '''<p>Submitted: Ingedient name: {ingredName},  localisation {localisation}; <br>
@@ -213,13 +212,13 @@ def getStringdictionarySQL(conn,rootName):
         end = ""
         for comp_name in record[1:]:
            ## if comp_name != "HIV_immature" : continue
-            if comp_name is None: 
+            if comp_name is None:
                   break
             if parent:
                 indent += ""#&nbsp;&nbsp;&nbsp;&nbsp;"
                 #import pdb; pdb.set_trace()
                 end += "]"
-                end += "},"    
+                end += "},"
             msg += indent+'{"name":"%s",'% comp_name
             msg += '"children":['
             parent = comp_name
@@ -238,10 +237,10 @@ def getStringdictionarySQL(conn,rootName):
                     source = ingred[2]
                     if source != None and len(source)!=4:
                     	if source[-4:] != ".pdb" : source = source+".pdb"
-                    msg += indent+'{"name":"%s","size":10,"source":{"pdb":"%s"},"count":%d, "molarity":%f, "surface":true},' %(  name,   source,  ingred[3],  ingred[5])   
+                    msg += indent+'{"name":"%s","size":10,"source":{"pdb":"%s"},"count":%d, "molarity":%f, "surface":true},' %(  name,   source,  ingred[3],  ingred[5])
                 #msg = msg[:-1]
                 #msg += "]"
-                #msg += "},"                                                           
+                #msg += "},"
             inter_ing = sql_query(conn, sql, (comp_id, 2),)
             if len(inter_ing):
                 #msg += indent+'{"name":"interior",'
@@ -252,10 +251,10 @@ def getStringdictionarySQL(conn,rootName):
                     source = ingred[2]
                     if source != None and len(source)!=4:
                     	if source[-4:] != ".pdb" : source = source+".pdb"
-                    msg += indent+'{"name":"%s","size":10,"source":{"pdb":"%s"},"count":%d, "molarity":%f, "surface":false},' %(  name,   source,  ingred[3],  ingred[5])   
+                    msg += indent+'{"name":"%s","size":10,"source":{"pdb":"%s"},"count":%d, "molarity":%f, "surface":false},' %(  name,   source,  ingred[3],  ingred[5])
                 #msg = msg[:-1]
                 #msg += "]"
-                #msg += "},"                                                                   
+                #msg += "},"
             if (end !=""):
                 msg=msg[:-1]
                 msg+=end
@@ -263,7 +262,7 @@ def getStringdictionarySQL(conn,rootName):
         msg += "]"
         msg += "},"
         acount+=1
-        #if acount == 2 :break         
+        #if acount == 2 :break
     msg = msg[:-1]
     msg +="]"
     msg +="}"
@@ -300,10 +299,10 @@ def getStringdictionaryJSON(jsondic):
                 if acount == None : acount = 0
                 molarity = ing_dic["molarity"] if "molarity" in ing_dic else 0.0
                 if molarity == None : moalrity = 0.0
-                msg += '{"name":"%s","size":10,"source":"%s","count":%d, "molarity":%f, "surface":false}\n,' %(  ing_dic["name"], str(source),  acount,  molarity)   
+                msg += '{"name":"%s","size":10,"source":"%s","count":%d, "molarity":%f, "surface":false}\n,' %(  ing_dic["name"], str(source),  acount,  molarity)
         #msg = msg[:-1]
         #msg += "]"
-        #msg += "}," 
+        #msg += "},"
     if "compartments" in jsondic:
         if len(jsondic["compartments"]):
             for cname in jsondic["compartments"]:
@@ -316,44 +315,44 @@ def getStringdictionaryJSON(jsondic):
                     if len(ingrs_dic):
                        #msg += '{"name":"surface",'
                        #msg += '"children":['
-                       for ing_name in ingrs_dic:  
+                       for ing_name in ingrs_dic:
                            ing_dic = ingrs_dic[ing_name]
                            name = ing_dic["name"]
-                           source = ing_dic["pdb"] if "pdb" in ing_dic else None 
+                           source = ing_dic["pdb"] if "pdb" in ing_dic else None
                            if source != None and len(source)!=4:
-                               if source[-4:] != ".pdb" : source = source+".pdb"                           
+                               if source[-4:] != ".pdb" : source = source+".pdb"
                            acount = ing_dic["nbMol"] if "nbMol" in ing_dic else 0
                            if acount == None : acount = 0
                            molarity = ing_dic["molarity"] if "molarity" in ing_dic else 0.0
                            if molarity == None : moalrity = 0.0
-                           msg += '{"name":"%s","size":10,"source":"%s","count":%d, "molarity":%f, "surface":true}\n,' %(  name,str(source),  acount,  molarity)   
+                           msg += '{"name":"%s","size":10,"source":"%s","count":%d, "molarity":%f, "surface":true}\n,' %(  name,str(source),  acount,  molarity)
                        #msg = msg[:-1]
                        #msg += "]"
-                       #msg += "}\n," 
+                       #msg += "}\n,"
                 if "interior" in comp_dic:
                     snode = comp_dic["interior"]
                     ingrs_dic = snode["ingredients"]
                     if len(ingrs_dic):
                        #msg += '{"name":"interior",'
                        #msg += '"children":[\n'
-                       for ing_name in ingrs_dic:  
+                       for ing_name in ingrs_dic:
                            ing_dic = ingrs_dic[ing_name]
                            name = ing_dic["name"]
-                           source = ing_dic["pdb"] if "pdb" in ing_dic else None 
+                           source = ing_dic["pdb"] if "pdb" in ing_dic else None
                            if source != None and len(source)!=4:
-                               if source[-4:] != ".pdb" : source = source+".pdb"                            
+                               if source[-4:] != ".pdb" : source = source+".pdb"
                            acount = ing_dic["nbMol"] if "nbMol" in ing_dic else 0
                            if acount == None : acount = 0
                            molarity = ing_dic["molarity"] if "molarity" in ing_dic else 0.0
                            if molarity == None : moalrity = 0.0
-                           msg += '{"name":"%s","size":10,"source":"%s","count":%d, "molarity":%f, "surface":false}\n,' %(  name,str(source),  acount,  molarity)   
+                           msg += '{"name":"%s","size":10,"source":"%s","count":%d, "molarity":%f, "surface":false}\n,' %(  name,str(source),  acount,  molarity)
                        #msg = msg[:-1]
                        #msg += "]"
-                       #msg += "}\n," 
+                       #msg += "}\n,"
 
                 msg = msg[:-1]
                 msg += "]"
-                msg += "}\n,"           
+                msg += "}\n,"
     #msg = msg[:-1]
     msg +="]"
     msg +="}\n"
@@ -361,7 +360,7 @@ def getStringdictionaryJSON(jsondic):
     #print "<br>"
     #print msg
     return msg
-    
+
 def forceSimulation(conn, rootName):
     aStr="""<!DOCTYPE html>
 <meta charset="utf-8">
@@ -414,12 +413,12 @@ var canvas = document.querySelector("canvas"),
     tau = 2 * Math.PI;
 
 var root = cpData();
-   
+
 var simulation = d3.forceSimulation(root)
     .velocityDecay(0.2)
     .force("x", d3.forceX().strength(0.002))
     .force("y", d3.forceY().strength(0.002))
-    .force("collide", d3.forceCollide().radius(function(d) 
+    .force("collide", d3.forceCollide().radius(function(d)
     { return d.r + 0.5; }).iterations(2))
     .on("tick", ticked);
 
@@ -441,7 +440,7 @@ function ticked() {
   context.restore();
 }
 
-    
+
 function cpData() {
 """
     aStr+="return "+getStringdictionary(conn,rootName)
@@ -576,7 +575,7 @@ progress {
 }
 progress::-webkit-progress-bar-value {
   background-color: #99ccff;
-}	
+}
 """
     javascript="""
 (function(){
@@ -648,7 +647,7 @@ progress::-webkit-progress-bar-value {
       }
       return tree_;
     }
-    
+
   this.init = function(e) {
       // Reset
       html_ = [];
@@ -730,7 +729,7 @@ progress::-webkit-progress-bar-value {
 
 #http://proteinformatics.charite.de/ngl/js/build/ngl.embedded.min.js
 def circlePacking (conn, rootName=None, json_dic = None):
-    css,js = "",""#JSFolder() 
+    css,js = "",""#JSFolder()
     aStr="""<!DOCTYPE html>
 <meta charset="utf-8">
 
@@ -769,7 +768,7 @@ html, body { width: 100%; height: 100%; overflow: auto; }
 },
 .node--root,
 .node--leaf,
-.node--leaferror 
+.node--leaferror
 
 .d3-tip {
   line-height: 1;
@@ -779,7 +778,7 @@ html, body { width: 100%; height: 100%; overflow: auto; }
   color: #fff;
   border-radius: 2px;
   -webkit-transition: opacity 0.3s; /* For Safari 3.1 to 6.0 */
-  transition: opacity 0.3s;   
+  transition: opacity 0.3s;
 }
 
 /* Creates a small triangle extender for the tooltip */
@@ -935,7 +934,7 @@ loadDataBase();
 var svg = d3.select("svg"),
     margin = 20,
     diameter = +svg.attr("width"),
-    g = svg.append("g").attr("transform", 
+    g = svg.append("g").attr("transform",
     		"translate(" + diameter / 2 + "," + diameter / 2 + ")");
 
 var color = d3.scaleLinear()
@@ -968,17 +967,17 @@ svg
     .on("click", function() { zoom(root); });
 
 svg.call(tipCirclePack);
-    
+
 var circle = g.selectAll("circle")
   .data(nodes)
   .attr("rInit", function(d, i) { return d.r })
   .enter().append("circle")
-    .attr("class", function(d) { 
+    .attr("class", function(d) {
         if (d.data.source === "None" &&  !d.children) return "node node--leaferror";
-        else  return d.parent ? d.children ? "node" : "node node--leaf" : "node node--root"; 
+        else  return d.parent ? d.children ? "node" : "node node--leaf" : "node node--root";
     })
     .style("fill", function(d) { return d.children ? color(d.depth) : null; })
-    .on("click", function(d) { 
+    .on("click", function(d) {
       stage.removeAllComponents();
       if ( "source" in d.data ) {
       		if (d.data.source === "None" ) return;
@@ -1012,7 +1011,7 @@ var circle = g.selectAll("circle")
           zoom(d.parent),
           d3.event.stopPropagation();
       }
-    	else if (focus !== d) zoom(d), d3.event.stopPropagation(); 
+    	else if (focus !== d) zoom(d), d3.event.stopPropagation();
     	})
       .on('mouseover', function (d) {
       // If node has no children, show tooltip and increase the radius of the circle
@@ -1032,7 +1031,7 @@ var circle = g.selectAll("circle")
       //.attr("r", selectedCircle.attr("rInit") );
     })
     //.call(force.drag);
-    
+
 var text = g.selectAll("text")
   .data(nodes)
   .enter().append("text")
@@ -1045,7 +1044,7 @@ var text = g.selectAll("text")
 var node = g.selectAll("circle,text");
 
 
-    
+
 zoomTo([root.x, root.y, root.r * 2 + margin]);
 
 function zoom(d) {
@@ -1080,9 +1079,9 @@ function cpData() {
     aStr+=js
     aStr+="</script><br>"
     print aStr
- 
+
 import imp
-jsonRecipeDB = imp.load_source("jsonRecipeDB", "/usr/local/www/projects/cellPackDB/jsonRecipeDB.py")
+jsonRecipeDB = imp.load_source("jsonRecipeDB", "./python/jsonRecipeDB.py")
 
 from jsonRecipeDB import  create_connection , list_table_columns, list_table_names, sql_query, add_row, JsonRecipeParser
 
@@ -1096,11 +1095,11 @@ def main1():
        statuskey = form["key"].value
     except:
        statuskey = None
-        
+
     #ingredName = form.getfirst('ingredName', '')
     #localisation = form.getfirst('localisation', '')
     #pastState = form.getfirst('pastState', '')
-    
+
     #print 'ingredName', ingredName, "state", "localisation", localisation,  pastState
     #print add_record(ingredName, localisation, pastState, jsonParser)
     if form.has_key("file") and form['file'] != None and form['file'].filename != "":
@@ -1121,7 +1120,7 @@ def main1():
     print "<br>"
     print statuskey
     print "<br>"
-    
+
     #forceSimulation (conn, "BloodHIVMycoRB.1.0")
     print_tree(conn)
 
@@ -1163,7 +1162,7 @@ def main():
         jsondic = json.loads(aStr)
         rootName=""
         if "recipe" in jsondic:
-            rootName = jsondic["recipe"]["name"] 
+            rootName = jsondic["recipe"]["name"]
         print getStringdictionaryJSON(jsondic)
     elif statuskey!=None and str(statuskey) == "sqldb":
         #print "test"
@@ -1184,12 +1183,10 @@ def main():
         print("Content-type: application/json\n")
         jsondic = json.loads(astr)
         print astr#json.dumps(jsondic)
-           
-try: 
+
+try:
     import getpass
     #print "RUNNING AS", getpass.getuser()
-    main() 
+    main()
 except:
-    cgi.print_exception() 
-
-
+    cgi.print_exception()

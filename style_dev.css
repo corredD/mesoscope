@@ -1048,5 +1048,5 @@ section#content p {
   transition: max-height 0.2s ease-out;
 }
 .accordion_panel > label {
-  width:45%;
+  //width:45%;
 }

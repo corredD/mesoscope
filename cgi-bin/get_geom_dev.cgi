@@ -1,4 +1,5 @@
-# #!/usr/bin/env /usr/local/www/projects/mgltools2/bin/pythonsh
+#!python2.7
+#!/usr/bin/env /usr/local/www/projects/mgltools2/bin/pythonsh
 
 import os
 import time
@@ -76,7 +77,7 @@ def cluster(data, k=3):
         # Storing the old centroid values
         C_old = deepcopy(C)
         # Finding the new centroids by taking the average value
-        
+
         for i in range(k):
             points = [data[j] for j in range(len(data)) if clusters[j] == i]
             #print "points" , len(points)
@@ -120,7 +121,7 @@ def getBeads(mol, nbeads, selstr=None):
     else:
         geomDict = {"centers": [], "radii":[]}
     return geomDict
-    
+
 
 from PmvApp.Pmv import MolApp
 def fetchMol(app, pdbId, model=None, pdbFolder=None):
@@ -249,7 +250,7 @@ def getCoarseMolSurf(app, mol, selstr, bu="", surfName='coarseMolSurf', perMol=T
             geomDict = {"verts": verts.flatten().tolist(), "faces":faces.flatten().tolist(), "normals": vnorms.flatten().tolist()}
         else:
             geomDict = {"verts":[], "faces":[], "normals":[]}
-            
+
     return geomDict
 
 
@@ -330,7 +331,7 @@ def main():
             #print "<br> <br> <br>"
             print "SURFACE COMPUTED !!!", "&nbsp; Num faces: %d"%len(geomDict['faces']), "&nbsp; Num verts: %d <br>" % len(geomDict['verts'])
             results.append(jsonstr)
-            
+
         if form.has_key("beads"): # clustering
             nbeads = 3
             if form.has_key("nbeads"):
@@ -339,7 +340,7 @@ def main():
             import json
             jsonstr = json.dumps(geomDict)
             results.append(jsonstr)
-            
+
         print '", "results":'         # this closes "log" and starts "results"
 
         for st in results:
