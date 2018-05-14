@@ -294,6 +294,10 @@ def main():
             print "number of lines in file", len(lines)
             print "<br>"
             mol = readMolStr(app, lines, fileitem.filename, model=model)
+    elif form.has_key("atomsCoords"):
+        #directly use the coordinates as a numpy array
+        #print form["atomCoords"]+'"'
+        mol = None
     elif form.has_key("pdbId"):
         pdbId = form.getvalue("pdbId")
         if pdbId and len(pdbId)==4:
@@ -308,6 +312,7 @@ def main():
                 os.system('wget --no-check-certificate '+url+' -O '+filename)
             app.lazyLoad('fileCmds', commands=['readMolecules'], package='PmvApp')
             mol = app.readMolecule(filename,addToRecent=False)
+
     if mol:
         results = []
         if form.has_key("cms"): # coarse mol surface
@@ -349,6 +354,7 @@ def main():
     astr=''
     for k in form :
         if k == "inputfile": continue
+        if k == "atomCoords": continue
         val = form.getvalue(k)
         if val == "":
             val = "not specified"
