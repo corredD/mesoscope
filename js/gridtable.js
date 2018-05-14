@@ -1253,7 +1253,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       console.log(ni); //91
       var n = graph.nodes[ni];
       console.log(n);
-      n.data.surface = arow.surface;
+      //n.data.surface = arow.surface;
       //change parent
       var parentstring_ar = arow.compartment.split("/"); //split on /
       console.log(parentstring_ar, parentstring_ar.length);
@@ -1263,6 +1263,8 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       var index = n.parent.children.indexOf(n);
       n.parent.children.splice(index, 1);
       n.parent = pnode;
+      n.depth = depth;
+      /*
       n.data.name = arow.name;
       n.data.size = arow.size;
       n.data.count = arow.count;
@@ -1272,15 +1274,18 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       n.data.bu = arow.bu;
       n.data.selection = arow.selection;
       n.data.uniprot = arow.uniprot;
+
+
       n.data.pcpalAxis = (Array.isArray(arow.pcpalAxis)) ? arow.pcpalAxis : arow.pcpalAxis.split(",").map(function(d) {
         return parseFloat(d);
       });
       n.data.offset = (Array.isArray(arow.offset)) ? arow.offset : arow.offset.split(",").map(function(d) {
         return parseFloat(d);
-      });
+      });*/
+      n = updateAttributesNode(n,arow);
+      console.log(n);
       console.log("offset is ", n.data.offset, n.data.pcpalAxis);
       //n.data."pos":p,"radii":r};
-      n.depth = depth;
       console.log("surface ", arow.surface, n.data.name)
       if (pnode) console.log(pnode.data.name);
       console.log("new depth is " + depth);
@@ -1289,10 +1294,11 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
         console.log(pnode);
         //console.log(pnode.children[0].depth);
       }
+
       simulation.alpha(1).alphaTarget(0).restart();
       //update ngl?
-      if (!n.data.source) n.data.source = {};
-      n.data.source.pdb = arow.pdb;
+      //if (!n.data.source) n.data.source = {};
+      //n.data.source.pdb = arow.pdb;
       if (arow.pdb) updateNGL(n);
       //NGLLoad(arow.pdb,arow.bu,arow.selection);	also update pcp and offset
     } else if (grid.gname === "grid_uniprot") {

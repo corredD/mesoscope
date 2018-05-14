@@ -1640,6 +1640,30 @@ function checkAttributes(agraph){
 	return agraph;
 	}
 
+function updateAttributesNode(anode,new_data) {
+		for (var key in new_data) {
+			 if(!(key in anode.data)) continue;
+			 console.log("update ",key,anode.data[key],new_data[key]);
+			 if (key === "offset"){
+				 anode.data.offset = (Array.isArray(new_data.offset)) ? new_data.offset : new_data.offset.split(",").map(function(d) {
+	         return parseFloat(d);
+	       });
+			 }
+			 else if (key ==="pcpalAxis") {
+				 anode.data.pcpalAxis = (Array.isArray(new_data.pcpalAxis)) ? new_data.pcpalAxis : new_data.pcpalAxis.split(",").map(function(d) {
+	         return parseFloat(d);
+	       });
+			 }
+			 else if (key === "pdb") {
+				 anode.data.source.pdb = new_data.pdb;
+			 }
+			 else {
+				 anode.data[key] = new_data[key];
+			 }
+		}
+		return anode;
+}
+
 function getcomphtml(anode) {
   var htmlStr='<div style="display:flex;flex-flow: column;">';
 	for (var e in anode.data)
