@@ -253,7 +253,45 @@ def getCoarseMolSurf(app, mol, selstr, bu="", surfName='coarseMolSurf', perMol=T
 
     return geomDict
 
-
+#iso = 1.0
+#res = -0.1
+#gsize = 16
+def computeCoarseMolSurf(coords, radii, XYZd =[16,16,16], isovalue=1.0,resolution=-0.1,padding=0.0,
+                         name='CoarseMolSurface',geom=None):
+    from UTpackages.UTblur import blur
+    #overwrite the radii
+    radii = np.ascontiguousarray(np.ones(len(coords))*2.6).tolist()
+    volarr, origin, span = blur.generateBlurmap(np.ascontiguousarray(coords).tolist(), radii, XYZd,resolution, padding = 0.0)
+    volarr.shape = (XYZd[0],XYZd[1],XYZd[2])
+    volarr = np.ascontiguousarray(np.transpose(volarr), 'f')
+    #weights =  np.ones(len(radii), typecode = "f")
+    h = {}
+    from Volume.Grid3D import Grid3DF
+    maskGrid = Grid3DF( volarr, origin, span , h)
+    h['amin'], h['amax'],h['amean'],h['arms']= maskGrid.stats()
+    #(self, grid3D, isovalue=None, calculatesignatures=None, verbosity=None)
+    from UTpackages.UTisocontour import isocontour
+    isocontour.setVerboseLevel(0)
+    data = maskGrid.data
+    origin = np.array(maskGrid.origin).astype('f')
+    stepsize = np.array(maskGrid.stepSize).astype('f')
+    # add 1 dimension for time steps amd 1 for multiple variables
+    if data.dtype.char!=np.float32:
+        data = data.astype('f')#Numeric.Float32)
+    newgrid3D = np.ascontiguousarray(np.reshape( np.transpose(data),
+                                          (1, 1)+tuple(data.shape) ), data.dtype.char)
+    ndata = isocontour.newDatasetRegFloat3D(newgrid3D, origin, stepsize)
+    isoc = isocontour.getContour3d(ndata, 0, 0, isovalue,
+                                       isocontour.NO_COLOR_VARIABLE)
+    vert = np.zeros((isoc.nvert,3)).astype('f')
+    norm = np.zeros((isoc.nvert,3)).astype('f')
+    col = np.zeros((isoc.nvert)).astype('f')
+    tri = np.zeros((isoc.ntri,3)).astype('i')
+    isocontour.getContour3dData(isoc, vert, norm, col, tri, 0)
+    if maskGrid.crystal:
+        vert = maskGrid.crystal.toCartesian(vert)
+    geomDict = {"verts": vert.flatten().tolist(), "faces":tri.flatten().tolist(), "normals": norm.flatten().tolist()}
+    return geomDict
 
 def main():
     #can be used directly as http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py?pdbId=1crn&selection=A
@@ -297,6 +335,25 @@ def main():
     elif form.has_key("atomsCoords"):
         #directly use the coordinates as a numpy array
         #print form["atomCoords"]+'"'
+        results = []
+        iso = 1.0
+        res = -0.1
+        gsize = 16
+        if form.has_key("iso"):
+            iso = float(form["iso"])
+        if form.has_key("res"):
+            res = float(form["res"])
+        if form.has_key("gsize"):
+            gsize = int(form["gsize"])
+        geomDict = computeCoarseMolSurf(form["atomCoords"], None,
+          XYZd =[gsize,gsize,gsize], isovalue=iso,resolution=res,padding=0.0)
+        jsonstr = json.dumps(geomDict)
+        #print "<br> <br> <br>"
+        print "SURFACE COMPUTED !!!", "&nbsp; Num faces: %d"%len(geomDict['faces']), "&nbsp; Num verts: %d <br>" % len(geomDict['verts'])
+        results.append(jsonstr)
+        print '", "results":'         # this closes "log" and starts "results"
+        for st in results:
+            print st
         mol = None
     elif form.has_key("pdbId"):
         pdbId = form.getvalue("pdbId")
@@ -331,7 +388,7 @@ def main():
             # compute the surface and print the json string with faces and verts:
             geomDict = getCoarseMolSurf(app, mol, selstr, bu = bu, surfName="coarseSurf_1", gridSize=gsize,
             padding=0., resolution=res, isovalue=iso)
-            import json
+
             jsonstr = json.dumps(geomDict)
             #print "<br> <br> <br>"
             print "SURFACE COMPUTED !!!", "&nbsp; Num faces: %d"%len(geomDict['faces']), "&nbsp; Num verts: %d <br>" % len(geomDict['verts'])

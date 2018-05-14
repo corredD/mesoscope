@@ -707,10 +707,12 @@ function buildFromServer(pdb,cms,beads,astructure){
         var data_parsed = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
         var results = data_parsed.results; //verts, faces,normals
         console.log("results:", results);
-        NGL_ShowMeshVFN(results);
-        if (node_selected) {
-          node_selected.data.geom = mesh; //v,f,n directly
-          node_selected.data.geom_type = "raw"; //mean that it provide the v,f,n directly
+        if (results){
+            NGL_ShowMeshVFN(results);
+            if (node_selected) {
+              node_selected.data.geom = mesh; //v,f,n directly
+              node_selected.data.geom_type = "raw"; //mean that it provide the v,f,n directly
+            }
         }
         document.getElementById('stopbuildgeom').setAttribute("class", "spinner hidden");
         document.getElementById("stopbuildgeom_lbl").setAttribute("class", "hidden");
