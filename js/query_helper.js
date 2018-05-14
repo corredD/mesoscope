@@ -781,6 +781,10 @@ function NextComputeIgredient() {
         current_compute_index = i;
         current_compute_node = graph.nodes[i];
       }
+      else {
+        d.data.geom_type = "file";
+        d.data.geom = d.data.source.pdb;
+      }
     }
   }
   console.log("return found ", found, current_compute_index, current_compute_node);
