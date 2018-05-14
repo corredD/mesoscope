@@ -335,17 +335,19 @@ def main():
     elif form.has_key("atomsCoords"):
         #directly use the coordinates as a numpy array
         #print form["atomCoords"]+'"'
+        import json
+        data = form["atomsCoords"].value
         results = []
         iso = 1.0
         res = -0.1
         gsize = 16
         if form.has_key("iso"):
-            iso = float(form["iso"])
+            iso = float(form["iso"].value)
         if form.has_key("res"):
-            res = float(form["res"])
+            res = float(form["res"].value)
         if form.has_key("gsize"):
-            gsize = int(form["gsize"])
-        geomDict = computeCoarseMolSurf(form["atomCoords"], None,
+            gsize = int(form["gsize"].value)
+        geomDict = computeCoarseMolSurf(data, None,
           XYZd =[gsize,gsize,gsize], isovalue=iso,resolution=res,padding=0.0)
         jsonstr = json.dumps(geomDict)
         #print "<br> <br> <br>"
@@ -380,11 +382,11 @@ def main():
             res = -0.1
             gsize = 16
             if form.has_key("iso"):
-                iso = float(form["iso"])
+                iso = float(form["iso"].value)
             if form.has_key("res"):
-                res = float(form["res"])
+                res = float(form["res"].value)
             if form.has_key("gsize"):
-                gsize = int(form["gsize"])
+                gsize = int(form["gsize"].value)
             # compute the surface and print the json string with faces and verts:
             geomDict = getCoarseMolSurf(app, mol, selstr, bu = bu, surfName="coarseSurf_1", gridSize=gsize,
             padding=0., resolution=res, isovalue=iso)
@@ -411,7 +413,7 @@ def main():
     astr=''
     for k in form :
         if k == "inputfile": continue
-        if k == "atomCoords": continue
+        if k == "atomsCoords": continue
         val = form.getvalue(k)
         if val == "":
             val = "not specified"
