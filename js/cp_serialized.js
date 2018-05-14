@@ -262,6 +262,7 @@ function OneIngredientDeserialized(ing_dic,surface,comp) {
 	  var size = ("encapsulatingRadius" in ing_dic)? ing_dic["encapsulatingRadius"] : 40;
 	  var name = ing_dic["name"];
     var pdb = ("pdb" in ing_dic)? ing_dic["pdb"] : "None";
+    var offset = [0,0,0];
     var source = {"pdb":pdb,"bu":"","model":"","selection":""};
     if ("source" in ing_dic){//} && pdb === "None") {
       source = ing_dic["source"];
@@ -274,6 +275,9 @@ function OneIngredientDeserialized(ing_dic,surface,comp) {
       //	p = ing_dic["source"]["pdb"];
       //	}
       if ('emdb' in source) source.pdb = "EMD-"+source.emdb+".map";//"EMD-5241.map"
+      if ('transform' in ing_dic["source"])
+          if ('offset' in ing_dic["source"].transform)
+            offset = ing_dic.source.transform.offset;
     }
 
     if (source.pdb && source.pdb.length!=4){
@@ -287,10 +291,14 @@ function OneIngredientDeserialized(ing_dic,surface,comp) {
 	  if (!molarity )  molarity = 0.0;
     var mw = ("molecularweight" in ing_dic )?ing_dic["molecularweight"] : 0.0;
     if (!mw) mw =0.0;
-    var geom = (("meshFile" in ing_dic)&&(ing_dic["meshFile"]!==null))? ing_dic["meshFile"].split("\\").pop() : "";
-    var geom_type = (geom!=="")?"file" : "None";
+    var geom_type = ("meshType" in ing_dic)? ing_dic["meshType"] : "None";
+    var geom = "";
+    if (geom_type !== "None") {
+      geom = (("meshFile" in ing_dic)&&(ing_dic["meshFile"]!==null))?ing_dic["meshFile"]:"";
+    }//(("meshFile" in ing_dic)&&(ing_dic["meshFile"]!==null))? ing_dic["meshFile"].split("\\").pop() : "";
+
 	  var principalVector = ("principalVector" in ing_dic)? ing_dic["principalVector"] : [0,0,0];
-	  var offset = ("offset" in ing_dic.source.transform)? ing_dic.source.transform.offset : [0,0,0];
+	  //var offset = ("offset" in ing_dic.source.transform)? ing_dic.source.transform.offset : [0,0,0];
     var confidence = ("confidence" in ing_dic ) ? ing_dic["confidence"]:0.0;//overall confidence
 	  //var spheres = getSpheres(ing_dic);
 	  var p = ("positions" in ing_dic) ? ing_dic.positions : null;
