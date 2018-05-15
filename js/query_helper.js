@@ -1163,6 +1163,7 @@ function getCurrentNodesAsCP_JSON(some_data, some_links) {
       if (!(cname in jsondic["compartments"])) {
         var gtype = (node.data.geom_type) ? node.data.geom_type : "None";
         var gname = (node.data.geom) ? node.data.geom : "";
+        if (name in gname) gname = gname.name;//in case it is a blob
         var thickness = (node.data.thickness) ? node.data.thickness : 7.5;
         //if metaball geom should be array of xyzr/
         jsondic["compartments"][cname] = {

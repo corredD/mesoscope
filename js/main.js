@@ -1365,6 +1365,7 @@ function selectCompFile (e) {
 	//alert(theFiles[0].size);
 	var thefile = theFiles[0];
 	node_selected.data.geom = thefile;
+	node_selected.data.geom_type = "file";
 	document.getElementById("label_comp_source_file").innerHTML = thefile.name;
 	stage.removeAllComponents();
 	NGL_LoadShapeFile(thefile);
@@ -1811,6 +1812,11 @@ function UpdateCompartmentRep(anode){
 	}
 	else if (comptype === "mb") {
 
+	}
+	else if (comptype === "raw") {
+		stage.removeAllComponents();
+		NGLLoadAShapeObj(anode.data.geom);
+		stage.autoView();
 	}
 }
 
@@ -2941,7 +2947,7 @@ function anotherSubject(anode,x,y,allnodes) {
 
 function asubject(x,y) {
 	var tolerance=5/2;
-	subject = null;
+	subject = graph.nodes[0];//root ?
 
 	x = transform.invertX(x);
 	y = transform.invertY(y);

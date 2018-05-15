@@ -866,6 +866,7 @@ function NGL_showGeomNode(e) {
 function NGL_LoadShapeFile(afile) {
   var thefile = afile;
   console.log(thefile);
+  if (!afile) return;
   //update the slecected node with its name.
   if (window.FileReader) {
     // FileReader is supported.
@@ -999,6 +1000,7 @@ function NGLLoadAShapeObj(gpath) {
             colorScheme: "chainId",
             name: "polymer"
           });
+          NGLShowOrigin();
           stage.autoView();
           ngl_current_structure = o;
           NGL_UpdateAssamblyList(o);
