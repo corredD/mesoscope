@@ -1,4 +1,4 @@
-#!python2.7
+#!/usr/bin/env /export/people/annao/mgltools2/MGLTools2-1.1/bin/pythonsh
 #!/usr/bin/env /usr/local/www/projects/mgltools2/bin/pythonsh
 
 import os
