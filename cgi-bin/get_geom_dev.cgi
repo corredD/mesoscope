@@ -259,6 +259,11 @@ def getCoarseMolSurf(app, mol, selstr, bu="", surfName='coarseMolSurf', perMol=T
 def computeCoarseMolSurf(coords, radii, XYZd =[16,16,16], isovalue=1.0,resolution=-0.1,padding=0.0,
                          name='CoarseMolSurface',geom=None):
     from UTpackages.UTblur import blur
+    print "COORDS", type(coords)
+    if type(coords) != np.ndarray:
+        coords = np.array(coords, "f")
+    else:
+        coords = coords.astype("f")
     #overwrite the radii
     radii = np.ascontiguousarray(np.ones(len(coords))*2.6).tolist()
     volarr, origin, span = blur.generateBlurmap(np.ascontiguousarray(coords).tolist(), radii, XYZd,resolution, padding = 0.0)
@@ -357,6 +362,8 @@ def main():
         #print form["atomCoords"]+'"'
         import json
         data = form["atomsCoords"].value
+        if type(data) == str:
+            data = eval(data)
         results = []
         iso = 1.0
         res = -0.1
