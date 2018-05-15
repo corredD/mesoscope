@@ -677,7 +677,64 @@ function NGLtoPMVselection(asele) {
   let new_sele = "";
 }
 
-function buildCMS() {
+/*
+use
+ngl_current_structure = o;
+ngl_current_structure.sele = sele;
+ngl_current_structure.assambly = assambly;
+*/
+function buildFromServer(pdb,cms,beads,astructure){
+    var dataset = GetAtomDataSet(pdb,astructure);
+    var formData = new FormData();
+    formData.append("atomsCoords", JSON.stringify(dataset));//array of x,y,z
+    if (cms) {
+      //add form for cms
+      formData.append("cms", true);
+    }
+    if (beads) {
+      //add form for beads
+      formData.append("beads", true);
+    }
+    document.getElementById('stopbuildgeom').setAttribute("class", "spinner");
+    document.getElementById("stopbuildgeom_lbl").setAttribute("class", "show");
+    $.ajax({
+      type: "POST",
+      //url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
+      url: pmv_server,
+      success: function(data) {
+        console.log("##BuildFromCoords###");
+        console.log(data);
+        var data_parsed = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
+        var results = data_parsed.results; //verts, faces,normals
+        console.log("results:", results);
+        if (results){
+            NGL_ShowMeshVFN(results);
+            if (node_selected) {
+              node_selected.data.geom = mesh; //v,f,n directly
+              node_selected.data.geom_type = "raw"; //mean that it provide the v,f,n directly
+            }
+        }
+        document.getElementById('stopbuildgeom').setAttribute("class", "spinner hidden");
+        document.getElementById("stopbuildgeom_lbl").setAttribute("class", "hidden");
+      },
+      error: function(error) {
+        console.log(error);
+      },
+      async: true,
+      data: formData,
+      cache: false,
+      contentType: false,
+      processData: false,
+      timeout: 60000
+    });
+}
+
+function buildCMS()
+{
+    buildFromServer("",true,false,null);
+}
+
+function buildCMS2() {
   var d = node_selected; //or node_selected.data.bu
   var pdb = d.data.source.pdb; //document.getElementById("pdb_str");
   var bu = (d.data.source.bu) ? d.data.source.bu : ""; //document.getElementById("bu_str");

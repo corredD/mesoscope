@@ -369,6 +369,7 @@ function toggleOriginVisibility(e) {
 }
 
 async function updateCurrentBeadsLevelClient() {
+  //center
   //async function updateCurrentBeadsLevel() {
   console.log("update beads", beads_elem.selectedOptions[0].value); //undefined?//lod level
   var ngl_sele = new NGL.Selection(sele_elem.value);
@@ -936,7 +937,9 @@ function NGLLoadAShapeObj(gpath) {
   } else if (node_selected.data.geom_type === "None" &&
     node_selected.data.nodeType !== "compartment") {
     //build it ?
-    buildCMS();
+    //buildCMS();
+    //test from atomCoords directly
+    buildFromServer(gpath,true,false,null);
   } else if (node_selected.data.geom_type === "file") {
     //gpath may be different as we pass data.geom
     if (typeof gpath === 'string') {
@@ -993,7 +996,14 @@ function NGLLoadAShapeObj(gpath) {
         //Collada.load( thefile, getCollada_cb );
       } else if (ext === "mmtf") {
         stage.loadFile("rcsb://" + gname, {
-          defaultRepresentation: true
+          defaultRepresentation: false
+        }).then(function(o) {
+          o.addRepresentation("spacefill", {
+            colorScheme: "chainId",
+            name: "polymer"
+          });
+          stage.autoView();
+          buildFromServer(gname,true,false,o);
         });
         //build the geom ?
       }
@@ -1116,8 +1126,40 @@ function NGLLoadSpheres(pos, rad) {
   }
 }
 
-
-
+/*
+use
+ngl_current_structure = o;
+ngl_current_structure.sele = sele;
+ngl_current_structure.assambly = assambly;
+*/
+function GetAtomDataSet(pdb,struture_object){
+  var dataset = [];
+  var o = struture_object;
+  if (!o) o = ngl_current_structure;
+  if (pdb) {}//load ?
+  var ats = o.structure.atomStore;
+  var nAtom = ats.count;
+  console.log("found ",nAtom);
+  var asele = "polymer";
+  if (o.ngl_sele) {
+    if (o.ngl_sele.string !== null) asele = o.ngl_sele.string;
+    else asele = o.ngl_sele;
+  }
+  if (asele === "") asele = "polymer";
+    var bu = false;
+    if (o.assambly !== "AU" && o.object.biomolDict[o.assambly]) {
+      //need to apply the matrix to the selection inside the BU selection ?
+      //console.log(o.object.biomolDict[o.assambly].getSelection());
+      //build using given selection AND biomolDic selection
+      asele = "(" + o.object.biomolDict[o.assambly].getSelection().string + ") AND " + asele;
+      bu = true;
+    }
+    console.log("selection is ",asele);
+    o.structure.eachAtom(function(ap) {
+      if (ap.atomname==="CA" || nAtom < 20000) dataset.push([ap.x, ap.y, ap.z]);
+    }, new NGL.Selection(asele));
+    return dataset;
+  }
 
 function processSymmetry(symmetry) {
   const symmetryData = {}
@@ -1223,7 +1265,6 @@ function GetGeometricCenterArray(clusteri, some_data) {
     "radius": R
   };
 }
-
 
 function ClusterStructure(o, center) {
   return buildWithKmeans(o, center);
