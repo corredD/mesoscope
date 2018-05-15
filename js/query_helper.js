@@ -684,6 +684,7 @@ ngl_current_structure.sele = sele;
 ngl_current_structure.assambly = assambly;
 */
 function buildFromServer(pdb,cms,beads,astructure){
+    var lod = beads_elem.selectedOptions[0].value;
     var dataset = GetAtomDataSet(pdb,astructure);
     var formData = new FormData();
     formData.append("atomsCoords", JSON.stringify(dataset));//array of x,y,z
@@ -694,6 +695,7 @@ function buildFromServer(pdb,cms,beads,astructure){
     if (beads) {
       //add form for beads
       formData.append("beads", true);
+      formData.append("nbeads", slidercluster_elem.value)
     }
     document.getElementById('stopbuildgeom').setAttribute("class", "spinner");
     document.getElementById("stopbuildgeom_lbl").setAttribute("class", "show");
@@ -707,12 +709,27 @@ function buildFromServer(pdb,cms,beads,astructure){
         var data_parsed = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
         var results = data_parsed.results; //verts, faces,normals
         console.log("results:", results);
-        if (results){
-            NGL_ShowMeshVFN(results);
-            if (node_selected) {
-              node_selected.data.geom = results; //v,f,n directly
+        if ("verts" in results) {
+          NGL_ShowMeshVFN(results);
+          if (node_selected) {
+              node_selected.data.geom = {
+              "verts": results.verts,
+              "faces": results.faces,
+              "normals": results.normals
+              }; //v,f,n directly
               node_selected.data.geom_type = "raw"; //mean that it provide the v,f,n directly
-            }
+          }
+        }
+        if ("centers" in results) {
+          NGL_ShowBeadsCR(results,lod);
+          if (node_selected) {
+            node_selected.data.pos = [{
+            "coords": results.centers
+          }];
+          node_selected.data.radii = [{
+            "radii": results.radii
+          }];
+        }
         }
         document.getElementById('stopbuildgeom').setAttribute("class", "spinner hidden");
         document.getElementById("stopbuildgeom_lbl").setAttribute("class", "hidden");

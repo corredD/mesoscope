@@ -101,16 +101,7 @@ def getClusterRad(clusters, centroids):
         radii.append(maxval)
     return radii
 
-def getBeads(mol, nbeads, selstr=None):
-    if selstr is not None :
-        molSel = mol.selectMolKit(selstr)
-    else:
-        selstr = ""
-        molSel = mol.select()
-    if not molSel:
-        return {"centers": [], "radii":[]}
-    #print "MOL SELECTION in BEADS:", selstr, molSel
-    data = molSel.getCoords()
+def getBeadsFromCoords(data, nbeads):
     centers, clusters = cluster(data, nbeads)
     if len(centers):
         radii = getClusterRad(clusters, centers)
@@ -122,6 +113,18 @@ def getBeads(mol, nbeads, selstr=None):
         geomDict = {"centers": [], "radii":[]}
     return geomDict
 
+
+def getBeads(mol, nbeads, selstr=None):
+    if selstr is not None :
+        molSel = mol.selectMolKit(selstr)
+    else:
+        selstr = ""
+        molSel = mol.select()
+    if not molSel:
+        return {"centers": [], "radii":[]}
+    #print "MOL SELECTION in BEADS:", selstr, molSel
+    data = molSel.getCoords()
+    return getBeadsFromCoords(data, nbeads)
 
 from PmvApp.Pmv import MolApp
 def fetchMol(app, pdbId, model=None, pdbFolder=None):
@@ -265,7 +268,7 @@ def computeCoarseMolSurf(coords, radii, XYZd =[16,16,16], isovalue=1.0,resolutio
     else:
         coords = coords.astype("f")
     #overwrite the radii
-    radii = np.ascontiguousarray(np.ones(len(coords))*2.6).tolist()
+    radii = np.ascontiguousarray(np.ones(len(coords))*1.8).tolist()
     volarr, origin, span = blur.generateBlurmap(np.ascontiguousarray(coords).tolist(), radii, XYZd,resolution, padding = 0.0)
     volarr.shape = (XYZd[0],XYZd[1],XYZd[2])
     volarr = np.ascontiguousarray(np.transpose(volarr), 'f')
@@ -347,7 +350,6 @@ def main():
         fileitem = form['inputfile']
         if fileitem.filename != "":
             # Test if the file was uploaded
-
             print fileitem.filename
             print "<br>"
             print "<br>"
@@ -365,22 +367,33 @@ def main():
         if type(data) == str:
             data = eval(data)
         results = []
-        iso = 1.0
-        res = -0.1
-        gsize = 16
-        if form.has_key("iso"):
-            iso = float(form["iso"].value)
-        if form.has_key("res"):
-            res = float(form["res"].value)
-        if form.has_key("gsize"):
-            gsize = int(form["gsize"].value)
-        geomDict = computeCoarseMolSurf(data, None,
-          XYZd =[gsize,gsize,gsize], isovalue=iso,resolution=res,padding=0.0)
-        jsonstr = json.dumps(geomDict)
-        #print "<br> <br> <br>"
-        print "SURFACE COMPUTED !!!", "&nbsp; Num faces: %d"%len(geomDict['faces']), "&nbsp; Num verts: %d <br>" % len(geomDict['verts'])
-        results.append(jsonstr)
-        print '", "results":'         # this closes "log" and starts "results"
+        if form.has_key("cms") and form.getvalue("cms") :
+          iso = 1.0
+          res = -0.1
+          gsize = 16
+          if form.has_key("iso"):
+              iso = float(form["iso"].value)
+          if form.has_key("res"):
+              res = float(form["res"].value)
+          if form.has_key("gsize"):
+              gsize = int(form["gsize"].value)
+          geomDict = computeCoarseMolSurf(data, None,
+            XYZd =[gsize,gsize,gsize], isovalue=iso,resolution=res,padding=0.0)
+          jsonstr = json.dumps(geomDict)
+          #print "<br> <br> <br>"
+          print "SURFACE COMPUTED !!!", "&nbsp; Num faces: %d"%len(geomDict['faces']), "&nbsp; Num verts: %d <br>" % len(geomDict['verts'])
+          results.append(jsonstr)
+        # this closes "log" and starts "results"
+        if form.has_key("beads") and form.getvalue("beads") :
+          #build beads from coordinates
+          nbeads = 5
+          if form.has_key("nbeads"):
+              nbeads = int(form.getvalue("nbeads"))
+          geomDict = getBeadsFromCoords(data, nbeads)
+          import json
+          jsonstr = json.dumps(geomDict)
+          results.append(jsonstr)
+        print '", "results":'
         for st in results:
             print st
         mol = None

@@ -420,8 +420,7 @@ async function updateCurrentBeadsLevelClient() {
 }
 
 // server side function for computing beads
-
-function updateCurrentBeadsLevel() {
+function updateCurrentBeadsLevelServer() {
   console.log("update beads", beads_elem.selectedOptions[0].value); //undefined?//lod level
   console.log("num clusters", slidercluster_elem.value);
   var d = node_selected; //or node_selected.data.bu
@@ -483,45 +482,7 @@ function updateCurrentBeadsLevel() {
       var data_parsed = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
       var clusters = data_parsed.results; //verts, faces,normals
       console.log("CLUSTERS:", clusters);
-      var _pos = {
-        "coords": clusters.centers
-      };
-      var _rad = {
-        "radii": clusters.radii
-      };
-      console.log("POS:", _pos);
-      console.log("RADII:", _rad);
-      if (!ngl_load_params.beads.pos) ngl_load_params.beads.pos = [];
-      if (!ngl_load_params.beads.rad) ngl_load_params.beads.rad = [];
-      ngl_load_params.beads.pos[lod] = _pos; //{"pos":[lvl0_pos,lvl1_pos],"rad":[lvl0_rad,lvl1_rad]};
-      ngl_load_params.beads.rad[lod] = _rad;
-      if (node_selected) {
-        console.log("update node ", node_selected.data.name)
-        node_selected.data.pos = JSON.parse(JSON.stringify(ngl_load_params.beads.pos));
-        node_selected.data.radii = JSON.parse(JSON.stringify(ngl_load_params.beads.rad));
-      }
-      if (comp.list) {
-        for (var i = 0; i < comp.list.length; i++) {
-          stage.removeComponent(comp.list[i]);
-        }
-      }
-      var col = Array(ngl_load_params.beads.pos[lod].coords.length).fill(0).map(makeARandomNumber);
-
-      var sphereBuffer = new NGL.SphereBuffer({
-        position: new Float32Array(ngl_load_params.beads.pos[lod].coords),
-        color: new Float32Array(col),
-        radius: new Float32Array(ngl_load_params.beads.rad[lod].radii)
-        //labelType:"text",
-        //labelText:labels
-      })
-      //update the component buffer ?
-      var shape = new NGL.Shape("beads_" + lod);
-      shape.addBuffer(sphereBuffer)
-      var shapeComp = stage.addComponentFromObject(shape)
-      var rep = shapeComp.addRepresentation("beads_" + lod, {
-        opacity: 0.6,
-        visibility: true
-      });
+      NGL_ShowBeadsCR(clusters,lod);
       nbBeads_elem.textContent = '' + ngl_load_params.beads.pos[lod].coords.length / 3 + ' beads';
       document.getElementById('stopkmeans').setAttribute("class", "spinner hidden");
       document.getElementById("stopkmeans_lbl").setAttribute("class", "hidden");
@@ -536,33 +497,13 @@ function updateCurrentBeadsLevel() {
     processData: false,
     timeout: 60000
   });
-  /***var ngl_sele = new NGL.Selection(sele_elem.value);
-  var center = GetGeometricCenter(ngl_current_structure, ngl_sele).center;
-  ngl_current_structure.ngl_sele = ngl_sele;
-  var lod = beads_elem.selectedOptions[0].value;
-  var comp = stage.getComponentsByName("beads_" + lod);
-  var rep = stage.getRepresentationsByName("beads_" + lod);
-  var assambly = assambly_elem.selectedOptions[0].value;
-  if (!assambly || assambly === "") assambly = "AU";
-  ngl_current_structure.assambly = assambly;
-  //stage.removeComponent(rep);
-  //rep.dispose();
-  //console.log("found rep beads_"+lod);
-  //console.log(rep);
-  //console.log("found component beads_"+lod);
-  //console.log(comp);
-  if (comp.list) {
-    //console.log(comp.list[0]);
-    //console.log(comp.list[0].reprList);
-    stage.removeComponent(comp.list[0]);
-    //comp.list[0].reprList[0].dispose();
-    //comp.list[0].dispose();
-  }
-    console.log("input", center, lod, ngl_current_structure);
-  var res = await _buildBeads(lod, ngl_current_structure, center);
-  console.log("finsihed building beads", res);
+}
 
-**/
+function updateCurrentBeadsLevel() {
+  //client, or server or server coords
+  //updateCurrentBeadsLevelClient();
+  //updateCurrentBeadsLevelServer();
+  buildFromServer(node_selected.data.source.pdb,false,true,ngl_current_structure);
 }
 
 function changeClusterMethod(e) {
@@ -820,6 +761,47 @@ function CenterNGL() {
 function LoadBeads(d) {
   //load sphere beads
   //when a sphereFile is given in the input
+}
+
+function NGL_ShowBeadsCR(clusters,lod){
+  var comp = stage.getComponentsByName("beads_" + lod);
+  var _pos = {
+    "coords": clusters.centers
+  };
+  var _rad = {
+    "radii": clusters.radii
+  };
+  if (!ngl_load_params.beads.pos) ngl_load_params.beads.pos = [];
+  if (!ngl_load_params.beads.rad) ngl_load_params.beads.rad = [];
+  ngl_load_params.beads.pos[lod] = _pos; //{"pos":[lvl0_pos,lvl1_pos],"rad":[lvl0_rad,lvl1_rad]};
+  ngl_load_params.beads.rad[lod] = _rad;
+  if (node_selected) {
+    console.log("update node ", node_selected.data.name)
+    node_selected.data.pos = JSON.parse(JSON.stringify(ngl_load_params.beads.pos));
+    node_selected.data.radii = JSON.parse(JSON.stringify(ngl_load_params.beads.rad));
+  }
+  if (comp.list) {
+    for (var i = 0; i < comp.list.length; i++) {
+      stage.removeComponent(comp.list[i]);
+    }
+  }
+  var col = Array(ngl_load_params.beads.pos[lod].coords.length).fill(0).map(makeARandomNumber);
+
+  var sphereBuffer = new NGL.SphereBuffer({
+    position: new Float32Array(ngl_load_params.beads.pos[lod].coords),
+    color: new Float32Array(col),
+    radius: new Float32Array(ngl_load_params.beads.rad[lod].radii)
+    //labelType:"text",
+    //labelText:labels
+  })
+
+  var shape = new NGL.Shape("beads_" + lod);
+  shape.addBuffer(sphereBuffer)
+  var shapeComp = stage.addComponentFromObject(shape)
+  var rep = shapeComp.addRepresentation("beads_" + lod, {
+    opacity: 0.6,
+    visibility: true
+  });
 }
 
 function NGL_ShowMeshVFN(mesh) {
