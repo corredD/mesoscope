@@ -710,7 +710,7 @@ function buildFromServer(pdb,cms,beads,astructure){
         if (results){
             NGL_ShowMeshVFN(results);
             if (node_selected) {
-              node_selected.data.geom = mesh; //v,f,n directly
+              node_selected.data.geom = results; //v,f,n directly
               node_selected.data.geom_type = "raw"; //mean that it provide the v,f,n directly
             }
         }
