@@ -729,7 +729,12 @@ function buildFromServer(pdb,cms,beads,astructure){
     });
 }
 
-function buildCMS() {
+function buildCMS()
+{
+    buildFromServer("",true,false,null);
+}
+
+function buildCMS2() {
   var d = node_selected; //or node_selected.data.bu
   var pdb = d.data.source.pdb; //document.getElementById("pdb_str");
   var bu = (d.data.source.bu) ? d.data.source.bu : ""; //document.getElementById("bu_str");

@@ -318,7 +318,7 @@ def main():
     # or use formData POST query
     form = cgi.FieldStorage()
     print '{"log":"'
-    print form
+    #print form
     # A nested FieldStorage instance holds the file
     app = MolApp()
     # get selection from the form
@@ -410,10 +410,10 @@ def main():
             # compute the surface and print the json string with faces and verts:
             geomDict = getCoarseMolSurf(app, mol, selstr, bu = bu, surfName="coarseSurf_1", gridSize=gsize,
             padding=0., resolution=res, isovalue=iso)
-
+            import json #I Dont understand why we need to reimport json
             jsonstr = json.dumps(geomDict)
             #print "<br> <br> <br>"
-            print "SURFACE COMPUTED !!!", "&nbsp; Num faces: %d"%len(geomDict['faces']), "&nbsp; Num verts: %d <br>" % len(geomDict['verts'])
+            #print "SURFACE COMPUTED !!!", "&nbsp; Num faces: %d"%len(geomDict['faces']), "&nbsp; Num verts: %d <br>" % len(geomDict['verts'])
             results.append(jsonstr)
 
         if form.has_key("beads"): # clustering

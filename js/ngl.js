@@ -1139,6 +1139,7 @@ function GetAtomDataSet(pdb,struture_object){
   if (pdb) {}//load ?
   var ats = o.structure.atomStore;
   var nAtom = ats.count;
+  console.log("found ",nAtom);
   var asele = "polymer";
   if (o.ngl_sele) {
     if (o.ngl_sele.string !== null) asele = o.ngl_sele.string;
@@ -1155,7 +1156,7 @@ function GetAtomDataSet(pdb,struture_object){
     }
     console.log("selection is ",asele);
     o.structure.eachAtom(function(ap) {
-      if (ap.atomname==="CA") dataset.push([ap.x, ap.y, ap.z]);
+      if (ap.atomname==="CA" || nAtom < 20000) dataset.push([ap.x, ap.y, ap.z]);
     }, new NGL.Selection(asele));
     return dataset;
   }
