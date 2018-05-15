@@ -1096,13 +1096,15 @@ function LoadMultiplePDBs(agrid, rowsids) {
 function updateCellValue(agrid, acolumn, acellrowindex, avalue) {
   console.log("update using id ", acellrowindex); //undefined ?
   var row = agrid.dataView.getItemById(acellrowindex);
-  row[acolumn] = avalue;
-  agrid.dataView.beginUpdate();
-  //agrid.invalidateRow(row.id);
-  agrid.dataView.updateItem(acellrowindex, row);
-  agrid.dataView.endUpdate();
-  agrid.render();
-  agrid.dataView.refresh();
+  if (row) {
+    row[acolumn] = avalue;
+    agrid.dataView.beginUpdate();
+    //agrid.invalidateRow(row.id);
+    agrid.dataView.updateItem(acellrowindex, row);
+    agrid.dataView.endUpdate();
+    agrid.render();
+    agrid.dataView.refresh();
+  }
 }
 
 function updateCellValues(agrid, acellrowindex, somecolumns, somevalues) {

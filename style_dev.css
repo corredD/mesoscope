@@ -113,7 +113,7 @@ li {
 	height: 10%;
 	display: flex;
   flex-flow: row;
-	justify-content: space-between;
+	justify-content: space-evenly;
 	align-items: center;
 	background-size: contain;
   background-color: paleturquoise;

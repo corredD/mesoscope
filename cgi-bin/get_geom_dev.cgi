@@ -301,7 +301,7 @@ def computeCoarseMolSurf(coords, radii, XYZd =[16,16,16], isovalue=1.0,resolutio
     if maskGrid.crystal:
         vert = maskGrid.crystal.toCartesian(vert)
     center = np.sum(coords, axis=0)/len(coords)
-    verts = verts - center
+    vert = vert - center
     geomDict = {"verts": vert.flatten().tolist(), "faces":tri.flatten().tolist(), "normals": norm.flatten().tolist()}
     return geomDict
 

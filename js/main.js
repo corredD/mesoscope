@@ -1709,7 +1709,9 @@ function getcomphtml(anode) {
 			//callback onchange ?
 			//htmlStr+=' <input id="comp_slider" style="width:80%" height:"40px" type="range" min="1" max="10000"" step="1" value="500" oninput="updateLabel(this)" onchange="resizeSphere(this)" /> ';
 			//htmlStr+=' <label id="comp_slider_label" for="comp_slider" style="width:20%">10A</label>';
-			var cradius = (anode.data.geom.radius)? anode.data.geom.radius : 500;
+			var cradius = 500;
+			if (("geom" in anode.data) && ("radius" in anode.data.geom))
+				 cradius = anode.data.geom.radius;
 			htmlStr+='<div style="display:flex;"><label>Radius(A):</label><input id="comp_slider" type="range" min="1" max="10000" step="1" value="'+cradius+'"style="width:70%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/>';
 		  htmlStr+='<input  id="comp_slider_num" min="1" max="10000" type="number" value="'+cradius+'" style="width:30%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/></div>';
 	}
@@ -1733,7 +1735,7 @@ function changeCompSource(compelem){
 	//hide/show file browser Button
 	//slider for spheres
 	//list of metaballs slider for radius , position should come from NGL
-	node_selected.data.geom_type = compelem.value;
+	if (node_selected) node_selected.data.geom_type = compelem.value;
 	console.log(node_selected);
 	var htmlStr='';
 	htmlStr += getcomphtml(node_selected);
@@ -2121,6 +2123,7 @@ function zoomed() {
   transform = d3v4.event.transform;
   console.log("scale is transform.k",transform.k);
 	//?clearHighLight();
+	if (d3v4.event.ctrlKey)clearHighLight();
 }
 
 function CenterCanvas()
@@ -2842,13 +2845,15 @@ function RenameNodeOver(){
 	console.log("rename over",node_over_to_use.data.name);
 	console.log(node_over_to_use);
 	var new_name = prompt("Please enter new name", node_over_to_use.data.name);
-	node_over_to_use.data.name = new_name;
-	if (node_over_to_use.data.nodetype!=="compartment")
-			updateCellValue(gridArray[0],"name",node_over_to_use.data.id,new_name);
-	else //change the compartment value for all child...
-		traverseTreeForCompartmentNameUpdate(node_over_to_use);
-	//update Grid
+	if (new_name!=null) {
+		node_over_to_use.data.name = new_name;
+		if (node_over_to_use.data.nodetype!=="compartment")
+				updateCellValue(gridArray[0],"name",node_over_to_use.data.id,new_name);
+		else //change the compartment value for all child...
+				traverseTreeForCompartmentNameUpdate(node_over_to_use);
+				//update Grid
 	}
+}
 
 function DeleteNodeOver(){
 	$(".custom-menu-node").hide(100);
@@ -3215,6 +3220,7 @@ function dragged() {
   d3v4.event.subject.fy = start_drag.y  + ((d3v4.event.y - start_drag.y ) / transform.k) * scaleY;
   if (current_mode === 1 && d3v4.event.subject.parent){
   	//do we hover another object.
+
   	//if ingredient hovering compartment show it
   	//then on drag end assign the new parent + surface
   	var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y,graph.nodes);
@@ -3269,6 +3275,7 @@ function dragended() {
   }
   if (current_mode === 1)
   {
+		node_selected = d3v4.event.subject;
   	mousexy = {"x":d3v4.event.subject.x,"y":d3v4.event.subject.y};
   	var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y,graph.nodes);
   	console.log("hover ",hovernodes);
