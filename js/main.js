@@ -1697,7 +1697,7 @@ function getcomphtml(anode) {
 	if (comptype === "None") {}
 	else if (comptype === "file") {
 		//add input file
-			htmlStr+='<input  class="hidden" type="file" id="comp_source_file" accept=".dae,.obj,.map" type="file" onchange="selectCompFile(event)" />';
+			htmlStr+='<input  class="hidden" type="file" id="comp_source_file" accept=".dae,.obj,.map,.pdb,.mmtf" type="file" onchange="selectCompFile(event)" />';
 			//onclick="$('#jsfile_input').trigger('click');"
 			var elem = "'comp_source_file'";
 			htmlStr+='<input type="button" id="load_comp_source_file" value="Browse..." onclick="document.getElementById('+elem+').click();" />';
@@ -1722,8 +1722,8 @@ function getcomphtml(anode) {
 		var thickness = (anode.data.thickness)? anode.data.thickness : 7.5;
 		htmlStr+='<div style="display:flex;">';
 		htmlStr+='<label>Thickness(A):</label>';
-		htmlStr+='<input id="comp_thick_slider" type="range" min="1" max="500" step="1" value="'+thickness+'"style="width:70%" oninput="updateLabelThickness(this)" onchange="updateThickness(this)"/>';
-		htmlStr+='<input  id="comp_thick_slider_num" min="1" max="500" type="number" value="'+thickness+'" style="width:30%" oninput="updateLabelThickness(this)" onchange="updateThickness(this)"/></div>';
+		htmlStr+='<input id="comp_slider_thick" type="range" min="-50" max="50" step="1" value="'+thickness+'"style="width:70%" oninput="updateLabelThickness(this)" onchange="updateThickness(this)"/>';
+		htmlStr+='<input  id="comp_slider_thick_num" min="-500" max="500" type="number" value="'+thickness+'" style="width:30%" oninput="updateLabelThickness(this)" onchange="updateThickness(this)"/></div>';
 	}
 return htmlStr;
 }

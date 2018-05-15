@@ -8,6 +8,8 @@ import numpy as np
 import json
 from copy import deepcopy
 
+cellpack_data_folder = "../../autoPACK/data/cellPACK_data/cellPACK_database_1.1.0/"
+
 def dist(a, b, ax=1):
     # Euclidean Distance Caculator
     return np.linalg.norm(a - b, axis=ax)
@@ -298,6 +300,8 @@ def computeCoarseMolSurf(coords, radii, XYZd =[16,16,16], isovalue=1.0,resolutio
     isocontour.getContour3dData(isoc, vert, norm, col, tri, 0)
     if maskGrid.crystal:
         vert = maskGrid.crystal.toCartesian(vert)
+    center = np.sum(coords, axis=0)/len(coords)
+    verts = verts - center
     geomDict = {"verts": vert.flatten().tolist(), "faces":tri.flatten().tolist(), "normals": norm.flatten().tolist()}
     return geomDict
 
@@ -320,6 +324,20 @@ def getellipse(coords, cov_scale=1.75, ell_scale=1.0):
                    "center": ellipse.getPosition().tolist()}
          return elData
      return {}
+
+def getFileInDataFolder(filename,folder):
+    #pdb should be in other
+    #cms should be in geometries
+    #beads should be in collisionTrees
+    path = cellpack_data_folder+"/"+folder+"/"+filename
+    if os.path.exists(path) :
+        #read the data and send it back or send back path
+        #print path
+        with open(path, 'r') as myfile:
+          data = myfile.read()
+        return data
+    else :
+        return ""
 
 def main():
     #can be used directly as http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py?pdbId=1crn&selection=A
@@ -346,6 +364,7 @@ def main():
         model = int(form.getvalue("model"))
     mol = None
     print selstr,bu,model
+
     if form.has_key('inputfile'):
         fileitem = form['inputfile']
         if fileitem.filename != "":
@@ -404,7 +423,7 @@ def main():
             mol = fetchMol(app, pdbId, model=model)
         else :
             #download in cache ? read
-            filename = "/usr/local/www/projects/autoPACK/data/cellPACK_data/cellPACK_database_1.1.0/other/"+pdbId
+            filename = cellpack_data_folder+"/other/"+pdbId
             if not os.path.exists(filename) :
                 #download
                 url = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/other/"+pdbId

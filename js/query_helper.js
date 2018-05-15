@@ -746,9 +746,73 @@ function buildFromServer(pdb,cms,beads,astructure){
     });
 }
 
+function buildFromServerPDB(pdb){
+  var d = node_selected; //or node_selected.data.bu
+  var pdb = pdb; //document.getElementById("pdb_str");
+  var bu = "";
+  var sele = "";
+  var model = "";
+  var thefile = null;
+  if (pdb.length !== 4) {
+    if (folder_elem && folder_elem.files.length != "") {
+      thefile = pathList_[pdb];
+    }
+  }
+  var formData = new FormData();
+  formData.append("cms", true);
+  //console.log(thefile)
+  // add assoc key values, this will be posts values
+  if (thefile !== null) {
+    formData.append("inputfile", thefile, thefile.name);
+    formData.append("upload_file", true);
+  } else if (pdb && pdb !== "") formData.append("pdbId", pdb);
+  if (bu && bu !== "") formData.append("bu", bu);
+  if (sele && sele !== "") formData.append("selection", sele);
+  if (model && model !== "") formData.append("modelId", model);
+  //formData.append(name, value);
+  console.log([pdb, bu, sele, model, thefile]);
+  console.log(formData);
+  document.getElementById('stopbuildgeom').setAttribute("class", "spinner");
+  document.getElementById("stopbuildgeom_lbl").setAttribute("class", "show");
+  $.ajax({
+    type: "POST",
+    //url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
+    url: pmv_server,
+    success: function(data) {
+      console.log("##CMS###");
+      console.log(data);
+      var data_parsed = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
+      var mesh = data_parsed.results; //verts, faces,normals
+      console.log("MESH:", mesh);
+      NGL_ShowMeshVFN(mesh);
+      if (node_selected) {
+        node_selected.data.geom = mesh; //v,f,n directly
+        node_selected.data.geom_type = "raw"; //mean that it provide the v,f,n directly
+      }
+      document.getElementById('stopbuildgeom').setAttribute("class", "spinner hidden");
+      document.getElementById("stopbuildgeom_lbl").setAttribute("class", "hidden");
+      //update the slicktable ? especially if none were specified
+      //just ignore it in the table ? like the offset and pcp. they should be hidden in the table.
+      //more room  for molecular weight and other information
+    },
+    error: function(error) {
+      console.log(error);
+    },
+    async: true,
+    data: formData,
+    cache: false,
+    contentType: false,
+    processData: false,
+    timeout: 60000
+  });
+}
+
 function buildCMS()
 {
-    buildFromServer("",true,false,null);
+    //build from coordinates
+    //buildFromServer("",true,false,null);
+    //build from PDB ids
+    buildCMS2();
 }
 
 function buildCMS2() {

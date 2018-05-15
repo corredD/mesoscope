@@ -153,7 +153,6 @@ function applyPcp() {
   }
 }
 
-
 function buildMB() {
   var shapemb = new NGL.Shape("mb");
   //two cylinder one red up, one blue down, center is 0,0,0
@@ -564,7 +563,7 @@ function showBeadsLevel(e) {
   showBeadsLevel_cb(e.value);
 }
 
-function UpdateAssamblyList(ngl_ob) {
+function NGL_UpdateAssamblyList(ngl_ob) {
   assambly_elem.options.length = 0;
   assambly_elem.options[0] = new Option("Assambly:", "Assambly:");
   assambly_elem.options[1] = new Option("AU", "AU");
@@ -904,6 +903,22 @@ function NGL_LoadShapeFile(afile) {
     reader.readAsText(file);
     //Collada.load( thefile, getCollada_cb );
   }
+  else if ((ext === "mmtf")||(ext === "pdb")) {
+    stage.loadFile(thefile, {
+      defaultRepresentation: false
+    }).then(function(o) {
+      o.addRepresentation("spacefill", {
+        colorScheme: "chainId",
+        name: "polymer"
+      });
+      ngl_current_structure = o;
+      NGL_UpdateAssamblyList(o);
+      stage.autoView();
+      buildFromServer("",true,false,o);//or build from file
+      //buildFromServerPDB(thefile);
+    });
+    //build the geom ?
+  }
 }
 
 function LoadShapeObj(d) {
@@ -976,7 +991,7 @@ function NGLLoadAShapeObj(gpath) {
           Collada.load(file, getCollada_cb);
         }
         //Collada.load( thefile, getCollada_cb );
-      } else if (ext === "mmtf") {
+      } else if ((ext === "mmtf")||(ext === "pdb")) {
         stage.loadFile("rcsb://" + gname, {
           defaultRepresentation: false
         }).then(function(o) {
@@ -985,7 +1000,10 @@ function NGLLoadAShapeObj(gpath) {
             name: "polymer"
           });
           stage.autoView();
-          buildFromServer(gname,true,false,o);
+          ngl_current_structure = o;
+          NGL_UpdateAssamblyList(o);
+          buildFromServer(gname,true,false,o);//or build from file
+          //buildFromServerPDB(gname);
         });
         //build the geom ?
       }
@@ -1531,7 +1549,7 @@ function LoadOneProtein(purl, aname, bu, sel_str) {
       //console.log(o);
       //o.symmetryData=symmetryData;
       //console.log(symmetryData);
-      UpdateAssamblyList(o);
+      NGL_UpdateAssamblyList(o);
       console.log("assambly is", assambly);
       setModelOptions(o); //redundant with selection ?
       //setSymmetryOptions(o);
