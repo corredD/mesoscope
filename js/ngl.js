@@ -847,6 +847,7 @@ function getCollada_cb(scene) {
     side: "double"
   });
   NGL_showGeomNode_cb(document.getElementById("showgeom").checked);
+  stage.autoView(1000);
 }
 
 function NGL_showGeomNode_cb(toggle) {
@@ -971,6 +972,7 @@ function NGLLoadAShapeObj(gpath) {
             opacity: 0.5,
             side: "double"
           });
+          stage.autoView(1000);
         });
         NGL_showGeomNode_cb(document.getElementById("showgeom").checked);
       } else if (ext === "dae") {
@@ -1001,7 +1003,7 @@ function NGLLoadAShapeObj(gpath) {
             name: "polymer"
           });
           NGLShowOrigin();
-          stage.autoView();
+          stage.autoView(1000);
           ngl_current_structure = o;
           NGL_UpdateAssamblyList(o);
           buildFromServer(gname,true,false,o);//or build from file

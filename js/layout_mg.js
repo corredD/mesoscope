@@ -932,6 +932,8 @@ function UpdateUniPDBcomponent(entry){
   puv.innerHTML = '&lt;pdb-uniprot-viewer entry-id="'+entry+'" entity-id="1" height="370"&gt;&lt;/pdb-uniprot-viewer&gt;';
 }
 
+helper_setupFibersDictionary();
+
 /*
 (function () {
 'use strict';

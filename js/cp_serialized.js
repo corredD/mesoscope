@@ -144,7 +144,7 @@ function oneCompartment(scomp,node)
     scomp["mesh"] = geom;
   }
   else if (gtype === "file") {
-    scomp["filename"] = (name in geom)? geom.name : geom;//extension give the type
+    scomp["filename"] = (typeof geom === 'string')? geom : geom.name;//extension give the type
   }
   else if (gtype === "sphere") {
     scomp["radius"] = ("radius" in geom)? geom.radius : 500.0;

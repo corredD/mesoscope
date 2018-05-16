@@ -4,6 +4,8 @@ var cumulative_res = {
   "pdbs": null,
   "mols": null
 };
+//serialized is hardcoded
+var cp_fiber_description = {};
 
 //so we can use the mgl2 copy and put there some computed geometry
 var pmv_server = "cgi-bin/get_geom_dev.cgi"; //(local_host_dev)?"cgi-bin/get_geom_dev.cgi":
@@ -616,6 +618,32 @@ function saveCurrentCSV(grid) {
 function saveCurrentXLS() {}
 
 function saveCurrentD3JSON() {}
+
+function helper_setupFibersDictionary(){
+  var url = "data/Fibers.json";
+  console.log(url);
+  d3v4.json(url, function (error,json) {
+    cp_fiber_description = json;
+    console.log("cp_fiber_description",cp_fiber_description);
+  });
+}
+
+function helper_getFiberIngredientDescription(ingrdic){
+    //read in on the server ?
+    console.log("cp_fiber_description",cp_fiber_description);
+    if (cp_fiber_description===null) return ingrdic;
+    var query = ingrdic.name.toLowerCase();
+    for (var key in cp_fiber_description) {
+      comon = findLongestCommonSubstring(key,query);
+      console.log(key,query,comon);
+      if (comon && comon!=="" ) {//comon!=="" &&
+          var newDic = Object.assign(cp_fiber_description[key],ingrdic);
+          console.log(newDic);
+          return newDic;
+      }
+    }
+    return ingrdic;
+}
 //save as a recipe that can be ued ?
 //need additional fiedl : sphereTree.pcpAlVector.offset
 //need to compute thenm ? server or client ?
@@ -653,6 +681,11 @@ function OneCPIngredient(node, surface) {
     aing_dic["radii"] = node.data.radii;
   }
   aing_dic["packingMode"] = node.data.buildtype; //random, file etc...
+  if (node.data.ingtype === "fiber"){
+    //support dna, rna peptide, actine etc...
+    aing_dic = helper_getFiberIngredientDescription(aing_dic);
+    console.log(aing_dic);
+  }
   //description=label,organism,score,
   return aing_dic;
 }
@@ -1163,7 +1196,7 @@ function getCurrentNodesAsCP_JSON(some_data, some_links) {
       if (!(cname in jsondic["compartments"])) {
         var gtype = (node.data.geom_type) ? node.data.geom_type : "None";
         var gname = (node.data.geom) ? node.data.geom : "";
-        if (name in gname) gname = gname.name;//in case it is a blob
+        if ((gtype === "file")&&(!(typeof gname === 'string'))) gname = gname.name;//in case it is a blob
         var thickness = (node.data.thickness) ? node.data.thickness : 7.5;
         //if metaball geom should be array of xyzr/
         jsondic["compartments"][cname] = {
