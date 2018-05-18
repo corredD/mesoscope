@@ -845,7 +845,17 @@ function buildCMS()
     //build from coordinates
     //buildFromServer("",true,false,null);
     //build from PDB ids
-    buildCMS2();
+    var rep = stage.getRepresentationsByName("surface");
+    if (rep.list.length > 0) {
+      var mesh = NGL_getRawMesh("surface");
+      console.log("MESH:", mesh);
+      NGL_ShowMeshVFN(mesh);
+      if (node_selected) {
+        node_selected.data.geom = mesh; //v,f,n directly
+        node_selected.data.geom_type = "raw"; //mean that it provide the v,f,n directly
+      }
+    }
+    else buildCMS2();
 }
 
 function buildCMS2() {

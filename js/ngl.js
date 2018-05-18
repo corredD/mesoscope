@@ -803,6 +803,18 @@ function NGL_ShowBeadsCR(clusters,lod){
   });
 }
 
+
+//rep or component
+function NGL_getRawMesh(rep_name) {
+    var rep = stage.getRepresentationsByName(rep_name).list[0];
+    //rep.repr.__isolevel
+    var surf = rep.repr.surface;
+    var mesh = {"verts":(surf.position)?Array.from(surf.position):null,
+                "faces":(surf.index)?Array.from(surf.index):null,
+                "normals":(surf.normals)?Array.from(surf.normals):null }
+    return mesh;
+}
+
 function NGL_ShowMeshVFN(mesh) {
   console.log("create shape with ");
   console.log(mesh);
@@ -934,10 +946,11 @@ function NGLLoadAShapeObj(gpath) {
   if (node_selected.data.geom_type === "raw") {
     NGL_ShowMeshVFN(gpath);
   } else if (node_selected.data.geom_type === "None" &&
-    node_selected.data.nodeType !== "compartment") {
+    node_selected.data.nodetype !== "compartment") {
     //build it ?
     //buildCMS();
     //test from atomCoords directly
+    console.log("NGLLoadAShapeObj",node_selected);
     buildFromServer(gpath,true,false,null);
   } else if (node_selected.data.geom_type === "file") {
     //gpath may be different as we pass data.geom

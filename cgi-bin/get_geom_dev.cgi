@@ -258,53 +258,6 @@ def getCoarseMolSurf(app, mol, selstr, bu="", surfName='coarseMolSurf', perMol=T
 
     return geomDict
 
-#iso = 1.0
-#res = -0.1
-#gsize = 16
-def computeCoarseMolSurf(coords, radii, XYZd =[16,16,16], isovalue=1.0,resolution=-0.1,padding=0.0,
-                         name='CoarseMolSurface',geom=None):
-    from UTpackages.UTblur import blur
-    print "COORDS", type(coords)
-    if type(coords) != np.ndarray:
-        coords = np.array(coords, "f")
-    else:
-        coords = coords.astype("f")
-    #overwrite the radii
-    radii = np.ascontiguousarray(np.ones(len(coords))*1.8).tolist()
-    volarr, origin, span = blur.generateBlurmap(np.ascontiguousarray(coords).tolist(), radii, XYZd,resolution, padding = 0.0)
-    volarr.shape = (XYZd[0],XYZd[1],XYZd[2])
-    volarr = np.ascontiguousarray(np.transpose(volarr), 'f')
-    #weights =  np.ones(len(radii), typecode = "f")
-    h = {}
-    from Volume.Grid3D import Grid3DF
-    maskGrid = Grid3DF( volarr, origin, span , h)
-    h['amin'], h['amax'],h['amean'],h['arms']= maskGrid.stats()
-    #(self, grid3D, isovalue=None, calculatesignatures=None, verbosity=None)
-    from UTpackages.UTisocontour import isocontour
-    isocontour.setVerboseLevel(0)
-    data = maskGrid.data
-    origin = np.array(maskGrid.origin).astype('f')
-    stepsize = np.array(maskGrid.stepSize).astype('f')
-    # add 1 dimension for time steps amd 1 for multiple variables
-    if data.dtype.char!=np.float32:
-        data = data.astype('f')#Numeric.Float32)
-    newgrid3D = np.ascontiguousarray(np.reshape( np.transpose(data),
-                                          (1, 1)+tuple(data.shape) ), data.dtype.char)
-    ndata = isocontour.newDatasetRegFloat3D(newgrid3D, origin, stepsize)
-    isoc = isocontour.getContour3d(ndata, 0, 0, isovalue,
-                                       isocontour.NO_COLOR_VARIABLE)
-    vert = np.zeros((isoc.nvert,3)).astype('f')
-    norm = np.zeros((isoc.nvert,3)).astype('f')
-    col = np.zeros((isoc.nvert)).astype('f')
-    tri = np.zeros((isoc.ntri,3)).astype('i')
-    isocontour.getContour3dData(isoc, vert, norm, col, tri, 0)
-    if maskGrid.crystal:
-        vert = maskGrid.crystal.toCartesian(vert)
-    center = np.sum(coords, axis=0)/len(coords)
-    vert = vert - center
-    geomDict = {"verts": vert.flatten().tolist(), "faces":tri.flatten().tolist(), "normals": norm.flatten().tolist()}
-    return geomDict
-
 def getellipse(coords, cov_scale=1.75, ell_scale=1.0):
      if type(coords) != np.ndarray:
          coords = np.array(coords, "f")
@@ -338,6 +291,76 @@ def getFileInDataFolder(filename,folder):
         return data
     else :
         return ""
+
+def getVolumeIsoContourFromGrid(maskGrid,isovalue,center = [0,0,0]):
+    from UTpackages.UTisocontour import isocontour
+    isocontour.setVerboseLevel(0)
+    data = maskGrid.data
+    origin = np.array(maskGrid.origin).astype('f')
+    stepsize = np.array(maskGrid.stepSize).astype('f')
+    # add 1 dimension for time steps amd 1 for multiple variables
+    if data.dtype.char!=np.float32:
+        data = data.astype('f')#Numeric.Float32)
+    newgrid3D = np.ascontiguousarray(np.reshape( np.transpose(data),
+                                          (1, 1)+tuple(data.shape) ), data.dtype.char)
+    ndata = isocontour.newDatasetRegFloat3D(newgrid3D, origin, stepsize)
+    isoc = isocontour.getContour3d(ndata, 0, 0, isovalue,
+                                       isocontour.NO_COLOR_VARIABLE)
+    vert = np.zeros((isoc.nvert,3)).astype('f')
+    norm = np.zeros((isoc.nvert,3)).astype('f')
+    col = np.zeros((isoc.nvert)).astype('f')
+    tri = np.zeros((isoc.ntri,3)).astype('i')
+    isocontour.getContour3dData(isoc, vert, norm, col, tri, 0)
+    if maskGrid.crystal:
+        vert = maskGrid.crystal.toCartesian(vert)
+    #center = np.sum(coords, axis=0)/len(coords)
+    vert = vert - np.array(center)
+    geomDict = {"verts": vert.flatten().tolist(), "faces":tri.flatten().tolist(), "normals": norm.flatten().tolist()}
+    return geomDict
+
+def getVolumeIsoContourFromData(rawdata,isovalue):
+    from Volume.Grid3D import Grid3DF #, Grid3DD,Grid3DUC, Grid3DSI,
+    h = {}
+    maskGrid = Grid3DF( rawdata, origin, span , h)
+    h['amin'], h['amax'],h['amean'],h['arms']= maskGrid.stats()
+    return getVolumeIsoContourFromGrid(maskGrid,isovalue)
+
+#g=getVolumeIsoContourFromFile("D:\Data\cellPACK_data_git\cellPACK_database_1.1.0\other\EMD-5239.map")
+def getVolumeIsoContourFromFile(filename):
+    from Volume.IO import volReaders
+    reader = volReaders.ReadCCP4()
+    gr=reader.read(filename)
+    return getVolumeIsoContourFromGrid(gr,0.0)
+
+def getVolumeFromFile(filename):
+    from Volume.IO import volReaders
+    reader = volReaders.ReadCCP4()
+    gr=reader.read(filename)
+    return gr#getVolumeIsoContourFromGrid(gr,0.0)
+
+#iso = 1.0
+#res = -0.1
+#gsize = 16
+def computeCoarseMolSurf(coords, radii, XYZd =[16,16,16], isovalue=1.0,resolution=-0.1,padding=0.0,
+                         name='CoarseMolSurface',geom=None):
+    from UTpackages.UTblur import blur
+    print "COORDS", type(coords)
+    if type(coords) != np.ndarray:
+        coords = np.array(coords, "f")
+    else:
+        coords = coords.astype("f")
+    #overwrite the radii
+    radii = np.ascontiguousarray(np.ones(len(coords))*1.8).tolist()
+    volarr, origin, span = blur.generateBlurmap(np.ascontiguousarray(coords).tolist(), radii, XYZd,resolution, padding = 0.0)
+    volarr.shape = (XYZd[0],XYZd[1],XYZd[2])
+    volarr = np.ascontiguousarray(np.transpose(volarr), 'f')
+    #weights =  np.ones(len(radii), typecode = "f")
+    h = {}
+    from Volume.Grid3D import Grid3DF
+    maskGrid = Grid3DF( volarr, origin, span , h)
+    h['amin'], h['amax'],h['amean'],h['arms']= maskGrid.stats()
+    #(self, grid3D, isovalue=None, calculatesignatures=None, verbosity=None)
+    return getVolumeIsoContourFromGrid(maskGrid,isovalue,center=np.sum(coords, axis=0)/len(coords))
 
 def main():
     #can be used directly as http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py?pdbId=1crn&selection=A
@@ -428,9 +451,32 @@ def main():
                 #download
                 url = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/other/"+pdbId
                 os.system('wget --no-check-certificate '+url+' -O '+filename)
-            app.lazyLoad('fileCmds', commands=['readMolecules'], package='PmvApp')
-            mol = app.readMolecule(filename,addToRecent=False)
-
+                if not os.path.exists(filename) :
+                  #should we ftp ?
+                  print "not found"
+            if filename.lower().endswith(('.mmtf', '.pdb')):
+              app.lazyLoad('fileCmds', commands=['readMolecules'], package='PmvApp')
+              mol = app.readMolecule(filename,addToRecent=False)
+            else :
+              results = []
+              vol = getVolumeFromFile(filename)
+              if form.has_key("cms") and form.getvalue("cms") :
+                  iso = 0.0
+                  if form.has_key("iso"):
+                    iso = float(form["iso"].value)
+                  geomDict = getVolumeIsoContourFromGrid(gr,iso)
+                  import json #I Dont understand why we need to reimport json
+                  jsonstr = json.dumps(geomDict)
+                  #print "<br> <br> <br>"
+                  #print "SURFACE COMPUTED !!!", "&nbsp; Num faces: %d"%len(geomDict['faces']), "&nbsp; Num verts: %d <br>" % len(geomDict['verts'])
+                  results.append(jsonstr)
+              if form.has_key("beads") and form.getvalue("beads") :
+                  nbeads = 5
+                  if form.has_key("nbeads"):
+                      nbeads = int(form.getvalue("nbeads"))
+              print '", "results":'         # this closes "log" and starts "results"
+              for st in results:
+                  print st
     if mol:
         results = []
         if form.has_key("cms"): # coarse mol surface
