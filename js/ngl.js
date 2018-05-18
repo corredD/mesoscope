@@ -28,9 +28,7 @@ var ngl_force_build_beads = false;
 var current_annotation;
 var title_annotation = document.getElementById("pdb_title");
 
-var current_compute_index = 0;
-var current_compute_node;
-var stop_current_compute = false;
+
 //var beads_checkbox = document.getElementById("beads_check");
 //var labels_checkbox = document.getElementById("label_check");
 
@@ -81,19 +79,9 @@ var available_color_schem = [
   "volume"
 ];
 
-//var available_representation = Object.keys( NGL.representationTypes );
-//available_representation.push("beads");
 var geom_purl = cellpack_repo+"geometries/"
 
-
-/*
-rep_elem.options.length = 0;
-for (var i=0;i<available_representation.length;i++) {
-	rep_elem.options[rep_elem.options.length] = new Option(available_representation[i], available_representation[i]);
-	}
-	*/
-
-function GetPDBURL(aname) {
+function NGL_GetPDBURL(aname) {
   console.log(aname);
   if (aname.length === 4)
     return "rcsb://" + aname + ".pdb";
@@ -107,19 +95,8 @@ function GetPDBURL(aname) {
   }
 }
 
-function selectFolder(e) {
-  console.log(e);
-  var theFiles = e.target.files;
-  var relativePath = theFiles[0].webkitRelativePath;
-  var folder = relativePath.split("/");
-  alert(folder[0]);
-  for (var i = 0, file; file = theFiles[i]; ++i) {
-    var sp = file.webkitRelativePath.split("/");
-    pathList_[sp[1]] = file;
-  }
-}
 
-function updatePcpElem() {
+function NGL_updatePcpElem() {
   for (var i = 0; i < 3; i++) {
     if (!ngl_load_params.axis) return;
     pcp_elem[i].value = ngl_load_params.axis.axis[i] * 100;
@@ -129,7 +106,7 @@ function updatePcpElem() {
   }
 }
 
-function applyPcp() {
+function NGL_applyPcp() {
   var axis = [pcp_elem[0].value / 100.0, pcp_elem[1].value / 100.0, pcp_elem[2].value / 100.0];
   var offset = [offset_elem[0].value / 1.0, offset_elem[1].value / 1.0, offset_elem[2].value / 1.0];
   ngl_load_params.axis.axis = axis;
@@ -153,7 +130,7 @@ function applyPcp() {
   }
 }
 
-function buildMB() {
+function NGL_buildMB() {
   var shapemb = new NGL.Shape("mb");
   //two cylinder one red up, one blue down, center is 0,0,0
   //Sign of Z coordinate is negative at the inner (IN) side and positive at the outer side.
@@ -169,7 +146,7 @@ function buildMB() {
   var r = shapembComp.addRepresentation("membrane");
 }
 
-function updateMBcomp() {
+function NGL_updateMBcomp() {
   //get the other two ?
   var axis = [pcp_elem[0].value / 100.0, pcp_elem[1].value / 100.0, pcp_elem[2].value / 100.0];
   var offset = [offset_elem[0].value / 1.0, offset_elem[1].value / 1.0, offset_elem[2].value / 1.0];
@@ -178,14 +155,14 @@ function updateMBcomp() {
   var q = new NGL.Quaternion();
   q.setFromUnitVectors(new NGL.Vector3(0, 0, 1), new NGL.Vector3(axis[0], axis[1], axis[2]));
   //console.log(q,new NGL.Vector3(axis[0],axis[1],axis[2]));
-  if (!acomp) buildMB();
+  if (!acomp) NGL_buildMB();
   acomp.setRotation(q);
   acomp.setPosition([-offset[0], -offset[1], -offset[2]]);
-  console.log("updateMBcomp axis ?", axis, offset);
+  console.log("NGL_updateMBcomp axis ?", axis, offset);
   //change the grid ? or the data or both ?
 }
 
-function setupNGL() {
+function NGL_Setup() {
   folder_elem = document.getElementById("file_input");
   rep_elem = document.getElementById("rep_type");
   assambly_elem = document.getElementById("ass_type");
@@ -209,17 +186,17 @@ function setupNGL() {
 
   /* for (var i=0;i<3;i++){
   			pcp_elem[i].oninput = function(e) {
-  					updateMBcomp();
+  					NGL_updateMBcomp();
   			}
   			offset_elem[i].oninput = function(e) {
-  					updateMBcomp();
+  					NGL_updateMBcomp();
   			}
   }
   */
 
   $('.inputRange, .inputNumber').on('input', function() {
     $(this).siblings('.inputRange, .inputNumber').val(this.value);
-    updateMBcomp();
+    NGL_updateMBcomp();
   });
 
   slidercluster_elem = document.getElementById("slidercl_params1");
@@ -228,7 +205,7 @@ function setupNGL() {
     slidercluster_label_elem.textContent = slidercluster_elem.value;
   });
   slidercluster_elem.addEventListener('mouseup', function(e) {
-    updateCurrentBeadsLevel();
+    NGL_updateCurrentBeadsLevel();
   });
 
   /* slidercluster_elem2 = document.getElementById("slidercl_params2");
@@ -237,7 +214,7 @@ function setupNGL() {
       slidercluster_label_elem2.textContent = slidercluster_elem2.value;
    });
    slidercluster_elem2.addEventListener('mouseup', function(e) {
-      updateCurrentBeadsLevel();
+      NGL_updateCurrentBeadsLevel();
    });
   */
   heading = document.getElementById("heading");
@@ -293,42 +270,10 @@ NGL.DatasourceRegistry.add(
   "data", new NGL.StaticDatasource("//cdn.cdn.rawgit.com/arose/ngl/v0.10.4/data/")
 );
 
-//var geom_purl = "http://mgldev.scripps.edu/projects/cellPackDB/Model/"
-
-// Create NGL Stage object
-
 //change the picking!
 //stage.signals.clicked.add(function (pickingProxy) {...});
 
-function addElement(el) {
-  Object.assign(el.style, {
-    position: "relative",
-    zIndex: 10
-  })
-  stage.viewer.container.appendChild(el)
-}
-
-function createElement(name, properties, style) {
-  var el = document.createElement(name)
-  Object.assign(el, properties)
-  Object.assign(el.style, style)
-  return el
-}
-
-function createSelect(options, properties, style) {
-  var select = createElement("select", properties, style)
-  addElement(select)
-  options.forEach(function(d) {
-    select.add(createElement("option", {
-      value: d[0],
-      text: d[1]
-    }))
-  })
-  return select
-}
-
-
-function GetNGLSelection(sel_str, model) {
+function NGL_GetSelection(sel_str, model) {
   var ngl_sele = "";
   if (sel_str && sel_str !== "") {
     //convert to ngl selection string
@@ -352,27 +297,27 @@ function GetNGLSelection(sel_str, model) {
 }
 
 
-function toggleBeadsVisibility(e) {
+function NGL_toggleBeadsVisibility(e) {
   stage.getRepresentationsByName("beads_0")
     .setVisibility(e.target.checked);
 }
 
-function toggleAxisVisibility(e) {
+function NGL_toggleAxisVisibility(e) {
   stage.getRepresentationsByName("beads_0")
     .setVisibility(e.target.checked);
 }
 
-function toggleOriginVisibility(e) {
+function NGL_toggleOriginVisibility(e) {
   stage.getRepresentationsByName("beads_0")
     .setVisibility(e.target.checked);
 }
 
-async function updateCurrentBeadsLevelClient() {
+async function NGL_updateCurrentBeadsLevelClient() {
   //center
   //async function updateCurrentBeadsLevel() {
   console.log("update beads", beads_elem.selectedOptions[0].value); //undefined?//lod level
   var ngl_sele = new NGL.Selection(sele_elem.value);
-  var center = GetGeometricCenter(ngl_current_structure, ngl_sele).center;
+  var center = NGL_GetGeometricCenter(ngl_current_structure, ngl_sele).center;
   ngl_current_structure.ngl_sele = ngl_sele;
   var lod = beads_elem.selectedOptions[0].value;
   var comp = stage.getComponentsByName("beads_" + lod);
@@ -393,9 +338,9 @@ async function updateCurrentBeadsLevelClient() {
     //comp.list[0].reprList[0].dispose();
     //comp.list[0].dispose();
   }
-  var res = await _buildBeads(lod, ngl_current_structure, center);
+  var res = await NGL_buildBeads(lod, ngl_current_structure, center);
   console.log("finsihed building", res);
-  var col = Array(ngl_load_params.beads.pos[lod].coords.length).fill(0).map(makeARandomNumber);
+  var col = Array(ngl_load_params.beads.pos[lod].coords.length).fill(0).map(Util_makeARandomNumber);
   var labels = Array(ngl_load_params.beads.pos[lod].coords.length).fill("0").map(function(v, i) {
     return "bead_" + i.toString()
   });
@@ -419,7 +364,7 @@ async function updateCurrentBeadsLevelClient() {
 }
 
 // server side function for computing beads
-function updateCurrentBeadsLevelServer() {
+function NGL_updateCurrentBeadsLevelClient() {
   console.log("update beads", beads_elem.selectedOptions[0].value); //undefined?//lod level
   console.log("num clusters", slidercluster_elem.value);
   var d = node_selected; //or node_selected.data.bu
@@ -498,20 +443,20 @@ function updateCurrentBeadsLevelServer() {
   });
 }
 
-function updateCurrentBeadsLevel() {
+function NGL_updateCurrentBeadsLevelClient() {
   //client, or server or server coords
-  //updateCurrentBeadsLevelClient();
-  //updateCurrentBeadsLevelServer();
+  //NGL_updateCurrentBeadsLevelClient();
+  //NGL_updateCurrentBeadsLevelServer();
   buildFromServer(node_selected.data.source.pdb,false,true,ngl_current_structure);
 }
 
-function changeClusterMethod(e) {
+function NGL_changeClusterMethod(e) {
   //var i = e.value,cluster_elem.selectedOptions[0].value;
   //var rep = stage.getComponentsByName("beads_"+i);
-  updateCurrentBeadsLevel();
+  NGL_updateCurrentBeadsLevel();
 }
 
-function showBeadsLevel_cb(alevel) {
+function NGL_showBeadsLevel_cb(alevel) {
   if (!ngl_load_params.beads.pos) return;
   if (!ngl_load_params.beads.rad) return;
   if (alevel === "None") {
@@ -559,8 +504,8 @@ function showBeadsLevel_cb(alevel) {
   }
 }
 
-function showBeadsLevel(e) {
-  showBeadsLevel_cb(e.value);
+function NGL_showBeadsLevel(e) {
+  NGL_showBeadsLevel_cb(e.value);
 }
 
 function NGL_UpdateAssamblyList(ngl_ob) {
@@ -573,7 +518,7 @@ function NGL_UpdateAssamblyList(ngl_ob) {
   });
 }
 
-function setModelOptions(ngl_ob) {
+function NGL_setModelOptions(ngl_ob) {
   model_elem.options.length = 0;
   const modelStore = ngl_ob.structure.modelStore
   if (modelStore.count > 1) {
@@ -587,7 +532,7 @@ function setModelOptions(ngl_ob) {
   //if (modelStore.count === 0) model_elem.options[model_elem.options.length] = new Option(0, 0);
 }
 
-function setSymmetryOptions(ngl_ob) {
+function NGL_setSymmetryOptions(ngl_ob) {
   //const options = []
   //addOption(options, '-1', 'None')
   sym_elem.options[sym_elem.options.length] = new Option('None', 'None');
@@ -601,9 +546,9 @@ function setSymmetryOptions(ngl_ob) {
   }
 }
 
-function ChangeSymmetry(select0) {}
+function NGL_ChangeSymmetry(select0) {}
 
-function ChangeBiologicalAssambly(selected0) {
+function NGL_ChangeBiologicalAssambly(selected0) {
   console.log(rep_elem.selectedOptions[0].value);
   console.log(selected0.value);
   console.log(sele_elem.value);
@@ -641,7 +586,7 @@ function ChangeBiologicalAssambly(selected0) {
     });*/
 }
 
-function ChangeNGLlabel(select0) {
+function NGL_Changelabel(select0) {
   //either none or chain
   console.log(ngl_current_structure);
   ngl_current_structure.annotationList.forEach(function(elem) {
@@ -651,7 +596,7 @@ function ChangeNGLlabel(select0) {
   //title_annotation.setVisibility(true);
 }
 
-function ChangeRepresentation(selectedO) {
+function NGL_ChangeRepresentation(selectedO) {
   console.log(assambly_elem.selectedOptions[0].value);
   stage.getRepresentationsByName("polymer").dispose();
   stage.eachComponent(function(o) {
@@ -663,15 +608,15 @@ function ChangeRepresentation(selectedO) {
     })
   });
   //this overwrite the opacity of the beads
-  showBeadsLevel_cb(beads_elem.selectedOptions[0].value);
+  NGL_showBeadsLevel_cb(beads_elem.selectedOptions[0].value);
 }
 
 //overwrite model ?
-function ChangeSelection(astr_elem) {
+function NGL_ChangeSelection(astr_elem) {
   console.log(astr_elem.value);
-  ChangeRepresentation(rep_elem.selectedOptions[0]);
+  NGL_ChangeRepresentation(rep_elem.selectedOptions[0]);
   if (ngl_current_item_id) updateDataGridRowElem(0, ngl_current_item_id, "selection", (astr_elem.value === "polymer") ? "" : astr_elem.value);
-  showBeadsLevel_cb(beads_elem.selectedOptions[0].value);
+  NGL_showBeadsLevel_cb(beads_elem.selectedOptions[0].value);
   stage.autoView(1000);
   if (node_selected) {
     node_selected.data.selection = astr_elem.value;
@@ -701,13 +646,13 @@ function ChangeSelection(astr_elem) {
 }
 
 //overwrite model selection
-function ChangeModel(model_elem) {
+function NGL_ChangeModel(model_elem) {
   console.log(model_elem.value);
   var curr_sel = sele_elem.value.split("/")[0];
   //split on /
   console.log(curr_sel + "/" + model_elem.value);
   sele_elem.value = curr_sel + "/" + model_elem.value;
-  ChangeRepresentation(rep_elem.selectedOptions[0]);
+  NGL_ChangeRepresentation(rep_elem.selectedOptions[0]);
   //var rep = stage.getRepresentationsByName( "polymer" );
   //rep.setParameters(
   //    	{colorScheme: color_elem.selectedOptions[0].value,
@@ -732,7 +677,7 @@ function ChangeModel(model_elem) {
   }
 }
 
-function ChangeColorScheme(col_e) {
+function NGL_ChangeColorScheme(col_e) {
   //ngl color scheme change...
   //get the represnetation
   var curr_sel = sele_elem.value.split("/")[0];
@@ -745,7 +690,7 @@ function ChangeColorScheme(col_e) {
   });
 }
 
-function CenterNGL() {
+function NGL_CenterView() {
   stage.autoView(1000);
 }
 
@@ -755,9 +700,8 @@ function CenterNGL() {
 //stage.loadFile( "rcsb://1crn", { defaultRepresentation: true } );
 //stage.loadFile( "https://dl.dropboxusercontent.com.com/sh/lzoafabr3b99i2h/AABjLdOCwH4BlC9Gvy2SOdo_a?dl=0&preview=Synaptotagmin7.pdb",{"ext":"pdb"} );
 
-//LoadOneProtein("rcsb://1crn","1crn",-1,"polymer");
-//https://dl.dropboxusercontent.com/sh/lzoafabr3b99i2h/AABjLdOCwH4BlC9Gvy2SOdo_a?dl=0
-function LoadBeads(d) {
+//if beads define in a file
+function NGL_LoadBeads(d) {
   //load sphere beads
   //when a sphereFile is given in the input
 }
@@ -784,7 +728,7 @@ function NGL_ShowBeadsCR(clusters,lod){
       stage.removeComponent(comp.list[i]);
     }
   }
-  var col = Array(ngl_load_params.beads.pos[lod].coords.length).fill(0).map(makeARandomNumber);
+  var col = Array(ngl_load_params.beads.pos[lod].coords.length).fill(0).map(Util_makeARandomNumber);
 
   var sphereBuffer = new NGL.SphereBuffer({
     position: new Float32Array(ngl_load_params.beads.pos[lod].coords),
@@ -839,7 +783,7 @@ function NGL_ShowMeshVFN(mesh) {
   NGL_showGeomNode_cb(document.getElementById("showgeom").checked);
 }
 
-function getCollada_cb(scene) {
+function NGL_getCollada_cb(scene) {
   console.log("create shape with ");
   console.log(scene);
   var shape = new NGL.Shape("geom_surface");
@@ -909,13 +853,13 @@ function NGL_LoadShapeFile(afile) {
       //console.log(event.target);
       var data = event.target.result;
       //  stage.removeAllComponents();
-      getCollada_cb(Collada.parse(data, null, filename));
+      NGL_getCollada_cb(Collada.parse(data, null, filename));
       //  stage.autoView();
     };
     //read data
     //var type = thefile.type.split("/")[0];
     reader.readAsText(file);
-    //Collada.load( thefile, getCollada_cb );
+    //Collada.load( thefile, NGL_getCollada_cb );
   }
   else if ((ext === "mmtf")||(ext === "pdb")) {
     stage.loadFile(thefile, {
@@ -935,14 +879,14 @@ function NGL_LoadShapeFile(afile) {
   }
 }
 
-function LoadShapeObj(d) {
+function NGL_LoadShapeObj(d) {
   //load geometry mesh
   //extension need to be .obj
-  console.log("LoadShapeObj " + d.data.geom);
-  NGLLoadAShapeObj(d.data.geom);
+  console.log("NGL_LoadShapeObj " + d.data.geom);
+  NGL_LoadAShapeObj(d.data.geom);
 }
 
-function NGLLoadAShapeObj(gpath) {
+function NGL_LoadAShapeObj(gpath) {
   if (node_selected.data.geom_type === "raw") {
     NGL_ShowMeshVFN(gpath);
   } else if (node_selected.data.geom_type === "None" &&
@@ -950,7 +894,7 @@ function NGLLoadAShapeObj(gpath) {
     //build it ?
     //buildCMS();
     //test from atomCoords directly
-    console.log("NGLLoadAShapeObj",node_selected);
+    console.log("NGL_LoadAShapeObj",node_selected);
     buildFromServer(gpath,true,false,null);
   } else if (node_selected.data.geom_type === "file") {
     //gpath may be different as we pass data.geom
@@ -997,16 +941,16 @@ function NGLLoadAShapeObj(gpath) {
           reader.onload = function(event) {
             //console.log(event.target);
             var data = event.target.result;
-            getCollada_cb(Collada.parse(data, null, filename));
+            NGL_getCollada_cb(Collada.parse(data, null, filename));
           };
           //read data
           //var type = thefile.type.split("/")[0];
           reader.readAsText(file);
         } else {
-          console.log("Collada.load( file, getCollada_cb )", file);
-          Collada.load(file, getCollada_cb);
+          console.log("Collada.load( file, NGL_getCollada_cb )", file);
+          Collada.load(file, NGL_getCollada_cb);
         }
-        //Collada.load( thefile, getCollada_cb );
+        //Collada.load( thefile, NGL_getCollada_cb );
       } else if ((ext === "mmtf")||(ext === "pdb")) {
         stage.loadFile("rcsb://" + gname, {
           defaultRepresentation: false
@@ -1015,7 +959,7 @@ function NGLLoadAShapeObj(gpath) {
             colorScheme: "chainId",
             name: "polymer"
           });
-          NGLShowOrigin();
+          NGL_ShowOrigin();
           stage.autoView(1000);
           ngl_current_structure = o;
           NGL_UpdateAssamblyList(o);
@@ -1031,7 +975,7 @@ function NGLLoadAShapeObj(gpath) {
   }
 }
 
-function NGLShowOrigin() //StructureView
+function NGL_ShowOrigin() //StructureView
 {
   var shape = new NGL.Shape("ori");
   shape.addArrow([0, 0, 0], [10, 0, 0], [1, 0, 0], 1.0);
@@ -1042,7 +986,7 @@ function NGLShowOrigin() //StructureView
   shapeComp.addRepresentation("Origin");
 }
 
-function NGLShowAxisOffset(axis, offset) //StructureView
+function NGL_ShowAxisOffset(axis, offset) //StructureView
 {
   //arrow is start, end ,color, radius
   //axis should go from offset to given length
@@ -1097,18 +1041,13 @@ function NGLShowAxisOffset(axis, offset) //StructureView
   }
 }
 
-var makeARandomNumber = function() {
-  return Math.random();
-}
 
-
-
-function setupBeads(respone) {
+function NGL_setupBeads(respone) {
   console.log("setup beads");
   console.log(response);
 }
 
-function NGLLoadSpheres(pos, rad) {
+function NGL_LoadSpheres(pos, rad) {
   //start with level 0
   //add the beads representation to current stage
   console.log("load Beads");
@@ -1119,7 +1058,7 @@ function NGLLoadSpheres(pos, rad) {
   for (var i = 0; i < nLod; i++) {
     var lod = i;
     if (!pos[lod].coords) continue;
-    var col = Array(pos[lod].coords.length).fill(0).map(makeARandomNumber);
+    var col = Array(pos[lod].coords.length).fill(0).map(Util_makeARandomNumber);
     var labels = Array(pos[lod].coords.length).fill("0").map(function(v, i) {
       return "bead_" + i.toString()
     });
@@ -1149,7 +1088,7 @@ ngl_current_structure = o;
 ngl_current_structure.sele = sele;
 ngl_current_structure.assambly = assambly;
 */
-function GetAtomDataSet(pdb,struture_object){
+function NGL_GetAtomDataSet(pdb,struture_object){
   var dataset = [];
   var o = struture_object;
   if (!o) o = ngl_current_structure;
@@ -1178,7 +1117,7 @@ function GetAtomDataSet(pdb,struture_object){
     return dataset;
   }
 
-function processSymmetry(symmetry) {
+function NGL_processSymmetry(symmetry) {
   const symmetryData = {}
   if (symmetry && symmetry.length > 0) {
     symmetry.forEach(item => {
@@ -1235,8 +1174,9 @@ function processSymmetry(symmetry) {
   console.log(symmetry);
   return symmetryData
 }
+
 //center should be the center of the cluster not of the protein
-function GetGeometricCenter(astructure, selection) {
+function NGL_GetGeometricCenter(astructure, selection) {
   var center = new NGL.Vector3(0, 0, 0);
   var i = 0;
   var R = 0;
@@ -1259,7 +1199,7 @@ function GetGeometricCenter(astructure, selection) {
   };
 }
 
-function GetGeometricCenterArray(clusteri, some_data) {
+function NGL_GetGeometricCenterArray(clusteri, some_data) {
   var center = new NGL.Vector3(0, 0, 0);
   var i = 0;
   var R = 0;
@@ -1283,7 +1223,7 @@ function GetGeometricCenterArray(clusteri, some_data) {
   };
 }
 
-function ClusterStructure(o, center) {
+function NGL_ClusterStructure(o, center) {
   return buildWithKmeans(o, center);
   //if (cluster_elem.selectedOptions[0].value==="Kmeans") return buildWithKmeans(o,center);
   //else if (cluster_elem.selectedOptions[0].value==="Optics") return buildWithOptics(o,center);
@@ -1346,7 +1286,7 @@ function buildWithKmeans(o, center) {
     dataset.push([ap.x, ap.y, ap.z]);
   }, new NGL.Selection(asele));
 
-  //center = GetGeometricCenter(o,asele);
+  //center = NGL_GetGeometricCenter(o,asele);
   //for (var i=0;i<nAtom;i++) {
   //		 dataset.push([ats.x[i],ats.y[i],ats.z[i]]);
   //	}
@@ -1356,7 +1296,7 @@ function buildWithKmeans(o, center) {
   //center the selection?
   var clusters = kmeans.run(dataset, parseInt(slidercluster_elem.value));
   console.log(bu, clusters);
-  if (!bu) return ClusterToBeads(clusters, o, center);
+  if (!bu) return NGL_ClusterToBeads(clusters, o, center);
   else {
     var pos = []; //flat array
     var rad = []; //flat array
@@ -1367,8 +1307,8 @@ function buildWithKmeans(o, center) {
       //get center
       var sele = new NGL.Selection('@' + cl.join(','));
       //var sele = numbers.filter(CheckIfPrime);
-      var sph = GetGeometricCenter(o, sele); //atom in cluster
-      //var sph = GetGeometricCenterArray(cl,dataset);//atom in cluster
+      var sph = NGL_GetGeometricCenter(o, sele); //atom in cluster
+      //var sph = NGL_GetGeometricCenterArray(cl,dataset);//atom in cluster
       //pos[pos.length] = sph.center.x-center.x;
       //pos[pos.length] = sph.center.y-center.y;
       //pos[pos.length] = sph.center.z-center.z;
@@ -1398,7 +1338,7 @@ function buildWithKmeans(o, center) {
   }
 }
 
-function ClusterToBeads(some_clusters, astructure, center) {
+function NGL_ClusterToBeads(some_clusters, astructure, center) {
   var pos = []; //flat array
   var rad = []; //flat array
   var nCluster = some_clusters.length;
@@ -1406,7 +1346,7 @@ function ClusterToBeads(some_clusters, astructure, center) {
   for (var i = 0; i < nCluster; i++) {
     var cl = some_clusters[i];
     var sele = new NGL.Selection('@' + cl.join(','));
-    var sph = GetGeometricCenter(astructure, sele); //atom in cluster
+    var sph = NGL_GetGeometricCenter(astructure, sele); //atom in cluster
     pos[pos.length] = sph.center.x - center.x;
     pos[pos.length] = sph.center.y - center.y;
     pos[pos.length] = sph.center.z - center.z;
@@ -1418,11 +1358,11 @@ function ClusterToBeads(some_clusters, astructure, center) {
   };
 }
 
-function _buildBeads(lod, o, center) {
+function NGL_buildBeads(lod, o, center) {
 
-  var _cluster_coords = ClusterStructure(o, center);
+  var _cluster_coords = NGL_ClusterStructure(o, center);
   console.log("cluster?");
-  //var _cluster_coords = ClusterToBeads(_cluster,o,center);
+  //var _cluster_coords = NGL_ClusterToBeads(_cluster,o,center);
   //console.log(_cluster_coords);
   var _pos = {
     "coords": _cluster_coords.pos
@@ -1441,7 +1381,7 @@ function _buildBeads(lod, o, center) {
   }
 }
 
-function BuildBeads(o, center) {
+function NGL_autoBuildBeads(o, center) {
   var beads0 = o.structure.boundingBox.getBoundingSphere();
   var bsize = o.structure.boundingBox.getSize();
   var biszea = bsize.toArray();
@@ -1453,8 +1393,8 @@ function BuildBeads(o, center) {
   var lvl0_rad = {
     "radii": [R]
   };
-  var lvl1_cluster_coords = ClusterStructure(o, center);
-  //var lvl1_cluster_coords = ClusterToBeads(lvl1_cluster,o,center);
+  var lvl1_cluster_coords = NGL_ClusterStructure(o, center);
+  //var lvl1_cluster_coords = NGL_ClusterToBeads(lvl1_cluster,o,center);
   var lvl1_pos = {
     "coords": lvl1_cluster_coords.pos
   };
@@ -1479,24 +1419,13 @@ function BuildBeads(o, center) {
     node_selected.data.radii = ngl_load_params.beads.radii;
   }
 }
-/*
-	if (ngl_current_node && ngl_current_node.data.surface) {
-		if(!surf_elem.classList.contains('show')) {
-			surf_elem.classList.add('show');
-			surf_elem.classList.remove('hide');
-		}
-		else {
-			surf_elem.classList.remove('show');
-			surf_elem.classList.add('hide');
-			}
-		}*/
 
-function LoadOneProtein(purl, aname, bu, sel_str) {
+function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
 
   if (ngl_current_node && ngl_current_node.data.surface) {
     document.getElementById('surface').setAttribute("class", "show");
     //update the elem
-    updatePcpElem();
+    NGL_updatePcpElem();
   } else {
     document.getElementById('surface').setAttribute("class", "hidden");
   }
@@ -1520,7 +1449,7 @@ function LoadOneProtein(purl, aname, bu, sel_str) {
   }
   sele_elem.value = sele;
   if (ngl_load_params.dogeom) {
-    NGLLoadAShapeObj(ngl_load_params.geom);
+    NGL_LoadAShapeObj(ngl_load_params.geom);
     ngl_load_params.dogeom = false;
   }
   //this is async!
@@ -1529,23 +1458,23 @@ function LoadOneProtein(purl, aname, bu, sel_str) {
       ngl_current_structure = o;
       ngl_current_structure.sele = sele;
       ngl_current_structure.assambly = assambly;
-      //const symmetryData = processSymmetry(o.symmetry)
+      //const symmetryData = NGL_processSymmetry(o.symmetry)
       console.log("finished loading ");
       console.log(o.structure);
       //var sc = o.getView(new NGL.Selection(sele));
       //console.log("atomcenter",sc.atomCenter());
       //if (o.object.biomolDict.BU1) console.log(o.object.biomolDict.BU1);
-      var center = GetGeometricCenter(o, new NGL.Selection(sele)).center;
+      var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
       console.log("gcenter", center, ngl_force_build_beads);
       o.setPosition([-center.x, -center.y, -center.z]); //center molecule
       //ngl_force_build_beads
-      if (ngl_force_build_beads) BuildBeads(o, center);
+      if (ngl_force_build_beads) NGL_autoBuildBeads(o, center);
       if (ngl_load_params.doaxis) {
         //o.setPosition([ 0,0,0 ]);
         align_axis = true;
         var offset = ngl_load_params.axis.offset;
         console.log("offset?", offset);
-        NGLShowAxisOffset(ngl_load_params.axis.axis, offset);
+        NGL_ShowAxisOffset(ngl_load_params.axis.axis, offset);
         //ngl_load_params.doaxis=false;
       }
       o.addRepresentation("axes", {
@@ -1568,7 +1497,7 @@ function LoadOneProtein(purl, aname, bu, sel_str) {
       //console.log(symmetryData);
       NGL_UpdateAssamblyList(o);
       console.log("assambly is", assambly);
-      setModelOptions(o); //redundant with selection ?
+      NGL_setModelOptions(o); //redundant with selection ?
       //setSymmetryOptions(o);
       //assambly_elem.selectedOptions[0].value = "BU"+bu;
       if (bu !== -1) $('#ass_type').val(assambly); //assambly_elem.selectedIndex = assambly;//$('#ass_type').val(assambly);//.change();
@@ -1577,12 +1506,12 @@ function LoadOneProtein(purl, aname, bu, sel_str) {
       var align_axis = false;
 
       if (ngl_load_params.dobeads) {
-        NGLLoadSpheres(ngl_load_params.beads.pos, ngl_load_params.beads.rad);
+        NGL_LoadSpheres(ngl_load_params.beads.pos, ngl_load_params.beads.rad);
         ngl_load_params.dobeads = false;
-        showBeadsLevel(beads_elem.selectedOptions[0]);
+        NGL_showBeadsLevel(beads_elem.selectedOptions[0]);
       }
       //label
-      NGLShowOrigin();
+      NGL_ShowOrigin();
       //if (label_elem.selectedOptions[0].value !=="None") {
       var ap = o.structure.getAtomProxy();
       o.structure.eachChain(function(cp) {
@@ -1625,9 +1554,7 @@ function LoadOneProtein(purl, aname, bu, sel_str) {
     });
 }
 
-
-
-function compartmentSphere(name, radius) {
+function NGL_compartmentSphere(name, radius) {
   stage.removeAllComponents();
   var shape = new NGL.Shape("geom_surface", {
     disableImpostor: true,
@@ -1646,17 +1573,17 @@ function compartmentSphere(name, radius) {
   };
 }
 
-function noPdbProxy(name, radius) {
+function NGL_noPdbProxy(name, radius) {
   var align_axis = false;
-  NGLShowOrigin();
+  NGL_ShowOrigin();
   if (ngl_load_params.dogeom) {
-    NGLLoadAShapeObj(ngl_load_params.geom);
+    NGL_LoadAShapeObj(ngl_load_params.geom);
     ngl_load_params.dogeom = false;
   }
   if (ngl_load_params.dobeads) {
-    NGLLoadSpheres(ngl_load_params.beads.pos, ngl_load_params.beads.rad);
+    NGL_LoadSpheres(ngl_load_params.beads.pos, ngl_load_params.beads.rad);
     ngl_load_params.dobeads = false;
-    showBeadsLevel(beads_elem.selectedOptions[0]);
+    NGL_showBeadsLevel(beads_elem.selectedOptions[0]);
   }
   //label
   var shape = new NGL.Shape("proxy", {
@@ -1685,6 +1612,7 @@ function noPdbProxy(name, radius) {
 }
 
 /*
+//example for distances
 stage.loadFile( "rcsb://1crn", { name: "myProtein" } ).then( function( o ){
 
     o.autoView();
@@ -1700,7 +1628,7 @@ stage.loadFile( "rcsb://1crn", { name: "myProtein" } ).then( function( o ){
 } );
 */
 
-function updateNGL(d) {
+function NGL_UpdateWithNode(d) {
   //what is the id//
   //this is called from the canvas
   console.log("update with ", d);
@@ -1711,7 +1639,7 @@ function updateNGL(d) {
   ngl_force_build_beads = false;
   if (d.data.geom) {
     if ("geom_type" in d.data) {
-      ngl_load_params.geom = d.data.geom; //geom_purl + geom_name + ".obj"; //NGLLoadAShapeObj(  );
+      ngl_load_params.geom = d.data.geom; //geom_purl + geom_name + ".obj"; //NGL_LoadAShapeObj(  );
       ngl_load_params.dogeom = true;
     } else ngl_load_params.dogeom = false;
   }
@@ -1722,7 +1650,7 @@ function updateNGL(d) {
       "rad": d.data.radii
     };
     ngl_load_params.dobeads = true;
-    //NGLLoadSpheres( node_selected.data.pos,node_selected.data.radii );
+    //NGL_LoadSpheres( node_selected.data.pos,node_selected.data.radii );
   } else {
     console.log("no position?", console.log(d.data));
     //ngl_load_params.beads = {"pos":[],"rad":[]};
@@ -1734,14 +1662,14 @@ function updateNGL(d) {
       "offset": d.data.offset
     }
     ngl_load_params.doaxis = true;
-    //NGLShowAxisOffset( d.data.pcpalAxis,d.data.offset );
+    //NGL_ShowAxisOffset( d.data.pcpalAxis,d.data.offset );
     console.log("axis", ngl_load_params.axis)
   }
 
   if ("source" in d.data) {
     if (!d.data.source.pdb || d.data.source.pdb === "None") {
       //build a sphere of size radius
-      noPdbProxy(d.data.name, d.data.size);
+      NGL_noPdbProxy(d.data.name, d.data.size);
       return;
     }
     var bu = -1;
@@ -1754,7 +1682,7 @@ function updateNGL(d) {
     }
 
     if (d.data.source.pdb.length === 4)
-      LoadOneProtein("rcsb://" + d.data.source.pdb + ".mmtf", d.data.source.pdb, bu, sel_str);
+      NGL_LoadOneProtein("rcsb://" + d.data.source.pdb + ".mmtf", d.data.source.pdb, bu, sel_str);
     else {
       var pdbname = d.data.source.pdb;
       var ext = pdbname.slice(-4, pdbname.length);
@@ -1775,23 +1703,23 @@ function updateNGL(d) {
       } else {
         if (folder_elem && folder_elem.files.length != "") {
           //alert(pathList_[d.data.source]),
-          LoadOneProtein(pathList_[d.data.source.pdb], d.data.source.pdb, bu, sel_str);
+          NGL_LoadOneProtein(pathList_[d.data.source.pdb], d.data.source.pdb, bu, sel_str);
         } else {
           var purl = cellpack_repo+"other/" + d.data.source.pdb;
-          LoadOneProtein(purl, d.data.source.pdb, bu, sel_str);
+          NGL_LoadOneProtein(purl, d.data.source.pdb, bu, sel_str);
         }
       }
     }
   } else {
-    noPdbProxy(d.data.name, d.data.size);
-    //if (ngl_load_params.dogeom) {NGLLoadAShapeObj(ngl_load_params.geom);ngl_load_params.dogeom=false;}
-    //if (ngl_load_params.dobeads) {NGLLoadSpheres(ngl_load_params.beads.pos,ngl_load_params.beads.rad);ngl_load_params.dobeads=false;}
-    //if (ngl_load_params.doaxis) {NGLShowAxisOffset(ngl_load_params.axis.axis,ngl_load_params.axis.offset);ngl_load_params.doaxis=false;}
+    NGL_noPdbProxy(d.data.name, d.data.size);
+    //if (ngl_load_params.dogeom) {NGL_LoadAShapeObj(ngl_load_params.geom);ngl_load_params.dogeom=false;}
+    //if (ngl_load_params.dobeads) {NGL_LoadSpheres(ngl_load_params.beads.pos,ngl_load_params.beads.rad);ngl_load_params.dobeads=false;}
+    //if (ngl_load_params.doaxis) {NGL_ShowAxisOffset(ngl_load_params.axis.axis,ngl_load_params.axis.offset);ngl_load_params.doaxis=false;}
   }
 }
 
 
-function updateNGLPair(d) {
+function NGL_UpdateWithNodePair(d) {
   stage.removeAllComponents();
   document.getElementById('ProteinId').innerHTML = d.source.data.name + " " + d.target.data.name;
   var asele = ""
@@ -1804,22 +1732,22 @@ function updateNGLPair(d) {
     //use the pdb of the ingredient ?
     pdb = d.source.data.source.pdb;
     ngl_current_node = d.source;
-    NGLLoad(pdb, "AU", ""); //transform ?
+    NGL_Load(pdb, "AU", ""); //transform ?
     //ngl_current_structure.setPosition([ -200,0,0 ])
     pdb = d.target.data.source.pdb;
     ngl_current_node = d.source;
-    NGLLoad(pdb, "AU", ""); //transform ?
+    NGL_Load(pdb, "AU", ""); //transform ?
     //ngl_current_structure.setPosition([ 200,0,0 ])
 
   } else {
-    NGLLoad(d.pdb1, "AU", GetNGLSelection(asele, ""));
+    NGL_Load(d.pdb1, "AU", NGL_GetSelection(asele, ""));
   }
   //colorByChain?
-  //NGLLoad(d.pdb2,"AU",GetNGLSelection(d.sel2,""));
+  //NGL_Load(d.pdb2,"AU",NGL_GetSelection(d.sel2,""));
 }
 
 
-function NGLLoad(pdbname, bu, sel_str) {
+function NGL_Load(pdbname, bu, sel_str) {
   if (ngl_grid_mode) {
     console.log("clean gridmode");
     //change back the style
@@ -1835,7 +1763,7 @@ function NGLLoad(pdbname, bu, sel_str) {
   }
 
   if (pdbname.length === 4) {
-    LoadOneProtein("rcsb://" + pdbname + ".mmtf", pdbname, bu, sel_str);
+    NGL_LoadOneProtein("rcsb://" + pdbname + ".mmtf", pdbname, bu, sel_str);
   } else {
     var ext = pdbname.slice(-4, pdbname.length);
     if (pdbname.startsWith("EMD") || pdbname.startsWith("EMDB") || pdbname.slice(-4, pdbname.length) === ".map") {
@@ -1857,10 +1785,10 @@ function NGLLoad(pdbname, bu, sel_str) {
       //what about emdb
       if (folder_elem && folder_elem.files.length != "") {
         //alert(pathList_[d.data.source]),
-        LoadOneProtein(pathList_[pdbname], pdbname, bu, sel_str);
+        NGL_LoadOneProtein(pathList_[pdbname], pdbname, bu, sel_str);
       } else {
         var purl = cellpack_repo+"other/" + pdbname;
-        LoadOneProtein(purl, pdbname, bu, sel_str);
+        NGL_LoadOneProtein(purl, pdbname, bu, sel_str);
       }
     }
   }
@@ -1870,42 +1798,6 @@ function NGLLoad(pdbname, bu, sel_str) {
 //https://github.com/6pac/SlickGrid/blob/master/examples/example10-async-post-render.html
 //https://github.com/6pac/SlickGrid/blob/master/examples/example6-ajax-loading.html
 //let the server do everything in one call that send elem by elem ?
-function BuildDefaultCompartmentsRep() {
-  console.log("build default compartment", graph.nodes.length);
-  for (var i = 0; i < graph.nodes.length; i++) { //.forEach(function(d){
-    var d = graph.nodes[i];
-    if (d.data.nodetype !== "compartment") continue;
-    var comptype = ("geom_type" in d.data) ? d.data.geom_type : "None";
-    var geom = ("geom" in d.data) ? d.data.geom : "None";
-    if (!comptype || comptype === "None" || !geom || geom === "None") {
-      var name = d.data.name + "_geom";
-      var radius = 500.0;
-      d.data.geom = {
-        "name": name,
-        "radius": radius
-      };
-      d.data.geom_type = "sphere";
-    }
-    console.log("comp geom ", comptype, geom, d.data.name, d.data.geom, d.data.geom_type);
-  }
-  console.log
-}
-
-function BuildAll() {
-  //show the stop button
-  stop_current_compute = false;
-  document.getElementById('stopbeads').setAttribute("class", "spinner");
-  document.getElementById("stopbeads_lbl").setAttribute("class", "show");
-  document.getElementById("stopbeads_lbl").innerHTML = "building " + current_compute_index + " / " + graph.nodes.length;
-  //use getItem(index)
-  //for all compartment get a geom. default sphere of 500A
-  BuildDefaultCompartmentsRep();
-  current_compute_index = -1;
-  NextComputeIgredient();
-  buildLoopAsync();
-  //build geom for compartment by default
-  //build beads
-}
 
 function BuildAllBeads() {
   //show the stop button

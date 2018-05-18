@@ -72,17 +72,17 @@ var ngloptions = '' +
   '<div class="accordion_panel">'+
 //
   ' <div class="clusterBtn">' +
-  '<button onclick="CenterNGL()" style="">Center Camera</button>' +
+  '<button onclick="NGL_CenterView()" style="">Center Camera</button>' +
   '<button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
   '<button onclick="NextIgredient()" style="">Next Ingredient</button>' +
   '</div>' +
   '	<label id="ProteinId">protein name</label>' +
   ' <label id="pdb_id">pdb id</label>' +
-  ' <div> <label for="rep_type">Selection</label><input type="text" id="sel_str"  style="width:55%" placeholder="Selection" onchange="ChangeSelection(this)"/></div>' +
+  ' <div> <label for="rep_type">Selection</label><input type="text" id="sel_str"  style="width:55%" placeholder="Selection" onchange="NGL_ChangeSelection(this)"/></div>' +
   ' <label id="ngl_status"></label>' +
    '<div> <label for="rep_type">Representation'+
   ' </label>' +
-  ' <select id="rep_type" name="rep_type" style="width:55%" onchange="ChangeRepresentation(this)"  >' +
+  ' <select id="rep_type" name="rep_type" style="width:55%" onchange="NGL_ChangeRepresentation(this)"  >' +
   ' <option value="representation"> Representation: </option>' +
   ' <option value="cartoon" selected> cartoon </option>' +
   ' <option value="spacefill"> spacefill </option>' +
@@ -92,16 +92,16 @@ var ngloptions = '' +
   ' </select></div>' +
 
   '<div> <label for="ass_type">Assambly</label>' +
-  '  <select id="ass_type" name="ass_type" style="width:55%" onchange="ChangeBiologicalAssambly(this)" >' +
+  '  <select id="ass_type" name="ass_type" style="width:55%" onchange="NGL_ChangeBiologicalAssambly(this)" >' +
   '  <option value="Assambly"> Assambly: </option>' +
   '  <option value="AU" selected> AU </option>' +
   ' </select></div>' +
   ' <div><label for="mod_type">Model</label>' +
-  '  <select id="mod_type" name="mod_type" style="width:55%" onchange="ChangeModel(this)" >' +
+  '  <select id="mod_type" name="mod_type" style="width:55%" onchange="NGL_ChangeModel(this)" >' +
   '  <option value="showmodel" selected> Show model: </option>' +
   ' </select></div>' +
   ' <div><label for="color_type">Color</label>' +
-  '  <select id="color_type" name="color_type" style="width:55%" onchange="ChangeColorScheme(this)" >' +
+  '  <select id="color_type" name="color_type" style="width:55%" onchange="NGL_ChangeColorScheme(this)" >' +
   '  <option value="Colorby"> Color by: </option>' +
   ' </select></div>'
   //+' <label for="sym_elem">Symmetry :</label>'
@@ -110,7 +110,7 @@ var ngloptions = '' +
   //	+' </select>'
   +
   ' <div> <label for="label_elem">Label</label>' +
-  ' 	<select id="label_elem" name="label_elem" style="width:55%" onchange="ChangeNGLlabel(this)" >' +
+  ' 	<select id="label_elem" name="label_elem" style="width:55%" onchange="NGL_Changelabel(this)" >' +
   '   <option value="showlabel" selected> Show labels for: </option>' +
   '		<option value="None"> None </option>' +
   '		<option value="Chain" > Chain </option>' +
@@ -120,7 +120,7 @@ var ngloptions = '' +
   ' <button onclick="buildCMS()">Rebuild Geometry</button>'+getSpinner("stopbuildgeom","stopGeom()")+
   '</div>' +
   ' <div><label for="beads_elem">Show Beads</label>' +
-  ' <select id="beads_elem" name="beads_elem" style="width:55%" onchange="showBeadsLevel(this)" >' +
+  ' <select id="beads_elem" name="beads_elem" style="width:55%" onchange="NGL_showBeadsLevel(this)" >' +
   ' <option value="showbeads" selected> Show beads for lvl </option>' +
   '  <option value="All" > All </option>' +
   '  <option value="0" > 0 </option>' +
@@ -129,7 +129,7 @@ var ngloptions = '' +
   '  <option value="None" > None </option>' +
   ' </select></div>' +
   //' <div class="clusterBtn">' +
-  //' <select id="cluster_elem" name="cluster_elem" onchange="changeClusterMethod(this)" style="width:100%;height:40px">' +
+  //' <select id="cluster_elem" name="cluster_elem" onchange="NGL_changeClusterMethod(this)" style="width:100%;height:40px">' +
   //'  <option value="Kmeans" selected>Kmeans </option>' +
   //'  <option value="Optics" disabled> Optics</option>' +
   //'  <option value="DBSCAN" disabled> DBSCAN </option>' +
@@ -164,7 +164,7 @@ var ngloptions = '' +
   '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetZ" type="range" min="-150" max="150" step="10" style="width:70%"/>' +
   '<input class="inputNumber" id="num6" min="-150" max="150" type="number" value="0" style="width:30%"/>' +
   '</div>' +
-  '<button onclick="applyPcp()">Apply To Ingredient</button>' +
+  '<button onclick="NGL_applyPcp()">Apply To Ingredient</button>' +
   '</div>' +
   ' <label id="pdb_title">pdb TITLE</label>' +
    '</div>' +
@@ -571,7 +571,7 @@ nglComponent.prototype._Setup = function() {
   var optionsDropdown = $(ngloptions); //$( 'NGLOptionTemplate' ).html() );
   this._container.getElement().append(optionsDropdown);
   //this._container.getElement().append(ngl);
-  this._stage = setupNGL();
+  this._stage = NGL_Setup();
   this._container.on('resize', this._Resize, this);
   this._Resize();
   all_intialized[1] = true;

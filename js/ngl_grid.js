@@ -34,7 +34,7 @@ function NGL_loadList( pdbList ){
         return acc.then( function(){
             i += 1;
             heading.innerText = "Grid loading entry " + i +" "+name+" of " + pdbList.length + " entries";
-            var nameurl = GetPDBURL(name);
+            var nameurl = NGL_GetPDBURL(name);
             if (name === "None") return;
             return stage.loadFile( nameurl )
                 .then( addDiv )

@@ -103,16 +103,16 @@
       <button class="accordion">NGL options</button>
       <div class="accordion_panel">
         <div class="clusterBtn">
-          <button onclick="CenterNGL()" style="">Center</button>
+          <button onclick="NGL_CenterView()" style="">Center</button>
           <button onclick="PreviousIgredient()" style="">Previous</button>
           <button onclick="NextIgredient()" style="">Next</button>
         </div>
         <label id="ProteinId">protein name</label>
         <label id="pdb_id">pdb id</label>
-        <input type="text" id="sel_str" style="width:100%" placeholder="Selection" onchange="ChangeSelection(this)" />
+        <input type="text" id="sel_str" style="width:100%" placeholder="Selection" onchange="NGL_ChangeSelection(this)" />
         <label id="ngl_status"></label>
 
-        <select id="rep_type" name="rep_type" onchange="ChangeRepresentation(this)">
+        <select id="rep_type" name="rep_type" onchange="NGL_ChangeRepresentation(this)">
           <option value="representation"> Representation: </option>
           <option value="cartoon" selected> cartoon </option>
           <option value="spacefill"> spacefill </option>
@@ -120,18 +120,18 @@
           <option value="surface"> surface </option>
         </select>
 
-        <select id="ass_type" name="ass_type" onchange="ChangeBiologicalAssambly(this)">
+        <select id="ass_type" name="ass_type" onchange="NGL_ChangeBiologicalAssambly(this)">
           <option value="Assambly"> Assambly: </option>
           <option value="AU" selected> AU </option>
         </select>
-        <select id="mod_type" name="mod_type" onchange="ChangeModel(this)">
+        <select id="mod_type" name="mod_type" onchange="NGL_ChangeModel(this)">
           <option value="showmodel" selected> Show model: </option>
         </select>
         <label for="color_type">Color</label>
-        <select id="color_type" name="color_type" onchange="ChangeColorScheme(this)">
+        <select id="color_type" name="color_type" onchange="NGL_ChangeColorScheme(this)">
           <option value="Colorby"> Color by: </option>
         </select>
-        <select id="label_elem" name="label_elem" onchange="ChangeNGLlabel(this)">
+        <select id="label_elem" name="label_elem" onchange="NGL_Changelabel(this)">
           <option value="showlabel" selected> Show labels for: </option>
       		<option value="None"> None </option>
       		<option value="Chain" > Chain </option>
@@ -140,7 +140,7 @@
            <input type="checkbox" id="showgeom" onclick="NGL_showGeomNode(this)" checked>
            <label for="showgeom"> Show geometry </label> <button onclick="buildCMS()">Rebuild</button>
          </div>
-         <select id="beads_elem" name="beads_elem" onchange="showBeadsLevel(this)">
+         <select id="beads_elem" name="beads_elem" onchange="NGL_showBeadsLevel(this)">
             <option value="showbeads" selected> Show beads for lvl </option>
             <option value="All" > All </option>
             <option value="0" > 0 </option>

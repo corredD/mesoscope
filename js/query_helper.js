@@ -7,6 +7,11 @@ var cumulative_res = {
 //serialized is hardcoded
 var cp_fiber_description = {};
 
+//computation on server
+var current_compute_index = 0;
+var current_compute_node;
+var stop_current_compute = false;
+
 //so we can use the mgl2 copy and put there some computed geometry
 var pmv_server = "cgi-bin/get_geom_dev.cgi"; //(local_host_dev)?"cgi-bin/get_geom_dev.cgi":
 var sql_server = "cgi-bin/cellpack_db_dev.cgi"; //(local_host_dev)?"cgi-bin/cellpack_db_dev.cgi":
@@ -16,7 +21,7 @@ var local_host_dev = false;
 if (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") {
   alert("It's a local server!");
   local_host_dev = false;
-  ClientDetection(this);
+  Util_ClientDetection(this);
   alert(
     'OS: ' + jscd.os + ' ' + jscd.osVersion + '\n' +
     'Browser: ' + jscd.browser + ' ' + jscd.browserMajorVersion +
@@ -718,7 +723,7 @@ ngl_current_structure.assambly = assambly;
 */
 function buildFromServer(pdb,cms,beads,astructure){
     var lod = beads_elem.selectedOptions[0].value;
-    var dataset = GetAtomDataSet(pdb,astructure);
+    var dataset = NGL_GetAtomDataSet(pdb,astructure);
     var formData = new FormData();
     formData.append("atomsCoords", JSON.stringify(dataset));//array of x,y,z
     if (cms) {
@@ -1080,7 +1085,6 @@ function buildLoopAsync() {
   });
 }
 
-
 function buildCMS1(e) {
   //query the server for a cms given a PDB - see template.html for example and the cgi-bin
   //need afile or PDB id, bu, sele, model
@@ -1136,6 +1140,43 @@ function buildCMS1(e) {
     timeout: 60000
   });
 
+}
+
+function BuildDefaultCompartmentsRep() {
+  console.log("build default compartment", graph.nodes.length);
+  for (var i = 0; i < graph.nodes.length; i++) { //.forEach(function(d){
+    var d = graph.nodes[i];
+    if (d.data.nodetype !== "compartment") continue;
+    var comptype = ("geom_type" in d.data) ? d.data.geom_type : "None";
+    var geom = ("geom" in d.data) ? d.data.geom : "None";
+    if (!comptype || comptype === "None" || !geom || geom === "None") {
+      var name = d.data.name + "_geom";
+      var radius = 500.0;
+      d.data.geom = {
+        "name": name,
+        "radius": radius
+      };
+      d.data.geom_type = "sphere";
+    }
+    console.log("comp geom ", comptype, geom, d.data.name, d.data.geom, d.data.geom_type);
+  }
+  console.log
+}
+
+function BuildAll() {
+  //show the stop button
+  stop_current_compute = false;
+  document.getElementById('stopbeads').setAttribute("class", "spinner");
+  document.getElementById("stopbeads_lbl").setAttribute("class", "show");
+  document.getElementById("stopbeads_lbl").innerHTML = "building " + current_compute_index + " / " + graph.nodes.length;
+  //use getItem(index)
+  //for all compartment get a geom. default sphere of 500A
+  BuildDefaultCompartmentsRep();
+  current_compute_index = -1;
+  NextComputeIgredient();
+  buildLoopAsync();
+  //build geom for compartment by default
+  //build beads
 }
 
 function getCurrentNodesAsCP_JSON(some_data, some_links) {

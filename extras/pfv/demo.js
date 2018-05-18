@@ -291,7 +291,7 @@ require(['viewer', 'jquerysvg', 'bootstrap/tooltip', 'bootstrap/modal',
     var chain = GetNGLSelection(event.chainID);
     stage.removeAllComponents();
     document.getElementById('ProteinId').innerHTML = pdb+" "+chain;//arow.compartment+" "+arow.name+" : "+arow.pdb;
-    LoadOneProtein("rcsb://"+pdb,-1,":"+chain);
+    NGL_LoadOneProtein("rcsb://"+pdb,-1,":"+chain);
   
   });
   <!-- NGL code part II-->

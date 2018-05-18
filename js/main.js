@@ -1757,10 +1757,10 @@ document.getElementById('comp_slider').value = e.value;
 
 function resizeSphere(e){
 		//how to now the current spheres_array
-		//or update the current compartmentSphere
+		//or update the current NGL_compartmentSphere
 		var name = (node_selected.data.geom)?node_selected.data.geom.name:node_selected.data.name+"_geom";
 		var radius = e.value;
-		node_selected.data.geom = compartmentSphere(name,radius);
+		node_selected.data.geom = NGL_compartmentSphere(name,radius);
 		document.getElementById('comp_slider_num').value = e.value;
 		//document.getElementById('comp_slider_label').innerHTML = radius+"A";
 }
@@ -1774,11 +1774,11 @@ document.getElementById('comp_slider_thick').value = e.value;
 
 function updateThickness(e){
 		//how to now the current spheres_array
-		//or update the current compartmentSphere
+		//or update the current NGL_compartmentSphere
 		var name = (node_selected.data.geom)?node_selected.data.geom.name:node_selected.data.name+"_geom";
 		var thickness = e.value;
 		node_selected.data.thickness = thickness;
-		//node_selected.data.geom = compartmentSphere(name,radius);
+		//node_selected.data.geom = NGL_compartmentSphere(name,radius);
 		document.getElementById('comp_slider_thick_num').value = e.value;
 		document.getElementById('comp_slider_thick').value = e.value;
 		//document.getElementById('comp_slider_label').innerHTML = radius+"A";
@@ -1792,7 +1792,7 @@ function UpdateCompartmentRep(anode){
 		if ( anode.data.geom && anode.data.geom!== "None") {
 				//display in ngl
 				stage.removeAllComponents();
-				NGLLoadAShapeObj(anode.data.geom);
+				NGL_LoadAShapeObj(anode.data.geom);
 				stage.autoView();
 
 				//NGL_LoadShapeFile(anode.data.geom);//is it a file object ?
@@ -1801,21 +1801,21 @@ function UpdateCompartmentRep(anode){
 				//file is either on repo or local.
 				console.log(anode.data.geom_fname);//undefined
 				stage.removeAllComponents();
-				NGLLoadAShapeObj(anode.data.geom_fname)
+				NGL_LoadAShapeObj(anode.data.geom_fname)
 				stage.autoView();
 		}*/
 	}
 	else if (comptype === "sphere") {
 		  var name = (anode.data.geom)?anode.data.geom.name:anode.data.name+"_geom";
 			var radius = (anode.data.geom && "radius" in anode.data.geom)?anode.data.geom.radius:document.getElementById("comp_slider").value;
-			anode.data.geom = compartmentSphere(name,radius);
+			anode.data.geom = NGL_compartmentSphere(name,radius);
 	}
 	else if (comptype === "mb") {
 
 	}
 	else if (comptype === "raw") {
 		stage.removeAllComponents();
-		NGLLoadAShapeObj(anode.data.geom);
+		NGL_LoadAShapeObj(anode.data.geom);
 		stage.autoView();
 	}
 }
@@ -3154,7 +3154,7 @@ function dragstarted() {
   		}
   	console.log("??",nodes_selections);
 
-  	//updateNGL(d3v4.event.subject);
+  	//NGL_UpdateWithNode(d3v4.event.subject);
   }
 	else if (d3v4.event.subject.parent) {
 		if (current_mode !== 1) {
@@ -3263,7 +3263,7 @@ function dragended() {
   	//node_selected =  d3v4.event.subject;
   	//node_selected_indice = nodes.indexOf(node_selected);
   	UpdateSelectionPdbFromId(d3v4.event.subject.data.id);
-  	if (current_mode===0) updateNGL(d3v4.event.subject);
+  	if (current_mode===0) NGL_UpdateWithNode(d3v4.event.subject);
   	line_selected = null;
   }
   else {
@@ -3275,8 +3275,8 @@ function dragended() {
 	  	node_selected = null;
 	  	//its a line/interactin with an id.
 	  	UpdateSelectionInteractionFromId(d3v4.event.subject.id);//undefined ?
-	  	if (current_mode===0) updateNGLPair(d3v4.event.subject);
-	  	//if pdb1 and pdb2 -> updateNGL with all info...
+	  	if (current_mode===0) NGL_UpdateWithNodePair(d3v4.event.subject);
+	  	//if pdb1 and pdb2 -> NGL_UpdateWithNode with all info...
   	}
   }
   if (current_mode === 1)
@@ -3575,7 +3575,7 @@ function PreviousIgredient(){
   	//find the row
 		node_selected.data.visited = true;
   	UpdateSelectionPdbFromId(node_selected.data.id);
-  	updateNGL(node_selected);
+  	NGL_UpdateWithNode(node_selected);
   	wakeUpSim();
   }
 }
@@ -3597,7 +3597,7 @@ function NextIgredient(){
   if (found)
   {
   	UpdateSelectionPdbFromId(node_selected.data.id);
-  	updateNGL(node_selected);
+  	NGL_UpdateWithNode(node_selected);
   	wakeUpSim();
   }
 }
@@ -3709,7 +3709,7 @@ function setupGridster() {
 			width = 200;//nctop*50;
 			height = 200;//nr*50;
 			intialize();
-			setupNGL();
+			NGL_Setup();
 	    setupPFV();
 			graph.nodes = centerAllNodePos(graph.nodes);
 			stage.handleResize();

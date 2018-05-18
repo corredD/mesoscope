@@ -809,7 +809,7 @@ html, body { width: 100%; height: 100%; overflow: auto; }
 <div id="container">
   <div>
   <br> Select a working folder for your PDB, other wise it will use the github cellpackdatabase<br>
-    <input type="file" id="file_input" onchange="selectFolder(event)" webkitdirectory mozdirectory msdirectory odirectory directory multiple />
+    <input type="file" id="file_input" onchange="Util_selectFolder(event)" webkitdirectory mozdirectory msdirectory odirectory directory multiple />
     <ul id="dir-tree"></ul>
   </div>
 </div>
@@ -842,7 +842,7 @@ html, body { width: 100%; height: 100%; overflow: auto; }
 var pathList_={};
 var folder_elem = document.getElementById("file_input");
 
-function selectFolder(e) {
+function Util_selectFolder(e) {
     var theFiles = e.target.files;
     var relativePath = theFiles[0].webkitRelativePath;
     var folder = relativePath.split("/");

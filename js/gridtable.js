@@ -1301,8 +1301,8 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       //update ngl?
       //if (!n.data.source) n.data.source = {};
       //n.data.source.pdb = arow.pdb;
-      if (arow.pdb) updateNGL(n);
-      //NGLLoad(arow.pdb,arow.bu,arow.selection);	also update pcp and offset
+      if (arow.pdb) NGL_UpdateWithNode(n);
+      //NGL_Load(arow.pdb,arow.bu,arow.selection);	also update pcp and offset
     } else if (grid.gname === "grid_uniprot") {
       //is it the picked  checkbox
       if (cid === "picked") {
@@ -1498,16 +1498,16 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
             //var geom_name = node_selected.data.geom.split('.')[0];
             //var ext = geom_name.split('.').pop();
             if ("geom_type" in node_selected.data) {
-              ngl_load_params.geom = node_selected.data.geom; //geom_purl + geom_name + ".obj"; //NGLLoadAShapeObj(  );
+              ngl_load_params.geom = node_selected.data.geom; //geom_purl + geom_name + ".obj"; //NGL_LoadAShapeObj(  );
               ngl_load_params.dogeom = true;
               //if (node_selected.data.geom_type==="raw"){
               //do the NGL_ShowMeshVFN
-              //  ngl_load_params.geom = node_selected.data.geom;//geom_purl + geom_name + ".obj"; //NGLLoadAShapeObj(  );
+              //  ngl_load_params.geom = node_selected.data.geom;//geom_purl + geom_name + ".obj"; //NGL_LoadAShapeObj(  );
               //  ngl_load_params.dogeom = true;
               //}
             }
             //else if (geom_name.toLowerCase() !== "x") {
-            //     ngl_load_params.geom = arow.geom;//geom_purl + geom_name + ".obj"; //NGLLoadAShapeObj(  );
+            //     ngl_load_params.geom = arow.geom;//geom_purl + geom_name + ".obj"; //NGL_LoadAShapeObj(  );
             //  ngl_load_params.dogeom = true;
             //}
           }
@@ -1519,14 +1519,14 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
               "rad": node_selected.data.radii
             };
             ngl_load_params.dobeads = true;
-            //NGLLoadSpheres( node_selected.data.pos,node_selected.data.radii );
+            //NGL_LoadSpheres( node_selected.data.pos,node_selected.data.radii );
           } else {
             console.log("no position?", console.log(node_selected.data));
             //ngl_force_build_beads = true;
             //console.log ("query the beads");
             //var remote_url = 'http://mgldev.scripps.edu/cgi-bin/cellpack_db_dev.py?beads={"url":"'+purl+'","bu":'+bu+',"sel":"'+sele+'"}';
             //console.log(remote_url);
-            //callAjax(remote_url, setupBeads);
+            //callAjax(remote_url, NGL_setupBeads);
           }
           console.log("doaxis", "offset" in node_selected.data);
           if ("offset" in node_selected.data) {
@@ -1536,17 +1536,17 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
             }
             ngl_load_params.doaxis = true;
             console.log("doaxis", ngl_load_params.axis);
-            //NGLShowAxisOffset( d.data.pcpalAxis,d.data.offset );
+            //NGL_ShowAxisOffset( d.data.pcpalAxis,d.data.offset );
           }
 
-          //use updateNGL instead?
+          //use NGL_UpdateWithNode instead?
           if (arow.pdb && arow.pdb != "None" && arow.pdb != "") {
             if (ngl_current_item_id !== arow.id) {
               console.log("update NGL by removing all component");
               stage.removeAllComponents();
               ngl_current_node = node_selected;
               console.log(arow.pdb, arow.bu, arow.selection);
-              NGLLoad(arow.pdb, arow.bu, arow.selection);
+              NGL_Load(arow.pdb, arow.bu, arow.selection);
             }
             UpdatePDBcomponent(arow.pdb); //only work if 4letter
           } else {
@@ -1555,15 +1555,15 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
               document.getElementById("Query_4").value = arow.name.split("_").join(" ");
               queryPDBfromName(arow.name);
               if (ngl_load_params.dogeom) {
-                NGLLoadAShapeObj(ngl_load_params.geom);
+                NGL_LoadAShapeObj(ngl_load_params.geom);
                 ngl_load_params.dogeom = false;
               }
               if (ngl_load_params.dobeads) {
-                NGLLoadSpheres(ngl_load_params.beads.pos, ngl_load_params.beads.rad);
+                NGL_LoadSpheres(ngl_load_params.beads.pos, ngl_load_params.beads.rad);
                 ngl_load_params.dobeads = false;
               }
               if (ngl_load_params.doaxis) {
-                NGLShowAxisOffset(ngl_load_params.axis.axis, ngl_load_params.axis.offset);
+                NGL_ShowAxisOffset(ngl_load_params.axis.axis, ngl_load_params.axis.offset);
                 ngl_load_params.doaxis = false;
               }
             }
@@ -1575,7 +1575,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       node_selected = null;
       ngl_current_item_id = arow.id;
       stage.removeAllComponents();
-      NGLLoad(arow.pdb1, "AU", GetNGLSelection(arow.sel1 + "," + arow.sel2, ""));
+      NGL_Load(arow.pdb1, "AU", GetNGLSelection(arow.sel1 + "," + arow.sel2, ""));
       document.getElementById('ProteinId').innerHTML = arow.name1 + " " + arow.name2;
     } else if (grid.gname === "grid_uniprot") {
       //send the selection to the main recipe
@@ -1652,7 +1652,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
           ngl_current_item_id = arow.structureId;
           //selection is the chain Id
           ngl_current_node = null;
-          NGLLoad(arow.structureId, "AU", ":" + arow.chainId);
+          NGL_Load(arow.structureId, "AU", ":" + arow.chainId);
         }
       }
     }
