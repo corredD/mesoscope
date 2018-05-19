@@ -95,7 +95,6 @@ function NGL_GetPDBURL(aname) {
   }
 }
 
-
 function NGL_updatePcpElem() {
   for (var i = 0; i < 3; i++) {
     if (!ngl_load_params.axis) return;
@@ -364,7 +363,7 @@ async function NGL_updateCurrentBeadsLevelClient() {
 }
 
 // server side function for computing beads
-function NGL_updateCurrentBeadsLevelClient() {
+function NGL_updateCurrentBeadsLevelServer() {
   console.log("update beads", beads_elem.selectedOptions[0].value); //undefined?//lod level
   console.log("num clusters", slidercluster_elem.value);
   var d = node_selected; //or node_selected.data.bu
@@ -426,7 +425,7 @@ function NGL_updateCurrentBeadsLevelClient() {
       var data_parsed = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
       var clusters = data_parsed.results; //verts, faces,normals
       console.log("CLUSTERS:", clusters);
-      NGL_ShowBeadsCR(clusters,lod);
+      NGL_ShowBeadsCR(clusters,lod);//.center and .radii
       nbBeads_elem.textContent = '' + ngl_load_params.beads.pos[lod].coords.length / 3 + ' beads';
       document.getElementById('stopkmeans').setAttribute("class", "spinner hidden");
       document.getElementById("stopkmeans_lbl").setAttribute("class", "hidden");
@@ -443,11 +442,38 @@ function NGL_updateCurrentBeadsLevelClient() {
   });
 }
 
-function NGL_updateCurrentBeadsLevelClient() {
+function NGL_updateCurrentBeadsLevel() {
   //client, or server or server coords
   //NGL_updateCurrentBeadsLevelClient();
   //NGL_updateCurrentBeadsLevelServer();
-  buildFromServer(node_selected.data.source.pdb,false,true,ngl_current_structure);
+  if (node_selected.data.nodetype === "compartment") {}
+  else {
+  if ((node_selected.data.source.pdb)&&(node_selected.data.source.pdb!==""))
+  {
+    var pdbname = node_selected.data.source.pdb;
+    if (pdbname.startsWith("EMD") || pdbname.startsWith("EMDB") || pdbname.slice(-4, pdbname.length) === ".map"){
+      //this is a Volume
+      var comp = stage.getComponentsByName(pdbname);
+      if (comp.list.length!==0) {
+        comp = comp.list[0];
+        var volume = comp.volume;
+        var rep = stage.getRepresentationsByName("surface").list[0];
+        var iso = rep.repr.__isolevel
+        //var surf = rep.repr.surface;
+        if (!iso) iso = comp.reprList[0].repr.__isoLevel;
+        if (!iso) iso = 1.0;
+        console.log("iso is :",iso);
+        //var fv = new FilteredVolume(volume, volume._min, volume._max, false);
+        //cluster fv.getDataPosition();
+        var lod = parseInt(beads_elem.selectedOptions[0].value);
+        var clusters = NGL_ClusterVolume(volume,iso,{"x":0,"y":0,"z":0});
+        console.log("found cl",clusters);
+        NGL_ShowBeadsCR(clusters,lod);
+      }
+    }
+    else buildFromServer(node_selected.data.source.pdb,false,true,ngl_current_structure);
+  }
+}
 }
 
 function NGL_changeClusterMethod(e) {
@@ -706,6 +732,27 @@ function NGL_LoadBeads(d) {
   //when a sphereFile is given in the input
 }
 
+function NGL_ShowSpheres(pos,r){
+  console.log(pos);
+  var col = Array(pos.length).fill(0).map(Util_makeARandomNumber);
+  var rad = Array(pos.length/3).fill(1.0);
+  var sphereBuffer = new NGL.SphereBuffer({
+    position: new Float32Array(pos),
+    color: new Float32Array(col),
+    radius: new Float32Array(rad)
+  })
+
+  var shape = new NGL.Shape("some_spheres");
+  shape.addBuffer(sphereBuffer)
+  var shapeComp = stage.addComponentFromObject(shape)
+  var rep = shapeComp.addRepresentation("spheres", {
+    opacity: 1,
+    visibility: true
+  });
+  console.log(rep);
+  stage.autoView(200);
+}
+
 function NGL_ShowBeadsCR(clusters,lod){
   var comp = stage.getComponentsByName("beads_" + lod);
   var _pos = {
@@ -718,16 +765,19 @@ function NGL_ShowBeadsCR(clusters,lod){
   if (!ngl_load_params.beads.rad) ngl_load_params.beads.rad = [];
   ngl_load_params.beads.pos[lod] = _pos; //{"pos":[lvl0_pos,lvl1_pos],"rad":[lvl0_rad,lvl1_rad]};
   ngl_load_params.beads.rad[lod] = _rad;
+  console.log(ngl_load_params.beads);
   if (node_selected) {
     console.log("update node ", node_selected.data.name)
     node_selected.data.pos = JSON.parse(JSON.stringify(ngl_load_params.beads.pos));
     node_selected.data.radii = JSON.parse(JSON.stringify(ngl_load_params.beads.rad));
+    console.log(node_selected);
   }
   if (comp.list) {
     for (var i = 0; i < comp.list.length; i++) {
       stage.removeComponent(comp.list[i]);
     }
   }
+  console.log(ngl_load_params.beads.pos,lod);
   var col = Array(ngl_load_params.beads.pos[lod].coords.length).fill(0).map(Util_makeARandomNumber);
 
   var sphereBuffer = new NGL.SphereBuffer({
@@ -738,7 +788,10 @@ function NGL_ShowBeadsCR(clusters,lod){
     //labelText:labels
   })
 
-  var shape = new NGL.Shape("beads_" + lod);
+  var shape = new NGL.Shape("beads_" + lod, {
+    disableImpostor: true,
+    radialSegments: 10
+  });
   shape.addBuffer(sphereBuffer)
   var shapeComp = stage.addComponentFromObject(shape)
   var rep = shapeComp.addRepresentation("beads_" + lod, {
@@ -746,7 +799,6 @@ function NGL_ShowBeadsCR(clusters,lod){
     visibility: true
   });
 }
-
 
 //rep or component
 function NGL_getRawMesh(rep_name) {
@@ -1201,16 +1253,18 @@ function NGL_GetGeometricCenter(astructure, selection) {
 
 function NGL_GetGeometricCenterArray(clusteri, some_data) {
   var center = new NGL.Vector3(0, 0, 0);
-  var i = 0;
+  //var i = 0;
   var R = 0;
-  for (j in clusteri) {
+  var npoints = clusteri.length;
+  for (var i=0;i<npoints;i++){//} in clusteri) {
+    var j = clusteri[i];
     var atpos = new NGL.Vector3(some_data[j][0], some_data[j][1], some_data[j][2]);
     center.add(atpos);
-    i += 1;
+    //i += 1;
   }
-
-  center.divideScalar(i);
-  for (j in clusteri) {
+  center.divideScalar(npoints);
+  for (var i=0;i<npoints;i++){//} in clusteri) {
+    var j = clusteri[i];
     var atpos = new NGL.Vector3(some_data[j][0], some_data[j][1], some_data[j][2]);
     var L = atpos.sub(center).length();
     if (L > R) R = L;
@@ -1229,6 +1283,30 @@ function NGL_ClusterStructure(o, center) {
   //else if (cluster_elem.selectedOptions[0].value==="Optics") return buildWithOptics(o,center);
   //else if (cluster_elem.selectedOptions[0].value==="DBSCAN") return buildWithDBScan(o,center);
   //else return buildWithKmeans(o,center);
+}
+
+function NGL_ClusterVolume(v,iso,center) {
+  var dataset = [];
+  var pos = v.getDataPosition();
+  var p=[];
+  var j=0;
+  for (var i=0;i<pos.length/3;i++) {
+    var val = v.data[ i ];
+    if (val > iso-0.1 && val < iso+0.1) {
+      dataset.push([pos[j+0],pos[j+1],pos[j+2]]);
+      p.push(pos[j+0]);p.push(pos[j+1]);p.push(pos[j+2]);
+    }
+    j+=3;
+  }
+  NGL_ShowSpheres(p,null);
+  console.log("cluster!!", parseInt(slidercluster_elem.value), dataset.length);
+  //should we use a worker ?
+  // parameters: 3 - number of clusters
+  //center the selection?.
+  var kmeans = new KMEANS();
+  var clusters = kmeans.run(dataset, parseInt(slidercluster_elem.value));
+  console.log(clusters);
+  return NGL_ClusterVolumeToBeads(clusters, dataset, center);
 }
 
 function buildWithOptics(o, center) {
@@ -1336,6 +1414,26 @@ function buildWithKmeans(o, center) {
     };
     //return clusters;
   }
+}
+
+function NGL_ClusterVolumeToBeads(some_clusters, dataset, center) {
+  var pos = []; //flat array
+  var rad = []; //flat array
+  var nCluster = some_clusters.length;
+  console.log("use center ", center, nCluster);
+  for (var i = 0; i < nCluster; i++) {
+    var cl = some_clusters[i];
+    console.log(cl.length,cl);
+    var sph = NGL_GetGeometricCenterArray(cl, dataset);
+    pos[pos.length] = sph.center.x - center.x;
+    pos[pos.length] = sph.center.y - center.y;
+    pos[pos.length] = sph.center.z - center.z;
+    rad[rad.length] = sph.radius;
+  }
+  return {
+    "centers": pos,
+    "radii": rad
+  };
 }
 
 function NGL_ClusterToBeads(some_clusters, astructure, center) {
@@ -1700,6 +1798,10 @@ function NGL_UpdateWithNode(d) {
           var purl = cellpack_repo+"other/" + pdbname;
           stage.loadFile(purl, params);
         }
+        if (pdbname.startsWith("EMD-"))
+        {
+          pdb_id_elem.innerHTML = '<a href="https://www.ebi.ac.uk/pdbe/entry/emdb/' + pdbname.split(".")[0] + '" target="_blank">' + pdbname + '</a>';
+        }
       } else {
         if (folder_elem && folder_elem.files.length != "") {
           //alert(pathList_[d.data.source]),
@@ -1780,6 +1882,10 @@ function NGL_Load(pdbname, bu, sel_str) {
       } else {
         var purl = cellpack_repo+"other/" + pdbname;
         stage.loadFile(purl, params);
+      }
+      if (pdbname.startsWith("EMD-"))
+      {
+        pdb_id_elem.innerHTML = '<a href="https://www.ebi.ac.uk/pdbe/entry/emdb/' + pdbname.split(".")[0] + '" target="_blank">' + pdbname + '</a>';
       }
     } else {
       //what about emdb
