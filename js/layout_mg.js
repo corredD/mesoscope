@@ -15,167 +15,183 @@ console.log("angular is defined ?",app);
 //https://websvc.biocyc.org/getxml?id=META:MONOMER-584
 //-><component-of><Protein resource="getxml?META:CPLX-2022" orgid="META" frameid="CPLX-2022"/></component-of>
 
+function getSplitter()
+{
+  return '<div class="splitter"></div>';
+}
+
+//exampel : rep_type,option_elem,representation,NGL_ChangeRepresentation(this),
+function getSelect(select_id, div_class, label, onchange_cb, list_options) {
+  var astr=''+
+  '<div class="'+div_class+'">'+
+    '<label for="'+select_id+'">'+label+'</label>' +
+    '<select id="'+select_id+'" name="'+select_id+'" onchange="'+onchange_cb+'"  >';
+  for (var i=0;i<list_options.length;i++)
+  {
+    astr+=' <option value="'+list_options[i]+'"> '+list_options[i]+'</option>';
+  }
+  astr+='</select></div>';
+  return astr;
+}
+
 //hover_div//style="position:absolute; width:100% !important; display:block;"
 var canvasOption = '' +
-  '<div class="canvas_head" >' //z-index:50
-  +
-  '<div><select id="canvas_label" name="canvas_label" onchange="ChangeCanvasLabel(this)" >' +
-  '<option value="Select">Label for:</option>' +
-  '	<option value="None" > None </option>' +
-  '	<option value="label" > label </option>' +
-  '<option value="pdb" > pdb </option>' +
-  '<option value="uniprot" > uniprot </option>' +
-  '<option value="name" selected> name </option>' +
-  '</select>' +
-  '<select id="canvas_color" name="canvas_color">' +
-  '	<option value="Select">Color by:</option>' +
-  '	<option value="pdb" selected> missing PDB </option>' +
-  '	<option value="pcpalAxis" > missing PcpalAxis </option>' +
-  '	<option value="offset" > missing Offset </option>' +
-  '	<option value="count_molarity" > missing Copy number or molarity </option>' +
-  '	<option value="Beads" > missing SphereTree </option>' +
-  '	<option value="geom"> missing Geometry </option>' +
-  '	<option value="confidence" > confidence </option>' +
-  '	<option value="color" > color </option>' +
-  '	<option value="viewed"> viewed </option>' +
-  '	<option value="size"> size </option>' +
-  '	<option value="count" > count </option>' +
-  '	<option value="molarity" > molarity </option>' +
-  '	 <option value="mw" > molecularweight </option>' +
-  '</select>		' +
-  '	<select id="canvas_map_r" name="canvas_map_r" onchange="mapRadiusToProperty(this)" >' +
-  '	<option value="Select">Map radius to:</option>' +
-  '	<option value="size" selected> size </option>' +
-  '	<option value="count" > count </option>' +
-  '	<option value="molarity" > molarity </option>' +
-  '	 <option value="mw" > molecularweight </option>' +
-  '	</select></div>' +
-  '<button id="addingr" class="hidden" onclick="addIngredient()">Add ingredient</button>' +
-  '<button id="addcomp" class="hidden" onclick="addCompartment()">Add compartment</button>' +
-  '<button id="addlink" class="hidden" onclick="addLink()">Add interaction</button>'+
-  '<div>'+
-  '<input type="checkbox" id="unchecked" onclick="switchMode(this)" class="cbx hidden" />' +
-  '<label for="unchecked" class="lbl"></label>' +
-  '<label for="lbl" style="width:70px; float:right; margin-top:10px;">Edit Mode</label>' +
-  //	+'<div class="row demo">'
-  '</div>'+
+  '<div class="canvas_head" >' +
+    '<div>'+
+      '<select id="canvas_label" name="canvas_label" onchange="ChangeCanvasLabel(this)" >' +
+        '<option value="Select">Label for:</option>' +
+        '	<option value="None" > None </option>' +
+        '	<option value="label" > label </option>' +
+        '<option value="pdb" > pdb </option>' +
+        '<option value="uniprot" > uniprot </option>' +
+        '<option value="name" selected> name </option>' +
+      '</select>' +
+      '<select id="canvas_color" name="canvas_color">' +
+        '	<option value="Select">Color by:</option>' +
+        '	<option value="pdb" selected> missing PDB </option>' +
+        '	<option value="pcpalAxis" > missing PcpalAxis </option>' +
+        '	<option value="offset" > missing Offset </option>' +
+        '	<option value="count_molarity" > missing Copy number or molarity </option>' +
+        '	<option value="Beads" > missing SphereTree </option>' +
+        '	<option value="geom"> missing Geometry </option>' +
+        '	<option value="confidence" > confidence </option>' +
+        '	<option value="color" > color </option>' +
+        '	<option value="viewed"> viewed </option>' +
+        '	<option value="size"> size </option>' +
+        '	<option value="count" > count </option>' +
+        '	<option value="molarity" > molarity </option>' +
+        '	 <option value="mw" > molecularweight </option>' +
+      '</select>		' +
+      '<select id="canvas_map_r" name="canvas_map_r" onchange="mapRadiusToProperty(this)" >' +
+        '	<option value="Select">Map radius to:</option>' +
+        '	<option value="size" selected> size </option>' +
+        '	<option value="count" > count </option>' +
+        '	<option value="molarity" > molarity </option>' +
+        '	<option value="mw" > molecularweight </option>' +
+      '</select>'+
+    '</div>' +
+    '<button id="addingr" class="hidden" onclick="addIngredient()">Add ingredient</button>' +
+    '<button id="addcomp" class="hidden" onclick="addCompartment()">Add compartment</button>' +
+    '<button id="addlink" class="hidden" onclick="addLink()">Add interaction</button>'+
+    '<div>'+
+      '<input type="checkbox" id="unchecked" onclick="switchMode(this)" class="cbx hidden" />' +
+      '<label for="unchecked" class="lbl"></label>' +
+      '<label for="lbl" style="width:70px; float:right; margin-top:10px;">Edit Mode</label>' +
+    '</div>'+
   '</div>'
 
-//
-
-var ngloptions = '' +
-  //'<div class="hover_div" style="position:absolute; width:100% !important; display:block;z-index:1">  ' +
-  '<div class="NGLpan">'+
-  //accordion_panel
-  '<div class="NGLOptions">'+
-  '<button class="accordion">NGL options</button>'+
-  '<div class="accordion_panel">'+
-//
-  ' <div class="clusterBtn">' +
-  '<button onclick="NGL_CenterView()" style="">Center Camera</button>' +
+var ngl_options= ''+
+'<div class="NGLOptions">'+
   '<button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
   '<button onclick="NextIgredient()" style="">Next Ingredient</button>' +
-  '</div>' +
-  '	<label id="ProteinId">protein name</label>' +
-  ' <label id="pdb_id">pdb id</label>' +
-  ' <div> <label for="rep_type">Selection</label><input type="text" id="sel_str"  style="width:55%" placeholder="Selection" onchange="NGL_ChangeSelection(this)"/></div>' +
-  ' <label id="ngl_status"></label>' +
-   '<div> <label for="rep_type">Representation'+
-  ' </label>' +
-  ' <select id="rep_type" name="rep_type" style="width:55%" onchange="NGL_ChangeRepresentation(this)"  >' +
-  ' <option value="representation"> Representation: </option>' +
-  ' <option value="cartoon" selected> cartoon </option>' +
-  ' <option value="spacefill"> spacefill </option>' +
-  ' <option value="licorice" > licorice </option>' +
-  ' <option value="surface"> surface </option>' +
-  //+'  <option value="beads" disabled > beads </option>'
-  ' </select></div>' +
-
-  '<div> <label for="ass_type">Assambly</label>' +
-  '  <select id="ass_type" name="ass_type" style="width:55%" onchange="NGL_ChangeBiologicalAssambly(this)" >' +
-  '  <option value="Assambly"> Assambly: </option>' +
-  '  <option value="AU" selected> AU </option>' +
-  ' </select></div>' +
-  ' <div><label for="mod_type">Model</label>' +
-  '  <select id="mod_type" name="mod_type" style="width:55%" onchange="NGL_ChangeModel(this)" >' +
-  '  <option value="showmodel" selected> Show model: </option>' +
-  ' </select></div>' +
-  ' <div><label for="color_type">Color</label>' +
-  '  <select id="color_type" name="color_type" style="width:55%" onchange="NGL_ChangeColorScheme(this)" >' +
-  '  <option value="Colorby"> Color by: </option>' +
-  ' </select></div>'
-  //+' <label for="sym_elem">Symmetry :</label>'
-  //	+'  <select id="sym_elem" name="sym_elem" onchange="ChangeSymmetr(this)">'
-  //	+'  <option value="All" selected> All </option>'
-  //	+' </select>'
-  +
-  ' <div> <label for="label_elem">Label</label>' +
-  ' 	<select id="label_elem" name="label_elem" style="width:55%" onchange="NGL_Changelabel(this)" >' +
-  '   <option value="showlabel" selected> Show labels for: </option>' +
-  '		<option value="None"> None </option>' +
-  '		<option value="Chain" > Chain </option>' +
-  '	</select></div>' +
-  ' <div> <input type="checkbox"  id="showgeom" onclick="NGL_showGeomNode(this)" checked>' +
-  ' <label for="showgeom"> Show Geometry used </label> '+
-  ' <button onclick="buildCMS()">Rebuild Geometry</button>'+getSpinner("stopbuildgeom","stopGeom()")+
-  '</div>' +
-  ' <div><label for="beads_elem">Show Beads</label>' +
-  ' <select id="beads_elem" name="beads_elem" style="width:55%" onchange="NGL_showBeadsLevel(this)" >' +
-  ' <option value="showbeads" selected> Show beads for lvl </option>' +
-  '  <option value="All" > All </option>' +
-  '  <option value="0" > 0 </option>' +
-  '  <option value="1" > 1 </option>' +
-  '  <option value="2" > 2 </option>' +
-  '  <option value="None" > None </option>' +
-  ' </select></div>' +
+  '<button class="accordion">NGL options</button>'+
+  '<div class="accordion_panel">'+
+    '<div class="clusterBtn">' +
+      '<button onclick="NGL_CenterView()" style="">Center Camera</button>' +
+    '</div>' +
+    '<label id="ProteinId">protein name</label>' +
+    '<label id="pdb_id">pdb id</label>' +
+    '<div>'+
+      '<label for="rep_type">Selection</label>'+
+      '<input type="text" id="sel_str" style="width:55%" placeholder="Selection" onchange="NGL_ChangeSelection(this)"/>'+
+    '</div>'+
+    '<label id="ngl_status"></label>' +
+    getSelect("rep_type", "options_elems", "Representation",
+                            "NGL_ChangeRepresentation(this)", ngl_styles)+
+    '<div>'+
+      '<label for="ass_type">Assambly</label>' +
+      '<select id="ass_type" name="ass_type" style="width:55%" onchange="NGL_ChangeBiologicalAssambly(this)" >' +
+        '  <option value="Assambly"> Assambly: </option>' +
+        '  <option value="AU" selected> AU </option>' +
+      '</select>'+
+    '</div>' +
+    '<div>'+
+      '<label for="mod_type">Model</label>' +
+      '<select id="mod_type" name="mod_type" style="width:55%" onchange="NGL_ChangeModel(this)" >' +
+        '<option value="showmodel" selected> Show model: </option>' +
+      '</select>'+
+    '</div>' +
+    '<div>'+
+      '<label for="color_type">Color</label>' +
+      '<select id="color_type" name="color_type" style="width:55%" onchange="NGL_ChangeColorScheme(this)" >' +
+        '<option value="Colorby"> Color by: </option>' +
+      '</select>'+
+    '</div>'+
+    '<div>'+
+      '<label for="label_elem">Label</label>' +
+      '<select id="label_elem" name="label_elem" style="width:55%" onchange="NGL_Changelabel(this)" >' +
+      '   <option value="showlabel" selected> Show labels for: </option>' +
+      '		<option value="None"> None </option>' +
+      '		<option value="Chain" > Chain </option>' +
+      '</select>'+
+    '</div>'+
+    '<div>'+
+      '<input type="checkbox"  id="showgeom" onclick="NGL_showGeomNode(this)" checked>' +
+      '<label for="showgeom"> Show Geometry used </label> '+
+      '<button onclick="buildCMS()">Rebuild Geometry</button>'+getSpinner("stopbuildgeom","stopGeom()")+
+    '</div>' +
+    '<div>'+
+      '<label for="beads_elem">Show Beads</label>' +
+      '<select id="beads_elem" name="beads_elem" style="width:55%" onchange="NGL_showBeadsLevel(this)" >' +
+      '  <option value="showbeads" selected> Show beads for lvl </option>' +
+      '  <option value="All" > All </option>' +
+      '  <option value="0" > 0 </option>' +
+      '  <option value="1" > 1 </option>' +
+      '  <option value="2" > 2 </option>' +
+      '  <option value="None" > None </option>' +
+      '</select>'+
+    '</div>' +
   //' <div class="clusterBtn">' +
   //' <select id="cluster_elem" name="cluster_elem" onchange="NGL_changeClusterMethod(this)" style="width:100%;height:40px">' +
   //'  <option value="Kmeans" selected>Kmeans </option>' +
   //'  <option value="Optics" disabled> Optics</option>' +
   //'  <option value="DBSCAN" disabled> DBSCAN </option>' +
   //' </select>' +
- ' <div> <label> number of cluster</label>' +
-  ' <input id="slidercl_params1" style="width:70%;display:inline" type="range" min="1" max="100"" step="1" value="10" /> ' +
-  ' <label id="cl_params1" for="slidercl_params1">10</label>' +  getSpinner("stopkmeans","stopKmeans()")+
-  '</div>'+
-  //'<label> param 2</label>' +
-  //' <input id="slidercl_params2" style="width:100px" type="range" min="1" max="100"" step="1" value="10" /> ' +
-  //' <label id="cl_params2" for="slidercl_params2" style="width:30px">10</label>' +
-  ' <label id="nbBeads">0 beads</label>' +
-  //'</div>' +
-
-  //'<label> Selection</label>' +
-
-  ' <div id="query_search">' +
-  ' <label id="heading"></label>' +
-  ' </div> ' +
-
-  '<div class="hidden" id="surface">' +
-  '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpX" type="range" min="-100" max="100" step="1" style="width:70%" />' +
-  '<input class="inputNumber" id="num1" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
-  '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpY" type="range" min="-100" max="100" step="1" style="width:70%" />' +
-  '<input class="inputNumber" id="num2" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
-  '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpZ" type="range" min="-100" max="100" step="1" style="width:70%"/>' +
-  '<input class="inputNumber" id="num3" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
-  '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetX" type="range" min="-150" max="150" step="10" style="width:70%" />' +
-  '<input class="inputNumber" id="num4" min="-150" max="150" type="number" value="0" style="width:30%"/>' +
-  '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetY" type="range" min="-150" max="150" step="10" style="width:70%"/>' +
-  '<input class="inputNumber" id="num5" min="-150" max="150" type="number" value="0" style="width:30%"/>' +
-  '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetZ" type="range" min="-150" max="150" step="10" style="width:70%"/>' +
-  '<input class="inputNumber" id="num6" min="-150" max="150" type="number" value="0" style="width:30%"/>' +
+    '<div>'+
+      '<label> number of cluster</label>' +
+      '<input id="slidercl_params1" style="width:70%;display:inline" type="range" min="1" max="100"" step="1" value="10" /> ' +
+      '<label id="cl_params1" for="slidercl_params1">10</label>' +  getSpinner("stopkmeans","stopKmeans()")+
+    '</div>'+
+    '<label id="nbBeads">0 beads</label>' +
+    '<div id="query_search">' +
+      '<label id="heading"></label>' +
+    '</div> ' +
+    '<div class="hidden" id="surface">' +
+      '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpX" type="range" min="-100" max="100" step="1" style="width:70%" />' +
+      '<input class="inputNumber" id="num1" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
+      '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpY" type="range" min="-100" max="100" step="1" style="width:70%" />' +
+      '<input class="inputNumber" id="num2" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
+      '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpZ" type="range" min="-100" max="100" step="1" style="width:70%"/>' +
+      '<input class="inputNumber" id="num3" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
+      '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetX" type="range" min="-150" max="150" step="10" style="width:70%" />' +
+      '<input class="inputNumber" id="num4" min="-150" max="150" type="number" value="0" style="width:30%"/>' +
+      '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetY" type="range" min="-150" max="150" step="10" style="width:70%"/>' +
+      '<input class="inputNumber" id="num5" min="-150" max="150" type="number" value="0" style="width:30%"/>' +
+      '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetZ" type="range" min="-150" max="150" step="10" style="width:70%"/>' +
+      '<input class="inputNumber" id="num6" min="-150" max="150" type="number" value="0" style="width:30%"/>' +
+      '</div>' +
+      '<button onclick="NGL_applyPcp()">Apply To Ingredient</button>' +
+    '</div>' +
+    '<label id="pdb_title">pdb TITLE</label>' +
   '</div>' +
-  '<button onclick="NGL_applyPcp()">Apply To Ingredient</button>' +
-  '</div>' +
-  ' <label id="pdb_title">pdb TITLE</label>' +
-   '</div>' +
-   '<button class="accordion">object properties</button>'+
-   '<div class="accordion_panel" id="objectOptions">'+
+  '<button class="accordion">object properties</button>'+
+  '<div class="accordion_panel" id="objectOptions">'+
    //either compartment or ingredient
-   '</div>' +
   '</div>' +
-  '<div class="NGL" id="NGL"><div id="viewport" style="width:100%; height:100%;"></div></div>'+
-  '</div>' +
-  '</div>'
+'</div>'
+
+var ngl_viewport='' +
+'<div class="NGL" id="NGL">'+
+  '<div id="viewport" style="width:100%; height:100%;">'+
+  '</div>'+
+'</div>';
+
+var ngloptions = '' +
+  '<div class="NGLpan">'+
+      ngl_options+
+      getSplitter()+
+      ngl_viewport+
+  '</div>';
 
 function getSpinner(spinner_id,callback_close)
 {
@@ -501,9 +517,8 @@ myLayout.on('stateChanged', function() {
     state = JSON.stringify(config);
   }
   localStorage.setItem('savedState', state);
-  var jdata = serializedRecipe(graph.nodes, graph.links);
-  //var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links); //Links?
-  localStorage.setItem('savedRecipe', JSON.stringify(jdata));
+  //var jdata = serializedRecipe(graph.nodes, graph.links);
+  //localStorage.setItem('savedRecipe', JSON.stringify(jdata));
 });
 
 function saveCurrentState() {
@@ -575,6 +590,11 @@ nglComponent.prototype._Setup = function() {
   this._container.on('resize', this._Resize, this);
   this._Resize();
   all_intialized[1] = true;
+  //setup the splitter ?
+  $(".NGLOptions").resizable({
+    handleSelector: ".splitter",
+    resizeHeight: false
+  });
 }
 
 nglComponent.prototype._Resize = function() {

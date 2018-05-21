@@ -79,6 +79,9 @@ var available_color_schem = [
   "volume"
 ];
 
+
+var ngl_styles = ["cartoon","spacefill","licorice","surface"];
+
 var geom_purl = cellpack_repo+"geometries/"
 
 function NGL_GetPDBURL(aname) {
