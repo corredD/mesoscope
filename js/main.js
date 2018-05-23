@@ -1717,6 +1717,7 @@ function getcomphtml(anode) {
 		  htmlStr+='<input  id="comp_slider_num" min="1" max="10000" type="number" value="'+cradius+'" style="width:30%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/></div>';
 	}
 	else if (comptype === "mb") {
+		//how many mb do we have so far
 		htmlStr+=' <input id="comp_slider" style="width:80%" height:"40px" type="range" min="1" max="10000"" step="1" value="500" /> ';
 		htmlStr+=' <label id="comp_slider_label" for="comp_slider" style="width:20%">10</label>';
 	}
@@ -1811,7 +1812,11 @@ function UpdateCompartmentRep(anode){
 			anode.data.geom = NGL_compartmentSphere(name,radius);
 	}
 	else if (comptype === "mb") {
-
+			//kind of beads-> positions,radii
+			//draw the spheres and the metabals
+			stage.removeAllComponents();
+			NGL_MetaBalls();
+			//stage.autoView(100);
 	}
 	else if (comptype === "raw") {
 		stage.removeAllComponents();

@@ -98,49 +98,21 @@ var ngl_options= ''+
     '<label id="ngl_status"></label>' +
     getSelect("rep_type", "options_elems", "Representation",
                             "NGL_ChangeRepresentation(this)", ngl_styles)+
-    '<div>'+
-      '<label for="ass_type">Assambly</label>' +
-      '<select id="ass_type" name="ass_type" style="width:55%" onchange="NGL_ChangeBiologicalAssambly(this)" >' +
-        '  <option value="Assambly"> Assambly: </option>' +
-        '  <option value="AU" selected> AU </option>' +
-      '</select>'+
-    '</div>' +
-    '<div>'+
-      '<label for="mod_type">Model</label>' +
-      '<select id="mod_type" name="mod_type" style="width:55%" onchange="NGL_ChangeModel(this)" >' +
-        '<option value="showmodel" selected> Show model: </option>' +
-      '</select>'+
-    '</div>' +
-    '<div>'+
-      '<label for="color_type">Color</label>' +
-      '<select id="color_type" name="color_type" style="width:55%" onchange="NGL_ChangeColorScheme(this)" >' +
-        '<option value="Colorby"> Color by: </option>' +
-      '</select>'+
-    '</div>'+
-    '<div>'+
-      '<label for="label_elem">Label</label>' +
-      '<select id="label_elem" name="label_elem" style="width:55%" onchange="NGL_Changelabel(this)" >' +
-      '   <option value="showlabel" selected> Show labels for: </option>' +
-      '		<option value="None"> None </option>' +
-      '		<option value="Chain" > Chain </option>' +
-      '</select>'+
-    '</div>'+
+    getSelect("ass_type", "options_elems", "Assambly",
+                            "NGL_ChangeBiologicalAssambly(this)", ["AU"])+
+    getSelect("mod_type", "options_elems", "Model",
+                            "NGL_ChangeModel(this)", ["0"])+
+    getSelect("color_type", "options_elems", "Color",
+                            "NGL_ChangeColorScheme(this)", ngl_available_color_schem)+
+    getSelect("label_elem", "options_elems", "Label",
+                            "NGL_Changelabel(this)", ["None","Chain"])+
     '<div>'+
       '<input type="checkbox"  id="showgeom" onclick="NGL_showGeomNode(this)" checked>' +
       '<label for="showgeom"> Show Geometry used </label> '+
       '<button onclick="buildCMS()">Rebuild Geometry</button>'+getSpinner("stopbuildgeom","stopGeom()")+
     '</div>' +
-    '<div>'+
-      '<label for="beads_elem">Show Beads</label>' +
-      '<select id="beads_elem" name="beads_elem" style="width:55%" onchange="NGL_showBeadsLevel(this)" >' +
-      '  <option value="showbeads" selected> Show beads for lvl </option>' +
-      '  <option value="All" > All </option>' +
-      '  <option value="0" > 0 </option>' +
-      '  <option value="1" > 1 </option>' +
-      '  <option value="2" > 2 </option>' +
-      '  <option value="None" > None </option>' +
-      '</select>'+
-    '</div>' +
+    getSelect("beads_elem", "options_elems", "Show Beads",
+                            "NGL_showBeadsLevel(this)", ["All","0","1","2","None"])+
   //' <div class="clusterBtn">' +
   //' <select id="cluster_elem" name="cluster_elem" onchange="NGL_changeClusterMethod(this)" style="width:100%;height:40px">' +
   //'  <option value="Kmeans" selected>Kmeans </option>' +

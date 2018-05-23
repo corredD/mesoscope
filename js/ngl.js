@@ -46,6 +46,8 @@ var ngl_load_params = {
 var ngl_show_beads;
 var ngl_show_beads_level_select;
 
+var ngl_marching_cube;
+
 var ngl_current_structure;
 var ngl_current_node;
 var ngl_current_item_id;
@@ -54,7 +56,7 @@ var pcontainer = document.getElementById("NGL") || document.getElementById("NGLp
 
 var viewport = document.getElementById("viewport");
 var ngl_grid_heading = document.getElementById("heading");
-var available_color_schem = [
+var ngl_available_color_schem = [
   "atomindex",
   "bfactor",
   "chainid",
@@ -130,6 +132,75 @@ function NGL_applyPcp() {
     anode_selected.data.offset = offset;
     console.log("update anode", anode_selected);
   }
+}
+
+//picking spheres and moving them ?>
+//stage.signals.clicked.add(function (pickingProxy) {...});
+//type,sphere,mesh,component
+//then bind mouse to setPosition?
+
+
+function updateCubes(object, time, numblobs) {
+
+  object.reset();
+
+  // fill the field with some metaballs
+  var i, ballx, bally, ballz, subtract, strength;
+
+  subtract = 12;
+  strength = 1.2 / ((Math.sqrt(numblobs) - 1) / 4 + 1);
+
+  for (i = 0; i < numblobs; i++) {
+
+    ballx = Math.sin(i + 1.26 * time * (1.03 + 0.5 * Math.cos(0.21 * i))) * 0.27 + 0.5;
+    bally = Math.cos(i + 1.12 * time * 0.21 * Math.sin((0.72 + 0.83 * i))) * 0.27 + 0.5;
+    ballz = Math.cos(i + 1.32 * time * 0.1 * Math.sin((0.92 + 0.53 * i))) * 0.27 + 0.5;
+
+    object.addBall(ballx, bally, ballz, strength, subtract);
+
+  }
+
+  object.addBall(0.5, 0.5, 0.5, 1.2, 12);
+  object.addBall(0.5, 0.765, 0.5, 1.8, 12);
+  return object;
+};
+
+function NGL_MetaBalls(){
+    var resolution = 30;
+    //NGL.THREE
+    ngl_marching_cube = new NGL.MarchingCubes(resolution, null, true, false);
+    //add the metaballs
+    ngl_marching_cube = updateCubes(ngl_marching_cube, 0, 10);
+    //generate the mesh
+    var geo = ngl_marching_cube.generateGeometry();
+    console.log(geo);
+    console.log(geo.vertices.length + ', ' + geo.faces.length);
+    //mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({
+    //  color: 0xff1234,
+    //  wireframe: false
+    //}));
+    //mesh.scale.set(100, 100, 100);
+    //console.log(scene.children.length);
+    //scene.add(mesh);
+    var comp = stage.getComponentsByName("metab_surface");
+    if (comp.list) {
+      stage.removeComponent(comp.list[0]);
+    }
+    var shape = new NGL.Shape("metab_surface");
+    var col = Array(geo.vertices.length).fill(1);
+    shape.addMesh( //position, color, index, normal
+      geo.vertices, // a plane
+      col, // all green
+      geo.faces//,
+      //mesh.normals
+    );
+
+    var shapeComp = stage.addComponentFromObject(shape);
+    shapeComp.setScale(100);//this is the scale,
+    var r = shapeComp.addRepresentation("metab_surface", {
+      opacity: 0.5,
+      side: "double"
+    });
 }
 
 function NGL_buildMB() {
@@ -223,11 +294,13 @@ function NGL_Setup() {
   grid_viewport = document.getElementById("viewport"); //createElement( "div" );
 
   nLod = 3;
+  /*
   color_elem.options.length = 0;
   color_elem.options[color_elem.options.length] = new Option("Color by:", "Color by:");
   for (var i = 0; i < available_color_schem.length; i++) {
     color_elem.options[color_elem.options.length] = new Option(available_color_schem[i], available_color_schem[i]);
   }
+  */
   //default color by atomindex
   $('#color_type').val("atomindex");
 
