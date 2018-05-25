@@ -13,7 +13,7 @@ var heading = document.getElementById("heading");
 var grid_viewport = document.getElementById("viewport"); //createElement( "div" );
 var pdb_id_elem;
 var ngl_current_pickingProxy;
-
+var nlg_preview_isosurface = true;
 var pcp_elem = [];
 var offset_elem = [];
 
@@ -223,12 +223,19 @@ function NGL_updateMetaBalls(anode) {
 
 function NGL_updateMetaBallsGeom(anode)
 {
-  if (!ngl_marching_cube) ngl_marching_cube = new NGL.MarchingCubes(30, null, true, false);
-  NGL_updateMetaBalls(anode);
+  if (!anode.data.nodetype === "compartment") return;
+  if (!("pos" in node_selected.data)||(node_selected.data.pos === null)||(node_selected.data.pos.length===0)) {
+    anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
+    anode.data.radii=[{"radii":[500.0]}];
+  }
   NGL_multiSpheresComp(anode.data.pos[0].coords,anode.data.radii[0].radii);//box around ?
-  var geo = ngl_marching_cube.generateGeometry();
-  console.log(geo);
-  NGL_MetaBallsGeom(geo);
+  if (nlg_preview_isosurface){
+    if (!ngl_marching_cube) ngl_marching_cube = new NGL.MarchingCubes(30, null, true, false);
+    NGL_updateMetaBalls(anode);
+    var geo = ngl_marching_cube.generateGeometry();
+    console.log(geo);
+    NGL_MetaBallsGeom(geo);
+  }
 }
 
 function NGL_MetaBallsGeom(geo){
@@ -253,6 +260,26 @@ function NGL_MetaBallsGeom(geo){
     side: "double",
     //wireframe: true
   });
+}
+
+function NGL_ToggleMetaGeom(e)
+{
+  var comp = stage.getComponentsByName("metab_surface");
+  if (comp.list.length !== 0){
+    if (comp.list[0].reprList.length !== 0) {
+      comp.list[0].reprList[0].setVisibility(e.checked);
+    }
+  }
+  else
+  {
+    if (e.checked) {
+      NGL_updateMetaBalls(anode);
+      var geo = ngl_marching_cube.generateGeometry();
+      console.log(geo);
+      NGL_MetaBallsGeom(geo);
+    }
+  }
+  nlg_preview_isosurface = e.checked;
 }
 
 function NGL_MetaBalls(){
@@ -466,6 +493,7 @@ function NGL_Setup() {
     //update
     //console.log(ngl_current_pickingProxy.component.name);
     //console.log(ngl_current_pickingProxy.position);
+    if (!ngl_current_pickingProxy) return;
     var mbi = parseInt(ngl_current_pickingProxy.sphere.name);
     var pi = mbi*3;
     var cpos = new NGL.Vector3();
@@ -474,31 +502,34 @@ function NGL_Setup() {
     node_selected.data.pos[0].coords[pi] = cpos.x;
     node_selected.data.pos[0].coords[pi+1] = cpos.y;
     node_selected.data.pos[0].coords[pi+2] = cpos.z;
-    NGL_updateMetaBalls(node_selected);
-    var geo = ngl_marching_cube.generateGeometry();
-    NGL_MetaBallsGeom(geo);
-    /*
-    if (!this.component) return
-     this._setPanVector(x, y)
-     this._transformPanVector()
-
-     this.component.position.add(tmpPanVector)
-    this.component.updateMatrix()
-    */
+    if (nlg_preview_isosurface) {
+      NGL_updateMetaBalls(node_selected);
+      var geo = ngl_marching_cube.generateGeometry();
+      //how to update the shape mesh instead of recreating it
+      NGL_MetaBallsGeom(geo);
+    }
   });
+
+  //if metaballs only ?
   stage.signals.clicked.add(function (pickingProxy){
     console.log("pickingProxy");
     console.log(pickingProxy);
     ngl_current_pickingProxy = pickingProxy;
   });
 
+  stage.signals.hovered.add(function (pickingProxy){
+    console.log("pickingProxy");
+    console.log(pickingProxy);
+    ngl_current_pickingProxy = pickingProxy;
+  });
+
   //stage.mouseControls.remove( "drag-ctrl-right" );
-  //stage.mouseControls.remove( "drag-ctrl-left" );
+  stage.mouseControls.remove( "drag-ctrl-left" );
   //stage.mouseControls.add("drag-ctrl-right", NGL_panShapeDrag);
   //stage.mouseControls.add("drag-ctrl-left", NGL_panShapeDrag);
 
   //stage.mouseControls.add("drag-ctrl-right", NGL.MouseActions.panComponentDrag);
-  //stage.mouseControls.add("drag-ctrl-left", NGL.MouseActions.panComponentDrag);
+  stage.mouseControls.add("drag-ctrl-left", NGL.MouseActions.panComponentDrag);
   // panComponentDrag
   // remove actions triggered by a scroll event, including
   //   those requiring a key pressed or mouse button used

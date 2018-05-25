@@ -1749,6 +1749,8 @@ function getcomphtml(anode) {
 		htmlStr+='<input  id="comp_slider_num" min="1" max="10000" type="number" value="'+cradius+'" style="width:30%" oninput="updateLabel(this)" onchange="resizeMetaBall(this)"/></div>';
 		htmlStr+= '<button onclick="RemoveMetaball()">Remove Selected MB</button>';
 		htmlStr+= '<button onclick="AddMetaball()">Add MB</button>';
+		htmlStr+= '<div><input type="checkbox"  id="meta_preview" onclick="NGL_ToggleMetaGeom(this)" checked>';
+		htmlStr+= '<label for="meta_preview"> Preview IsoSurface </label></div>';
 		//button Remove
 		//button Add
 	}
@@ -1841,12 +1843,15 @@ function AddMetaball(){
 				mbe.options[mbe.options.length] = new Option(i, i);
 			}
 			stage.removeAllComponents();
-			NGL_updateMetaBallsGeom(node_selected);
+			NGL_updateMetaBallsGeom(node_selected);//NGL_MetaBalls();
+			NGL_ShowOrigin();
+			//stage.autoView();
 	}
 }
 
 function RemoveMetaball(){
 	//remove element and  update geom
+
 }
 
 function updateLabelThickness(e)
@@ -1899,7 +1904,8 @@ function UpdateCompartmentRep(anode){
 			//draw the spheres and the metabals
 			stage.removeAllComponents();
 			NGL_updateMetaBallsGeom(anode);//NGL_MetaBalls();
-			//stage.autoView(100);
+			NGL_ShowOrigin();
+			stage.autoView();
 	}
 	else if (comptype === "raw") {
 		stage.removeAllComponents();
