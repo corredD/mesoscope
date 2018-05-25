@@ -150,7 +150,11 @@ function oneCompartment(scomp,node)
     scomp["radius"] = ("radius" in geom)? geom.radius : 500.0;
   }
   else if (gtype === "mb") {
-    scomp["mb"] = geom;
+    scomp["mb"] = {"positions":[],"radii":[]};
+    if (node.data.pos && node.data.radii) {
+      scomp["mb"].positions = node.data.pos[0].coords;
+      scomp["mb"].radii = node.data.radii[0].radii;
+    }
   }
   else if (gtype === "None") {
   }
@@ -218,7 +222,7 @@ function serializedRecipe(some_data,some_links){
 	      		//surface = new sCompartment("surface")
 	      		if (!(cname+"_surface" in list_comp)){
 	      				var acomp = new sCompartment("surface", sCompartment_static_id);
-    						sCompartment_static_id+=1;
+    						//sCompartment_static_id+=1;
 								list_comp[cname+"_surface"] = acomp;
 								list_comp[cname].addCompartment(acomp);
 	      			}
@@ -235,7 +239,7 @@ function serializedRecipe(some_data,some_links){
 	      	else {
 	      		if (!(cname+"_interior" in list_comp)){
 	      				var acomp = new sCompartment("interior", sCompartment_static_id);
-    						sCompartment_static_id+=1;
+    						//sCompartment_static_id+=1;
 								list_comp[cname+"_interior"] = acomp;
 								list_comp[cname].addCompartment(acomp);
 	      			}
