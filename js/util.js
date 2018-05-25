@@ -2,7 +2,42 @@
    return Math.random();
  }
 
- function Util_ClientDetection(window) {
+function Util_ComputeBounds(points,radius)
+{
+  var bbMin = new NGL.Vector3(Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY);
+  var bbMax = new NGL.Vector3(Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY);
+  var rMax = Number.NEGATIVE_INFINITY;
+  var p=0;
+  for (var i=0;i<radius.length;i++)// (var point in points)
+  {
+      var p =new NGL.Vector3(points[p],points[p+1],points[p+2]);
+      if (isNaN(p.x) || isNaN(p.y) || isNaN(p.z))
+      {
+        p = new NGL.Vector3(0,0,0);
+      }
+      bbMin.min(p);
+      bbMax.max(p);
+      rMax = Math.max(rMax,radius[i]);
+      p+=3;
+  }
+  if (points.length === 1) {
+    p=0;
+    bbMin = new NGL.Vector3(points[p],points[p+1],points[p+2]);
+    bbMax = new NGL.Vector3(points[p],points[p+1],points[p+2]);
+  }
+  bbMin.sub(new NGL.Vector3(rMax, rMax, rMax));
+  bbMax.add(new NGL.Vector3(rMax, rMax, rMax));
+  var bbSize = new NGL.Vector3();
+  bbSize.subVectors(bbMax,bbMin);
+  var bbCenter = new NGL.Vector3();
+  var bbSizeHalf = new NGL.Vector3(0,0,0);
+  bbSizeHalf.addScaledVector(bbSize,0.5);
+  bbCenter.addVectors(bbMin, bbSizeHalf);
+  var maxsize = Math.max(Math.max(bbSize.x,bbSize.y),bbSize.z);
+  return {"center":bbCenter,"size":bbSize,"min":bbMin,"max":bbMax,"maxsize":maxsize};
+}
+
+function Util_ClientDetection(window) {
    /**
     * JavaScript Client Detection
     * (C) viazenetti GmbH (Christian Ludwig)
@@ -264,7 +299,7 @@
    };
  }
 
- function Util_selectFolder(e) {
+function Util_selectFolder(e) {
    console.log(e);
    var theFiles = e.target.files;
    var relativePath = theFiles[0].webkitRelativePath;

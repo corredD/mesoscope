@@ -21,14 +21,16 @@ function getSplitter()
 }
 
 //exampel : rep_type,option_elem,representation,NGL_ChangeRepresentation(this),
-function getSelect(select_id, div_class, label, onchange_cb, list_options) {
+//specify selected default option
+function getSelect(select_id, div_class, label, onchange_cb, list_options, default_options) {
   var astr=''+
   '<div class="'+div_class+'">'+
     '<label for="'+select_id+'">'+label+'</label>' +
     '<select id="'+select_id+'" name="'+select_id+'" onchange="'+onchange_cb+'"  >';
   for (var i=0;i<list_options.length;i++)
   {
-    astr+=' <option value="'+list_options[i]+'"> '+list_options[i]+'</option>';
+    var selected = (default_options === list_options[i])? ' selected':'';
+    astr+=' <option value="'+list_options[i]+'"'+selected+'> '+list_options[i]+'</option>';
   }
   astr+='</select></div>';
   return astr;
@@ -38,37 +40,12 @@ function getSelect(select_id, div_class, label, onchange_cb, list_options) {
 var canvasOption = '' +
   '<div class="canvas_head" >' +
     '<div>'+
-      '<select id="canvas_label" name="canvas_label" onchange="ChangeCanvasLabel(this)" >' +
-        '<option value="Select">Label for:</option>' +
-        '	<option value="None" > None </option>' +
-        '	<option value="label" > label </option>' +
-        '<option value="pdb" > pdb </option>' +
-        '<option value="uniprot" > uniprot </option>' +
-        '<option value="name" selected> name </option>' +
-      '</select>' +
-      '<select id="canvas_color" name="canvas_color">' +
-        '	<option value="Select">Color by:</option>' +
-        '	<option value="pdb" selected> missing PDB </option>' +
-        '	<option value="pcpalAxis" > missing PcpalAxis </option>' +
-        '	<option value="offset" > missing Offset </option>' +
-        '	<option value="count_molarity" > missing Copy number or molarity </option>' +
-        '	<option value="Beads" > missing SphereTree </option>' +
-        '	<option value="geom"> missing Geometry </option>' +
-        '	<option value="confidence" > confidence </option>' +
-        '	<option value="color" > color </option>' +
-        '	<option value="viewed"> viewed </option>' +
-        '	<option value="size"> size </option>' +
-        '	<option value="count" > count </option>' +
-        '	<option value="molarity" > molarity </option>' +
-        '	 <option value="mw" > molecularweight </option>' +
-      '</select>		' +
-      '<select id="canvas_map_r" name="canvas_map_r" onchange="mapRadiusToProperty(this)" >' +
-        '	<option value="Select">Map radius to:</option>' +
-        '	<option value="size" selected> size </option>' +
-        '	<option value="count" > count </option>' +
-        '	<option value="molarity" > molarity </option>' +
-        '	<option value="mw" > molecularweight </option>' +
-      '</select>'+
+      getSelect("canvas_label", "options_elems", "Node label",
+                            "ChangeCanvasLabel(this)", canvas_label_options,"name")+//canvas_label_options)+
+      getSelect("canvas_color", "options_elems", "Node color",
+                            "", canvas_color_options,"pdb")+
+      getSelect("canvas_map_r", "options_elems", "Node size",
+                            "mapRadiusToProperty(this)", Object.keys(property_mapping),"size")+
     '</div>' +
     '<button id="addingr" class="hidden" onclick="addIngredient()">Add ingredient</button>' +
     '<button id="addcomp" class="hidden" onclick="addCompartment()">Add compartment</button>' +
@@ -97,22 +74,22 @@ var ngl_options= ''+
     '</div>'+
     '<label id="ngl_status"></label>' +
     getSelect("rep_type", "options_elems", "Representation",
-                            "NGL_ChangeRepresentation(this)", ngl_styles)+
+                            "NGL_ChangeRepresentation(this)", ngl_styles,"cartoon")+
     getSelect("ass_type", "options_elems", "Assambly",
-                            "NGL_ChangeBiologicalAssambly(this)", ["AU"])+
+                            "NGL_ChangeBiologicalAssambly(this)", ["AU"],"AU")+
     getSelect("mod_type", "options_elems", "Model",
-                            "NGL_ChangeModel(this)", ["0"])+
+                            "NGL_ChangeModel(this)", ["0"],"0")+
     getSelect("color_type", "options_elems", "Color",
-                            "NGL_ChangeColorScheme(this)", ngl_available_color_schem)+
+                            "NGL_ChangeColorScheme(this)", ngl_available_color_schem,"atomindex")+
     getSelect("label_elem", "options_elems", "Label",
-                            "NGL_Changelabel(this)", ["None","Chain"])+
+                            "NGL_Changelabel(this)", ["None","Chain"],"None")+
     '<div>'+
       '<input type="checkbox"  id="showgeom" onclick="NGL_showGeomNode(this)" checked>' +
       '<label for="showgeom"> Show Geometry used </label> '+
       '<button onclick="buildCMS()">Rebuild Geometry</button>'+getSpinner("stopbuildgeom","stopGeom()")+
     '</div>' +
     getSelect("beads_elem", "options_elems", "Show Beads",
-                            "NGL_showBeadsLevel(this)", ["All","0","1","2","None"])+
+                            "NGL_showBeadsLevel(this)", ["All","0","1","2","None"],"None")+
   //' <div class="clusterBtn">' +
   //' <select id="cluster_elem" name="cluster_elem" onchange="NGL_changeClusterMethod(this)" style="width:100%;height:40px">' +
   //'  <option value="Kmeans" selected>Kmeans </option>' +

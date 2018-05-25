@@ -8,7 +8,12 @@ var comp_column = false;
 var comp_column_names =[];//index,name
 var csv_mapping = false; //if true, the column index is the column name
 var canvas_label = document.getElementById("canvas_label");
+var canvas_label_options = ["name","None","pdb","uniprot","label"];
+
 var canvas_color = document.getElementById("canvas_color");
+var canvas_color_options = ["pdb","pcpalAxis","offset","count_molarity","Beads",
+														"geom","confidence","color","viewed","size","count",
+														"molarity","mw"];
 var current_scale = 1;
 //extracellular
 var localisation_tag = ["cytosol","periplasm","inner_membrane","outer_membrane","membrane","cytoplasm","lumen"];
@@ -65,6 +70,11 @@ var temp_link;
 var header_index;
 var start_index;
 var property_mapping={};
+property_mapping.size = {"min":999999,"max":0};
+property_mapping.molecularweight = {"min":999999,"max":0};
+property_mapping.molarity = {"min":999999,"max":0};
+property_mapping.count = {"min":999999,"max":0};
+property_mapping.confidence = {"min":999999,"max":0};
 
 var comp_highligh;
 var comp_highligh_surface;
@@ -1718,8 +1728,29 @@ function getcomphtml(anode) {
 	}
 	else if (comptype === "mb") {
 		//how many mb do we have so far
-		htmlStr+=' <input id="comp_slider" style="width:80%" height:"40px" type="range" min="1" max="10000"" step="1" value="500" /> ';
-		htmlStr+=' <label id="comp_slider_label" for="comp_slider" style="width:20%">10</label>';
+		//already has some beads?
+		var mb_options=["None"];
+		if ("pos" in anode.data && anode.data.pos.length !== 0 ) {
+			//for each metaball add a radius slider, or use a select ?
+			//and change the radius of the selected bead
+			//d.data.radii[lod].radii
+			//d.data.pos[lod].coords
+			var n_mb = d.data.pos[0].coords.length/3;
+			mb_options = d3.range(n_mb);
+		}
+		else {
+			d.data.pos = [{"coords":[0.0,0.0,0.0]}];
+			d.data.radii=[{"radii":[500]}];
+			mb_options = [0];
+		}
+		htmlStr += getSelect("metaball_elem", "options_elems", "Choose MB",
+													"SetActiveMB(this)", mb_options,0);
+		htmlStr+='<div style="display:flex;"><label>Radius(A):</label><input id="comp_slider" type="range" min="1" max="10000" step="1" value="'+cradius+'"style="width:70%" oninput="updateLabel(this)" onchange="resizeMetaBall(this)"/>';
+		htmlStr+='<input  id="comp_slider_num" min="1" max="10000" type="number" value="'+cradius+'" style="width:30%" oninput="updateLabel(this)" onchange="resizeMetaBall(this)"/></div>';
+		htmlStr+= '<button onclick="RemoveMetaball()">Remove Selected MB</button>';
+		htmlStr+= '<button onclick="AddMetaball()">Add MB</button>';
+		//button Remove
+		//button Add
 	}
 	//add thickness dataset
 	if (comptype !== "None") {
@@ -1764,6 +1795,58 @@ function resizeSphere(e){
 		node_selected.data.geom = NGL_compartmentSphere(name,radius);
 		document.getElementById('comp_slider_num').value = e.value;
 		//document.getElementById('comp_slider_label').innerHTML = radius+"A";
+}
+
+function SetActiveMB(e)
+{
+	var mbi = e.value;
+	var radius = node_selected.data.radii[0].radii[mbi];
+	document.getElementById('comp_slider_num').value = radius;
+	document.getElementById('comp_slider').value = radius;
+}
+
+function resizeMetaBall(e){
+		//how to now the current spheres_array
+		//or update the current NGL_compartmentSphere
+		var name = (node_selected.data.geom)?node_selected.data.geom.name:node_selected.data.name+"_geom";
+		var radius = e.value;
+		var mbe = document.getElementById('metaball_elem');
+		var mbi = mbe.selectedOptions[0].value;
+		node_selected.data.radii[0].radii[mbi] = radius;
+		//update the metaballs
+		document.getElementById('comp_slider_num').value = e.value;
+		//document.getElementById('comp_slider_label').innerHTML = radius+"A";
+		stage.removeAllComponents();
+		NGL_updateMetaBallsGeom(node_selected);
+}
+
+function AddMetaball(){
+	//use current radius and metaball to current node
+	if (node_selected) {
+			if (!("pos" in node_selected.data)||(node_selected.data.pos === null)||(node_selected.data.pos.length===0)) {
+				node_selected.data.pos = [{"coords":[]}];
+				node_selected.data.radii=[{"radii":[]}];
+			}
+			node_selected.data.pos[0].coords.push(0.0);
+			node_selected.data.pos[0].coords.push(0.0);
+			node_selected.data.pos[0].coords.push(0.0);
+			var radius = document.getElementById('comp_slider').value;
+			node_selected.data.radii[0].radii.push(radius);
+			//update the select
+			var mbe = document.getElementById('metaball_elem');
+			mbe.options.length = 0;
+			var n_mb = node_selected.data.pos[0].coords.length/3;
+			for (let i = 0; i < n_mb; ++i) {
+				//addOption(options, i, 'Model ' + (i + 1))
+				mbe.options[mbe.options.length] = new Option(i, i);
+			}
+			stage.removeAllComponents();
+			NGL_updateMetaBallsGeom(node_selected);
+	}
+}
+
+function RemoveMetaball(){
+	//remove element and  update geom
 }
 
 function updateLabelThickness(e)
@@ -1815,7 +1898,7 @@ function UpdateCompartmentRep(anode){
 			//kind of beads-> positions,radii
 			//draw the spheres and the metabals
 			stage.removeAllComponents();
-			NGL_MetaBalls();
+			NGL_updateMetaBallsGeom(anode);//NGL_MetaBalls();
 			//stage.autoView(100);
 	}
 	else if (comptype === "raw") {

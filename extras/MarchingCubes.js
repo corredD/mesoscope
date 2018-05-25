@@ -21,7 +21,8 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
     this.init = function(resolution) {
 
         this.resolution = resolution;
-
+        this.grid_scale = 1.0;
+        this.data_bound = {};
         // parameters
 
         this.isolation = 80.0;
@@ -460,7 +461,7 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
 
     // Adds a reciprocal ball (nice and blobby) that, to be fast, fades to zero after
     // a fixed distance, determined by strength and subtract.
-
+    // need to be in range 0-1
     this.addBall = function(ballx, bally, ballz, strength, subtract) {
 
         // Let's solve the equation to find the radius:
@@ -811,7 +812,7 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
         this.render(geo_callback);
 
         // console.log( "generated " + geo.faces.length + " triangles" );
-
+        //scale back or translate ?
         return geo;
 
     };

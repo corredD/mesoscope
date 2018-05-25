@@ -16,7 +16,7 @@ var sortcol = "name";
 var current_grid = 0;
 var current_selection;
 
-var column_elem;
+var grid_column_elem;
 
 var uni_picked;
 var pdb_picked;
@@ -35,7 +35,7 @@ var countryList = [
 ];
 
 function setupSlickGrid() {
-  column_elem = document.getElementById("column_type");
+  grid_column_elem = document.getElementById("column_type");
 
 }
 
@@ -1148,11 +1148,11 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
     console.log(uniprot_detailView);
   }
 
-  //column_elem.options.length = 0;
+  //grid_column_elem.options.length = 0;
   //for (var i = 0; i < some_column.length;i++) {
-  // 	  column_elem.options[column_elem.options.length] = new Option(some_column[i].name, some_column[i].name);
+  // 	  grid_column_elem.options[grid_column_elem.options.length] = new Option(some_column[i].name, some_column[i].name);
   // }
-  //column_elem.options[column_elem.options.length] = new Option("none","none");
+  //grid_column_elem.options[grid_column_elem.options.length] = new Option("none","none");
   var groupOption = {}; //{ checkboxSelect: true, checkboxSelectPlugin: checkboxSelector };
   if (ind === 3) //pdbid.
   {
@@ -1791,12 +1791,12 @@ function changeCurrentGrid(gid) {
   if (!gridArray || gridArray.length < 2) return;
   var columns = gridArray[gid].getColumns();
   console.log(columns);
-  if (!column_elem)
-    column_elem = document.getElementById("column_type");
-  column_elem.options.length = 0;
-  column_elem.options[0] = new Option("none", "none");
+  if (!grid_column_elem)
+    grid_column_elem = document.getElementById("column_type");
+  grid_column_elem.options.length = 0;
+  grid_column_elem.options[0] = new Option("none", "none");
   for (var i = 0; i < columns.length; i++) {
-    if (columns[i].name && columns[i].name !== "") column_elem.options[column_elem.options.length] = new Option(columns[i].name, columns[i].name);
+    if (columns[i].name && columns[i].name !== "") grid_column_elem.options[grid_column_elem.options.length] = new Option(columns[i].name, columns[i].name);
   }
   //force chamging the tab.
   //problem the css compatibility with pfv

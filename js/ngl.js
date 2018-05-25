@@ -12,6 +12,7 @@ var beads_elem = document.getElementById("beads_elem");
 var heading = document.getElementById("heading");
 var grid_viewport = document.getElementById("viewport"); //createElement( "div" );
 var pdb_id_elem;
+var ngl_current_pickingProxy;
 
 var pcp_elem = [];
 var offset_elem = [];
@@ -165,6 +166,94 @@ function updateCubes(object, time, numblobs) {
   return object;
 };
 
+function NGL_updateMetaBalls(anode) {
+  if (!anode) anode = node_selected;
+  if (!anode.data.nodetype === "compartment") return;
+  if (!ngl_marching_cube) ngl_marching_cube = new NGL.MarchingCubes(30, null, true, false);
+  ngl_marching_cube.reset();
+  if (!("pos" in node_selected.data)||(node_selected.data.pos === null)||(node_selected.data.pos.length===0)) {
+    anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
+    anode.data.radii=[{"radii":[500.0]}];
+  }
+  console.log(anode.data);
+  //NGL_LoadSpheres(anode.data.pos, anode.data.radii);
+  var numblobs = anode.data.radii[0].radii.length;
+  subtract = 12;
+  strength = 1.2 / ((Math.sqrt(numblobs) - 1) / 4 + 1);
+  var p=0;
+  //firs scaleExtent
+  //find min-max
+  /*var points = [];
+  var radii = [];
+  console.log(typeof anode.data.pos[0].coords[p]);
+  for (var i=0;i<numblobs;i++){
+      var pos = new NGL.Vector3(anode.data.pos[0].coords[p],
+                                anode.data.pos[0].coords[p+1],
+                                anode.data.pos[0].coords[p+2]);
+      var radius = parseFloat(anode.data.radii[0].radii[i]);
+      points.push(pos);
+      radii.push(radius);
+      p+=3;
+  }
+  */
+  var bounds = Util_ComputeBounds(anode.data.pos[0].coords,anode.data.radii[0].radii);//center,size,min,max
+  console.log(bounds);
+  ngl_marching_cube.grid_scale = bounds.maxsize;
+  ngl_marching_cube.data_bound = bounds;
+  for (var i=0;i<numblobs;i++){
+      var p = new NGL.Vector3(anode.data.pos[0].coords[p],
+                                anode.data.pos[0].coords[p+1],
+                                anode.data.pos[0].coords[p+2]);
+      var apos = p.sub(bounds.min).divideScalar(bounds.maxsize);
+      var arad = anode.data.radii[0].radii[i]/bounds.maxsize;
+      //normalize
+      // strength / (radius^2) = subtract
+      // strength = subtract * radius^2
+      // radius^2 = strength / subtract
+      // radius = sqrt(strength / subtract)
+      //scale Radius
+      //scale Position
+      var subtract = 12;
+      var strength = subtract * arad * arad;
+      ngl_marching_cube.addBall(apos.x,apos.y,apos.z, 1.2, strength, subtract);//strength, subtract
+      p+=3;
+  }
+}
+
+function NGL_updateMetaBallsGeom(anode)
+{
+  if (!ngl_marching_cube) ngl_marching_cube = new NGL.MarchingCubes(30, null, true, false);
+  NGL_updateMetaBalls(anode);
+  NGL_multiSpheresComp(anode.data.pos[0].coords,anode.data.radii[0].radii);//box around ?
+  var geo = ngl_marching_cube.generateGeometry();
+  console.log(geo);
+  NGL_MetaBallsGeom(geo);
+}
+
+function NGL_MetaBallsGeom(geo){
+  var comp = stage.getComponentsByName("metab_surface");
+  if (comp.list) {
+    stage.removeComponent(comp.list[0]);
+  }
+  var shape = new NGL.Shape("metab_surface");
+  var col = Array(geo.vertices.length).fill(1);
+  shape.addMesh( //position, color, index, normal
+    geo.vertices, // a plane
+    col, // all green
+    geo.faces//,
+    //mesh.normals
+  );
+
+  var shapeComp = stage.addComponentFromObject(shape);
+  shapeComp.setScale(ngl_marching_cube.data_bound.maxsize);//this is the scale,
+  shapeComp.setPosition(ngl_marching_cube.data_bound.min);//this is the position,
+  var r = shapeComp.addRepresentation("metab_surface", {
+    opacity: 1.0,
+    side: "double",
+    //wireframe: true
+  });
+}
+
 function NGL_MetaBalls(){
     var resolution = 30;
     //NGL.THREE
@@ -233,6 +322,41 @@ function NGL_updateMBcomp() {
   acomp.setPosition([-offset[0], -offset[1], -offset[2]]);
   console.log("NGL_updateMBcomp axis ?", axis, offset);
   //change the grid ? or the data or both ?
+}
+
+function NGL_panShapeDrag (stage, deltaX, deltaY) {
+    console.log("deltaX,deltaY");
+    console.log(deltaX,deltaY);
+    console.log(ngl_current_pickingProxy);
+    console.log(ngl_current_pickingProxy.sphere.name);
+    //get the sphere pdb_picked
+    var mbi = parseInt(ngl_current_pickingProxy.sphere.name);
+    var pi = mbi*3;
+    const scaleFactor = stage.trackballControls.controls.getCanvasScaleFactor(0);
+    var tmpPanVector = new NGL.Vector3()
+    tmpPanVector.set(deltaX, deltaY, 0)
+    tmpPanVector.multiplyScalar(stage.trackballControls.panSpeed * scaleFactor)
+    /*var tmpPanMatrix = new NGL.Matrix4()
+    tmpPanMatrix.extractRotation(this.component.transform)
+    tmpPanMatrix.premultiply(this.viewer.rotationGroup.matrix)
+    tmpPanMatrix.getInverse(tmpPanMatrix)
+    tmpPanVector.applyMatrix4(tmpPanMatrix)
+    */
+    console.log("before",ngl_current_pickingProxy.sphere.position);
+    console.log(tmpPanVector);
+    var cpos = new NGL.Vector3();
+    cpos.copy(ngl_current_pickingProxy.sphere.position);
+    cpos.add(tmpPanVector);
+    console.log("after",cpos);
+    node_selected.data.pos[0].coords[pi] = cpos.x;
+    node_selected.data.pos[0].coords[pi+1] = cpos.y;
+    node_selected.data.pos[0].coords[pi+2] = cpos.z;
+    console.log("position are",mbi,node_selected.data.pos[0].coords);
+    ngl_current_pickingProxy.sphere.position = cpos;
+    //stage.removeAllComponents();
+    //NGL_updateMetaBallsGeom(node_selected);
+    //only update the cubes in metaball and the geom, not the shape ?
+    //how to move a shape-> should we use multiple component instead?
 }
 
 function NGL_Setup() {
@@ -336,6 +460,47 @@ function NGL_Setup() {
     backgroundColor: "white"
   });
   viewport.setAttribute("style", "width:100%; height:100%;");
+
+  stage.mouseObserver.signals.dragged.add(function (deltaX,deltaY){
+    //update
+    console.log(ngl_current_pickingProxy.component.name);
+    console.log(ngl_current_pickingProxy.position);
+    var mbi = parseInt(ngl_current_pickingProxy.sphere.name);
+    var pi = mbi*3;
+    var cpos = new NGL.Vector3();
+    cpos.copy(ngl_current_pickingProxy.position);
+    node_selected.data.pos[0].coords[pi] = cpos.x;
+    node_selected.data.pos[0].coords[pi+1] = cpos.y;
+    node_selected.data.pos[0].coords[pi+2] = cpos.z;
+    NGL_updateMetaBalls(node_selected);
+    var geo = ngl_marching_cube.generateGeometry();
+    NGL_MetaBallsGeom(geo);
+    /*
+    if (!this.component) return
+     this._setPanVector(x, y)
+     this._transformPanVector()
+
+     this.component.position.add(tmpPanVector)
+    this.component.updateMatrix()
+    */
+  });
+  stage.signals.clicked.add(function (pickingProxy){
+    console.log("pickingProxy");
+    console.log(pickingProxy);
+    ngl_current_pickingProxy = pickingProxy;
+  });
+
+  //stage.mouseControls.remove( "drag-ctrl-right" );
+  //stage.mouseControls.remove( "drag-ctrl-left" );
+  //stage.mouseControls.add("drag-ctrl-right", NGL_panShapeDrag);
+  //stage.mouseControls.add("drag-ctrl-left", NGL_panShapeDrag);
+
+  //stage.mouseControls.add("drag-ctrl-right", NGL.MouseActions.panComponentDrag);
+  //stage.mouseControls.add("drag-ctrl-left", NGL.MouseActions.panComponentDrag);
+  // panComponentDrag
+  // remove actions triggered by a scroll event, including
+  //   those requiring a key pressed or mouse button used
+  //stage.mouseControls.remove( "scroll-*" );
   return stage;
 }
 
@@ -1181,17 +1346,19 @@ function NGL_LoadSpheres(pos, rad) {
   console.log("load Beads");
   console.log(pos);
   console.log(rad);
-  var nLod = pos.length;
   if (!pos || pos.length === 0) return;
+  var nLod = rad.length;
+  console.log(nLod);
   for (var i = 0; i < nLod; i++) {
     var lod = i;
     if (!pos[lod].coords) continue;
     var col = Array(pos[lod].coords.length).fill(0).map(Util_makeARandomNumber);
-    var labels = Array(pos[lod].coords.length).fill("0").map(function(v, i) {
-      return "bead_" + i.toString()
+
+    var shape = new NGL.Shape("beads_" + lod, {
+      disableImpostor: true,
+      radialSegments: 10
     });
-    var shape = new NGL.Shape("beads_" + lod);
-    console.log(labels);
+    //console.log(labels);
     var sphereBuffer = new NGL.SphereBuffer({
       position: new Float32Array(pos[lod].coords),
       color: new Float32Array(col),
@@ -1202,11 +1369,11 @@ function NGL_LoadSpheres(pos, rad) {
     shape.addBuffer(sphereBuffer)
     var shapeComp = stage.addComponentFromObject(shape)
     var rep = shapeComp.addRepresentation("beads_" + lod, {
-      opacity: 0.6,
+      opacity: 1.0,
       visibility: true
     });
     console.log("rep", rep);
-    //shapeComp.autoView()
+    stage.autoView();
   }
 }
 
@@ -1745,6 +1912,38 @@ function NGL_compartmentSphere(name, radius) {
     "name": name,
     "radius": radius
   };
+}
+
+function NGL_multiSpheres(pos, radii) {
+  var shape = new NGL.Shape("multispheres", {
+    disableImpostor: true,
+    radialSegments: 10
+  });
+  var p=0;
+  for (var i=0;i<radii.length;i++) {
+    //position,color,radii,label
+    shape.addSphere([pos[p],pos[p+1],pos[p+2]], [1, 0, 0], radii[i],i.toString());
+    p+=3;
+  }
+  var shapeComp = stage.addComponentFromObject(shape);
+  shapeComp.addRepresentation("multispheres_rep"); //wireframe ?
+  //add a line to show the radius ?
+  //stage.autoView();
+}
+
+function NGL_multiSpheresComp(pos, radii) {
+  var p=0;
+  for (var i=0;i<radii.length;i++) {
+    //position,color,radii,label
+    var shape = new NGL.Shape(i.toString(), {
+      disableImpostor: true,
+      radialSegments: 10
+    });
+    shape.addSphere([pos[p],pos[p+1],pos[p+2]], [1, 0, 0], radii[i],i.toString());
+    p+=3;
+    var shapeComp = stage.addComponentFromObject(shape);
+    shapeComp.addRepresentation("multispheres_rep"+i.toString()); //wireframe ?
+  }
 }
 
 function NGL_noPdbProxy(name, radius) {
