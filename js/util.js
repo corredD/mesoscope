@@ -10,16 +10,13 @@ function Util_ComputeBounds(points,radius)
   var p=0;
   for (var i=0;i<radius.length;i++)// (var point in points)
   {
-      var p =new NGL.Vector3(points[p],points[p+1],points[p+2]);
-      if (isNaN(p.x) || isNaN(p.y) || isNaN(p.z))
-      {
-        p = new NGL.Vector3(0,0,0);
-      }
-      bbMin.min(p);
-      bbMax.max(p);
+      var ap = new NGL.Vector3(points[p],points[p+1],points[p+2]);
+      bbMin.min(ap);
+      bbMax.max(ap);
       rMax = Math.max(rMax,radius[i]);
       p+=3;
   }
+  //rMax*=2;
   if (points.length === 1) {
     p=0;
     bbMin = new NGL.Vector3(points[p],points[p+1],points[p+2]);

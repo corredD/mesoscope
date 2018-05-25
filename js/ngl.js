@@ -175,7 +175,7 @@ function NGL_updateMetaBalls(anode) {
     anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
     anode.data.radii=[{"radii":[500.0]}];
   }
-  console.log(anode.data);
+  //console.log(anode.data);
   //NGL_LoadSpheres(anode.data.pos, anode.data.radii);
   var numblobs = anode.data.radii[0].radii.length;
   subtract = 12;
@@ -197,14 +197,14 @@ function NGL_updateMetaBalls(anode) {
   }
   */
   var bounds = Util_ComputeBounds(anode.data.pos[0].coords,anode.data.radii[0].radii);//center,size,min,max
-  console.log(bounds);
+  //console.log(bounds);
   ngl_marching_cube.grid_scale = bounds.maxsize;
   ngl_marching_cube.data_bound = bounds;
   for (var i=0;i<numblobs;i++){
-      var p = new NGL.Vector3(anode.data.pos[0].coords[p],
+      var ap = new NGL.Vector3(anode.data.pos[0].coords[p],
                                 anode.data.pos[0].coords[p+1],
                                 anode.data.pos[0].coords[p+2]);
-      var apos = p.sub(bounds.min).divideScalar(bounds.maxsize);
+      var apos = ap.sub(bounds.min).divideScalar(bounds.maxsize);//.divide(bounds.size);//.divideScalar(bounds.maxsize);
       var arad = anode.data.radii[0].radii[i]/bounds.maxsize;
       //normalize
       // strength / (radius^2) = subtract
@@ -213,9 +213,10 @@ function NGL_updateMetaBalls(anode) {
       // radius = sqrt(strength / subtract)
       //scale Radius
       //scale Position
+      //change isovalue?
       var subtract = 12;
-      var strength = subtract * arad * arad;
-      ngl_marching_cube.addBall(apos.x,apos.y,apos.z, 1.2, strength, subtract);//strength, subtract
+      var strength =  subtract * arad  ;
+      ngl_marching_cube.addBall(apos.x,apos.y,apos.z, strength, subtract);//strength, subtract
       p+=3;
   }
 }
@@ -246,9 +247,9 @@ function NGL_MetaBallsGeom(geo){
 
   var shapeComp = stage.addComponentFromObject(shape);
   shapeComp.setScale(ngl_marching_cube.data_bound.maxsize);//this is the scale,
-  shapeComp.setPosition(ngl_marching_cube.data_bound.min);//this is the position,
+  shapeComp.setPosition(ngl_marching_cube.data_bound.center);//this is the position,
   var r = shapeComp.addRepresentation("metab_surface", {
-    opacity: 1.0,
+    opacity: 0.5,
     side: "double",
     //wireframe: true
   });
@@ -463,11 +464,12 @@ function NGL_Setup() {
 
   stage.mouseObserver.signals.dragged.add(function (deltaX,deltaY){
     //update
-    console.log(ngl_current_pickingProxy.component.name);
-    console.log(ngl_current_pickingProxy.position);
+    //console.log(ngl_current_pickingProxy.component.name);
+    //console.log(ngl_current_pickingProxy.position);
     var mbi = parseInt(ngl_current_pickingProxy.sphere.name);
     var pi = mbi*3;
     var cpos = new NGL.Vector3();
+    console.log(mbi,pi);
     cpos.copy(ngl_current_pickingProxy.position);
     node_selected.data.pos[0].coords[pi] = cpos.x;
     node_selected.data.pos[0].coords[pi+1] = cpos.y;
