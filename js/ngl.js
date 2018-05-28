@@ -518,8 +518,8 @@ function NGL_Setup() {
   });
 
   stage.signals.hovered.add(function (pickingProxy){
-    console.log("pickingProxy");
-    console.log(pickingProxy);
+    //console.log("pickingProxy");
+    //console.log(pickingProxy);
     ngl_current_pickingProxy = pickingProxy;
   });
 
@@ -1213,6 +1213,7 @@ function NGL_LoadShapeObj(d) {
 }
 
 function NGL_LoadAShapeObj(gpath) {
+  if (!node_selected) return;
   if (node_selected.data.geom_type === "raw") {
     NGL_ShowMeshVFN(gpath);
   } else if (node_selected.data.geom_type === "None" &&

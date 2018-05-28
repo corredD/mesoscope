@@ -1875,6 +1875,7 @@ function updateThickness(e){
 
 function UpdateCompartmentRep(anode){
 	console.log(anode.data);//undefined
+	if (!node_selected) node_selected = anode;
 	var comptype = ("geom_type" in anode.data)? anode.data.geom_type: "None";
 	if (comptype === "file"||(comptype === "None")){
 
@@ -2563,7 +2564,7 @@ function sortNodeByDepth(objects){
    	}
    if (current_mode===1 && temp_link) {
    				drawLink(context,temp_link);
-   				context.strokeStyle = "grey";
+   				context.strokeStyle = "white";
    				context.lineWidth=5;
           context.stroke();
    	}
@@ -2940,6 +2941,19 @@ function traverseTreeForCompartmentNameUpdate(anode){
 		});
 	}
 
+function ResizeNodeOver(){
+	$(".custom-menu-node").hide(100);
+	console.log("rename over",node_over_to_use.data.name);
+	console.log(node_over_to_use);
+	var new_size = prompt("Please enter new size", node_over_to_use.r);
+	if (new_size!=null) {
+		node_over_to_use.data.size = parseFloat(new_size);
+		node_over_to_use.r = parseFloat(new_size);
+		if (node_over_to_use.data.nodetype!=="compartment")
+				updateCellValue(gridArray[0],"size",node_over_to_use.data.id,parseFloat(new_size));
+	}
+}
+
 function RenameNodeOver(){
 	$(".custom-menu-node").hide(100);
 	console.log("rename over",node_over_to_use.data.name);
@@ -3016,11 +3030,14 @@ function anotherSubject(anode,x,y,allnodes) {
   for (i = 0; i < n; ++i) {
     d = allnodes[i];
     if (d===anode) continue;
+		// d3v4.event.subject.children.indexOf(hovernodes.node)!==-1
+		if (anode.children && anode.children.indexOf(d)!==-1) continue;
+		if (d.children && d.children.indexOf(anode)!==-1) continue;
     dx = x  - d.x;
     dy = y  - d.y;
     d2 = Math.sqrt(dx * dx + dy * dy);
-    //console.log(d.data.name,d.r,d2)
-		if (!d.parent)
+    //console.log(d.data.name, d.r, d2, d.depth)
+		if (!d.parent)//root
 		{
 			miniD = d2;
 			subject = d;
@@ -3324,6 +3341,8 @@ function dragged() {
   	//if ingredient hovering compartment show it
   	//then on drag end assign the new parent + surface
   	var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y,graph.nodes);
+		console.log("dragged hover ",hovernodes);
+		//console.log(hovernodes.node.data.name);
   	if (hovernodes.node && hovernodes.node.data.nodetype === "compartment")
   	{
   		comp_highligh = hovernodes.node;
@@ -3347,7 +3366,7 @@ function dragged() {
 
 function dragended() {
 	draggin_d_node = false;
-	console.log(d3v4.event.subject);
+	console.log("dragended",d3v4.event.subject);
   if (!d3v4.event.active && HQ) simulation.alphaTarget(0);
   d3v4.event.subject.fx = null;
   d3v4.event.subject.fy = null;
@@ -3379,21 +3398,29 @@ function dragended() {
   	mousexy = {"x":d3v4.event.subject.x,"y":d3v4.event.subject.y};
   	var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y,graph.nodes);
   	console.log("hover ",hovernodes);
-  	//restore depth value
+
+		//restore depth value
   	d3v4.event.subject.depth = d3v4.event.subject._depth;
   	//if subject is an ingredient and hover is compartment change graph
   	if (hovernodes.node )
   	{
+			console.log("hover ",hovernodes.node.data.name);
   		console.log (hovernodes.node.data.nodetype);
-  		if ( hovernodes.node.data.nodetype === "compartment" || (!(hovernodes.node.parent))) {
-  			var index = d3v4.event.subject.parent.children.indexOf(d3v4.event.subject);
+  		if ( hovernodes.node.data.nodetype === "compartment" || (!(hovernodes.node.parent))) {//compartment or root
+				//current index as a child
+				var index = d3v4.event.subject.parent.children.indexOf(d3v4.event.subject);
+				//if the current parent is different from the node hover
   			if (d3v4.event.subject.parent!==hovernodes.node) {
-  				if (d3v4.event.subject.children && d3v4.event.subject.children.indexOf(hovernodes.node)!==-1){}
-	  			else {
+					//check if hovernode is a child of the subject
+  				if (d3v4.event.subject.children && d3v4.event.subject.children.indexOf(hovernodes.node)!==-1){}//d3v4.event.subject.children &&
+					else {
 	  				if (index > -1) {
+							//remove subject to his parent
 	            d3v4.event.subject.parent.children.splice(index, 1);
 	        	}
+						//add subject to hover children list
 		        hovernodes.node.children.push(d3v4.event.subject);
+						//change the parent of subject
 		  		  d3v4.event.subject.parent = hovernodes.node;
 		  		  d3v4.event.subject.depth = hovernodes.node.depth+1;
 		  		  hovernodes.node.r += d3v4.event.subject.r/2;
@@ -3401,7 +3428,16 @@ function dragended() {
 		  		  console.log("update ? ",d3v4.event.subject);
 		  		  if (d3v4.event.subject.data.nodetype !== "compartment")
 		  		  	updateCellValue(gridArray[0],"compartment",d3v4.event.subject.data.id,cname);
-		  		  else {}//need to change all child
+		  		  else {
+							//loop over the children and change the depth and the radius, and the path ?
+							d3v4.event.subject.children.forEach(function (ch_node)
+							{
+								ch_node.depth = d3v4.event.subject.depth+1;
+								var cn = ch_node.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/').slice(0,-1);
+								updateCellValue(gridArray[0],"compartment",ch_node.data.id,cn);
+							}
+						);
+						}//need to change all child
 		  		}
 		  	}
 	  		if (d3v4.event.subject.data.nodetype !== "compartment")
