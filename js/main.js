@@ -1811,7 +1811,7 @@ function resizeMetaBall(e){
 		//how to now the current spheres_array
 		//or update the current NGL_compartmentSphere
 		var name = (node_selected.data.geom)?node_selected.data.geom.name:node_selected.data.name+"_geom";
-		var radius = e.value;
+		var radius = parseFloat(e.value);
 		var mbe = document.getElementById('metaball_elem');
 		var mbi = mbe.selectedOptions[0].value;
 		node_selected.data.radii[0].radii[mbi] = radius;

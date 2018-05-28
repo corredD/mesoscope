@@ -22,6 +22,7 @@ class sCompartment{
     addIngredientGroup(ingrgroup){
         this.IngredientGroups.push(ingrgroup);
         ingrgroup.local_id = this.IngredientGroups.length-1;
+        ingrgroup.compartmentId = this.unique_id;
 		}
 
     //def to_JSON(self):
