@@ -1666,6 +1666,7 @@ function updateAttributesNode(anode,new_data) {
 	       });
 			 }
 			 else if (key === "pdb") {
+				 if (!anode.data.source) anode.data.source={};
 				 anode.data.source.pdb = new_data.pdb;
 			 }
 			 else {
@@ -1903,6 +1904,7 @@ function UpdateCompartmentRep(anode){
 	else if (comptype === "mb") {
 			//kind of beads-> positions,radii
 			//draw the spheres and the metabals
+			anode.data.geom = "mb";
 			stage.removeAllComponents();
 			NGL_updateMetaBallsGeom(anode);//NGL_MetaBalls();
 			NGL_ShowOrigin();

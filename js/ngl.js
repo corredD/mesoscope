@@ -585,7 +585,7 @@ function NGL_toggleOriginVisibility(e) {
     .setVisibility(e.target.checked);
 }
 
-async function NGL_updateCurrentBeadsLevelClient() {
+function NGL_updateCurrentBeadsLevelClient() {
   //center
   //async function updateCurrentBeadsLevel() {
   console.log("update beads", beads_elem.selectedOptions[0].value); //undefined?//lod level
@@ -611,7 +611,7 @@ async function NGL_updateCurrentBeadsLevelClient() {
     //comp.list[0].reprList[0].dispose();
     //comp.list[0].dispose();
   }
-  var res = await NGL_buildBeads(lod, ngl_current_structure, center);
+  var res = NGL_buildBeads(lod, ngl_current_structure, center);
   console.log("finsihed building", res);
   var col = Array(ngl_load_params.beads.pos[lod].coords.length).fill(0).map(Util_makeARandomNumber);
   var labels = Array(ngl_load_params.beads.pos[lod].coords.length).fill("0").map(function(v, i) {
@@ -745,7 +745,10 @@ function NGL_updateCurrentBeadsLevel() {
         NGL_ShowBeadsCR(clusters,lod);
       }
     }
-    else buildFromServer(node_selected.data.source.pdb,false,true,ngl_current_structure);
+    else {
+      NGL_updateCurrentBeadsLevelClient();
+      //buildFromServer(node_selected.data.source.pdb,false,true,ngl_current_structure);
+    }
   }
 }
 }

@@ -311,7 +311,7 @@ function OneIngredientDeserialized(ing_dic,surface,comp) {
     if (!r) {
       r = ("radii" in ing_dic)? ing_dic.radii : null;
     }
-    if (p.length!==0) {
+    if (p && p.length!==0) {
       if (!("coords" in p[0])) {
         var pos = [];
         var rad = [];
