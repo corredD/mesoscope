@@ -1217,7 +1217,7 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
 				if (allfield.color_index !==-1) {
 					if (idata[allfield.color_index]) color = idata[allfield.color_index].split(',').map(Number);//chain:residues?
 				}
-        sele = GetNGLSelection(sele,model);
+        sele = NGL_GetSelection(sele,model);
         var elem = {
 					"name":name,"size":25,"molecularweight":mw,"confidence":confidence,"color":color,
         	"source":{"pdb":source,"bu":bu,"selection":sele,"model":model},"count":acount,
