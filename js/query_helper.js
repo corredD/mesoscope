@@ -961,6 +961,7 @@ function NextComputeIgredient() {
           d.data.pos === "null" || d.data.pos.length === 0 ||
           d.data.pos === ""))) {
       //if (!graph.nodes[i].children){
+      if ("pdb" in d.data.source ) {
       var fileExt = d.data.source.pdb.split('.').pop();
       if (fileExt !== "map") {
         found = true;
@@ -971,6 +972,7 @@ function NextComputeIgredient() {
         d.data.geom_type = "file";
         d.data.geom = d.data.source.pdb;
       }
+    }
     }
   }
   console.log("return found ", found, current_compute_index, current_compute_node);

@@ -148,6 +148,10 @@ function EvaluateCurrentReadyState(){
 	var comp_geom_state=0;
 	var ningr=0;
 	var ncomp=0;
+	var list_missing_beads=[];
+	var list_missing_geom=[];
+	var list_missing_pdb=[];
+
 	for (var i=0;i<graph.nodes.length;i++){
 			var d = graph.nodes[i];
 			if (!d.children)
@@ -157,17 +161,17 @@ function EvaluateCurrentReadyState(){
 				if  ( "data" in d && "source" in d.data
 							&& "pdb" in d.data.source
 							&& (!d.data.source.pdb || d.data.source.pdb === "None"
-						|| d.data.source.pdb === "null" || d.data.source.pdb === ""))  sources_state++;
+						|| d.data.source.pdb === "null" || d.data.source.pdb === ""))  {sources_state++;list_missing_pdb.push(d.data.name);}
 				//if ( "data" in d && "source" in d.data
 				//			&& "pos" in d.data
 				if (!d.data.pos || d.data.pos === "None"
 							|| d.data.pos === "null" || d.data.pos.length === 0
-							|| d.data.pos === "")  beads_state++;
+							|| d.data.pos === "")  {beads_state++;list_missing_beads.push(d.data.name);}
 				if ("data" in d && "count" in d.data && "molarity" in d.data
 							&& d.data.count === 0 && d.data.molarity === 0.0) count_molarity_state++;
 				//if ( "data" in d && "geom" in d.data
 				if (!d.data.geom || d.data.geom === "None"
-						|| d.data.geom === "null" || d.data.geom === "")  geom_state++;
+						|| d.data.geom === "null" || d.data.geom === "")  {geom_state++;list_missing_geom.push(d.data.name);}
 				if ( "data" in d && "visited" in d.data
 									&& !d.data.visited ) node_view_state++;
 			}
@@ -202,6 +206,9 @@ function EvaluateCurrentReadyState(){
 	if (score_critical === 1) current_ready_state = 1;
 	else if (perfect_score === 1) current_ready_state = 2;
 	current_ready_state_value = res;
+	console.log(list_missing_geom);
+	console.log(list_missing_beads);
+	console.log(list_missing_pdb);
 }
 
 function switchMode(e){
