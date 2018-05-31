@@ -1252,7 +1252,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
     var cid = grid.getColumns()[cell].id;
     console.log(cid);
     if (grid.gname === "grid_recipe") {
-      console.log(ni); //91
+      console.log(ni); //11
       var n = graph.nodes[ni];
       console.log(n);
       //n.data.surface = arow.surface;
@@ -1262,10 +1262,12 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       var depth = parentstring_ar.length;
       var parentstring = parentstring_ar[parentstring_ar.length - 1]; //.slice(-1,parentstring.length);
       var pnode = getNodeByName(parentstring);
+      if (n.parent) {
       var index = n.parent.children.indexOf(n);
       n.parent.children.splice(index, 1);
       n.parent = pnode;
       n.depth = depth;
+    }
       /*
       n.data.name = arow.name;
       n.data.size = arow.size;
