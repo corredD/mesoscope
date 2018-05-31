@@ -21,6 +21,10 @@ var surface_tag = ["membrane","x","surface","tm"];
 var current_ready_state = 0;//0-1-2
 var current_ready_state_value;//0-1-2
 
+var list_missing_beads=[];
+var list_missing_geom=[];
+var list_missing_pdb=[];
+
 var sheet_name=[];
 var current_data_header,
 		current_jsondic,
@@ -148,9 +152,9 @@ function EvaluateCurrentReadyState(){
 	var comp_geom_state=0;
 	var ningr=0;
 	var ncomp=0;
-	var list_missing_beads=[];
-	var list_missing_geom=[];
-	var list_missing_pdb=[];
+	list_missing_beads=[];
+	list_missing_geom=[];
+	list_missing_pdb=[];
 
 	for (var i=0;i<graph.nodes.length;i++){
 			var d = graph.nodes[i];
@@ -206,9 +210,9 @@ function EvaluateCurrentReadyState(){
 	if (score_critical === 1) current_ready_state = 1;
 	else if (perfect_score === 1) current_ready_state = 2;
 	current_ready_state_value = res;
-	console.log(list_missing_geom);
-	console.log(list_missing_beads);
-	console.log(list_missing_pdb);
+	//console.log(list_missing_geom);
+	//console.log(list_missing_beads);
+	//console.log(list_missing_pdb);
 }
 
 function switchMode(e){
@@ -1249,9 +1253,12 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
 							var values = idata[comp_column_names[c].id];//can be a count or a molarity
 							//console.log("comp is "+c+" "+comp_column_names[c].id+" "+values);
 							if (values && values!==null && values!=="" && values!==0) {
-									if (isInteger(values)) elem.count = values;
-									else if (isFloat(values)) elem.molarity = values;
-									else if (molarity_index ===-1) elem.molarity = values;
+									var avalue = parseFloat(values);
+									if (avalue < 1) elem.molarity = avalue;
+									else elem.count = avalue;
+									//if (isInteger(values)) elem.count = values;
+									//else if (isFloat(values)) elem.molarity = values;
+									if (molarity_index ===-1) elem.molarity = values;
 									elem.surface = comp_column_names[c].surface;
 									comp = comp_column_names[c].name;
 									comp_elem = float_compartments[comp];

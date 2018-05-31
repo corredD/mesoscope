@@ -1433,7 +1433,11 @@ function SaveRecipeCellPACK() {
   console.log(current_ready_state_value);
 
   if (current_ready_state === 0) {
-    alert(" this is recipe is incomplete, can't export\n missing ??\n" + JSON.stringify(current_ready_state_value));
+    alert(" this is recipe is incomplete, can't export\n"
+            + JSON.stringify(current_ready_state_value)
+            + "\nmissing beads " + JSON.stringify(list_missing_beads)
+            + "\nmissing geoms " + JSON.stringify(list_missing_geom)
+            + "\nmissing pdb " + JSON.stringify(list_missing_pdb));
     return;
   }
   var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links);
@@ -1446,7 +1450,12 @@ function SaveRecipeCellPACK() {
 function SaveRecipeCellPACK_serialized() {
   console.log("save recipe serialized");
   if (current_ready_state === 0) {
-    alert(" this is recipe is incomplete, can't export\n missing ??\n" + JSON.stringify(current_ready_state_value));
+
+    alert(" this is recipe is incomplete, can't export\n"
+            + JSON.stringify(current_ready_state_value)
+            + "\nmissing beads " + JSON.stringify(list_missing_beads)
+            + "\nmissing geoms " + JSON.stringify(list_missing_geom)
+            + "\nmissing pdb " + JSON.stringify(list_missing_pdb));
     return;
   }
   var jdata = serializedRecipe(graph.nodes, graph.links);
