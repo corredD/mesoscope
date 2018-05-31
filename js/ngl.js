@@ -571,7 +571,6 @@ function NGL_GetSelection(sel_str, model) {
   return ngl_sele;
 }
 
-
 function NGL_toggleBeadsVisibility(e) {
   stage.getRepresentationsByName("beads_0")
     .setVisibility(e.target.checked);
@@ -825,16 +824,40 @@ function NGL_UpdateAssamblyList(ngl_ob) {
 
 function NGL_setModelOptions(ngl_ob) {
   model_elem.options.length = 0;
-  const modelStore = ngl_ob.structure.modelStore
+  const modelStore = ngl_ob.structure.modelStore;
+  var model = "0";
+  if (node_selected) {
+    model = model_elem.value;
+  }
   if (modelStore.count > 1) {
     model_elem.options[model_elem.options.length] = new Option('Show model:', 'Show model:');
     model_elem.options[model_elem.options.length] = new Option('all', 'all');
   }
   for (let i = 0; i < modelStore.count; ++i) {
     //addOption(options, i, 'Model ' + (i + 1))
-    model_elem.options[model_elem.options.length] = new Option(i, i);
+    model_elem.options[model_elem.options.length] = new Option(i, i,false, (parseInt(model) === i));
   }
   //if (modelStore.count === 0) model_elem.options[model_elem.options.length] = new Option(0, 0);
+}
+
+function NGL_setChainSelectionOptions(ngl_ob)
+{
+  //update the selection div element
+   const modelStore = ngl_ob.structure.modelStore;
+   var model = "0";
+   if (modelStore.count > 1) {
+     if (node_selected) {
+       model = node_selected.data.source.model;
+     }
+   }
+   var aselection = (modelStore.count > 1) ? NGL_GetSelection("", model):"polymer";
+   var chnames = []
+   var nch = ngl_ob.structure.getChainnameCount();
+   ngl_ob.structure.eachChain( chain => {
+    chnames.push( chain.chainname)
+  }, new NGL.Selection(aselection));
+  console.log(aselection,chnames);
+  layout_addOptionsForMultiSelect("selection_ch_checkboxes",chnames);
 }
 
 function NGL_setSymmetryOptions(ngl_ob) {
@@ -857,6 +880,16 @@ function NGL_ChangeBiologicalAssambly(selected0) {
   console.log(rep_elem.selectedOptions[0].value);
   console.log(selected0.value);
   console.log(sele_elem.value);
+  stage.getRepresentationsByName("polymer").dispose();
+  stage.eachComponent(function(o) {
+    o.addRepresentation(rep_elem.selectedOptions[0].value, {
+      colorScheme: color_elem.selectedOptions[0].value,
+      sele: sele_elem.value,
+      name: "polymer",
+      assembly: assambly_elem.selectedOptions[0].value
+    })
+  });
+  /*
   var rep = stage.getRepresentationsByName("polymer");
   rep.setParameters({
     colorScheme: color_elem.selectedOptions[0].value,
@@ -864,6 +897,7 @@ function NGL_ChangeBiologicalAssambly(selected0) {
     name: "polymer",
     assembly: selected0.value
   });
+  */
   //updatTheTable
   if (ngl_current_item_id) {
     updateDataGridRowElem(0, ngl_current_item_id, "bu", selected0.value);
@@ -950,6 +984,40 @@ function NGL_ChangeSelection(astr_elem) {
   });	*/
 }
 
+function NGL_ChangeChainsSelection(an_elem) {
+  var aselection = "";
+  var checkboxes = document.getElementById("selection_ch_checkboxes");
+  console.log(checkboxes);
+  console.log(sele_elem.value);
+  var selection = "";
+  console.log(an_elem);
+  var allcheck = checkboxes.getElementsByTagName("input");
+  var all = allcheck.length;
+  var countchecked = 0;
+  for (var i=0;i<all;i++)
+  {
+      if (allcheck[i].checked) countchecked++;
+  }
+  var diff = all-countchecked;
+  console.log(diff,(diff<countchecked));
+  if (diff<countchecked) {
+    //aselection+="not :"+allcheck[0].id
+    for (var i=0;i<all;i++)
+    {
+        if (!allcheck[i].checked) aselection+=" and not :"+allcheck[i].id;
+    }
+  }
+  else {
+    //aselection+=":"+allcheck[0].id
+    for (var i=0;i<all;i++)
+    {
+        if (allcheck[i].checked) aselection+=" or :"+allcheck[i].id;
+    }
+  }
+  sele_elem.value = aselection;
+  NGL_ChangeSelection(sele_elem);
+}
+
 //overwrite model selection
 function NGL_ChangeModel(model_elem) {
   console.log(model_elem.value);
@@ -980,6 +1048,7 @@ function NGL_ChangeModel(model_elem) {
     node_selected.data.source.selection = curr_sel + "/" + model_elem.value;
     node_selected.data.source.model = model_elem.value;
   }
+  if (ngl_current_structure) NGL_setChainSelectionOptions(ngl_current_structure);
 }
 
 function NGL_ChangeColorScheme(col_e) {
@@ -1431,9 +1500,15 @@ function NGL_GetAtomDataSet(pdb,struture_object){
   var nAtom = ats.count;
   console.log("found ",nAtom);
   var asele = "polymer";
-  if (o.ngl_sele) {
+  if (o.ngl_sele && o.ngl_sele!=="") {
     if (o.ngl_sele.string !== null) asele = o.ngl_sele.string;
     else asele = o.ngl_sele;
+  }
+  else if (o.sele&& o.sele!=="") {
+    asele = o.sele;
+  }
+  else if (sele_elem.value&& sele_elem.value!=="") {
+    asele = sele_elem.value;
   }
   if (asele === "") asele = "polymer";
     var bu = false;
@@ -1448,6 +1523,7 @@ function NGL_GetAtomDataSet(pdb,struture_object){
     o.structure.eachAtom(function(ap) {
       if (ap.atomname==="CA" || nAtom < 20000) dataset.push([ap.x, ap.y, ap.z]);
     }, new NGL.Selection(asele));
+    console.log("dataset is ", dataset.length);
     return dataset;
   }
 
@@ -1878,6 +1954,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       NGL_UpdateAssamblyList(o);
       console.log("assambly is", assambly);
       NGL_setModelOptions(o); //redundant with selection ?
+      NGL_setChainSelectionOptions(o);
       //setSymmetryOptions(o);
       //assambly_elem.selectedOptions[0].value = "BU"+bu;
       if (bu !== -1) $('#ass_type').val(assambly); //assambly_elem.selectedIndex = assambly;//$('#ass_type').val(assambly);//.change();

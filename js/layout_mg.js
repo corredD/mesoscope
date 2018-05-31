@@ -36,6 +36,38 @@ function getSelect(select_id, div_class, label, onchange_cb, list_options, defau
   return astr;
 }
 
+
+function layout_addOptionsForMultiSelect(select_id,options){
+  var check_elem = document.getElementById(select_id);
+  check_elem.innerHTML = "";
+  for (var i = 0;i<options.length;i++) {
+    var opt = options[i];//label
+    check_elem.innerHTML += '<label for="'+opt+'"><input type="checkbox" id="'+opt+'" onclick="NGL_ChangeChainsSelection(this)" checked />'+opt+'</label>';
+  }
+}
+
+function layout_getMultiSelect(select_id)
+{
+  var astr=''+
+  '<div class="multiselect">'+
+  '<div class="selectBox" onclick="Util_showCheckboxes()">'+
+    '<select>'+
+    '  <option>Select an option</option>'+
+    '</select>'+
+    '<div class="overSelect"></div>'+
+  '</div>'+
+  '<div id="'+select_id+'">'+
+    '<label for="one">'+
+    '  <input type="checkbox" id="one" />First checkbox</label>'+
+    '<label for="two">'+
+    '  <input type="checkbox" id="two" />Second checkbox</label>'+
+    '<label for="three">'+
+    '  <input type="checkbox" id="three" />Third checkbox</label>'+
+    '</div>'+
+  '</div>';
+  return astr;
+}
+
 //hover_div//style="position:absolute; width:100% !important; display:block;"
 var canvasOption = '' +
   '<div class="canvas_head" >' +
@@ -71,6 +103,7 @@ var ngl_options= ''+
     '<div>'+
       '<label for="rep_type">Selection</label>'+
       '<input type="text" id="sel_str" style="width:55%" placeholder="Selection" onchange="NGL_ChangeSelection(this)"/>'+
+      layout_getMultiSelect("selection_ch_checkboxes") +
     '</div>'+
     '<label id="ngl_status"></label>' +
     getSelect("rep_type", "options_elems", "Representation",

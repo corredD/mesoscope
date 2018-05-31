@@ -737,6 +737,10 @@ function buildFromServer(pdb,cms,beads,astructure){
     }
     document.getElementById('stopbuildgeom').setAttribute("class", "spinner");
     document.getElementById("stopbuildgeom_lbl").setAttribute("class", "show");
+
+    //console.log([pdb, bu, sele, model, thefile]);
+    console.log(formData);
+
     $.ajax({
       type: "POST",
       //url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
@@ -860,7 +864,11 @@ function buildCMS()
         node_selected.data.geom_type = "raw"; //mean that it provide the v,f,n directly
       }
     }
-    else buildCMS2();
+    else {
+      var pdb = node_selected.data.source.pdb;
+      buildFromServer(pdb,true,false,ngl_current_structure);
+      //buildCMS2();
+    }
 }
 
 function buildCMS2() {

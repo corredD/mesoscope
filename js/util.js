@@ -1,4 +1,17 @@
- var Util_makeARandomNumber = function() {
+var util_expanded = false;
+
+function Util_showCheckboxes() {
+  var checkboxes = document.getElementById("selection_ch_checkboxes");
+  if (!util_expanded) {
+    checkboxes.style.display = "block";
+    util_expanded = true;
+  } else {
+    checkboxes.style.display = "none";
+    util_expanded = false;
+  }
+}
+
+var Util_makeARandomNumber = function() {
    return Math.random();
  }
 
