@@ -17,6 +17,8 @@ var nlg_preview_isosurface = true;
 var pcp_elem = [];
 var offset_elem = [];
 
+var use_mglserver_beads = true;
+
 var nLod = 3;
 var slidercluster_elem;
 var slidercluster_label_elem;
@@ -746,9 +748,9 @@ function NGL_updateCurrentBeadsLevel() {
       }
     }
     else {
-      NGL_updateCurrentBeadsLevelClient();
-      //buildFromServer(node_selected.data.source.pdb,false,true,ngl_current_structure);
-    }
+      if (use_mglserver_beads) buildFromServer(node_selected.data.source.pdb,false,true,ngl_current_structure);
+      else NGL_updateCurrentBeadsLevelClient();
+      }
   }
 }
 }
