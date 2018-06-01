@@ -320,3 +320,13 @@ function Util_selectFolder(e) {
      pathList_[sp[1]] = file;
    }
  }
+
+function Util_gunzip(compressed_data){
+  var gunzip = new Zlib.Gunzip(compressed);
+  var plain = gunzip.decompress();
+  return plain;
+}
+
+function Util_parseXML(plaintxt) {
+  return $.parseXML( xml );
+}

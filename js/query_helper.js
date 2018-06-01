@@ -552,6 +552,44 @@ function queryPDBfromSequence(sequence) {
   submitForm(query, sequence);
 }
 
+function querySequenceMapping(pdbid) {
+  //need a 4 letter code
+  if (pdbid.length !== 4 ) {
+    var asplit = pdbid.split("_");
+    console.log(asplit);
+    if (asplit[0].length === 4 ) pdbid = asplit[0];
+    else return;
+  }
+  var formData = new FormData();
+  formData.append("mapping", "true");//array of x,y,z
+  formData.append("pdbId", pdbid);
+
+  console.log(formData);
+
+  $.ajax({
+        type: "POST",
+        //url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
+        url: pmv_server,
+        success: function(data) {
+          console.log("##MappingFileData###");
+          console.log(data);
+          var rdata = Util_gunzip(data);
+          console.log(rdata);
+          var parsed_data = Util_parseXML(rdata);
+          console.log(parsed_data);
+        },
+        error: function(error) {
+          console.log(error);
+        },
+        async: true,
+        data: formData,
+        cache: false,
+        contentType: false,
+        processData: false,
+        timeout: 60000
+      });
+}
+
 //<img width="910" height="496" class="img-responsive" id="chainImageA"
 //style="border: 0px; border-image: none;"
 //src="http://www.rcsb.org/pdb/explore/remediatedChain.do?structureId=1A00&amp;params.annotationsStr=SCOP,Site%20Record,DSSP&amp;chainId=A" usemap="#chainAmap_">

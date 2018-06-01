@@ -366,6 +366,17 @@ def main():
     #can be used directly as http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py?pdbId=1crn&selection=A
     # or use formData POST query
     form = cgi.FieldStorage()
+    if form.has_key("mapping") :
+        import urllib2
+        pdbId = form.getvalue("pdbId")
+        url = "ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/xml/"+pdbId+".xml.gz"
+        req = urllib2.Request(url);
+        response = urllib2.urlopen(req);
+        the_page = response.read()
+        #print '{"raw":"'
+        print the_page
+        #print '}'
+        return
     print '{"log":"'
     #print form
     # A nested FieldStorage instance holds the file

@@ -1953,7 +1953,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
   } else {
     document.getElementById('surface').setAttribute("class", "hidden");
   }
-
+  querySequenceMapping(aname);
   console.log("load " + purl + " " + bu + " " + sel_str);
   //if its a surface protein show the modal for the pcpalAxis and the offset
   var params = {
