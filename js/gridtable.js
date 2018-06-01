@@ -1530,7 +1530,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
               console.log(arow.pdb, arow.bu, arow.selection);
               NGL_Load(arow.pdb, arow.bu, arow.selection);
             }
-            UpdatePDBcomponent(arow.pdb); //only work if 4letter
+            UpdatePDBcomponent(arow.pdb.toLowerCase()); //only work if 4letter
           } else {
             console.log("query PDB for " + arow.name);
             if (arow.name !== "protein_name") {
