@@ -338,6 +338,27 @@ function NGL_buildMB() {
   var r = shapembComp.addRepresentation("membrane");
 }
 
+function NGL_updateMBcompDrag(acomp) {
+  //update ui elem while dragging
+  if (!acomp) acomp = stage.getComponentsByName("mb").list[0];
+  var pos = acomp.position; //global position
+  var quat = acomp.quaternion; //local rotation
+  var axis = new NGL.Vector3(0, 0, 1);//quat.multiplyVector3(new NGL.Vector3(0, 0, 1));
+  axis.applyQuaternion(quat);
+  var offset = pos;
+  //offset.applyQuaternion() quat.inverse().multiplyVector3(pos);
+  pcp_elem[0].value = axis.x*100;
+  pcp_elem[1].value = axis.y*100;
+  pcp_elem[2].value = axis.z*100;
+  offset_elem[0].value = offset.x*-1;
+  offset_elem[1].value = offset.y*-1;
+  offset_elem[2].value = offset.z*-1;
+  for (var i = 0; i < 3; i++) {
+    $(pcp_elem[i]).siblings('.inputNumber').val(pcp_elem[i].value);
+    $(offset_elem[i]).siblings('.inputNumber').val(offset_elem[i].value);
+  }
+}
+
 function NGL_updateMBcomp() {
   //get the other two ?
   var axis = [pcp_elem[0].value / 100.0, pcp_elem[1].value / 100.0, pcp_elem[2].value / 100.0];
@@ -345,7 +366,8 @@ function NGL_updateMBcomp() {
   var acomp = stage.getComponentsByName("mb").list[0];
   //
   var q = new NGL.Quaternion();
-  q.setFromUnitVectors(new NGL.Vector3(0, 0, 1), new NGL.Vector3(axis[0], axis[1], axis[2]));
+  axis = new NGL.Vector3(axis[0], axis[1], axis[2]);//normalize ?
+  q.setFromUnitVectors(new NGL.Vector3(0, 0, 1), axis.normalize());
   //console.log(q,new NGL.Vector3(axis[0],axis[1],axis[2]));
   if (!acomp) NGL_buildMB();
   acomp.setRotation(q);
@@ -493,9 +515,15 @@ function NGL_Setup() {
 
   stage.mouseObserver.signals.dragged.add(function (deltaX,deltaY){
     //update
+    //console.log(ngl_current_pickingProxy);
     //console.log(ngl_current_pickingProxy.component.name);
     //console.log(ngl_current_pickingProxy.position);
     if (!ngl_current_pickingProxy) return;
+    if(ngl_current_pickingProxy.component.name==="mb") {
+      //update pcpAxis and rotaiton
+      NGL_updateMBcompDrag(ngl_current_pickingProxy.component)
+    }
+    else {
     var mbi = parseInt(ngl_current_pickingProxy.sphere.name);
     var pi = mbi*3;
     var cpos = new NGL.Vector3();
@@ -510,6 +538,7 @@ function NGL_Setup() {
       //how to update the shape mesh instead of recreating it
       NGL_MetaBallsGeom(geo);
     }
+  }
   });
 
   //if metaballs only ?
