@@ -898,6 +898,7 @@ function setupPDBLib(){
       {
           node_selected.data.uniprot = e.eventData.elementData.domainId;
           updateCellValue(gridArray[0], "uniprot", current_grid_row, node_selected.data.uniprot);
+          setupProVista(node_selected.data.uniprot);
       }
     }
     //highligh the clicked residue?
@@ -909,8 +910,8 @@ function setupPDBLib(){
       end = parseInt(sp[1]);
     }
     else {
-      start = e.eventData.elementData.pathData.start.author_residue_number;//residue_number,//author_residue_number;
-      end = e.eventData.elementData.pathData.end.author_residue_number;//residue_number,//author_residue_number;
+      start = e.eventData.elementData.pathData.start.residue_number;//residue_number,//author_residue_number;
+      end = e.eventData.elementData.pathData.end.residue_number;//residue_number,//author_residue_number;
     }
     var color = "rgb("+e.eventData.elementData.color[0]+", "+e.eventData.elementData.color[1]+", "+e.eventData.elementData.color[2]+")";
     NGL_ChangeHighlight(start,end,color,
