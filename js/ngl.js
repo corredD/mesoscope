@@ -551,7 +551,7 @@ function NGL_Setup() {
   stage.signals.hovered.add(function (pickingProxy){
     //console.log("pickingProxy");
     //console.log(pickingProxy);
-    ngl_current_pickingProxy = pickingProxy;
+   if (pickingProxy) ngl_current_pickingProxy = pickingProxy;
   });
 
   //stage.mouseControls.remove( "drag-ctrl-right" );
