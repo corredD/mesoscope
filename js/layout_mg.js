@@ -829,6 +829,8 @@ $(document).ready(function() {
     if (savedRecipe !== null && usesavedState) LoadSaveState(JSON.parse(savedRecipe));
     else LoadExampleMpn();
     evaluate_interval = setInterval(EvaluateCurrentReadyState,10000);
+    var checkboxes = document.getElementById("selection_ch_checkboxes");
+    checkboxes.style.display = "none";
     //setupPDBLib();
 		//'use strict';angular.bootstrap(document, ['pdb.component.library']);
   }.bind(this), 20);
@@ -910,6 +912,7 @@ function setupPDBLib(){
 
 function UpdatePDBcomponent(entry)
 {
+  //do it for all entity?
   if (!pdbcomponent_setup) setupPDBLib();
   if (entry.length !== 4 ) {
     var asplit = entry.split("_");
@@ -919,11 +922,23 @@ function UpdatePDBcomponent(entry)
   }
   console.log("UpdatePDBcomponent with "+entry);
   var topo = document.getElementById("pdbeComp_topov");//document.getElementsByTagName("pdb-topology-viewer")[0];
-  topo.innerHTML = '&lt;pdb-topology-viewer entry-id="'+entry+'" entity-id="1" height="370"&gt;&lt;/pdb-topology-viewer&gt;';
   var seqv = document.getElementById("pdbeComp_seqv");//document.getElementsByTagName("pdb-topology-viewer")[0];
   seqv.innerHTML = "";
-  seqv.innerHTML = '&lt;pdb-seq-viewer entry-id="'+entry+'" entity-id="1" height="370"&gt;&lt;/pdb-seq-viewer&gt;';
-  console.log("update ?",entry,seqv.innerHTML );
+  topo.innerHTML = "";
+  if (ngl_current_structure) {
+    var nEntity = ngl_current_structure.structure.entityList.length;
+    for (var i=0;i<nEntity;i++){
+      console.log(ngl_current_structure.structure.entityList[i]);
+      if (!ngl_current_structure.structure.entityList[i].isPolymer()) continue;
+      seqv.innerHTML += '&lt;pdb-seq-viewer entry-id="'+entry+'" entity-id="'+(i+1).toString()+'" height="370"&gt;&lt;/pdb-seq-viewer&gt;';
+      topo.innerHTML += '&lt;pdb-topology-viewer entry-id="'+entry+'" entity-id="'+(i+1).toString()+'" height="370"&gt;&lt;/pdb-topology-viewer&gt;';
+    }
+  }
+  else {
+    topo.innerHTML = '&lt;pdb-topology-viewer entry-id="'+entry+'" entity-id="1" height="370"&gt;&lt;/pdb-topology-viewer&gt;';
+    seqv.innerHTML = '&lt;pdb-seq-viewer entry-id="'+entry+'" entity-id="1" height="370"&gt;&lt;/pdb-seq-viewer&gt;';
+  }
+  //console.log("update ?",entry,seqv.innerHTML );
   //use ngl to get all entity ?
 }
 

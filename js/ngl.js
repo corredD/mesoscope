@@ -1093,9 +1093,10 @@ function NGL_ChangeColorScheme(col_e) {
   });
 }
 
+//check the uniprot mapping for the given resiudes
 function NGL_ChangeHighlight(pdbStart, pdbEnd, color)
 {
-	//is the representation exist
+	//query the mapping server using ngl_current_structure.structure.name
 	if (!ngl_current_structure) return;
 	if (!color) color = 'gold';
 	var style = 'licorice';
