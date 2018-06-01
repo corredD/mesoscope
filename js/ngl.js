@@ -1093,6 +1093,44 @@ function NGL_ChangeColorScheme(col_e) {
   });
 }
 
+function NGL_ChangeHighlight(pdbStart, pdbEnd, color)
+{
+	//is the representation exist
+	if (!ngl_current_structure) return;
+	if (!color) color = 'gold';
+	var style = 'licorice';
+
+	var sele = pdbStart + "-" + pdbEnd ;//+ ":" + chainId;
+
+	if (pdbEnd - pdbStart < 2) {
+		color = color;
+		style = 'spacefill';
+	}
+
+	var comp = ngl_current_structure;
+  stage.getRepresentationsByName('highlight').dispose();
+  stage.getRepresentationsByName('hLabel').dispose();
+
+    comp.addRepresentation(style, {
+        sele: sele,
+        color: color,
+        radius: 1,
+				name:"highlight"
+      });
+
+		comp.addRepresentation("label", {
+														sele: sele+".CA",
+														color: "grey",
+														scale: 2.0,
+														zOffset: 4.0,
+														name:"hLabel"
+												});
+    //stage.centerView(false, sele);
+
+  comp.autoView(200);
+}
+
+
 function NGL_CenterView() {
   stage.autoView(1000);
 }

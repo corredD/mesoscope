@@ -934,6 +934,42 @@ function UpdateUniPDBcomponent(entry){
   puv.innerHTML = '&lt;pdb-uniprot-viewer entry-id="'+entry+'" entity-id="1" height="370"&gt;&lt;/pdb-uniprot-viewer&gt;';
 }
 
+function setupProtVistaEvents()
+{
+	protvista_instance.getDispatcher().on("featureSelected", function(obj) {
+    console.log('featureSelected');
+    console.log(obj);
+		console.log(obj.feature.begin,obj.feature.end);
+		NGL_ChangeHighlight(obj.feature.begin,obj.feature.end,obj.color);
+});
+}
+
+/*protvista features*/
+//the pvf features to protvista e.g. pdb,model,pfam...
+function setupProVista(uniid){
+	if (!protvista_instance) {
+		if (!ProtVista ) ProtVista = require(['ProtVista']);
+		protvista_instance = new ProtVista({
+			el: document.getElementById("protvista"),
+			uniprotacc: uniid,
+			categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM','SEQUENCE_INFORMATION',
+		'STRUCTURAL','TOPOLOGY']
+
+		});
+	} else { //update
+		document.getElementById("protvista").innerHtml ="";
+		protvista_instance = new ProtVista({
+			el: document.getElementById("protvista"),
+			uniprotacc: uniid,
+			categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM','SEQUENCE_INFORMATION',
+		'STRUCTURAL','TOPOLOGY']
+		});
+	}
+	setupProtVistaEvents();
+}
+
+
+
 helper_setupFibersDictionary();
 
 /*

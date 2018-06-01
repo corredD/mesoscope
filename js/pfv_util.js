@@ -370,30 +370,6 @@ function changeHighlight(sele) {
   });
 }
 
-
-/*protvista features*/
-//the pvf features to protvista e.g. pdb,model,pfam...
-function setupProVista(uniid,pdb){
-	if (!protvista_instance) {
-		if (!ProtVista ) ProtVista = require(['ProtVista']);
-		protvista_instance = new ProtVista({
-			el: document.getElementById("protvista"),
-			uniprotacc: uniid,
-			categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM','SEQUENCE_INFORMATION',
-		'STRUCTURAL','TOPOLOGY']
-
-		});
-	} else { //update
-		document.getElementById("protvista").innerHtml ="";
-		protvista_instance = new ProtVista({
-			el: document.getElementById("protvista"),
-			uniprotacc: uniid,
-			categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM','SEQUENCE_INFORMATION',
-		'STRUCTURAL','TOPOLOGY']
-		});
-	}
-}
-
 //query mgl2 for sequence alignment between current ngl_object sequence (selection?) and current uniprot_access_number
 //Your data sources are defined here
 //       customDataSource: {

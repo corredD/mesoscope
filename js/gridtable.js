@@ -1453,27 +1453,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
               featureView.loadUniprot(arow.uniprot);
             }
             //the pvf features to protvista e.g. pdb,model,pfam...
-            if (!protvista_instance) {
-              if (!ProtVista) ProtVista = require(['ProtVista']);
-              protvista_instance = new ProtVista({
-                el: document.getElementById("protvista"),
-                uniprotacc: arow.uniprot,
-                categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM', 'SEQUENCE_INFORMATION',
-                  'STRUCTURAL', 'TOPOLOGY'
-                ]
-
-              });
-            }
-            else { //update
-              document.getElementById("protvista").innerHtml = "";
-              protvista_instance = new ProtVista({
-                el: document.getElementById("protvista"),
-                uniprotacc: arow.uniprot,
-                categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM', 'SEQUENCE_INFORMATION',
-                  'STRUCTURAL', 'TOPOLOGY'
-                ]
-              });
-            }
+            setupProVista(arow.uniprot);
             console.log(protvista_instance);
             UpdateUniPDBcomponent(arow.uniprot);
             //add the current PDb if any and split
@@ -1585,25 +1565,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       node_selected = null;
       if (cid == "Entry") {
         //the pvf features to protvista e.g. pdb,model,pfam...
-        if (!protvista_instance) {
-          if (!ProtVista) ProtVista = require(['ProtVista']);
-          protvista_instance = new ProtVista({
-            el: document.getElementById("protvista"),
-            uniprotacc: arow.uniprot,
-            categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM', 'SEQUENCE_INFORMATION',
-              'STRUCTURAL', 'TOPOLOGY'
-            ]
-          });
-        } else { //update
-          document.getElementById("protvista").innerHtml = "";
-          protvista_instance = new ProtVista({
-            el: document.getElementById("protvista"),
-            uniprotacc: arow.uniprot,
-            categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM', 'SEQUENCE_INFORMATION',
-              'STRUCTURAL', 'TOPOLOGY'
-            ]
-          });
-        }
+        setupProVista(arow.Entry);
         if (featureView) {
           document.getElementById("up-field").value = arow.Entry;
           featureView.loadUniprot(arow.Entry);
@@ -1622,25 +1584,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       console.log(args);
       //send the selection to the main recipe
       if ("uniprotAcc" in arow && cid === "uniprotAcc") {
-        if (!protvista_instance) {
-          if (!ProtVista) ProtVista = require(['ProtVista']);
-          protvista_instance = new ProtVista({
-            el: document.getElementById("protvista"),
-            uniprotacc: arow.uniprotAcc,
-            categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM', 'SEQUENCE_INFORMATION',
-              'STRUCTURAL', 'TOPOLOGY'
-            ]
-          });
-        } else { //update
-          document.getElementById("protvista").innerHtml = "";
-          protvista_instance = new ProtVista({
-            el: document.getElementById("protvista"),
-            uniprotacc: arow.uniprotAcc,
-            categoryOrder: ['DOMAINS_AND_SITES', 'VARIATION', 'PTM', 'SEQUENCE_INFORMATION',
-              'STRUCTURAL', 'TOPOLOGY'
-            ]
-          });
-        }
+        setupProVista(arow.uniprotAcc);
         if (featureView) {
           document.getElementById("up-field").value = arow.uniprotAcc;
           featureView.singlePDBmode = false;
