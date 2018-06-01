@@ -14,8 +14,8 @@ var gridArray;
 var gridIds = ["grid_recipe", "grid_interaction", "grid_uniprot", "grid_pdb"];
 var sortcol = "name";
 var current_grid = 0;
-var current_selection;
-
+var current_grid_row;
+var grid_column_elem;
 var grid_column_elem;
 
 var uni_picked;
@@ -1391,6 +1391,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
     var cell = grid.getCellFromEvent(e);
     var cid = grid.getColumns()[cell.cell].id;
     var arow = grid.dataView.getItem(args.row);
+    current_grid_row = arow.id;
     if (!arow) return;
     if (grid.gname === "grid_recipe") {
       //update pfv ?
@@ -1709,6 +1710,7 @@ function UpdateSelectionPdbFromId(node_id) {
 function SelectRowFromId(node_id) {
   var test = gridArray[0].dataView.getRowById(node_id);
   console.log("atest ", test);
+  current_grid_row = test.id;
   gridArray[0].setSelectedRows([test]);
 }
 

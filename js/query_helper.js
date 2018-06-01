@@ -552,8 +552,68 @@ function queryPDBfromSequence(sequence) {
   submitForm(query, sequence);
 }
 
+function SetSequenceMapping(xmldata){
+  //set up the obect that will hold the seq mapping.
+  //the server should actually return the mapping directly in json
+  var entity = xmldata.getElementsByTagName("entity");
+  var mapping = [];//entity number = {"topdb":{},"touni":{}}
+  var umapping = {};
+  //mapping uniacces: entity-chain , res-res
+  for (var i =0;i<entity.length;i++) {
+    var entity_mapping = {"entityId":entity[i].getAttribute("entityId"),"uniId":"","chainId":"","mapping":{}};//chain
+    var residues = entity[i].getElementsByTagName("residue");
+    for (var j =0;j<residues.length;j++) {
+      var dbResNum = residues[j].getAttribute("dbResNum");//what this number correspond to ?
+      var crossRefDb = residues[j].getElementsByTagName("crossRefDb");//first two child
+      var pdbResNum;
+      var uniResNum;
+      var uniaccess;
+      var chainId;
+      var found1 = false;
+      var found2 = false;
+      for (var k =0;k<crossRefDb.length;k++) {
+          if (crossRefDb[k].getAttribute("dbSource") === "PDB") {
+            pdbResNum = parseInt(crossRefDb[k].getAttribute("dbResNum"));
+            chainId = crossRefDb[k].getAttribute("dbChainId");
+            //entity_mapping[dbResNum] = pdbResNum;
+            found1 = true;
+          }
+          if (crossRefDb[k].getAttribute("dbSource") === "UniProt") {
+            uniResNum = parseInt(crossRefDb[k].getAttribute("dbResNum"));
+            uniaccess = crossRefDb[k].getAttribute("dbAccessionId");
+            //entity_mapping[dbResNum] = pdbResNum;
+            if (!(uniaccess in umapping)) umapping[uniaccess] = {chainId:{"umapping":{},"mapping":{}}};
+            if (!(chainId in umapping[uniaccess])) umapping[uniaccess][chainId] = {"umapping":{},"mapping":{}};
+            found2 = true;
+          }
+      }
+      if ((found1&&found2)&&(uniResNum && pdbResNum && uniaccess && chainId)){
+        if (entity_mapping.uniId === "") entity_mapping.uniId = uniaccess;
+        if (entity_mapping.chainId === "") entity_mapping.chainId = chainId;
+        entity_mapping.mapping[uniResNum]=pdbResNum;
+        if (!(uniaccess in umapping)) umapping[uniaccess] = {chainId:{"umapping":{},"mapping":{}}};
+        if (!(chainId in umapping[uniaccess])) umapping[uniaccess][chainId] = {"umapping":{},"mapping":{}};
+        umapping[uniaccess][chainId].umapping[uniResNum]=pdbResNum;//to use with PDB component ?
+        umapping[uniaccess][chainId].mapping[dbResNum]=pdbResNum;//to use with protvista
+      }
+    }
+    mapping.push(entity_mapping);
+  }
+  console.log(mapping);
+  return umapping;
+}
+
+function GetSequenceMappingP(pdbres){//return resnumber in uni from resnumber in pdb
+}
+
+function GetSequenceMappingU(unires){//return resnumber in pdb from resnumber in uni
+}
+
 function querySequenceMapping(pdbid) {
   //need a 4 letter code
+  if (node_selected)
+    if ("mapping" in node_selected.data)
+        return;//= mapping;
   if (pdbid.length !== 4 ) {
     var asplit = pdbid.split("_");
     console.log(asplit);
@@ -565,7 +625,10 @@ function querySequenceMapping(pdbid) {
   formData.append("pdbId", pdbid);
 
   console.log(formData);
-
+  //should check if not already done...
+  //or just check if begin-end is different between upr and pdb ?
+  document.getElementById('stopbeads').setAttribute("class", "spinner");
+  document.getElementById("stopbeads_lbl").setAttribute("class", "show");
   $.ajax({
         type: "POST",
         //url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
@@ -578,6 +641,12 @@ function querySequenceMapping(pdbid) {
           //console.log(rdata);
           var parsed_data = Util_parseXML(data);
           console.log(parsed_data);
+          var mapping = SetSequenceMapping(parsed_data);
+          console.log(mapping);
+          if (node_selected)
+              node_selected.data.mapping = mapping;
+              document.getElementById('stopbeads').setAttribute("class", "spinner hidden");
+              document.getElementById("stopbeads_lbl").setAttribute("class", "hidden");
         },
         error: function(error) {
           console.log(error);

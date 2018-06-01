@@ -519,7 +519,7 @@ function NGL_Setup() {
     //console.log(ngl_current_pickingProxy.component.name);
     //console.log(ngl_current_pickingProxy.position);
     if (!ngl_current_pickingProxy) return;
-    if(ngl_current_pickingProxy.component.name==="mb") {
+    if(ngl_current_pickingProxy.component && ngl_current_pickingProxy.component.name==="mb") {
       //update pcpAxis and rotaiton
       NGL_updateMBcompDrag(ngl_current_pickingProxy.component)
     }
@@ -1094,7 +1094,7 @@ function NGL_ChangeColorScheme(col_e) {
 }
 
 //check the uniprot mapping for the given resiudes
-function NGL_ChangeHighlight(pdbStart, pdbEnd, color)
+function NGL_ChangeHighlight(pdbStart, pdbEnd, color, chainId)
 {
 	//query the mapping server using ngl_current_structure.structure.name
 	if (!ngl_current_structure) return;
@@ -1102,12 +1102,12 @@ function NGL_ChangeHighlight(pdbStart, pdbEnd, color)
 	var style = 'licorice';
 
 	var sele = pdbStart + "-" + pdbEnd ;//+ ":" + chainId;
-
+  if (chainId !== "") sele+=" and :"+chainId;
 	if (pdbEnd - pdbStart < 2) {
 		color = color;
 		style = 'spacefill';
 	}
-
+  console.log("highlight ",sele);
 	var comp = ngl_current_structure;
   stage.getRepresentationsByName('highlight').dispose();
   stage.getRepresentationsByName('hLabel').dispose();
@@ -1953,7 +1953,8 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
   } else {
     document.getElementById('surface').setAttribute("class", "hidden");
   }
-  querySequenceMapping(aname);
+  var isseq = document.getElementById("sequence_mapping").checked;
+  if (isseq) querySequenceMapping(aname);
   console.log("load " + purl + " " + bu + " " + sel_str);
   //if its a surface protein show the modal for the pcpalAxis and the offset
   var params = {

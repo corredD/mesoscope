@@ -206,6 +206,7 @@ var gridoptions = ''
   '<div style="display:flex"><input type="text""  style="width:100%;" placeholder="PDB_Query" id="Query_4" onchange="refineQuery(this)"/>' +
   '<button style="width:20%;" id="QueryBtn_4" onclick="refineQuery(this)">search</button></div>'+
   '<label for="sequence_search"> Use Sequence Blast PDB Search </label><input type="checkbox" name="sequence_search" id="sequence_search">' +
+  '<label for="sequence_search"> Setup mapping uniprot-PDB resnum </label><input type="checkbox" name="sequence_mapping" id="sequence_mapping">' +
   '</div>'+
   '<label id="LoaderTxt" class="hidden" for="aloader"></label>' +
   '<div class="spinner hidden" id="spinner" style="width:200px;height:20px;" >' +
@@ -883,6 +884,51 @@ function setupPDBLib(){
   puvp.appendChild(puv);
 
   pdbcomponent_setup = true;
+  document.addEventListener('PDB.seqViewer.click', function(e){
+    //do something on event
+    console.log('PDB.seqViewer.click');
+    console.log(e);
+
+    if (e.eventData.elementData.elementType ==="uniprot") {
+      //e.eventData.entityId: "1"
+      //e.eventData.entryId: "3bc1"
+      //e.eventData.residueNumber: 98
+      //check if its the uniprot we have in the grid ?
+      if (e.eventData.elementData.domainId !== node_selected.data.uniprot)
+      {
+          node_selected.data.uniprot = e.eventData.elementData.domainId;
+          updateCellValue(gridArray[0], "uniprot", current_grid_row, node_selected.data.uniprot);
+      }
+    }
+    //highligh the clicked residue?
+    var start;
+    var end;
+    if ('chain_range' in e.eventData.elementData.pathData){
+      var sp = e.eventData.elementData.pathData.split("-");
+      start = parseInt(sp[0]);
+      end = parseInt(sp[1]);
+    }
+    else {
+      start = e.eventData.elementData.pathData.start.author_residue_number;//residue_number,//author_residue_number;
+      end = e.eventData.elementData.pathData.end.author_residue_number;//residue_number,//author_residue_number;
+    }
+    var color = "rgb("+e.eventData.elementData.color[0]+", "+e.eventData.elementData.color[1]+", "+e.eventData.elementData.color[2]+")";
+    NGL_ChangeHighlight(start,end,color,
+                        e.eventData.elementData.pathData.chain_id);
+  });
+
+  document.addEventListener('PDB.topologyViewer.click', function(e){
+    //do something on event
+    console.log('PDB.topologyViewer.click');
+    console.log(e);
+  });
+
+  document.addEventListener('PDB.uniprotViewer.click', function(e){
+    //do something on event
+    console.log('PDB.uniprotViewer.click');
+    console.log(e);
+  });
+
   return;
   angular_app.directive('pdbeComp',function($compile){
     return {
@@ -955,7 +1001,27 @@ function setupProtVistaEvents()
     console.log('featureSelected');
     console.log(obj);
 		console.log(obj.feature.begin,obj.feature.end);
-		NGL_ChangeHighlight(obj.feature.begin,obj.feature.end,obj.color);
+    //use Mapping
+    var start = obj.feature.begin;
+    var end = obj.feature.end;
+    var isseq = document.getElementById("sequence_mapping").checked;
+    var ch="";
+    if (isseq) {
+        //whats is the uniport id. and the chain
+        if (node_selected) {
+          console.log(node_selected.data.uniprot);
+          //chain Id ?
+          var k = Object.keys(node_selected.data.mapping[node_selected.data.uniprot])
+          var ch = k[0];
+          if (ch === "chainId") ch = k[1];
+          if (obj.feature.begin in node_selected.data.mapping[node_selected.data.uniprot][ch])
+              start = node_selected.data.mapping[node_selected.data.uniprot][ch][obj.feature.begin];
+          if (obj.feature.end in node_selected.data.mapping[node_selected.data.uniprot][ch])
+              end = node_selected.data.mapping[node_selected.data.uniprot][ch][obj.feature.end];
+        }
+    }
+    console.log(start,end);
+		NGL_ChangeHighlight(start,end,obj.color,ch);
 });
 }
 
