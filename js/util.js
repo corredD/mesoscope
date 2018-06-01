@@ -321,12 +321,21 @@ function Util_selectFolder(e) {
    }
  }
 
+ function Util_stringToArray(bufferString) {
+ 	let uint8Array = new TextEncoder("utf-8").encode(bufferString);
+ 	return uint8Array;
+ }
+ function Util_arrayToString(bufferValue) {
+ 	return new TextDecoder("utf-8").decode(bufferValue);
+ }
+
 function Util_gunzip(compressed_data){
-  var gunzip = new Zlib.Gunzip(compressed);
+  // compressed = Array.<number> or Uint8Array
+  var gunzip = new Zlib.Gunzip(compressed_data);
   var plain = gunzip.decompress();
   return plain;
 }
 
 function Util_parseXML(plaintxt) {
-  return $.parseXML( xml );
+  return $.parseXML( plaintxt );
 }

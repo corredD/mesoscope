@@ -368,13 +368,19 @@ def main():
     form = cgi.FieldStorage()
     if form.has_key("mapping") :
         import urllib2
+        from StringIO import StringIO
+        import gzip
         pdbId = form.getvalue("pdbId")
         url = "ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/xml/"+pdbId+".xml.gz"
         req = urllib2.Request(url);
+        req.add_header('Accept-encoding', 'gzip')
         response = urllib2.urlopen(req);
-        the_page = response.read()
+        buf = StringIO(response.read())
+        f = gzip.GzipFile(fileobj=buf)
+        data = f.read()
+        #the_page = response.read()
         #print '{"raw":"'
-        print the_page
+        print data
         #print '}'
         return
     print '{"log":"'

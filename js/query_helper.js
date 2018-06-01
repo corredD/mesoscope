@@ -572,10 +572,11 @@ function querySequenceMapping(pdbid) {
         url: pmv_server,
         success: function(data) {
           console.log("##MappingFileData###");
-          console.log(data);
-          var rdata = Util_gunzip(data);
-          console.log(rdata);
-          var parsed_data = Util_parseXML(rdata);
+          console.log( typeof data);
+          console.log( data );
+          //var rdata = Util_gunzip(Util_stringToArray(data));
+          //console.log(rdata);
+          var parsed_data = Util_parseXML(data);
           console.log(parsed_data);
         },
         error: function(error) {
