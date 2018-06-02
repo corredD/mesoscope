@@ -622,7 +622,7 @@ function querySequenceMapping(pdbid) {
   }
   var formData = new FormData();
   formData.append("mapping", "true");//array of x,y,z
-  formData.append("pdbId", pdbid);
+  formData.append("pdbId", pdbid.toLowerCase());
 
   console.log(formData);
   //should check if not already done...
