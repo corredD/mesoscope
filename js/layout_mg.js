@@ -7,6 +7,11 @@ var protvista_instance;
 var pdbcomponent_setup = false;
 var angular_app = (app!==null)?app : null;
 
+var seq_feature_viewer_lbl;
+var uniprot_viewer_tab_lbl;
+var topology_viewer_lbl;
+var protvista_tab_lbl;
+
 console.log("angular is defined ?",app);
 //add interaction viewer : https://github.com/ebi-uniprot/interaction-viewer
 //add spv https://github.com/Sinnefa/SPV_Signaling_Pathway_Visualizer_v1.0
@@ -750,6 +755,14 @@ myLayout.registerComponent('topology_viewer', function(container, state) {
   //ahtml+='<code id="pdbeComp_topov" class="pdbeComp" display-in="topov" contenteditable="true">';
   //ahtml+='&lt;pdb-topology-viewer entry-id="1aqd" entity-id="1" height="370"&gt;&lt;/pdb-topology-viewer&gt;';
   //ahtml+='</code></pre></div>';
+  topology_viewer_lbl = $('<div class="messageTab">' + '' + '</div>');
+  // Add the counter element whenever a tab is created
+  container.on( 'tab', function( tab ){
+      tab.element.append( topology_viewer_lbl );
+      tab.element[0].onclick = function(e) {
+        UpdatePDBcomponent(null);
+      };
+  });
   container.getElement().html(ahtml);
 })
 
@@ -760,6 +773,14 @@ myLayout.registerComponent('seq_feature_viewer', function(container, state) {
   //ahtml+='<code id="pdbeComp_seqv" class="pdbeComp" display-in="seqv" contenteditable="true">';
   //ahtml+='&lt;pdb-seq-viewer entry-id="1aqd" entity-id="1" height="370"&gt;&lt;/pdb-seq-viewer&gt;';
   //ahtml+='</code></pre></div>';
+  seq_feature_viewer_lbl = $('<div class="messageTab">' + '' + '</div>');
+  // Add the counter element whenever a tab is created
+  container.on( 'tab', function( tab ){
+      tab.element.append( seq_feature_viewer_lbl );
+      tab.element[0].onclick = function(e) {
+        UpdatePDBcomponent(null);
+      };
+  });
   container.getElement().html(ahtml);
 })
 
@@ -770,10 +791,28 @@ myLayout.registerComponent('uniprot_viewer', function(container, state) {
   //ahtml+='<code id="pdbeComp_puv" class="pdbeComp" display-in="puv" contenteditable="true">';
   //ahtml+='&lt;pdb-uniprot-viewer entry-id="P07550" entity-id="1" height="370"&gt;&lt;/pdb-uniprot-viewer&gt;';
   //ahtml+='</code></pre></div>';
+  uniprot_viewer_tab_lbl = $('<div class="messageTab">' + '' + '</div>');
+  // Add the counter element whenever a tab is created
+  container.on( 'tab', function( tab ){
+      tab.element.append( uniprot_viewer_tab_lbl );
+      tab.element[0].onclick = function(e) {
+        UpdateUniPDBcomponent(null);
+      };
+  });
+  //container.on('tab', setupProVista, this);
   container.getElement().html(ahtml);
 })
 
+
 myLayout.registerComponent('protvista', function(container, state) {
+  protvista_tab_lbl = $('<div class="messageTab">' + '' + '</div>');
+  // Add the counter element whenever a tab is created
+  container.on( 'tab', function( tab ){
+      tab.element.append( protvista_tab_lbl );
+      tab.element[0].onclick = function(e) {
+        setupProVista(null);
+      };
+  });
   container.getElement().html('<div id="protvista" class="protvista" style="height:100%;width=100%"></div>');
 })
 //myLayout.createDragSource( element, newItemConfig );
@@ -870,6 +909,7 @@ function off() {
 function setupPDBLib(){
   var topo = document.getElementById("topov");
   var topop = document.getElementById("topov_p");
+  if (!topop) return;
   topo.parent = topop;
   topop.appendChild(topo);
 
@@ -960,6 +1000,10 @@ function setupPDBLib(){
 function UpdatePDBcomponent(entry)
 {
   //do it for all entity?
+  console.log(entry);
+  console.log(typeof entry);
+  if ( typeof entry !== "string") entry = (node_selected)? node_selected.data.source.pdb:"";
+  if (entry === null) entry = (node_selected)? node_selected.data.source.pdb:"";
   if (!pdbcomponent_setup) setupPDBLib();
   if (entry.length !== 4 ) {
     var asplit = entry.split("_");
@@ -968,6 +1012,9 @@ function UpdatePDBcomponent(entry)
     else return;
   }
   console.log("UpdatePDBcomponent with "+entry);
+  seq_feature_viewer_lbl.text( entry );
+  topology_viewer_lbl.text( entry );
+
   var topo = document.getElementById("pdbeComp_topov");//document.getElementsByTagName("pdb-topology-viewer")[0];
   var seqv = document.getElementById("pdbeComp_seqv");//document.getElementsByTagName("pdb-topology-viewer")[0];
   seqv.innerHTML = "";
@@ -990,10 +1037,13 @@ function UpdatePDBcomponent(entry)
 }
 
 function UpdateUniPDBcomponent(entry){
+  if (entry===null) entry = node_selected.data.uniprot;
   if (!pdbcomponent_setup) setupPDBLib();
   var puv = document.getElementById("pdbeComp_puv");//document.getElementsByTagName("pdb-topology-viewer")[0];
   puv.innerHTML = "";
   puv.innerHTML = '&lt;pdb-uniprot-viewer entry-id="'+entry+'" entity-id="1" height="370"&gt;&lt;/pdb-uniprot-viewer&gt;';
+  uniprot_viewer_tab_lbl.text(entry);
+  //protvista_tab_lbl.text(entry);
 }
 
 function setupProtVistaEvents()
@@ -1029,6 +1079,7 @@ function setupProtVistaEvents()
 /*protvista features*/
 //the pvf features to protvista e.g. pdb,model,pfam...
 function setupProVista(uniid){
+  if (uniid===null) uniid = node_selected.data.uniprot;
 	if (!protvista_instance) {
 		if (!ProtVista ) ProtVista = require(['ProtVista']);
 		protvista_instance = new ProtVista({
@@ -1048,6 +1099,9 @@ function setupProVista(uniid){
 		});
 	}
 	setupProtVistaEvents();
+  //uniprot_viewer_tab_lbl.text(uniid);
+  //uniprot_viewer_tab_lbl.text(uniid);
+  protvista_tab_lbl.text(uniid);
 }
 
 
