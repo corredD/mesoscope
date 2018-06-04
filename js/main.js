@@ -1691,6 +1691,7 @@ function updateAttributesNode(anode,new_data) {
 }
 
 function getcomphtml(anode) {
+	if (anode.data.nodetype!=="compartment") return;
   var htmlStr='<div style="display:flex;flex-flow: column;">';
 	for (var e in anode.data)
 	{
@@ -1745,22 +1746,25 @@ function getcomphtml(anode) {
 		//how many mb do we have so far
 		//already has some beads?
 		var mb_options=["None"];
+		var cradius = 500.0;
 		if ("pos" in anode.data && anode.data.pos.length !== 0 ) {
 			//for each metaball add a radius slider, or use a select ?
 			//and change the radius of the selected bead
 			//d.data.radii[lod].radii
 			//d.data.pos[lod].coords
-			var n_mb = d.data.pos[0].coords.length/3;
+			var n_mb = anode.data.pos[0].coords.length/3;
 			mb_options = d3.range(n_mb);
+			cradius = parseFloat(anode.data.radii[0].radii[0]);//node_selected.data.radii[0].radii[mbi];
 		}
 		else {
-			d.data.pos = [{"coords":[0.0,0.0,0.0]}];
-			d.data.radii=[{"radii":[500]}];
+			anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
+			anode.data.radii=[{"radii":[500]}];
 			mb_options = [0];
 		}
 		htmlStr += getSelect("metaball_elem", "options_elems", "Choose MB",
 													"SetActiveMB(this)", mb_options,0);
-		htmlStr+='<div style="display:flex;"><label>Radius(A):</label><input id="comp_slider" type="range" min="1" max="10000" step="1" value="'+cradius+'"style="width:70%" oninput="updateLabel(this)" onchange="resizeMetaBall(this)"/>';
+		htmlStr+='<div style="display:flex;"><label>Radius(A):</label>';
+		htmlStr+='<input id="comp_slider" type="range" min="1" max="10000" step="1" value="'+cradius+'"style="width:70%" oninput="updateLabel(this)" onchange="resizeMetaBall(this)"/>';
 		htmlStr+='<input  id="comp_slider_num" min="1" max="10000" type="number" value="'+cradius+'" style="width:30%" oninput="updateLabel(this)" onchange="resizeMetaBall(this)"/></div>';
 		htmlStr+= '<button onclick="RemoveMetaball()">Remove Selected MB</button>';
 		htmlStr+= '<button onclick="AddMetaball()">Add MB</button>';

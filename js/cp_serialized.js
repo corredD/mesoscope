@@ -380,7 +380,11 @@ function SetupOneCompartment(acomp,acompdic)
   if (acomp.geom_type === "raw") {acomp["geom"] = acompdic.mesh;}
   if (acomp.geom_type === "file") {acomp["geom"] = acompdic.filename;}
   if (acomp.geom_type === "sphere") {acomp["geom"] = {"name":acompdic.name,"radius":acompdic.radius};}
-  if (acomp.geom_type === "mb") {acomp["geom"] = acompdic.mb;}
+  if (acomp.geom_type === "mb") {
+      acomp["geom"] = acompdic.mb;
+      acomp["pos"] = [{"coords":acompdic.mb.positions}];
+      acomp["radii"] = [{"radii":acompdic.mb.radii}];
+  }
   if (acomp.geom_type === "None") {acomp["geom"] = "None";}
   //could have both a source file and a mesh ? if the source is a map or pdb ?
   acomp["thickness"] = ("thickness" in acompdic)?acompdic.thickness:7.5;

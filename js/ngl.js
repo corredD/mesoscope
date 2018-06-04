@@ -516,9 +516,12 @@ function NGL_Setup() {
   stage.mouseObserver.signals.dragged.add(function (deltaX,deltaY){
     //update
     //console.log(ngl_current_pickingProxy);
+    //console.log(node_selected.data.nodetype);
+    //console.log(node_selected);
     //console.log(ngl_current_pickingProxy.component.name);
     //console.log(ngl_current_pickingProxy.position);
     if (!ngl_current_pickingProxy) return;
+    if (node_selected && node_selected.data.nodetype!=="compartment") return;
     if(ngl_current_pickingProxy.component && ngl_current_pickingProxy.component.name==="mb") {
       //update pcpAxis and rotaiton
       NGL_updateMBcompDrag(ngl_current_pickingProxy.component)
