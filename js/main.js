@@ -3392,7 +3392,23 @@ function dragended() {
   	//node_selected =  d3v4.event.subject;
   	//node_selected_indice = nodes.indexOf(node_selected);
   	UpdateSelectionPdbFromId(d3v4.event.subject.data.id);
-  	if (current_mode===0) NGL_UpdateWithNode(d3v4.event.subject);
+  	if (current_mode===0) {
+			NGL_UpdateWithNode(d3v4.event.subject);
+			//also update the PDB component and sequence viewer
+			UpdatePDBcomponent(d3v4.event.subject.data.source.pdb.toLowerCase());
+			if (!(d3v4.event.subject.data.uniprot)||d3v4.event.subject.data.uniprot === "") {
+				//gather the first uniprot code ?
+				var entry = CleanEntryPDB(d3v4.event.subject.data.source.pdb.toLowerCase());
+				current_list_pdb=[entry]
+				custom_report_uniprot_only = true;
+				customReport(entry);//should update the uniprot
+			}
+			else {
+				setupProVista(d3v4.event.subject.data.uniprot);
+				console.log(protvista_instance);
+				UpdateUniPDBcomponent(d3v4.event.subject.data.uniprot);
+			}
+		}
   	line_selected = null;
   }
   else {

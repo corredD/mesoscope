@@ -1442,9 +1442,11 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
           if (arow.uniprot !== "") { //featureView.uniprotId) {
             if (arow.pdb && arow.pdb != "None" && arow.pdb != "") {
               var apdb = arow.pdb.split("_")[0];
-              if (apdb.length === 4)
-                if (featureView)
+              if (apdb.length === 4){
+                if (featureView){
                   featureView.addPDB(apdb);
+                }
+              }
             }
             if (featureView) {
               document.getElementById("up-field").value = arow.uniprot;
@@ -1463,11 +1465,24 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
           }
 
         }else {
-          console.log("fetch uniprot " + arow.uniprot)
-          //place the query in the text input
-          document.getElementById("Query_3").value = arow.name.split("_").join("+");
-          queryUniportKBfromName(arow.name);
+          if (arow.pdb !=="") {
+            var entry = CleanEntryPDB(arow.pdb.toLowerCase());
+            current_list_pdb=[entry]
+            customReport(entry);//should update the uniprot
+          }
+          else {
+            console.log("fetch uniprot " + arow.uniprot)
+            //place the query in the text input
+            document.getElementById("Query_3").value = arow.name.split("_").join("+");
+            queryUniportKBfromName(arow.name);
         }
+        }
+        //check if there is a pdb and update NGL and other widget
+        if (arow.pdb !=="") {
+          NGL_UpdateWithNode(node_selected);
+          UpdatePDBcomponent(arow.pdb.toLowerCase());
+        }
+        else {UpdatePDBcomponent("");}
       } else {
         console.log("ngl_current_item_id", ngl_current_item_id);
         console.log("arow.id", arow.id);
@@ -1531,7 +1546,25 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
               console.log(arow.pdb, arow.bu, arow.selection);
               NGL_Load(arow.pdb, arow.bu, arow.selection);
             }
+            //update both PDB component
             UpdatePDBcomponent(arow.pdb.toLowerCase()); //only work if 4letter
+            if (arow.uniprot === "") {
+              //gather the first uniprot code ?
+              var entry = CleanEntryPDB(arow.pdb.toLowerCase());
+              if (entry !=="") {
+                current_list_pdb=[entry]
+                custom_report_uniprot_only = true;
+        				customReport(entry);//should update the uniprot
+              }
+              else {
+                UpdateUniPDBcomponent("");
+                setupProVista("");
+              }
+            }
+            else {
+              UpdateUniPDBcomponent(arow.uniprot);
+              setupProVista(arow.uniprot);
+            }
           } else {
             console.log("query PDB for " + arow.name);
             if (arow.name !== "protein_name") {

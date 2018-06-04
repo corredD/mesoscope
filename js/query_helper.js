@@ -1,5 +1,6 @@
 var rcsb_url = "https://www.rcsb.org";
 var current_list_pdb;
+var custom_report_uniprot_only = false;
 var cumulative_res = {
   "pdbs": null,
   "mols": null
@@ -245,7 +246,7 @@ function customReportCB(response, querytxt) {
         //row.label = test[0]["Protein names"].split("(")[0];
         row.uniprot = cdata.data[0].uniprotAcc;
         row.label = cdata.data[0].uniprotRecommendedName;
-        row.pdb = cdata.data[0].structureId;
+        if (custom_report_uniprot_only === false) row.pdb = cdata.data[0].structureId;
         gridArray[0].dataView.beginUpdate();
         gridArray[0].invalidateRow(row.id);
         gridArray[0].dataView.updateItem(row.id, row);
@@ -261,6 +262,8 @@ function customReportCB(response, querytxt) {
         groupByElem_cb(3, "structureId");
         gridArray[3].render();
         gridArray[3].dataView.refresh();
+        UpdateUniPDBcomponent(row.uniprot);
+        setupProVista(row.uniprot);
       }
     }
   }
@@ -269,7 +272,7 @@ function customReportCB(response, querytxt) {
     "pdbs": null,
     "mols": null
   };
-
+  custom_report_uniprot_only = false;
 }
 
 function customReport(querytxt) {
