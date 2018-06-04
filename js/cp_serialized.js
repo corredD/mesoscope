@@ -88,9 +88,12 @@ function oneIngredient(singr,node){
 	  node.data.source.transform={}
 	  node.data.source.transform.offset = node.data.offset;
     //add the selection and the bu in the source
-    node.data.source.selection = (node.data.selection)?node.data.selection:"";
-    node.data.source.bu = (node.data.bu)?node.data.bu:"";
-    node.data.source.model = (node.data.model)?node.data.model:"";
+    if (!(node.data.source.selection) || node.data.source.selection === "")
+        node.data.source.selection = (node.data.selection)?node.data.selection:"";
+    if (!(node.data.source.bu) || node.data.source.bu === "")
+        node.data.source.bu = (node.data.bu)?node.data.bu:"";
+    if (!(node.data.source.model) || node.data.source.model === "")
+        node.data.source.model = (node.data.model)?node.data.model:"";
 	  singr["encapsulatingRadius"] = node.data.size;
 	  singr["source"] = node.data.source;//var source = ("pdb" in ing_dic)? ing_dic["pdb"] : "None";
 	  singr["nbMol"] = node.data.count;
