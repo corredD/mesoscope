@@ -211,7 +211,7 @@ var gridoptions = ''
   '<div style="display:flex"><input type="text""  style="width:100%;" placeholder="PDB_Query" id="Query_4" onchange="refineQuery(this)"/>' +
   '<button style="width:20%;" id="QueryBtn_4" onclick="refineQuery(this)">search</button></div>'+
   '<label for="sequence_search"> Use Sequence Blast PDB Search </label><input type="checkbox" name="sequence_search" id="sequence_search">' +
-  '<label for="sequence_search"> Setup mapping uniprot-PDB resnum </label><input type="checkbox" name="sequence_mapping" id="sequence_mapping">' +
+  '<label for="sequence_search"> Setup mapping uniprot-PDB resnum </label><input type="checkbox" name="sequence_mapping" id="sequence_mapping" checked>' +
   '</div>'+
   '<label id="LoaderTxt" class="hidden" for="aloader"></label>' +
   '<div class="spinner hidden" id="spinner" style="width:200px;height:20px;" >' +
@@ -906,6 +906,60 @@ function off() {
   document.getElementById("overlay").style.display = "none";
 } //overlay_text
 
+
+function pdbcomp_click_callback(e) {
+  if (e.eventData.elementData.elementType === "molecule") return;
+  if (e.eventData.elementData.elementType ==="uniprot") {
+    //e.eventData.entityId: "1"
+    //e.eventData.entryId: "3bc1"
+    //e.eventData.residueNumber: 98
+    //check if its the uniprot we have in the grid ?
+    if (e.eventData.elementData.domainId !== node_selected.data.uniprot)
+    {
+        node_selected.data.uniprot = e.eventData.elementData.domainId;
+        updateCellValue(gridArray[0], "uniprot", current_grid_row, node_selected.data.uniprot);
+        setupProVista(node_selected.data.uniprot);
+    }
+  }
+  //highligh the clicked residue?
+  var start;
+  var end;
+  if ('chain_range' in e.eventData.elementData.pathData){
+    var sp = e.eventData.elementData.pathData.chain_range.split("-");
+    start = parseInt(sp[0]);
+    end = parseInt(sp[1]);
+  }
+  else {
+    start = parseInt(e.eventData.elementData.pathData.start.residue_number);//residue_number,//author_residue_number;
+    end = parseInt(e.eventData.elementData.pathData.end.residue_number);//residue_number,//author_residue_number;
+  }
+  var color = "rgb("+e.eventData.elementData.color[0]+", "+e.eventData.elementData.color[1]+", "+e.eventData.elementData.color[2]+")";
+  //mapping ?
+  var entityId = e.eventData.entityId;
+  var did = node_selected.data.mapping.unimap[entityId];// e.eventData.elementData.domainId;
+  var ch = e.eventData.elementData.pathData.chain_id;
+  console.log("before mapping ",start,end,entityId,did,ch);
+  if (start in node_selected.data.mapping[did][ch].mapping)
+      start = node_selected.data.mapping[did][ch].mapping[start];
+  if (end in node_selected.data.mapping[did][ch].mapping)
+      end = node_selected.data.mapping[did][ch].mapping[end];
+  console.log("after mapping ",start,end);
+  NGL_ChangeHighlight(start,end,color,ch);
+}
+
+function pdbcomp_mouseover_callback(e) {
+  if (e.eventData.elementData.elementType === "molecule") return;
+  var entityId = e.eventData.entityId;
+  var did = node_selected.data.mapping.unimap[entityId];//
+  var ch = e.eventData.elementData.pathData.chain_id;
+  var resnum = e.eventData.residueNumber;
+  console.log("before mapping ",resnum,entityId,did,ch);
+  if (resnum in node_selected.data.mapping[did][ch].mapping)
+      resnum = node_selected.data.mapping[did][ch].mapping[resnum];
+  console.log("after mapping ",resnum);
+  NGL_ChangeHighlightResidue(resnum,ch);
+}
+
 function setupPDBLib(){
   var topo = document.getElementById("topov");
   var topop = document.getElementById("topov_p");
@@ -924,44 +978,19 @@ function setupPDBLib(){
   puvp.appendChild(puv);
 
   pdbcomponent_setup = true;
+
   document.addEventListener('PDB.seqViewer.click', function(e){
     //do something on event
     console.log('PDB.seqViewer.click');
     console.log(e);
-
-    if (e.eventData.elementData.elementType ==="uniprot") {
-      //e.eventData.entityId: "1"
-      //e.eventData.entryId: "3bc1"
-      //e.eventData.residueNumber: 98
-      //check if its the uniprot we have in the grid ?
-      if (e.eventData.elementData.domainId !== node_selected.data.uniprot)
-      {
-          node_selected.data.uniprot = e.eventData.elementData.domainId;
-          updateCellValue(gridArray[0], "uniprot", current_grid_row, node_selected.data.uniprot);
-          setupProVista(node_selected.data.uniprot);
-      }
-    }
-    //highligh the clicked residue?
-    var start;
-    var end;
-    if ('chain_range' in e.eventData.elementData.pathData){
-      var sp = e.eventData.elementData.pathData.split("-");
-      start = parseInt(sp[0]);
-      end = parseInt(sp[1]);
-    }
-    else {
-      start = e.eventData.elementData.pathData.start.residue_number;//residue_number,//author_residue_number;
-      end = e.eventData.elementData.pathData.end.residue_number;//residue_number,//author_residue_number;
-    }
-    var color = "rgb("+e.eventData.elementData.color[0]+", "+e.eventData.elementData.color[1]+", "+e.eventData.elementData.color[2]+")";
-    NGL_ChangeHighlight(start,end,color,
-                        e.eventData.elementData.pathData.chain_id);
+    pdbcomp_click_callback(e);
   });
 
   document.addEventListener('PDB.topologyViewer.click', function(e){
     //do something on event
     console.log('PDB.topologyViewer.click');
     console.log(e);
+    pdbcomp_click_callback(e);
   });
 
   document.addEventListener('PDB.uniprotViewer.click', function(e){
@@ -970,8 +999,20 @@ function setupPDBLib(){
     console.log(e);
   });
 
+  document.addEventListener('PDB.topologyViewer.mouseover', function(e){
+    console.log('PDB.topologyViewer.mouseover');
+    console.log(e);
+    pdbcomp_mouseover_callback(e);
+  });
+
+  document.addEventListener('PDB.seqViewer.mouseover', function(e){
+    console.log('PDB.seqViewer.mouseover');
+    console.log(e);
+    pdbcomp_mouseover_callback(e);
+  });
+
   return;
-  angular_app.directive('pdbeComp',function($compile){
+  /*angular_app.directive('pdbeComp',function($compile){
     return {
       restrict: 'C',
       link: function(scope, element, attrs){
@@ -993,7 +1034,7 @@ function setupPDBLib(){
       }
     }
   });
-  console.log(angular_app);
+  console.log(angular_app);*/
 }
 
 function CleanEntryPDB(entry) {
@@ -1100,16 +1141,17 @@ function setupProtVistaEvents()
         if (node_selected) {
           console.log(node_selected.data.uniprot);
           //chain Id ?
-          var k = Object.keys(node_selected.data.mapping[node_selected.data.uniprot])
+          var k = Object.keys(node_selected.data.mapping[node_selected.data.uniprot]);//Object.keys(node_selected.data.mapping[node_selected.data.uniprot])
           var ch = k[0];
           if (ch === "chainId") ch = k[1];
-          if (obj.feature.begin in node_selected.data.mapping[node_selected.data.uniprot][ch])
-              start = node_selected.data.mapping[node_selected.data.uniprot][ch][obj.feature.begin];
-          if (obj.feature.end in node_selected.data.mapping[node_selected.data.uniprot][ch])
-              end = node_selected.data.mapping[node_selected.data.uniprot][ch][obj.feature.end];
+          //node_selected.data.mapping.E1B792.A.mapping[23]
+          if (obj.feature.begin in node_selected.data.mapping[node_selected.data.uniprot][ch].mapping)
+              start = node_selected.data.mapping[node_selected.data.uniprot][ch].umapping[obj.feature.begin];
+          if (obj.feature.end in node_selected.data.mapping[node_selected.data.uniprot][ch].mapping)
+              end = node_selected.data.mapping[node_selected.data.uniprot][ch].umapping[obj.feature.end];
         }
     }
-    console.log(start,end);
+    console.log("new ",start,end);
 		NGL_ChangeHighlight(start,end,obj.color,ch);
 });
 }

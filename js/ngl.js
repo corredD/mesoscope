@@ -1096,6 +1096,35 @@ function NGL_ChangeColorScheme(col_e) {
   });
 }
 
+function NGL_ChangeHighlightResidue(resnum,chainId)
+{
+  if (!ngl_current_structure) return;
+  var style = 'spacefill';
+  var sele = resnum;
+  if (chainId !== "") sele+=" and :"+chainId;
+  var comp = ngl_current_structure;
+  stage.getRepresentationsByName('highlightRes').dispose();
+  stage.getRepresentationsByName('hLabelRes').dispose();
+
+    comp.addRepresentation(style, {
+        sele: sele,
+        color: color,
+        radius: 2,
+				name:"highlightRes"
+      });
+
+		comp.addRepresentation("label", {
+														sele: sele+".CA",
+														color: "yellow",
+														scale: 3.0,
+														zOffset: 6.0,
+														name:"hLabelRes"
+												});
+    //stage.centerView(false, sele);
+
+  comp.autoView(200);
+}
+
 //check the uniprot mapping for the given resiudes
 function NGL_ChangeHighlight(pdbStart, pdbEnd, color, chainId)
 {

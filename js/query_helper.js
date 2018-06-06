@@ -556,16 +556,24 @@ function queryPDBfromSequence(sequence) {
 }
 
 function SetSequenceMapping(xmldata){
+  //node_selected.data.xmldata = xmldata;//for debug
   //set up the obect that will hold the seq mapping.
   //the server should actually return the mapping directly in json
   var entity = xmldata.getElementsByTagName("entity");
   var mapping = [];//entity number = {"topdb":{},"touni":{}}
   var umapping = {};
   //mapping uniacces: entity-chain , res-res
+  //should have the same entity number in ngl_structure
+  var ngl_entity_mapping = {};
+  var nEntity = ngl_current_structure.structure.entityList.length;
+  for (var i=0;i<nEntity;i++){
+    ngl_entity_mapping[(i+1).toString()]="";
+  }
   for (var i =0;i<entity.length;i++) {
     var entity_mapping = {"entityId":entity[i].getAttribute("entityId"),"uniId":"","chainId":"","mapping":{}};//chain
     var residues = entity[i].getElementsByTagName("residue");
     for (var j =0;j<residues.length;j++) {
+      //actual number from protvista
       var dbResNum = residues[j].getAttribute("dbResNum");//what this number correspond to ?
       var crossRefDb = residues[j].getElementsByTagName("crossRefDb");//first two child
       var pdbResNum;
@@ -591,18 +599,24 @@ function SetSequenceMapping(xmldata){
           }
       }
       if ((found1&&found2)&&(uniResNum && pdbResNum && uniaccess && chainId)){
-        if (entity_mapping.uniId === "") entity_mapping.uniId = uniaccess;
-        if (entity_mapping.chainId === "") entity_mapping.chainId = chainId;
-        entity_mapping.mapping[uniResNum]=pdbResNum;
+        //if (entity_mapping.uniId === "") entity_mapping.uniId = uniaccess;
+        //if (entity_mapping.chainId === "") entity_mapping.chainId = chainId;
+        //entity_mapping.mapping[uniResNum]=pdbResNum;
         if (!(uniaccess in umapping)) umapping[uniaccess] = {chainId:{"umapping":{},"mapping":{}}};
         if (!(chainId in umapping[uniaccess])) umapping[uniaccess][chainId] = {"umapping":{},"mapping":{}};
         umapping[uniaccess][chainId].umapping[uniResNum]=pdbResNum;//to use with PDB component ?
         umapping[uniaccess][chainId].mapping[dbResNum]=pdbResNum;//to use with protvista
       }
+      if (uniaccess){
+        if (ngl_entity_mapping[(i+1).toString()]==="") ngl_entity_mapping[(i+1).toString()] = uniaccess;
+      }
+      //umapping[uniaccess].mapping[dbResNum]=pdbResNum;//to use with protvista
+      //entity_mapping.mapping[dbResNum]=pdbResNum;
     }
-    mapping.push(entity_mapping);
+    //mapping.push(entity_mapping);
   }
-  console.log(mapping);
+  umapping.unimap = ngl_entity_mapping;
+  //console.log(mapping);
   return umapping;
 }
 
