@@ -1738,6 +1738,7 @@ function UpdateSelectionPdbFromId(node_id) {
   gridArray[0].setSelectedRows([test]);
   gridArray[0].setActiveCell(test, 7); //7 is currently pdb
   gridArray[0].gotoCell(test, 7, false);
+  current_grid_row = test.id;
 }
 
 function SelectRowFromId(node_id) {

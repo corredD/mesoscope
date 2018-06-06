@@ -232,7 +232,7 @@ function switchMode(e){
 
 function CreateNew(){
 	//reset everything
-	current_mode =1;
+	current_mode = 1;
 	document.getElementById("unchecked").checked = true;
 	document.getElementById("addingr").setAttribute("class", "show");
 	document.getElementById("addcomp").setAttribute("class", "show");
@@ -248,7 +248,17 @@ function CreateNew(){
   nodes[0].children=[];
   graph.nodes=nodes;
 	graph.links=[];
+	//clear selection
+	node_selected = null;
+	node_selected_indice = -1;
+	nodes_selections=[];
+	//clear highligh
+	clearHighLight();
+	//clear NGL
 	if (stage) stage.removeAllComponents();
+	//clear PDB component widget
+	setupProVista(null);
+	UpdatePDBcomponent(null);
 	}
 
 
@@ -1938,18 +1948,31 @@ function UpdateCompartmentRep(anode){
 function SetObjectsOptionsDiv(anode) {
 	//ues the node objects
 	var htmlStr='';
-	if (anode.data.nodetype === "compartment") {
+	if ("source" in anode) {
+		//id,index,name1,name2,pdb1,sel1,sel2
+		htmlStr+= '<label> id : ' + anode.id +'</label>';
+		htmlStr+= '<label> partner 1 : ' + anode.name1 +'</label>';
+		htmlStr+= '<label> partner 3 : ' + anode.name2 +'</label>'
+		htmlStr+= '<label> pdb1 : ' + anode.pdb1 +'</label>'
+		htmlStr+= '<label> sel1: ' + anode.sel1 +'</label>'
+		htmlStr+= '<label> sel2: ' + anode.sel2 +'</label>'
+		if (!("data" in anode)) {
+			anode.data={};
+			anode.data.nodetype = "interaction";
+		}
+	}
+	else if (anode.data.nodetype === "compartment") {
 		//return div with upload for geometry or select0
 		htmlStr += getcomphtml(anode);
 		UpdateCompartmentRep(anode);
 	}
 	else {
 		//list all property ? use the grid editor ?
-		for (var e in anode.data)
-			htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>'
-		//htmlStr+=-'<label> Parent Name '+anode.parent.name+'</label>'
-		var cname = anode.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/');
-		htmlStr+='<label> path: '+cname+'</label>'
+			for (var e in anode.data)
+				htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>'
+			//htmlStr+=-'<label> Parent Name '+anode.parent.name+'</label>'
+			var cname = anode.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/');
+			htmlStr+='<label> path: '+cname+'</label>'
 	}
 	var container_ = document.getElementById("objectOptions");
 	if (container_) {
@@ -2573,7 +2596,7 @@ function sortNodeByDepth(objects){
        }
        );
    }
-   if (nodes_selections.length !==0 ) {
+   if ( (nodes_selections.length % 2) === 0 ) {
    	//show link between i,i+1
    	for (var l=0;l<nodes_selections.length-1;l+=2){
    			drawLinkTwoNode(nodes_selections[l],nodes_selections[l+1]);
@@ -2911,7 +2934,7 @@ function AddANode(some_data){
    newNode.x = canvas.width/2;
    newNode.y = canvas.height/2;
    newNode.r = 30;
-   newNode.source = {"pdb":newNode.pdb,"bu":newNode.bu,"selection":newNode.selection,"model":""};
+   newNode.data.source = {"pdb":newNode.pdb,"bu":newNode.bu,"selection":newNode.selection,"model":""};
    graph.nodes[0].children.push(newNode);
    graph.nodes.push(newNode);
    console.log(newNode);
@@ -3256,7 +3279,7 @@ function mouseMoved(event) {
 
 function dragstarted() {
 	//click event on canvas
-	console.log("DraggStart",ctrlKey);
+	console.log("DraggStart",ctrlKey,d3v4.event.subject);
 	draggin_d_node = true;
 	//padding
   var rect = canvas.getBoundingClientRect(), // abs. size of element
@@ -3273,7 +3296,7 @@ function dragstarted() {
   	console.log("??",nodes_selections,ctrlKey);
   	node_selected =  d3v4.event.subject;
   	node_selected_indice = graph.nodes.indexOf(node_selected);
-		SelectRowFromId(node_selected.data.id);
+
   	if (ctrlKey){
   		console.log("ctrl",nodes_selections);
   		if (nodes_selections.indexOf(node_selected)===-1) nodes_selections.push(node_selected);
@@ -3283,8 +3306,7 @@ function dragstarted() {
   		nodes_selections=[]
   		nodes_selections.push(node_selected);
   		}
-  	console.log("??",nodes_selections);
-
+  	console.log("??",nodes_selections,ctrlKey);
   	//NGL_UpdateWithNode(d3v4.event.subject);
   }
 	else if (d3v4.event.subject.parent) {
@@ -3312,13 +3334,13 @@ function dragstarted() {
   		draggin_d_node = false;
   }
   //change the node.depth os that it doesnt collide
-  if (current_mode === 1 && d3v4.event.subject.parent)
+  if (current_mode === 1 && d3v4.event.subject.parent && !(ctrlKey))
   {
   	var depth = d3v4.event.subject.depth;
   	d3v4.event.subject._depth = depth;
   	d3v4.event.subject.depth = 6;
   	updateForce();
-  	}
+  }
   //d3v4.event.subject.fx = d3v4.event.subject.x;
   //d3v4.event.subject.fy = d3v4.event.subject.y;
  // console.log(d3v4.event.subject.depth);
@@ -3355,7 +3377,7 @@ function dragged() {
   //node_selected =  d3v4.event.subject;
   d3v4.event.subject.fx = start_drag.x  + ((d3v4.event.x - start_drag.x ) / transform.k) * scaleX;//d3v4.event.x;
   d3v4.event.subject.fy = start_drag.y  + ((d3v4.event.y - start_drag.y ) / transform.k) * scaleY;
-  if (current_mode === 1 && d3v4.event.subject.parent){
+  if (current_mode === 1 && d3v4.event.subject.parent && !(ctrlKey)){
   	//do we hover another object.
 
   	//if ingredient hovering compartment show it
@@ -3387,15 +3409,17 @@ function dragged() {
 function dragended() {
 	draggin_d_node = false;
 	console.log("dragended",d3v4.event.subject);
+	if (ctrlKey) return;
   if (!d3v4.event.active && HQ) simulation.alphaTarget(0);
   d3v4.event.subject.fx = null;
   d3v4.event.subject.fy = null;
 	SetObjectsOptionsDiv(d3v4.event.subject);
-	d3v4.event.subject.data.visited = true;
   if (!d3v4.event.subject.children && !("source" in d3v4.event.subject)) {
+		d3v4.event.subject.data.visited = true;
   	//node_selected =  d3v4.event.subject;
   	//node_selected_indice = nodes.indexOf(node_selected);
   	UpdateSelectionPdbFromId(d3v4.event.subject.data.id);
+		//SelectRowFromId(node_selected.data.id);
   	if (current_mode===0) {
 			NGL_UpdateWithNode(d3v4.event.subject);
 			//also update the PDB component and sequence viewer
@@ -3416,7 +3440,7 @@ function dragended() {
   	line_selected = null;
   }
   else {
-  	if ("source" in d3v4.event.subject && d3v4.event.subject.nodetype==="ingredient"){
+  	if ("source" in d3v4.event.subject ){//&& d3v4.event.subject.nodetype==="ingredient"
 	  	line_selected = d3v4.event.subject;
   		nodes_selections=[]
   		nodes_selections.push(line_selected.source);
@@ -3428,7 +3452,7 @@ function dragended() {
 	  	//if pdb1 and pdb2 -> NGL_UpdateWithNode with all info...
   	}
   }
-  if (current_mode === 1)
+  if (current_mode === 1 )
   {
 		node_selected = d3v4.event.subject;
   	mousexy = {"x":d3v4.event.subject.x,"y":d3v4.event.subject.y};
@@ -3438,7 +3462,7 @@ function dragended() {
 		//restore depth value
   	d3v4.event.subject.depth = d3v4.event.subject._depth;
   	//if subject is an ingredient and hover is compartment change graph
-  	if (hovernodes.node )
+  	if (hovernodes.node && (!("source" in node_selected)) )
   	{
 			console.log("hover ",hovernodes.node.data.name);
   		console.log (hovernodes.node.data.nodetype);

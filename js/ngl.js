@@ -1591,6 +1591,22 @@ ngl_current_structure = o;
 ngl_current_structure.sele = sele;
 ngl_current_structure.assambly = assambly;
 */
+/*
+function NGL_GetCurrentSelection(){
+  var d=node_selected;
+  if (!(node_selected)) return "";
+  var bu = (d.data.source.bu) ? d.data.source.bu : ""; //document.getElementById("bu_str");
+  //selection need to be pmv string
+  var sele = (d.data.source.selection) ? d.data.source.selection : ""; //document.getElementById("sel_str");
+  //sele = sele.replace(":", "");
+  //selection is in NGL format. Need to go in pmv format
+  //every :C is a chainNameScheme
+  var model = (d.data.source.model) ? d.data.source.model : ""; //model_elem.selectedOptions[0].value;
+  if ((!model) || model.startsWith("S") || model.startsWith("a")) model = "";
+  if (sele.startsWith("/")) sele = "";
+
+}
+*/
 function NGL_GetAtomDataSet(pdb,struture_object){
   var dataset = [];
   var o = struture_object;
@@ -2325,6 +2341,7 @@ function NGL_UpdateWithNodePair(d) {
   if (!d.pdb1 || d.pdb1 === "") {
     //use the pdb of the ingredient ?
     pdb = d.source.data.source.pdb;
+    if (!pdb || pdb === "") return;
     ngl_current_node = d.source;
     NGL_Load(pdb, "AU", ""); //transform ?
     //ngl_current_structure.setPosition([ -200,0,0 ])

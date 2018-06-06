@@ -1108,7 +1108,7 @@ function UpdatePDBcomponent(entry)
 }
 
 function UpdateUniPDBcomponent(entry){
-  if (entry===null) entry = node_selected.data.uniprot;
+  if (node_selected && entry===null) entry = node_selected.data.uniprot;
   if (!pdbcomponent_setup) setupPDBLib();
   var puv = document.getElementById("pdbeComp_puv");//document.getElementsByTagName("pdb-topology-viewer")[0];
   puv.innerHTML = "";
@@ -1159,11 +1159,11 @@ function setupProtVistaEvents()
 /*protvista features*/
 //the pvf features to protvista e.g. pdb,model,pfam...
 function setupProVista(uniid){
-  if (uniid===null) uniid = node_selected.data.uniprot;
+  if (uniid===null) uniid = (node_selected)?node_selected.data.uniprot:"";
   if (!(uniid) || uniid ==="" || uniid === null) {
     console.log("Update ProVista with null");
     protvista_tab_lbl.text("");
-    document.getElementById("protvista").innerHtml ="";
+    document.getElementById("protvista").innerHTML ="";
     return;
   }
 	if (!protvista_instance) {
@@ -1176,7 +1176,7 @@ function setupProVista(uniid){
 
 		});
 	} else { //update
-		document.getElementById("protvista").innerHtml ="";
+		document.getElementById("protvista").innerHTML ="";
 		protvista_instance = new ProtVista({
 			el: document.getElementById("protvista"),
 			uniprotacc: uniid,
