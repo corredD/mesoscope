@@ -17,7 +17,7 @@ var nlg_preview_isosurface = true;
 var pcp_elem = [];
 var offset_elem = [];
 
-var use_mglserver_beads = true;
+var use_mglserver_beads = false;
 
 var nLod = 3;
 var slidercluster_elem;
@@ -622,7 +622,29 @@ function NGL_updateCurrentBeadsLevelClient() {
   //center
   //async function updateCurrentBeadsLevel() {
   console.log("update beads", beads_elem.selectedOptions[0].value); //undefined?//lod level
-  var ngl_sele = new NGL.Selection(sele_elem.value);
+  var asele = "polymer";
+  var o = ngl_current_structure;
+  if (o.ngl_sele && o.ngl_sele!=="") {
+    if (o.ngl_sele.string !== null) asele = o.ngl_sele.string;
+    else asele = o.ngl_sele;
+  }
+  else if (o.sele&& o.sele!=="") {
+    asele = o.sele;
+  }
+  if (sele_elem.value&& sele_elem.value!=="") {
+    if (asele !== sele_elem.value) asele = sele_elem.value;
+  }
+  if (asele === "") asele = "polymer";
+  var bu = false;
+  if (o.assambly !== "AU" && o.object.biomolDict[o.assambly]) {
+    //need to apply the matrix to the selection inside the BU selection ?
+    //console.log(o.object.biomolDict[o.assambly].getSelection());
+    //build using given selection AND biomolDic selection
+    asele = "(" + o.object.biomolDict[o.assambly].getSelection().string + ") AND " + asele;
+    bu = true;
+  }
+  console.log("selection is ",asele);
+  var ngl_sele = new NGL.Selection(asele);
   var center = NGL_GetGeometricCenter(ngl_current_structure, ngl_sele).center;
   ngl_current_structure.ngl_sele = ngl_sele;
   var lod = beads_elem.selectedOptions[0].value;
@@ -779,7 +801,9 @@ function NGL_updateCurrentBeadsLevel() {
       }
     }
     else {
-      if (use_mglserver_beads) buildFromServer(node_selected.data.source.pdb,false,true,ngl_current_structure);
+      if (use_mglserver_beads) {
+        buildFromServer(node_selected.data.source.pdb,false,true,ngl_current_structure);
+      }
       else NGL_updateCurrentBeadsLevelClient();
       }
   }
@@ -867,7 +891,7 @@ function NGL_setModelOptions(ngl_ob) {
   }
   for (let i = 0; i < modelStore.count; ++i) {
     //addOption(options, i, 'Model ' + (i + 1))
-    model_elem.options[model_elem.options.length] = new Option(i, i,false, (parseInt(model) === i));
+    model_elem.options[model_elem.options.length] = new Option(i, i,(parseInt(model) === i), (parseInt(model) === i));
   }
   //if (modelStore.count === 0) model_elem.options[model_elem.options.length] = new Option(0, 0);
 }
@@ -909,27 +933,7 @@ function NGL_setSymmetryOptions(ngl_ob) {
 function NGL_ChangeSymmetry(select0) {}
 
 function NGL_ChangeBiologicalAssambly(selected0) {
-  console.log(rep_elem.selectedOptions[0].value);
-  console.log(selected0.value);
-  console.log(sele_elem.value);
-  stage.getRepresentationsByName("polymer").dispose();
-  stage.eachComponent(function(o) {
-    o.addRepresentation(rep_elem.selectedOptions[0].value, {
-      colorScheme: color_elem.selectedOptions[0].value,
-      sele: sele_elem.value,
-      name: "polymer",
-      assembly: assambly_elem.selectedOptions[0].value
-    })
-  });
-  /*
-  var rep = stage.getRepresentationsByName("polymer");
-  rep.setParameters({
-    colorScheme: color_elem.selectedOptions[0].value,
-    sele: sele_elem.value,
-    name: "polymer",
-    assembly: selected0.value
-  });
-  */
+  NGL_ChangeRepresentation(rep_elem.selectedOptions[0]);
   //updatTheTable
   if (ngl_current_item_id) {
     updateDataGridRowElem(0, ngl_current_item_id, "bu", selected0.value);
@@ -970,14 +974,23 @@ function NGL_Changelabel(select0) {
 function NGL_ChangeRepresentation(selectedO) {
   console.log(assambly_elem.selectedOptions[0].value);
   stage.getRepresentationsByName("polymer").dispose();
+  stage.getRepresentationsByName("axes").dispose();
   stage.eachComponent(function(o) {
     o.addRepresentation(selectedO.value, {
       colorScheme: color_elem.selectedOptions[0].value,
       sele: sele_elem.value,
       name: "polymer",
       assembly: assambly_elem.selectedOptions[0].value
-    })
+    });
+    //doesnt work with biological assambly
+    o.addRepresentation("axes", {
+      sele: sele_elem.value,
+      showAxes: true,
+      showBox: true,
+      radius: 0.2
+    });
   });
+
   //this overwrite the opacity of the beads
   NGL_showBeadsLevel_cb(beads_elem.selectedOptions[0].value);
 }
@@ -987,7 +1000,6 @@ function NGL_ChangeSelection(astr_elem) {
   console.log(astr_elem.value);
   NGL_ChangeRepresentation(rep_elem.selectedOptions[0]);
   if (ngl_current_item_id) updateDataGridRowElem(0, ngl_current_item_id, "selection", (astr_elem.value === "polymer") ? "" : astr_elem.value);
-  NGL_showBeadsLevel_cb(beads_elem.selectedOptions[0].value);
   stage.autoView(1000);
   if (node_selected) {
     node_selected.data.selection = astr_elem.value;
@@ -1057,7 +1069,11 @@ function NGL_ChangeModel(model_elem) {
   //split on /
   console.log(curr_sel + "/" + model_elem.value);
   sele_elem.value = curr_sel + "/" + model_elem.value;
-  NGL_ChangeRepresentation(rep_elem.selectedOptions[0]);
+  var o = ngl_current_structure;
+  var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele_elem.value)).center;
+  console.log("gcenter", center);
+  o.setPosition([-center.x, -center.y, -center.z]); //center molecule
+  //reset center
   //var rep = stage.getRepresentationsByName( "polymer" );
   //rep.setParameters(
   //    	{colorScheme: color_elem.selectedOptions[0].value,
@@ -1081,6 +1097,7 @@ function NGL_ChangeModel(model_elem) {
     node_selected.data.source.model = model_elem.value;
   }
   if (ngl_current_structure) NGL_setChainSelectionOptions(ngl_current_structure);
+  NGL_ChangeRepresentation(rep_elem.selectedOptions[0]);
 }
 
 function NGL_ChangeColorScheme(col_e) {
@@ -1591,7 +1608,7 @@ ngl_current_structure = o;
 ngl_current_structure.sele = sele;
 ngl_current_structure.assambly = assambly;
 */
-/*
+
 function NGL_GetCurrentSelection(){
   var d=node_selected;
   if (!(node_selected)) return "";
@@ -1606,7 +1623,23 @@ function NGL_GetCurrentSelection(){
   if (sele.startsWith("/")) sele = "";
 
 }
-*/
+/*
+console.log(o.object.biomolDict[o.assambly].partList.length);
+console.log(o.object.biomolDict[o.assambly]);
+for (var j = 0; j < o.object.biomolDict[o.assambly].partList.length; j++) {
+  console.log(o.object.biomolDict[o.assambly].partList[j].matrixList.length);
+  for (var k = 0; k < o.object.biomolDict[o.assambly].partList[j].matrixList.length; k++) {
+    var mat = o.object.biomolDict[o.assambly].partList[j].matrixList[k];
+    var new_pos = new NGL.Vector3(sph.center.x, sph.center.y, sph.center.z);
+    //console.log(new_pos);
+    new_pos.applyMatrix4(mat);
+    pos[pos.length] = new_pos.x - center.x;
+    pos[pos.length] = new_pos.y - center.y;
+    pos[pos.length] = new_pos.z - center.z;
+    rad[rad.length] = sph.radius;
+  }
+}*/
+
 function NGL_GetAtomDataSet(pdb,struture_object){
   var dataset = [];
   var o = struture_object;
@@ -1623,25 +1656,47 @@ function NGL_GetAtomDataSet(pdb,struture_object){
   else if (o.sele&& o.sele!=="") {
     asele = o.sele;
   }
-  else if (sele_elem.value&& sele_elem.value!=="") {
-    asele = sele_elem.value;
+  if (sele_elem.value&& sele_elem.value!=="") {
+    if (asele !== sele_elem.value) asele = sele_elem.value;
   }
   if (asele === "") asele = "polymer";
-    var bu = false;
-    if (o.assambly !== "AU" && o.object.biomolDict[o.assambly]) {
-      //need to apply the matrix to the selection inside the BU selection ?
-      //console.log(o.object.biomolDict[o.assambly].getSelection());
-      //build using given selection AND biomolDic selection
-      asele = "(" + o.object.biomolDict[o.assambly].getSelection().string + ") AND " + asele;
-      bu = true;
-    }
-    console.log("selection is ",asele);
-    o.structure.eachAtom(function(ap) {
-      if (ap.atomname==="CA" || nAtom < 20000) dataset.push([ap.x, ap.y, ap.z]);
-    }, new NGL.Selection(asele));
-    console.log("dataset is ", dataset.length);
-    return dataset;
+  var bu = false;
+  if (o.assambly !== "AU" && o.object.biomolDict[o.assambly]) {
+    //need to apply the matrix to the selection inside the BU selection ?
+    //console.log(o.object.biomolDict[o.assambly].getSelection());
+    //build using given selection AND biomolDic selection
+    asele = "(" + o.object.biomolDict[o.assambly].getSelection().string + ") AND " + asele;
+    bu = true;
   }
+  console.log("selection is ",asele);
+  var amodel;
+  /*if (o.structure.modelStore.count > 1) {
+    asele = "polymer";
+    //check if chain selected ?
+    o.structure.eachModel(function(m){
+      console.log("model",m.index,node_selected.data.source.model,(m.index === node_selected.data.source.model));
+      if (m.index === parseInt(node_selected.data.source.model)){
+        console.log(m);
+        m.eachAtom(function(ap) {
+          console.log(ap.modelIndex,ap.index);
+          if (ap.atomname==="CA" || nAtom < 20000) dataset.push([
+                        o.structure.atomStore.x[ap.index],
+                        o.structure.atomStore.y[ap.index],
+                        o.structure.atomStore.z[ap.index]]);
+        });
+      }
+    });
+  }*/
+      o.structure.eachAtom(function(ap) {
+        if (ap.atomname==="CA" || nAtom < 20000) {
+          dataset.push([ap.x, ap.y, ap.z]);
+          //console.log(ap.modelIndex,ap.index);
+        }
+      }, new NGL.Selection(asele));
+
+  console.log("dataset is ", dataset.length, dataset);
+  return dataset;
+}
 
 function NGL_processSymmetry(symmetry) {
   const symmetryData = {}
@@ -1822,7 +1877,7 @@ function buildWithKmeans(o, center) {
   var asele = (o.ngl_sele) ? o.ngl_sele : "polymer";
   if (o.ngl_sele.string !== null) asele = o.ngl_sele.string;
   if (asele === "") asele = "polymer";
-  console.log(asele); //current sele undefined
+  console.log("kmeans sele",asele); //current sele undefined
   var bu = false;
   console.log(o.assambly); //current assambly
   if (o.assambly !== "AU" && o.object.biomolDict[o.assambly]) {
@@ -1832,11 +1887,13 @@ function buildWithKmeans(o, center) {
     asele = "(" + o.object.biomolDict[o.assambly].getSelection().string + ") AND " + asele;
     bu = true;
   }
-  //console.log(asele);
-  var dataset = [];
-  o.structure.eachAtom(function(ap) {
-    dataset.push([ap.x, ap.y, ap.z]);
-  }, new NGL.Selection(asele));
+  console.log("Kmeans selection". asele);
+  var dataset = NGL_GetAtomDataSet(null,o);
+  if (dataset.length === 0 ) return null;
+  //var dataset = [];
+  //o.structure.eachAtom(function(ap) {
+  //    dataset.push([ap.x, ap.y, ap.z]);
+  //  }, new NGL.Selection(asele));
 
   //center = NGL_GetGeometricCenter(o,asele);
   //for (var i=0;i<nAtom;i++) {
@@ -1848,46 +1905,78 @@ function buildWithKmeans(o, center) {
   //center the selection?
   var clusters = kmeans.run(dataset, parseInt(slidercluster_elem.value));
   console.log(bu, clusters);
-  if (!bu) return NGL_ClusterToBeads(clusters, o, center);
-  else {
-    var pos = []; //flat array
-    var rad = []; //flat array
-    var nCluster = clusters.length;
-    console.log("use center ", center);
-    for (var i = 0; i < nCluster; i++) {
-      var cl = clusters[i];
-      //get center
-      var sele = new NGL.Selection('@' + cl.join(','));
-      //var sele = numbers.filter(CheckIfPrime);
-      var sph = NGL_GetGeometricCenter(o, sele); //atom in cluster
-      //var sph = NGL_GetGeometricCenterArray(cl,dataset);//atom in cluster
-      //pos[pos.length] = sph.center.x-center.x;
-      //pos[pos.length] = sph.center.y-center.y;
-      //pos[pos.length] = sph.center.z-center.z;
-      //rad[rad.length] = sph.radius;
-      //add as many as matrixList.
-      console.log(o.object.biomolDict[o.assambly].partList.length);
-      console.log(o.object.biomolDict[o.assambly]);
-      for (var j = 0; j < o.object.biomolDict[o.assambly].partList.length; j++) {
-        console.log(o.object.biomolDict[o.assambly].partList[j].matrixList.length);
-        for (var k = 0; k < o.object.biomolDict[o.assambly].partList[j].matrixList.length; k++) {
-          var mat = o.object.biomolDict[o.assambly].partList[j].matrixList[k];
-          var new_pos = new NGL.Vector3(sph.center.x, sph.center.y, sph.center.z);
-          //console.log(new_pos);
-          new_pos.applyMatrix4(mat);
-          pos[pos.length] = new_pos.x - center.x;
-          pos[pos.length] = new_pos.y - center.y;
-          pos[pos.length] = new_pos.z - center.z;
-          rad[rad.length] = sph.radius;
-        }
+  if (!bu) return NGL_ClusterToBeads(clusters, o, center,dataset);
+  else return NGL_applybuToclusters(o,clusters,center,dataset);
+}
+
+
+function NGL_applyBUtoResultsBeads(o,beads,center){
+  var pos = []; //flat array
+  var rad = []; //flat array
+  var nCluster = beads.length;
+  console.log("use center ", center);
+  var j=0;
+  for (var i = 0; i < nCluster; i++) {
+    //var cl = beads.centers[j];
+    var radius = beads.radii[i];
+    var sph = cl.centers; //atom in cluster
+
+    for (var j = 0; j < o.object.biomolDict[o.assambly].partList.length; j++) {
+      for (var k = 0; k < o.object.biomolDict[o.assambly].partList[j].matrixList.length; k++) {
+        var mat = o.object.biomolDict[o.assambly].partList[j].matrixList[k];
+        var new_pos = new NGL.Vector3(beads.centers[j], beads.centers[j+1], beads.centers[j+2]);
+        //console.log(new_pos);
+        new_pos.applyMatrix4(mat);
+        pos[pos.length] = new_pos.x - center.x;
+        pos[pos.length] = new_pos.y - center.y;
+        pos[pos.length] = new_pos.z - center.z;
+        rad[rad.length] = radius;
       }
     }
-    return {
-      "pos": pos,
-      "rad": rad
-    };
-    //return clusters;
+    j+=3;
   }
+  beads.centers = pos;
+  beads.radii = rad;
+  return beads;
+}
+
+function NGL_applybuToclusters(o,clusters,center,dataset){
+  var pos = []; //flat array
+  var rad = []; //flat array
+  var nCluster = clusters.length;
+  console.log("use center ", center);
+  for (var i = 0; i < nCluster; i++) {
+    var cl = clusters[i];
+    //get center
+    //var sele = new NGL.Selection('@' + cl.join(','));
+    //var sele = numbers.filter(CheckIfPrime);
+    //var sph = NGL_GetGeometricCenter(o, sele); //atom in cluster
+    var sph = NGL_GetGeometricCenterArray(cl,dataset);//atom in cluster
+    //pos[pos.length] = sph.center.x-center.x;
+    //pos[pos.length] = sph.center.y-center.y;
+    //pos[pos.length] = sph.center.z-center.z;
+    //rad[rad.length] = sph.radius;
+    //add as many as matrixList.
+    console.log(o.object.biomolDict[o.assambly].partList.length);
+    console.log(o.object.biomolDict[o.assambly]);
+    for (var j = 0; j < o.object.biomolDict[o.assambly].partList.length; j++) {
+      console.log(o.object.biomolDict[o.assambly].partList[j].matrixList.length);
+      for (var k = 0; k < o.object.biomolDict[o.assambly].partList[j].matrixList.length; k++) {
+        var mat = o.object.biomolDict[o.assambly].partList[j].matrixList[k];
+        var new_pos = new NGL.Vector3(sph.center.x, sph.center.y, sph.center.z);
+        //console.log(new_pos);
+        new_pos.applyMatrix4(mat);
+        pos[pos.length] = new_pos.x - center.x;
+        pos[pos.length] = new_pos.y - center.y;
+        pos[pos.length] = new_pos.z - center.z;
+        rad[rad.length] = sph.radius;
+      }
+    }
+  }
+  return {
+    "pos": pos,
+    "rad": rad
+  };
 }
 
 function NGL_ClusterVolumeToBeads(some_clusters, dataset, center) {
@@ -1910,15 +1999,19 @@ function NGL_ClusterVolumeToBeads(some_clusters, dataset, center) {
   };
 }
 
-function NGL_ClusterToBeads(some_clusters, astructure, center) {
+function NGL_ClusterToBeads(some_clusters, astructure, center, dataset) {
   var pos = []; //flat array
   var rad = []; //flat array
   var nCluster = some_clusters.length;
   console.log("use center ", center);
+  var model = (node_selected.data.source.model)?"/"+node_selected.data.source.model:"";
   for (var i = 0; i < nCluster; i++) {
     var cl = some_clusters[i];
-    var sele = new NGL.Selection('@' + cl.join(','));
-    var sph = NGL_GetGeometricCenter(astructure, sele); //atom in cluster
+    //if model need to offset all the number ?
+    //var asele = new NGL.Selection(model+'@' + cl.join(','));
+    //console.log(asele,model);
+    var sph = NGL_GetGeometricCenterArray(cl, dataset);
+    //var sph = NGL_GetGeometricCenter(astructure, asele); //atom in cluster
     pos[pos.length] = sph.center.x - center.x;
     pos[pos.length] = sph.center.y - center.y;
     pos[pos.length] = sph.center.z - center.z;
@@ -1933,6 +2026,7 @@ function NGL_ClusterToBeads(some_clusters, astructure, center) {
 function NGL_buildBeads(lod, o, center) {
 
   var _cluster_coords = NGL_ClusterStructure(o, center);
+  if (!(_cluster_coords)) return;
   console.log("cluster?");
   //var _cluster_coords = NGL_ClusterToBeads(_cluster,o,center);
   //console.log(_cluster_coords);
@@ -1966,6 +2060,7 @@ function NGL_autoBuildBeads(o, center) {
     "radii": [R]
   };
   var lvl1_cluster_coords = NGL_ClusterStructure(o, center);
+  if (!(lvl1_cluster_coords)) return;
   //var lvl1_cluster_coords = NGL_ClusterToBeads(lvl1_cluster,o,center);
   var lvl1_pos = {
     "coords": lvl1_cluster_coords.pos

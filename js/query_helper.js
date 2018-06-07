@@ -850,6 +850,7 @@ function buildFromServer(pdb,cms,beads,astructure){
     var lod = beads_elem.selectedOptions[0].value;
     var dataset = NGL_GetAtomDataSet(pdb,astructure);
     var formData = new FormData();
+    //BU problem here
     formData.append("atomsCoords", JSON.stringify(dataset));//array of x,y,z
     if (cms) {
       //add form for cms
@@ -888,6 +889,10 @@ function buildFromServer(pdb,cms,beads,astructure){
           }
         }
         if ("centers" in results) {
+          //deal with bu
+          if (astructure.assambly !== "AU" && astructure.object.biomolDict[astructure.assambly]) {
+             results = NGL_applyBUtoResultsBeads(astructure,results,[0,0,0]);
+           }
           NGL_ShowBeadsCR(results,lod);
           if (node_selected) {
             node_selected.data.pos = [{
@@ -935,7 +940,7 @@ function buildFromServerPDB(pdb){
   } else if (pdb && pdb !== "") formData.append("pdbId", pdb);
   if (bu && bu !== "") formData.append("bu", bu);
   if (sele && sele !== "") formData.append("selection", sele);
-  if (model && model !== "") formData.append("modelId", model);
+  if (model && model !== "") formData.append("model", (parseInt(model)+1).toString());
   //formData.append(name, value);
   console.log([pdb, bu, sele, model, thefile]);
   console.log(formData);
@@ -991,8 +996,8 @@ function buildCMS()
     }
     else {
       var pdb = node_selected.data.source.pdb;
-      buildFromServer(pdb,true,false,ngl_current_structure);
-      //buildCMS2();
+      //buildFromServer(pdb,true,false,ngl_current_structure);
+      buildCMS2();
     }
 }
 
@@ -1030,7 +1035,7 @@ function buildCMS2() {
   } else if (pdb && pdb !== "") formData.append("pdbId", pdb);
   if (bu && bu !== "") formData.append("bu", bu);
   if (sele && sele !== "") formData.append("selection", sele);
-  if (model && model !== "") formData.append("modelId", model);
+  if (model && model !== "") formData.append("model", (parseInt(model)+1).toString());
   //formData.append(name, value);
   console.log([pdb, bu, sele, model, thefile]);
   console.log(formData);
@@ -1172,7 +1177,7 @@ function buildLoopAsync() {
   } else if (pdb && pdb !== "") formData.append("pdbId", pdb);
   if (bu && bu !== "") formData.append("bu", bu);
   if (sele && sele !== "") formData.append("selection", sele);
-  if (model && model !== "") formData.append("modelId", model);
+  if (model && model !== "") formData.append("model", (parseInt(model)+1).toString() );
   //formData.append(name, value);
   console.log("query geom with ", [pdb, bu, sele, model, thefile]);
   //console.log(formData);
@@ -1245,7 +1250,7 @@ function buildCMS1(e) {
   if (pdb !== "") formData.append("pdbId", pdb);
   if (bu !== "") formData.append("bu", bu);
   if (sele !== "") formData.append("selection", sele);
-  if (model !== "") formData.append("modelId", model);
+  if (model !== "") formData.append("model", (parseInt(model)+1).toString());
   console.log(pdb, bu, sele, model, thefile);
   //formData.append(name, value);
   $.ajax({
