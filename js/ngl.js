@@ -1119,6 +1119,7 @@ function NGL_ChangeHighlightResidue(resnum,chainId)
   var style = 'spacefill';
   var sele = resnum;
   if (chainId !== "") sele+=" and :"+chainId;
+  if (node_selected && node_selected.data.source.model && node_selected.data.source.model!=="") sele+=" and /"+node_selected.data.source.model;
   var comp = ngl_current_structure;
   stage.getRepresentationsByName('highlightRes').dispose();
   stage.getRepresentationsByName('hLabelRes').dispose();
@@ -1127,6 +1128,7 @@ function NGL_ChangeHighlightResidue(resnum,chainId)
         sele: sele,
         color: color,
         radius: 2,
+        assembly: assambly_elem.selectedOptions[0].value,
 				name:"highlightRes"
       });
 
@@ -1135,7 +1137,8 @@ function NGL_ChangeHighlightResidue(resnum,chainId)
 														color: "yellow",
 														scale: 3.0,
 														zOffset: 6.0,
-														name:"hLabelRes"
+														name:"hLabelRes",
+                            assembly: assambly_elem.selectedOptions[0].value
 												});
     //stage.centerView(false, sele);
 
@@ -1152,6 +1155,8 @@ function NGL_ChangeHighlight(pdbStart, pdbEnd, color, chainId)
 
 	var sele = pdbStart + "-" + pdbEnd ;//+ ":" + chainId;
   if (chainId !== "") sele+=" and :"+chainId;
+  if (node_selected && node_selected.data.source.model && node_selected.data.source.model!=="") sele+=" and /"+node_selected.data.source.model;
+
 	if (pdbEnd - pdbStart < 2) {
 		color = color;
 		style = 'spacefill';
@@ -1165,7 +1170,8 @@ function NGL_ChangeHighlight(pdbStart, pdbEnd, color, chainId)
         sele: sele,
         color: color,
         radius: 1,
-				name:"highlight"
+				name:"highlight",
+        assembly: assambly_elem.selectedOptions[0].value
       });
 
 		comp.addRepresentation("label", {
@@ -1173,7 +1179,8 @@ function NGL_ChangeHighlight(pdbStart, pdbEnd, color, chainId)
 														color: "grey",
 														scale: 2.0,
 														zOffset: 4.0,
-														name:"hLabel"
+														name:"hLabel",
+                            assembly: assambly_elem.selectedOptions[0].value
 												});
     //stage.centerView(false, sele);
 
