@@ -144,12 +144,14 @@ var ngl_options= ''+
       '<label id="heading"></label>' +
     '</div> ' +
     '<div class="hidden" id="surface">' +
+      '<label id="pcpLabel">Principal Axis (shift+control left click)</label>' +
       '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpX" type="range" min="-100" max="100" step="1" style="width:70%" />' +
       '<input class="inputNumber" id="num1" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
       '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpY" type="range" min="-100" max="100" step="1" style="width:70%" />' +
       '<input class="inputNumber" id="num2" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
       '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpZ" type="range" min="-100" max="100" step="1" style="width:70%"/>' +
       '<input class="inputNumber" id="num3" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
+      '<label id="offsetLabel">Offset (shift+control right click)</label>' +
       '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetX" type="range" min="-450" max="450" step="1" style="width:70%" />' +
       '<input class="inputNumber" id="num4" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
       '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetY" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
@@ -1000,14 +1002,16 @@ function setupPDBLib(){
   });
 
   document.addEventListener('PDB.topologyViewer.mouseover', function(e){
-    console.log('PDB.topologyViewer.mouseover');
-    console.log(e);
-    pdbcomp_mouseover_callback(e);
+    //console.log('PDB.topologyViewer.mouseover');
+    //console.log(e);
+    var resnum = e.eventData.residueNumber;
+    var ch = e.eventData.chainId;
+    NGL_ChangeHighlightResidue(resnum,ch);
   });
 
   document.addEventListener('PDB.seqViewer.mouseover', function(e){
-    console.log('PDB.seqViewer.mouseover');
-    console.log(e);
+    //console.log('PDB.seqViewer.mouseover');
+    //console.log(e);
     pdbcomp_mouseover_callback(e);
   });
 

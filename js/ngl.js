@@ -1142,7 +1142,7 @@ function NGL_ChangeHighlightResidue(resnum,chainId)
 												});
     //stage.centerView(false, sele);
 
-  comp.autoView(200);
+    //comp.autoView(200);
 }
 
 //check the uniprot mapping for the given resiudes
@@ -1184,7 +1184,7 @@ function NGL_ChangeHighlight(pdbStart, pdbEnd, color, chainId)
 												});
     //stage.centerView(false, sele);
 
-  comp.autoView(200);
+  //comp.autoView(200);
 }
 
 

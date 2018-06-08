@@ -311,7 +311,7 @@ var allfield_query={
 	    compartment_index:["compartment"],
 	    biological_unit_index:["biological","bu","assambly","stoichiometry"],
 	    string_selection_index:["selection","chain"],
-	    location_index:["membrane", "localisation","localization","location"],
+	    location_index:["membrane", "localisation","localization","location","surface"],
 	    model_index:["model"],
 	    molarity_index:["contentration","molarity"],
 	    uniprot_index:["uniprot"],
@@ -761,6 +761,12 @@ function guessCompartmentFromColumn(data, rootName) {
 				//	console.log("loc is ",loc);
 				//}
 				if (comp) {
+						//check if can split with "." or "/"
+						var csplit = comp.split(".");
+						if (csplit.length > 1) comp = csplit[csplit.length-1];
+						csplit = comp.split("/");
+						if (csplit.length > 1) comp = csplit[csplit.length-1];
+						//what about nesting, can visualy fix it
 						if (comp_name.indexOf(comp) === -1) {
 							comp_name.push(comp);
 							var cdata = {
@@ -953,7 +959,7 @@ function isInteger(n) {
 function IsSurface(cellValue) {
 	if (!cellValue) return false;//undefined
 	for (var j=0;j<surface_tag.length;j++) {
-		let comon = findLongestCommonSubstring(surface_tag[j],cellValue.toLowerCase().replace(" ",""))
+		let comon = findLongestCommonSubstring(surface_tag[j].toLowerCase(),cellValue.toLowerCase().replace(" ",""))
 		//console.log(surface_tag[j],cellValue.toLowerCase(),comon);
 		if (comon && comon!=="" ) {
 			if ( comon.length >= surface_tag[j].length ) return true;
@@ -1136,7 +1142,7 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
 		molecularweight_index=allfield.molecularweight_index,
 		confidence_index=allfield.confidence_index,
     compartments_index=allfield.compartment_index;
-  console.log("mapping is ");
+  console.log("mapping for "+rootName+" is ");
   console.log(allfield);
 	var compartments={};
 	var compgraph = getModalCompGraph() ;//the main graph
@@ -1231,7 +1237,7 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
 				if (allfield.color_index !==-1) {
 					if (idata[allfield.color_index]) color = idata[allfield.color_index].split(',').map(Number);//chain:residues?
 				}
-        sele = NGL_GetSelection(sele,model);
+        //sele = NGL_GetSelection(sele,model);
         var elem = {
 					"name":name,"size":25,"molecularweight":mw,"confidence":confidence,"color":color,
         	"source":{"pdb":source,"bu":bu,"selection":sele,"model":model},"count":acount,
@@ -1245,6 +1251,10 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
 				if (!comp_column) {
 					//not the multicolumn compartment definition
 					if (comp!==""){
+							var csplit = comp.split(".")
+							if (csplit.length >1) comp = csplit[csplit.length-1];
+							csplit = comp.split("/")
+							if (csplit.length >1) comp = csplit[csplit.length-1];
 							// a column compartment was set by user
 							//use the modal mapping
 							comp_elem = float_compartments[comp];
@@ -1778,6 +1788,7 @@ function getcomphtml(anode) {
 		htmlStr+='<input  id="comp_slider_num" min="1" max="10000" type="number" value="'+cradius+'" style="width:30%" oninput="updateLabel(this)" onchange="resizeMetaBall(this)"/></div>';
 		htmlStr+= '<button onclick="RemoveMetaball()">Remove Selected MB</button>';
 		htmlStr+= '<button onclick="AddMetaball()">Add MB</button>';
+		htmlStr+= '<label> mouse ctrl-left click to drag metaball</label>';
 		htmlStr+= '<div><input type="checkbox"  id="meta_preview" onclick="NGL_ToggleMetaGeom(this)" checked>';
 		htmlStr+= '<label for="meta_preview"> Preview IsoSurface </label></div>';
 		//button Remove
