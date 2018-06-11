@@ -507,8 +507,8 @@ myLayout.on('stateChanged', function() {
     state = JSON.stringify(config);
   }
   localStorage.setItem('savedState', state);
-  //var jdata = serializedRecipe(graph.nodes, graph.links);
-  //localStorage.setItem('savedRecipe', JSON.stringify(jdata));
+  var jdata = serializedRecipe(graph.nodes, graph.links);
+  localStorage.setItem('savedRecipe', JSON.stringify(jdata));
 });
 
 function saveCurrentState() {
@@ -870,13 +870,21 @@ $(document).ready(function() {
     clearInterval(interval);
     if (savedRecipe !== null && usesavedState) LoadSaveState(JSON.parse(savedRecipe));
     else LoadExampleMpn();
-    evaluate_interval = setInterval(EvaluateCurrentReadyState,10000);
+    evaluate_interval = setInterval(EvaluateCurrentReadyState,10000);//in ms, Do every 10 seconds
     var checkboxes = document.getElementById("selection_ch_checkboxes");
     checkboxes.style.display = "none";
     //setupPDBLib();
 		//'use strict';angular.bootstrap(document, ['pdb.component.library']);
   }.bind(this), 20);
 });
+
+/*
+window.onpopstate = function(event) {
+  //save the recipe
+  console.log("autosave");
+	saveCurrentState();
+};
+*/
 /*
 var topo = document.getElementsByClassName("topologyViewerWrapper");
 var seqs = document.getElementsByClassName("seqViewerWrapper");

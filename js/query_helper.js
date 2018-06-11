@@ -811,6 +811,7 @@ function OneCPIngredient(node, surface) {
     aing_dic["radii"] = node.data.radii;
   }
   aing_dic["packingMode"] = node.data.buildtype; //random, file etc...
+  aing_dic["comments"] = node.data.comments;
   if (node.data.ingtype === "fiber"){
     //support dna, rna peptide, actine etc...
     aing_dic = helper_getFiberIngredientDescription(aing_dic);

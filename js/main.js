@@ -445,13 +445,16 @@ function OneIngredient(ing_dic,surface) {
 		//console.log(offset);
 		//console.log(principalVector);
 		//check the type
+		var comments = ("comments" in ing_dic)? ing_dic["comments"] :"";
 		var atype = ("Type" in ing_dic)? ing_dic["Type"] :"";//Grow,MultiSphere,etc...
 		var packingMode = ("packingMode" in ing_dic)? ing_dic["packingMode"] :"";//random,close,etc...
 		var btype = GetIngredientTypeAndBuildType(ing_dic);//"ingtype":btype.type,"buildtype":btype.build,
 		var elem ={"name":name,"size":size,"molecularweight":mw,"confidence":confidence,
 	  	"source":source,"count":acount,"ingtype":btype.type,"buildtype":btype.build,
-	  	"molarity":molarity, "surface":surface,"geom":geom,"geom_type":geom_type,"label":label,
-	  	"uniprot":uniprot,"pcpalAxis":principalVector,"offset":offset,"pos":p,"radii":r,"nodetype":"ingredient"};
+	  	"molarity":molarity, "surface":surface,"geom":geom,"geom_type":geom_type,
+			"label":label,"comments":comments,
+	  	"uniprot":uniprot,"pcpalAxis":principalVector,"offset":offset,"pos":p,
+			"radii":r,"nodetype":"ingredient"};
 	  //console.log(JSON.stringify(elem));
 	  //console.log(elem);
 	  return elem;
@@ -1657,6 +1660,7 @@ function checkAttributes(agraph){
 		//if (!("color" in agraph[i].data)) agraph[i].data.color = [0,0,0];
 		if (!("ingtype" in agraph[i].data)) agraph[i].data.ingtype = "protein";
 		if (!("buildtype" in agraph[i].data)) agraph[i].data.buildtype = "random";
+		if (!("comments" in agraph[i].data)) agraph[i].data.comments = "";
 		//if (!("color" in agraph[i].data)) agraph[i].data.color = [];
 		if (agraph[i].data.molecularweight > property_mapping.molecularweight.max) property_mapping.molecularweight.max = agraph[i].data.molecularweight;
 		if (agraph[i].data.molecularweight < property_mapping.molecularweight.min) property_mapping.molecularweight.min = agraph[i].data.molecularweight;
@@ -3467,7 +3471,7 @@ function dragended() {
   		nodes_selections=[]
   		nodes_selections.push(line_selected.source);
   		nodes_selections.push(line_selected.target);
-	  	node_selected = null;
+	  	node_selected = line_selected.source;
 	  	//its a line/interactin with an id.
 	  	UpdateSelectionInteractionFromId(d3v4.event.subject.id);//undefined ?
 	  	if (current_mode===0) NGL_UpdateWithNodePair(d3v4.event.subject);

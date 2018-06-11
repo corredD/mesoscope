@@ -120,6 +120,7 @@ function oneIngredient(singr,node){
     singr["meshType"] = node.data.geom_type;//meshfile or v,f,n?
     singr["ingtype"] = node.data.ingtype;
     singr["buildtype"] = node.data.buildtype;
+    singr["comments"] = node.data.comments;
 	  //parse
 	  //description=label,organism,score,
 	  //partners_properties
@@ -293,6 +294,7 @@ function OneIngredientDeserialized(ing_dic,surface,comp) {
 	  }
 
 	  var label = ("description" in ing_dic)? ing_dic["description"] : "";
+    var comments = ("comments" in ing_dic)? ing_dic["comments"] : "";
 	  var acount = ("nbMol" in ing_dic)? ing_dic["nbMol"] : 0;
 	  if (!acount ) acount = 0;
 	  var molarity = ("molarity" in ing_dic)? ing_dic["molarity"] : 0.0;
@@ -345,6 +347,7 @@ function OneIngredientDeserialized(ing_dic,surface,comp) {
 	  	"uniprot":"","pcpalAxis":principalVector,
       "offset":offset,"pos":p,"radii":r,
       "ingtype":ingtype,"buildtype":buildtype,
+      "comments":comments,
       "nodetype":"ingredient"};//,"id":id};
 	  return elem;
 	}
