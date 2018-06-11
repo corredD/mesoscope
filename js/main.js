@@ -283,6 +283,7 @@ var allfield={
 			confidence_index:-1,
 			include_index:-1,
 			color_index:-1,
+			comment_index:-1,
 	    compartments:-1//special case where one column per comnpartment
 	    };
 var allfield_labels={
@@ -302,8 +303,10 @@ var allfield_labels={
 			confidence_index:"overall confidence score",
 			include_index:"include the ingredient (x,null,true,false)",
 			color_index:"predefined color for ingredient (r,g,b)",
+			comment_index:"notes and comments for the ingredient",
 	    compartments:""//special case where one column per comnpartment
 	    };
+
 var allfield_query={
   		name_index:["protein","name"],
 	    source_index:["structure","source","pdb"],
@@ -321,10 +324,9 @@ var allfield_query={
 			confidence_index:["confidence","score"],
 			include_index:["include"],
 			color_index:["color","rgb"],
+			comment_index:["note","comment"],
 	    compartments:""//special case where one column per comnpartment
 	    };
-
-
 
 function checkPartners(ing_dic,currentId){
 	var partners=[]
@@ -1237,12 +1239,13 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
 				if (allfield.color_index !==-1) {
 					if (idata[allfield.color_index]) color = idata[allfield.color_index].split(',').map(Number);//chain:residues?
 				}
+				var comments = (allfield.comment_index!==-1)?idata[allfield.comment_index]:"";
         //sele = NGL_GetSelection(sele,model);
         var elem = {
 					"name":name,"size":25,"molecularweight":mw,"confidence":confidence,"color":color,
         	"source":{"pdb":source,"bu":bu,"selection":sele,"model":model},"count":acount,
         	"molarity":molarity, "surface":false,"geom":geom,"geom_type":"file","include":include,
-        	"uniprot":uniprot,"pcpalAxis":axis,"offset":offset,  "nodetype":"ingredient"};
+        	"uniprot":uniprot,"pcpalAxis":axis,"offset":offset,  "nodetype":"ingredient","comments":comments};
         //alert(elem.name);
 				var loc_comp = (location_index!==-1)?idata[location_index]:"";
 				var surface = IsSurface(loc_comp);
@@ -2052,13 +2055,13 @@ function isolate(force, filter) {
 
 function updateForce(){
 			simulation.nodes(graph.nodes);
-   		simulation.force("link").links(graph.links);
-			//simulation.force("link", d3v4.forceLink())//.iterations(1).id(function(d) { return d.id; }).strength(0.1))
-		  simulation.force("d0", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 0; }))
-		  simulation.force("d1", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 1; }))
-		  simulation.force("d2", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 2; }))
-		  simulation.force("d3", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 3; }))
-		  simulation.force("d4", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 4; }))
+			simulation.force("link", d3v4.forceLink().strength(0.1));//.iterations(1).id(function(d) { return d.id; })
+			simulation.force("link").links(graph.links);
+		  simulation.force("d0", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 0; }));
+		  simulation.force("d1", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 1; }));
+		  simulation.force("d2", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 2; }));
+		  simulation.force("d3", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 3; }));
+		  simulation.force("d4", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 4; }));
 		  simulation.force("leaf", isolate(d3v4.forceCollide().radius(function(d) {return d.r*1.65;}), function(d) { return !d.children; }));
 	}
 
@@ -2239,7 +2242,7 @@ function intialize()
 
   	clearHighLight();
 		simulation = d3v4.forceSimulation()
-		    .force("link", d3v4.forceLink())//.iterations(1).id(function(d) { return d.id; }).strength(0.1))
+		    .force("link", d3v4.forceLink().iterations(1).id(function(d) { return d.id; }).strength(0.1))
 		    .force("d0", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 0; }))
 		    .force("d1", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 1; }))
 		    .force("d2", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 2; }))
@@ -2824,7 +2827,8 @@ function addCompartment() {
 
 function addLink(){
 	//check number of selected  node
-	console.log("add link from nodes_selections",nodes_selections);
+	if (!graph.links) graph.links =[];
+	console.log("add link from nodes_selections",nodes_selections,graph.links);
 	if (nodes_selections.length>=2) {
 		for (var i=0;i<nodes_selections.length-1;i+=2){
 			//create a link between the selected nodes
@@ -2833,7 +2837,6 @@ function addLink(){
 			var s = graph.nodes.indexOf(nodes_selections[i]);
 			var t = graph.nodes.indexOf(nodes_selections[i+1]);
 			console.log(name1,name2);
-
 			var id = graph.links.length;
 			var alink = {"source":nodes_selections[i],"target":nodes_selections[i+1],
 			"name1":name1,"name2":name2,"pdb1":"",
@@ -2869,6 +2872,10 @@ function addLink(){
 		}
 	  }
 		}
+		//clear selection
+		node_selected = null;
+		node_selected_indice = -1;
+		nodes_selections=[];
 	}
 
 function AddALink(some_link) {
@@ -3086,10 +3093,11 @@ function anotherSubject(anode,x,y,allnodes) {
     if (d===anode) continue;
 		// d3v4.event.subject.children.indexOf(hovernodes.node)!==-1
 		if (anode.children && anode.children.indexOf(d)!==-1) continue;
-		if (d.children && d.children.indexOf(anode)!==-1) continue;
+
     dx = x  - d.x;
     dy = y  - d.y;
     d2 = Math.sqrt(dx * dx + dy * dy);
+
     //console.log(d.data.name, d.r, d2, d.depth)
 		if (!d.parent)//root
 		{
@@ -3103,6 +3111,9 @@ function anotherSubject(anode,x,y,allnodes) {
     			miniD = d2;
     	  	subject = d;
     	  	depth_over = d.depth;
+					if (d.children && d.children.indexOf(anode)!==-1) {
+						break;
+					}
     		//}
     	}
     }
@@ -3419,8 +3430,8 @@ function dragged() {
 
 function dragended() {
 	draggin_d_node = false;
-	console.log("dragended",d3v4.event.subject);
-	if (ctrlKey) return;
+	console.log("dragended",d3v4.event.subject,ctrlKey);
+
   if (!d3v4.event.active && HQ) simulation.alphaTarget(0);
   d3v4.event.subject.fx = null;
   d3v4.event.subject.fy = null;
@@ -3465,8 +3476,10 @@ function dragended() {
   }
   if (current_mode === 1 )
   {
+		if (ctrlKey) return;
 		node_selected = d3v4.event.subject;
   	mousexy = {"x":d3v4.event.subject.x,"y":d3v4.event.subject.y};
+
   	var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y,graph.nodes);
   	console.log("hover ",hovernodes);
 

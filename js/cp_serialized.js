@@ -442,7 +442,7 @@ function parseCellPackRecipeSerialized(jsondic){
 	  //the serialzied is nested
 	  //need to check how we defined the itneraction
 		var graph ={};//the main graph
-    var interaction = {};//name1,name2,id1,id2,data // pdb, beads, etc...
+    var interaction = [];//name1,name2,id1,id2,data // pdb, beads, etc...
     var rootName=jsondic.name;
     ingr_uniq_id = 0;
 		//use cytoplasme or not ?

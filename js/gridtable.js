@@ -1050,6 +1050,14 @@ function CreateNodeColumns() {
       minWidth: 120,
       editor: AutoCompleteEditor,
       dataSource: compartmentList
+    },
+    {
+      id: "comments",
+      name: "comments",
+      sortable: true,
+      field: "comments",
+      minWidth: 120,
+      editor: Slick.Editors.Text
     }
   ];
   return columns;
