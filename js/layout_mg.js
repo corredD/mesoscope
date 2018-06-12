@@ -980,9 +980,12 @@ function setupPDBLib(){
   var seqvp = document.getElementById("seqv_p");
   seqv.parent = seqvp;
   seqvp.appendChild(seqv);
+  seqv.setAttribute('display','grid');
 
   var puv = document.getElementById("puv");
   var puvp = document.getElementById("puv_p");
+  puv.setAttribute('display','grid');
+    
   puv.parent = puvp;
   puvp.appendChild(puv);
 
