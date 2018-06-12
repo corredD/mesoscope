@@ -27,6 +27,7 @@ var current_ready_state_value;//0-1-2
 var list_missing_beads=[];
 var list_missing_geom=[];
 var list_missing_pdb=[];
+var totalNbInclude=0;
 
 var sheet_name=[];
 var current_data_header,
@@ -158,7 +159,7 @@ function EvaluateCurrentReadyState(){
 	list_missing_beads=[];
 	list_missing_geom=[];
 	list_missing_pdb=[];
-
+	totalNbInclude = 0;
 	for (var i=0;i<graph.nodes.length;i++){
 			var d = graph.nodes[i];
 			if (!d.children)
@@ -181,6 +182,8 @@ function EvaluateCurrentReadyState(){
 						|| d.data.geom === "null" || d.data.geom === "")  {geom_state++;list_missing_geom.push(d.data.name);}
 				if ( "data" in d && "visited" in d.data
 									&& !d.data.visited ) node_view_state++;
+				if ("data" in d && "include" in d.data && d.data.include) totalNbInclude+=1;
+
 			}
 			else {
 				//compartments
@@ -234,6 +237,8 @@ function switchMode(e){
 	}
 
 function CreateNew(){
+	var r = confirm("Create a new blank recipe and loose your change ?");
+	if (!r) return;
 	//reset everything
 	current_mode = 1;
 	document.getElementById("unchecked").checked = true;
@@ -2924,6 +2929,9 @@ function addIngredient(){
   row_to_edit.offset = [0,0,0];
   row_to_edit.pcpalAxis = [0,0,1];
 	row_to_edit.confidence = 0;
+	row_to_edit.include = true;
+	row_to_edit.ingtype = "protein";
+	row_to_edit.buildtype = "random";
   row_to_edit.compartment = graph.nodes[0].data.name;//should be root
 	grid.dataView.beginUpdate();
 	//grid.dataView.insertItem(0, row_to_edit);
@@ -2962,7 +2970,8 @@ function AddANode(some_data){
    newNode.y = canvas.height/2;
    newNode.r = 30;
    newNode.data.source = {"pdb":some_data.pdb,"bu":some_data.bu,"selection":some_data.selection,"model":""};
-   graph.nodes[0].children.push(newNode);
+
+	 graph.nodes[0].children.push(newNode);
    graph.nodes.push(newNode);
    console.log(newNode);
    updateForce();

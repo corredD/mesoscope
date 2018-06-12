@@ -208,7 +208,9 @@ function customReportCB(response, querytxt) {
     var g = CreateGrid("grid_pdb", parentId, cdata.data, cdata.column, options);
     //g.registerPlugin(checkboxSelector);
     //force redraw of the grid with resize?
-  } else {
+  }
+  else
+  {
     var cdata = CreateDataColumnFromCVS(data);
     if (cdata.data.length > 0) {
       cdata.data[0].picked = true;
@@ -267,6 +269,7 @@ function customReportCB(response, querytxt) {
       }
     }
   }
+  grid_tab_label[3].text ( data.length.toString() );
   current_list_pdb = "";
   cumulative_res = {
     "pdbs": null,
@@ -367,9 +370,11 @@ function uniprotReadyCallBack(htmlResponse, querytxt) {
   //update the spreadshit with uniprot Id
   //split the row and get the IDs
   var rowsids = gridArray[0].getSelectedRows();
-  console.log("in callbvack");
-  console.log(rowsids);
-  console.log(htmlResponse);
+  if (DEBUGLOG) {
+    console.log("in callback");
+    console.log(rowsids);
+    console.log(htmlResponse);
+  }
   //localStorage.getItem( 'savedState' );
   var test = d3v4.tsvParse(htmlResponse);
   //var names = [];
@@ -426,6 +431,8 @@ function uniprotReadyCallBack(htmlResponse, querytxt) {
       //cdata.data.splice(20, cdata.data.length - 20);
       //sessionStorage.setItem("uni_"+rowsids[0],JSON.stringify({"query":querytxt,"data":cdata}));
     }
+    //update tabs
+    grid_tab_label[2].text(cdata.data.length.toString());
   }
   uni_picked = 0;
   //sessionStorage - key is the row id
@@ -435,6 +442,7 @@ function uniprotReadyCallBack(htmlResponse, querytxt) {
 
 //https://www.uniprot.org/uniprot/?query=mpn391&sort=score&columns=id%2Centry%20name%2Creviewed%2Cprotein%20names%2Cgenes%2Corganism%2Clength%2Csequence%2Ccomment(FUNCTION)%2Ccomment(SUBUNIT%20STRUCTURE)%2Cgo(molecular%20function)%2Cgo(cellular%20component)%2Ccomment(SUBCELLULAR%20LOCATION)%2Cfeature(TOPOLOGICAL%20DOMAIN)%2Cfeature(TRANSMEMBRANE)%2Cfeature(INTRAMEMBRANE)%2Cfeature(MODIFIED%20RESIDUE)%2Cfeature(SIGNAL)%2C3d%2Cdatabase(PDB)%2Cdatabase(ProteinModelPortal)%2Cdatabase(Pfam)
 function queryUniportKBfromName(aname) {
+  grid_tab_label[2].text( "" );
   console.log("query");
   document.getElementById("LoaderTxt").innerHTML = "query uniprot : " + aname.split("_").join("+");
   var querytxt = aname.split("_").join("+");
@@ -491,6 +499,7 @@ function queryUniportKBfromName(aname) {
 //molecularWeight,secondaryStructure,entityMacromoleculeType,compound,plasmid,source,
 //taxonomyId,biologicalProcess,cellularComponent,molecularFunction,ecNo,expressionHost
 function queryPDBfromName(aname) {
+  grid_tab_label[3].text( "" );
   document.getElementById("LoaderTxt").innerHTML = "query PDB : " + aname.split("_").join(" ");
   var querytxt = aname.split("_").join(" ");
   var dosearch = true;
@@ -525,6 +534,7 @@ function queryPDBfromName(aname) {
 }
 
 function queryPDBfromSequence(sequence) {
+  grid_tab_label[3].text( "" );
   document.getElementById("LoaderTxt").innerHTML = "query sequence : " + sequence;;
   var querytxt = sequence;
   if (usesavedSession) {
@@ -682,11 +692,20 @@ function querySequenceMapping(pdbid) {
 //src="http://www.rcsb.org/pdb/explore/remediatedChain.do?structureId=1A00&amp;params.annotationsStr=SCOP,Site%20Record,DSSP&amp;chainId=A" usemap="#chainAmap_">
 function saveCurrentCSV(grid) {
   //	$("#exporticon").click(function() {
+  if (totalNbInclude === 0 ) {
+    alert(" this is recipe is incomplete, can't export "+totalNbInclude.toString()+" selected entity\n"
+            //+ JSON.stringify(current_ready_state_value)
+  //          + "\nmissing beads " + JSON.stringify(list_missing_beads)
+  //          + "\nmissing geoms " + JSON.stringify(list_missing_geom)
+  //          + "\nmissing pdb " + JSON.stringify(list_missing_pdb)
+          );
+    return;
+  }
   console.log("saveCurrentCSV");
   var processRow = function(row) {
     var finalVal = '';
     for (var j = 0; j < row.length; j++) {
-      var innerValue = row[j] === null ? '' : row[j].toString();
+      var innerValue = (row[j] && row[j] !== null) ? row[j].toString() : '';
       if (row[j] instanceof Date) {
         innerValue = row[j].toLocaleString();
       };
@@ -1571,9 +1590,9 @@ function SaveRecipeCellPACK() {
   console.log(current_ready_state);
   console.log(current_ready_state_value);
 
-  if (current_ready_state === 0) {
-    alert(" this is recipe is incomplete, can't export\n"
-            + JSON.stringify(current_ready_state_value)
+  if (current_ready_state === 0 || totalNbInclude === 0 ) {
+    alert(" this is recipe is incomplete, can't export "+totalNbInclude.toString()+" selected entity\n"
+            //+ JSON.stringify(current_ready_state_value)
             + "\nmissing beads " + JSON.stringify(list_missing_beads)
             + "\nmissing geoms " + JSON.stringify(list_missing_geom)
             + "\nmissing pdb " + JSON.stringify(list_missing_pdb));
@@ -1588,10 +1607,9 @@ function SaveRecipeCellPACK() {
 
 function SaveRecipeCellPACK_serialized() {
   console.log("save recipe serialized");
-  if (current_ready_state === 0) {
-
-    alert(" this is recipe is incomplete, can't export\n"
-            + JSON.stringify(current_ready_state_value)
+  if (current_ready_state === 0 || totalNbInclude === 0 ) {
+    alert(" this is recipe is incomplete, can't export "+totalNbInclude.toString()+" selected entity\n"
+            //+ JSON.stringify(current_ready_state_value)
             + "\nmissing beads " + JSON.stringify(list_missing_beads)
             + "\nmissing geoms " + JSON.stringify(list_missing_geom)
             + "\nmissing pdb " + JSON.stringify(list_missing_pdb));
