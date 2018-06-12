@@ -1,3 +1,6 @@
+//main debug flag for console print
+var DEBUGLOG=false;
+
 var current_mode=0;//0-view/curate mode, 1-create mode
 var sql_data;
 var start_drag = {"x":0,"y":0};
@@ -1579,7 +1582,7 @@ function LoadExampleMpn(){
 	  csv_mapping= false;
 	  comp_column = false;
     d3v4.json(url, function (json) {
-    	      console.log(json);
+    	      if (DEBUGLOG) console.log(json);
 			      var adata = parseCellPackRecipe(json)
 			      //var alink =[]
 			      //alert("worked??");
@@ -1594,7 +1597,7 @@ function LoadExampleHIV(){
 		  comp_column = false;
 
 	    d3v4.json(url, function (json) {
-	    	      console.log(json);
+	    	      if (DEBUGLOG) console.log(json);
 				      var adata = parseCellPackRecipe(json)
 				      //var alink =[]
 				      //alert("worked??");
@@ -1608,7 +1611,7 @@ function LoadExampleHIV(){
 			  csv_mapping= false;
 			  comp_column = false;
 		    d3v4.json(url, function (json) {
-		    	      console.log(json);
+		    	      if (DEBUGLOG) console.log(json);
 					      var adata = parseCellPackRecipe(json)
 					      //var alink =[]
 					      //alert("worked??");
@@ -1626,8 +1629,10 @@ function LoadExampleBloodHIV(){
 		comp_column = false;
 		console.log(url);
 		d3v4.json(url, function (error,json) {
-						console.log("error",error)
-						console.log("json",json);
+						if (DEBUGLOG) {
+							console.log("error",error)
+							console.log("json",json);
+						}
 						var adata = parseCellPackRecipeSerialized(json)
 						//var alink =[]
 						//alert("worked??");
@@ -3722,7 +3727,7 @@ function MapLinkToNode(some_nodes,some_links) {
 }
 
 function update_graph(agraph,alink){
-	console.log("agraph",agraph);
+	if (DEBUGLOG) console.log("agraph",agraph);
 	var mapping = d3v4.scaleLinear()
     .domain([Math.min(0,property_mapping["size"].min), property_mapping["size"].max])
     .range([0, 25]);
@@ -3731,11 +3736,13 @@ function update_graph(agraph,alink){
     .sum(function(d) { return d.size; })
     .sort(function(a, b) { return b.value - a.value; });
 
-  console.log("root",root);
+  if (DEBUGLOG) console.log("root",root);
   nodes = pack(root).descendants();//flatten--error ?
-	console.log("nodes",nodes);
-  console.log("alink",alink);
-  alink = MapLinkToNode(nodes,alink);
+	if (DEBUGLOG) {
+		console.log("nodes",nodes);
+  	console.log("alink",alink);
+  }
+	alink = MapLinkToNode(nodes,alink);
 
   nodes = checkAttributes(nodes);
   nodes = resetAllNodePos(nodes);
@@ -3747,7 +3754,7 @@ function update_graph(agraph,alink){
   UpdateGridFromD3Nodes(nodes,0);
   UpdateGridFromD3Links(alink,1);
 
-  console.log( nodes );
+  if (DEBUGLOG) console.log( nodes );
 
   graph={};
   graph.nodes = nodes;
@@ -3774,7 +3781,7 @@ function update_graph(agraph,alink){
   //simulation.alpha(1).alphaTarget(0).restart();
   simulation.alpha(1);
   //ticked();
-  saveCurrentState();
+  //saveCurrentState();
 }
 
 function PreviousIgredient(){

@@ -632,10 +632,10 @@ function querySequenceMapping(pdbid) {
     if ("mapping" in node_selected.data)
         return;//= mapping;
   if (pdbid.length !== 4 ) {
+    pdbid = CleanEntryPDB(pdbid);
     var asplit = pdbid.split("_");
     console.log(asplit);
-    if (asplit[0].length === 4 ) pdbid = asplit[0];
-    else return;
+    if (pdbid === "" ) return;
   }
   var formData = new FormData();
   formData.append("mapping", "true");//array of x,y,z

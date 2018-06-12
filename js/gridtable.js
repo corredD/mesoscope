@@ -776,7 +776,7 @@ function CreateDataColumnFromD3Nodes(agraph) {
       data.push(elem);
     }
   }
-  console.log("build data for grid",agraph);
+  if (DEBUGLOG) console.log("build data for grid",agraph);
   //console.log(JSON.stringify(data));
   return {
     "data": data,
@@ -821,15 +821,19 @@ function UpdateGridFromD3Links(agraph, grid_id) {
     var parentId = "tabs-2";
     var options = CreateOptions();
     var grid = CreateGrid("grid_interaction", parentId, cdata.data, cdata.column, options);
-    console.log("grid created ?");
-    console.log(gridArray.length + " after");
-    console.log(grid);
+    if (DEBUGLOG) {
+      console.log("grid created ?");
+      console.log(gridArray.length + " after");
+      console.log(grid);
+    }
   } else UpdateGrid(cdata, grid_id);
 }
 
 function UpdateGrid(cdata, grid_id) {
-  console.log(gridArray.length + " before");
-  console.log(cdata.column);
+  if (DEBUGLOG) {
+    console.log(gridArray.length + " before");
+    console.log(cdata.column);
+  }
   gridArray[grid_id].setColumns(cdata.column);
   gridArray[grid_id].dataView.beginUpdate();
   gridArray[grid_id].dataView.setItems(cdata.data);

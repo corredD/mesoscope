@@ -507,8 +507,7 @@ myLayout.on('stateChanged', function() {
     state = JSON.stringify(config);
   }
   localStorage.setItem('savedState', state);
-  var jdata = serializedRecipe(graph.nodes, graph.links);
-  localStorage.setItem('savedRecipe', JSON.stringify(jdata));
+  saveCurrentState();
 });
 
 function saveCurrentState() {
