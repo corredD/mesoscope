@@ -2956,7 +2956,7 @@ function AddANode(some_data){
    newNode.x = canvas.width/2;
    newNode.y = canvas.height/2;
    newNode.r = 30;
-   newNode.data.source = {"pdb":newNode.pdb,"bu":newNode.bu,"selection":newNode.selection,"model":""};
+   newNode.data.source = {"pdb":some_data.pdb,"bu":some_data.bu,"selection":some_data.selection,"model":""};
    graph.nodes[0].children.push(newNode);
    graph.nodes.push(newNode);
    console.log(newNode);
@@ -3367,6 +3367,9 @@ function dragstarted() {
   	d3v4.event.subject.depth = 6;
   	updateForce();
   }
+	else {
+		d3v4.event.subject._depth = d3v4.event.subject.depth;
+	}
   //d3v4.event.subject.fx = d3v4.event.subject.x;
   //d3v4.event.subject.fy = d3v4.event.subject.y;
  // console.log(d3v4.event.subject.depth);

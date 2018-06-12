@@ -2105,6 +2105,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
   }
   var isseq = document.getElementById("sequence_mapping").checked;
   if (isseq) querySequenceMapping(aname);
+  if (!bu) bu="";
   console.log("load " + purl + " " + bu + " " + sel_str);
   //if its a surface protein show the modal for the pcpalAxis and the offset
   var params = {
