@@ -997,8 +997,8 @@ function buildCMS()
     }
     else {
       var pdb = node_selected.data.source.pdb;
-      //buildFromServer(pdb,true,false,ngl_current_structure);
-      buildCMS2();
+      buildFromServer(pdb,true,false,ngl_current_structure);
+      //buildCMS2();
     }
 }
 
