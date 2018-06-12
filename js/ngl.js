@@ -1116,7 +1116,7 @@ function NGL_ChangeColorScheme(col_e) {
 function NGL_ChangeHighlightResidue(resnum,chainId)
 {
   if (!ngl_current_structure) return;
-  var style = 'spacefill';
+  var style = 'hyperball';
   var sele = resnum;
   if (chainId !== "") sele+=" and :"+chainId;
   if (node_selected && node_selected.data.source.model && node_selected.data.source.model!=="") sele+=" and /"+node_selected.data.source.model;
