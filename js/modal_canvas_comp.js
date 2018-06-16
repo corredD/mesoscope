@@ -43,7 +43,8 @@ function childrenToList(parent) {
   return astr;
 }
 
-function drawHtmlTreeList(atree)
+//modal_lisholder
+function modal_drawHtmlTreeList(atree, alistholder)
 {
   console.log("atree",atree);
   var aStr=''
@@ -51,15 +52,16 @@ function drawHtmlTreeList(atree)
   //follow the graph. can use the first node that should be root
   var root = atree[0];
   if (!root) {
-      modal_lisholder.innerHTML = "";
-      return;
+      if (alistholder) alistholder.innerHTML = "";
+      return "";
     }
   aStr+='<li>'+root.data.name;
   if (root.children) aStr += childrenToList(root);
   aStr+='</li>';
   aStr+='</ul>';
-  console.log("astr",aStr);
-  modal_lisholder.innerHTML = aStr;
+  if (DEBUGLOG) console.log("astr",aStr);
+  if (alistholder) alistholder.innerHTML = aStr;
+  else return aStr;
 }
 
 function getModalCompGraph() {
@@ -238,7 +240,7 @@ function updateGraph(loc_comp)
     console.log("nodes", modal_nodes);
     modal_nodes = resetAllModalNodePos(modal_nodes);
     modal_nodes = centerAllModalNodePos(modal_nodes);
-    drawHtmlTreeList(modal_root);
+    modal_drawHtmlTreeList(modal_root,modal_lisholder);
 }
 
 function setupModalD3() {
@@ -264,7 +266,7 @@ function setupModalD3() {
   .nodeSize([15, 75])
   .separation((a, b) => a.parent === b.parent ? 1 : 1)(modal_root)
 
-  drawHtmlTreeList(modal_nodes);
+  modal_drawHtmlTreeList(modal_nodes, modal_lisholder);
 
   console.log(modal_tree.descendants());
   d3v4.select(modal_canvas)
@@ -677,7 +679,7 @@ function modal_dragended()
         if (surface_tag.indexOf(d3v4.event.subject.data.name) !== -1) surface_tag.pop(d3v4.event.subject.data.name);
       }
     }
-    drawHtmlTreeList(modal_nodes);
+    modal_drawHtmlTreeList(modal_nodes,modal_lisholder);
   }
   //update the table ?
   console.log("issurface ?",d3v4.event.subject.data.surface)

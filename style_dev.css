@@ -110,10 +110,10 @@ li {
 
 .logo_head {
 	width: 100%;
-	height: 10%;
+	height: 5%;
 	display: flex;
   flex-flow: row;
-	justify-content: space-evenly;
+	justify-content: space-between;
 	align-items: center;
 	background-size: contain;
   background-color: paleturquoise;

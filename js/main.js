@@ -20,7 +20,7 @@ var canvas_color_options = ["pdb","pcpalAxis","offset","count_molarity","Beads",
 var current_scale = 1;
 //extracellular
 var localisation_tag = ["cytosol","periplasm","inner_membrane","outer_membrane","membrane","cytoplasm","lumen"];
-var surface_tag = ["membrane","x","surface","tm"];
+var surface_tag = ["membrane","x","surface","tm","true"];
 var current_ready_state = 0;//0-1-2
 var current_ready_state_value;//0-1-2
 
@@ -1930,15 +1930,15 @@ function updateThickness(e){
 		//document.getElementById('comp_slider_label').innerHTML = radius+"A";
 }
 
-function UpdateCompartmentRep(anode){
-	console.log(anode.data);//undefined
+function UpdateCompartmentRep(anode,clear_ngl = true){
+	console.log("UpdateCompartmentRep ",anode.data);//undefined
 	if (!node_selected) node_selected = anode;
 	var comptype = ("geom_type" in anode.data)? anode.data.geom_type: "None";
 	if (comptype === "file"||(comptype === "None")){
 
-		if ( anode.data.geom && anode.data.geom!== "None") {
+  if ( anode.data.geom && anode.data.geom!== "None") {
 				//display in ngl
-				stage.removeAllComponents();
+				if (clear_ngl) stage.removeAllComponents();
 				NGL_LoadAShapeObj(anode.data.geom);
 				stage.autoView();
 
@@ -1961,20 +1961,29 @@ function UpdateCompartmentRep(anode){
 			//kind of beads-> positions,radii
 			//draw the spheres and the metabals
 			anode.data.geom = "mb";
-			stage.removeAllComponents();
+			if (clear_ngl) stage.removeAllComponents();
 			NGL_updateMetaBallsGeom(anode);//NGL_MetaBalls();
 			NGL_ShowOrigin();
 			stage.autoView();
 	}
 	else if (comptype === "raw") {
-		stage.removeAllComponents();
+		if (clear_ngl) stage.removeAllComponents();
 		NGL_LoadAShapeObj(anode.data.geom);
 		stage.autoView();
 	}
 }
 
+function drawCompRec(anode) {
+	stage.removeAllComponents();
+	anode.each(function(cnode) {
+			if (cnode.children && cnode.data.nodetype === "compartment")
+					UpdateCompartmentRep(cnode,false);
+	});
+}
+
 function SetObjectsOptionsDiv(anode) {
 	//ues the node objects
+	var title='';
 	var htmlStr='';
 	if ("source" in anode) {
 		//id,index,name1,name2,pdb1,sel1,sel2
@@ -1988,23 +1997,42 @@ function SetObjectsOptionsDiv(anode) {
 			anode.data={};
 			anode.data.nodetype = "interaction";
 		}
+		title = 'interaction';
+	}
+	else if (!anode.parent) {
+		for (var e in anode.data)
+			htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>'
+		//htmlStr+=-'<label> Parent Name '+anode.parent.name+'</label>'
+		var cname = anode.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/');
+		htmlStr+='<label> path: '+cname+'</label>';
+		//bounding box//
+		//list only compartments and show them
+		htmlStr +='<div id="listholder_root"  class="modal-list">';
+		htmlStr += modal_drawHtmlTreeList(graph.nodes, null);
+		htmlStr +='</div>';
+		title = 'root';
+		//update viewer with all compartments
+		//loop over all compartment
+		drawCompRec(anode);
 	}
 	else if (anode.data.nodetype === "compartment") {
 		//return div with upload for geometry or select0
 		htmlStr += getcomphtml(anode);
 		UpdateCompartmentRep(anode);
+		title = 'compartment';
 	}
 	else {
-		//list all property ? use the grid editor ?
+		  //list all property ? use the grid editor ?
 			for (var e in anode.data)
 				htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>'
 			//htmlStr+=-'<label> Parent Name '+anode.parent.name+'</label>'
 			var cname = anode.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/');
 			htmlStr+='<label> path: '+cname+'</label>'
+			title = anode.data.nodetype;
 	}
 	var container_ = document.getElementById("objectOptions");
 	if (container_) {
-		container_.previousSibling.innerHTML = anode.data.nodetype + " properties";
+		container_.previousSibling.innerHTML = title + " properties";
 		container_.innerHTML = htmlStr;
 	}
 }
@@ -2791,9 +2819,9 @@ function getNodeByName(aname){
 	for (i = 0; i < graph.nodes.length; ++i) {
 		if (graph.nodes[i].data.name===aname)
 		   return graph.nodes[i];
-		}
-			return null;
 	}
+	return null;
+}
 
 function addCompartment() {
 	var some_data = {
@@ -2811,6 +2839,7 @@ function addCompartment() {
    newNode.size = 150;
    newNode.children =[];
    console.log(newNode);
+	 graph.nodes[0].children.push(newNode);
    graph.nodes.push(newNode);
    updateForce();
    return;

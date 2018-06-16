@@ -230,22 +230,23 @@ function NGL_updateMetaBallsGeom(anode)
     anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
     anode.data.radii=[{"radii":[500.0]}];
   }
-  NGL_multiSpheresComp(anode.data.pos[0].coords,anode.data.radii[0].radii);//box around ?
+  NGL_multiSpheresComp(anode.data.name,anode.data.pos[0].coords,anode.data.radii[0].radii);//box around ?
   if (nlg_preview_isosurface){
     if (!ngl_marching_cube) ngl_marching_cube = new NGL.MarchingCubes(30, null, true, false);
     NGL_updateMetaBalls(anode);
     var geo = ngl_marching_cube.generateGeometry();
     console.log(geo);
+    geo.name = anode.data.name;
     NGL_MetaBallsGeom(geo);
   }
 }
 
 function NGL_MetaBallsGeom(geo){
-  var comp = stage.getComponentsByName("metab_surface");
+  var comp = stage.getComponentsByName(geo.name+"_metab_surface");
   if (comp.list) {
     stage.removeComponent(comp.list[0]);
   }
-  var shape = new NGL.Shape("metab_surface");
+  var shape = new NGL.Shape(geo.name+"_metab_surface");
   var col = Array(geo.vertices.length).fill(1);
   shape.addMesh( //position, color, index, normal
     geo.vertices, // a plane
@@ -257,7 +258,7 @@ function NGL_MetaBallsGeom(geo){
   var shapeComp = stage.addComponentFromObject(shape);
   shapeComp.setScale(ngl_marching_cube.data_bound.maxsize);//this is the scale,
   shapeComp.setPosition(ngl_marching_cube.data_bound.center);//this is the position,
-  var r = shapeComp.addRepresentation("metab_surface", {
+  var r = shapeComp.addRepresentation(geo.name+"_metab_surface", {
     opacity: 0.5,
     side: "double",
     //wireframe: true
@@ -266,19 +267,27 @@ function NGL_MetaBallsGeom(geo){
 
 function NGL_ToggleMetaGeom(e)
 {
-  var comp = stage.getComponentsByName("metab_surface");
-  if (comp.list.length !== 0){
-    if (comp.list[0].reprList.length !== 0) {
-      comp.list[0].reprList[0].setVisibility(e.checked);
-    }
-  }
-  else
+  var anode = node_selected;
+  if (!anode.parent) //root
   {
-    if (e.checked) {
-      NGL_updateMetaBalls(anode);
-      var geo = ngl_marching_cube.generateGeometry();
-      console.log(geo);
-      NGL_MetaBallsGeom(geo);
+    //for root need to go through all of them
+  }
+  else {
+    var comp = stage.getComponentsByName(anode.data.name+"_metab_surface");
+    if (comp.list.length !== 0){
+      if (comp.list[0].reprList.length !== 0) {
+        comp.list[0].reprList[0].setVisibility(e.checked);
+      }
+    }
+    else
+    {
+      if (e.checked) {
+        NGL_updateMetaBalls(anode);
+        var geo = ngl_marching_cube.generateGeometry();
+        console.log(geo);
+        geo.name = anode.data.name;
+        NGL_MetaBallsGeom(geo);
+      }
     }
   }
   nlg_preview_isosurface = e.checked;
@@ -515,7 +524,7 @@ function NGL_Setup() {
 
   stage.mouseObserver.signals.dragged.add(function (deltaX,deltaY){
     //update
-    //console.log(ngl_current_pickingProxy);
+    console.log(ngl_current_pickingProxy);
     //console.log(node_selected.data.nodetype);
     //console.log(node_selected);
     //console.log(ngl_current_pickingProxy.component.name);
@@ -527,20 +536,26 @@ function NGL_Setup() {
       NGL_updateMBcompDrag(ngl_current_pickingProxy.component)
     }
     else {
-    var mbi = parseInt(ngl_current_pickingProxy.sphere.name);
-    var pi = mbi*3;
-    var cpos = new NGL.Vector3();
-    console.log(mbi,pi);
-    cpos.copy(ngl_current_pickingProxy.position);
-    node_selected.data.pos[0].coords[pi] = cpos.x;
-    node_selected.data.pos[0].coords[pi+1] = cpos.y;
-    node_selected.data.pos[0].coords[pi+2] = cpos.z;
-    if (nlg_preview_isosurface) {
-      NGL_updateMetaBalls(node_selected);
-      var geo = ngl_marching_cube.generateGeometry();
-      //how to update the shape mesh instead of recreating it
-      NGL_MetaBallsGeom(geo);
-    }
+      var asplit = ngl_current_pickingProxy.sphere.name.split("_");
+      var name = asplit[0];
+      //retrieve the node with this name
+      var anode = getNodeByName(name);
+      var mbi = parseInt( (asplit.length>1)? asplit[1]:"0");
+      var pi = mbi*3;
+      var cpos = new NGL.Vector3();
+      console.log(name,mbi,pi,anode);
+
+      cpos.copy(ngl_current_pickingProxy.position);
+      anode.data.pos[0].coords[pi] = cpos.x;
+      anode.data.pos[0].coords[pi+1] = cpos.y;
+      anode.data.pos[0].coords[pi+2] = cpos.z;
+      if (nlg_preview_isosurface) {
+        NGL_updateMetaBalls(anode);
+        var geo = ngl_marching_cube.generateGeometry();
+        //how to update the shape mesh instead of recreating it
+        geo.name = name;
+        NGL_MetaBallsGeom(geo);
+      }
   }
   });
 
@@ -2267,18 +2282,18 @@ function NGL_multiSpheres(pos, radii) {
   //stage.autoView();
 }
 
-function NGL_multiSpheresComp(pos, radii) {
+function NGL_multiSpheresComp(name,pos, radii) {
   var p=0;
   for (var i=0;i<radii.length;i++) {
     //position,color,radii,label
-    var shape = new NGL.Shape(i.toString(), {
+    var shape = new NGL.Shape(name+"_"+i.toString(), {
       disableImpostor: true,
       radialSegments: 10
     });
-    shape.addSphere([pos[p],pos[p+1],pos[p+2]], [1, 0, 0], radii[i],i.toString());
+    shape.addSphere([pos[p],pos[p+1],pos[p+2]], [1, 0, 0], radii[i],name+"_"+i.toString());
     p+=3;
     var shapeComp = stage.addComponentFromObject(shape);
-    shapeComp.addRepresentation("multispheres_rep"+i.toString()); //wireframe ?
+    shapeComp.addRepresentation(name+"_"+i.toString()); //wireframe ?
   }
 }
 
