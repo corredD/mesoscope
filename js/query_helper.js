@@ -758,6 +758,8 @@ function saveCurrentCSV(grid) {
       document.body.removeChild(link);
     }
   }
+  recipe_changed = false;
+  grid_tab_label[0].text ( "" );
 }
 
 //current Data to JSON and then Recipe ?
@@ -1553,6 +1555,7 @@ function saveCurrentCVJSON() {
   var blob = new Blob([csvFile], {
     type: 'text/csv;charset=utf-8;'
   });
+
   if (navigator.msSaveBlob) { // IE 10+
     navigator.msSaveBlob(blob, filename);
   } else {
@@ -1568,6 +1571,8 @@ function saveCurrentCVJSON() {
       document.body.removeChild(link);
     }
   }
+  recipe_changed = false;
+  grid_tab_label[0].text ( "" );
 }
 
 function download(content, fileName, contentType) {
@@ -1603,6 +1608,8 @@ function SaveRecipeCellPACK() {
   console.log(JSON.stringify(jdata));
   download(JSON.stringify(jdata), jsondic.recipe.name + '.json', 'text/plain');
   console.log("saved");
+  recipe_changed = false;
+  grid_tab_label[0].text ( "" );
 }
 
 function SaveRecipeCellPACK_serialized() {
@@ -1620,4 +1627,6 @@ function SaveRecipeCellPACK_serialized() {
   console.log(JSON.stringify(jdata));
   download(JSON.stringify(jdata), jdata.name + '_serialized.json', 'text/plain');
   console.log("saved");
+  recipe_changed = false;
+  grid_tab_label[0].text ( "" );
 }

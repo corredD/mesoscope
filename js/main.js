@@ -1964,7 +1964,9 @@ function UpdateCompartmentRep(anode,clear_ngl = true){
 		NGL_LoadAShapeObj(anode,anode.data.geom);
 		stage.autoView();
 	}
-	else {if (clear_ngl) stage.removeAllComponents();}
+	else {
+		if (clear_ngl) stage.removeAllComponents();
+	}
 }
 
 function drawCompRec(anode) {

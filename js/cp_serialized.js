@@ -180,6 +180,7 @@ function serializedRecipe(some_data,some_links){
     //proteins = None  # sIngredientGroup("proteins", 0)
     //fibers = None  # sIngredientGroup("fibers", 1)
 
+    //traverse the hierarchy instead of the flat data?
 		for (var i=0;i<some_data.length;i++)
 		{
 	      var  node = some_data[i];
@@ -202,7 +203,15 @@ function serializedRecipe(some_data,some_links){
     						sCompartment_static_id+=1;
 								list_comp[cname] = comp;
 								if (!(node.parent.name in list_comp)) console.log(node.data.name,node.parent.data.name);
-								list_comp[node.parent.data.name].addCompartment(comp);
+								if (node.parent.name in list_comp) list_comp[node.parent.data.name].addCompartment(comp);
+                else {
+                  var acomp = new sCompartment(node.parent.data.name, sCompartment_static_id);
+                  var anode = getNodeByName(node.parent.data.name);
+                  acomp = oneCompartment(acomp,anode);
+      						sCompartment_static_id+=1;
+  								list_comp[node.parent.data.name] = acomp;
+                  list_comp[node.parent.data.name].addCompartment(comp);
+                }
 	      	  }
 	      	  continue;
 	      }

@@ -1257,6 +1257,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
 
   grid.onCellChange.subscribe(function(e, args) {
     recipe_changed = true;
+    grid_tab_label[0].text ( "*" );
     console.log("Cell changed", e, args, grid.gname);
     var cell = args.cell; //grid.getCellFromEvent(e);
     console.log(cell)
