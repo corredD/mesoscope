@@ -1441,7 +1441,7 @@ function selectFile(e){
 		document.getElementById("addingr").setAttribute("class", "hidden");
 		document.getElementById("addcomp").setAttribute("class", "hidden");
 		document.getElementById("addlink").setAttribute("class", "hidden");
-
+		stage.removeAllComponents();
 	  csv_mapping= false;
 	  comp_column = false;
     var theFiles = e.target.files;
@@ -1556,6 +1556,7 @@ function selectDBcallback (response,query) {
 function selectDB(){
 		//alert("SQLDB");
 		//pyRequestSQL(update_graph);
+		stage.removeAllComponents();
 		callAjax(sql_server+'?key="sqldb"', selectDBcallback,"sqldb");
 		/*
 		var result = syncpyRequestSQL(update_graph);
@@ -1577,6 +1578,7 @@ function selectDB(){
 }
 
 function LoadSaveState(ajson){
+		stage.removeAllComponents();
 	  csv_mapping= false;
 	  comp_column = false;
     //var adata = parseCellPackRecipe(ajson);
@@ -1585,6 +1587,7 @@ function LoadSaveState(ajson){
 	}
 
 function LoadExampleMpn(){
+	  stage.removeAllComponents();
 	  var url = "data/Mpn_1.0_2.json";
 	  csv_mapping= false;
 	  comp_column = false;
@@ -1599,6 +1602,7 @@ function LoadExampleMpn(){
 	}
 
 function LoadExampleHIV(){
+			stage.removeAllComponents();
 		  var url = cellpack_repo+"recipes/BloodPlasma1.0.json";
 		  csv_mapping= false;
 		  comp_column = false;
@@ -1614,6 +1618,7 @@ function LoadExampleHIV(){
 		}
 
 		function LoadExampleBlood(){
+				stage.removeAllComponents();
 			  var url = cellpack_repo+"recipes/BloodPlasma1.0.json";
 			  csv_mapping= false;
 			  comp_column = false;
@@ -1630,6 +1635,7 @@ function LoadExampleHIV(){
 function LoadExampleBloodHIV(){
 		//file is in data
 		//https://raw.githubusercontent.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json
+		stage.removeAllComponents();
 		var url = "data/BloodPlasmaHIV_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
 		//var url = "./data/BloodPlasmaHIV_serialzed.json";
 		csv_mapping= false;

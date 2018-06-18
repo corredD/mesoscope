@@ -740,18 +740,19 @@ function saveCurrentCSV(grid) {
     csvFile += processRow(rows[i]);
   }
   console.log(csvFile);
+  var rname = graph.nodes[0].data.name;
   var blob = new Blob([csvFile], {
     type: 'text/csv;charset=utf-8;'
   });
   if (navigator.msSaveBlob) { // IE 10+
-    navigator.msSaveBlob(blob, "filename.csv");
+    navigator.msSaveBlob(blob, rname+".csv");
   } else {
     var link = document.createElement("a");
     if (link.download !== undefined) { // feature detection
       // Browsers that support HTML5 download attribute
       var url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
-      link.setAttribute("download", "filename.csv");
+      link.setAttribute("download", rname+".csv");
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
@@ -819,6 +820,7 @@ function OneCPIngredient(node, surface) {
   aing_dic["source"] = node.data.source; //var source = ("pdb" in ing_dic)? ing_dic["pdb"] : "None";
   aing_dic["nbMol"] = node.data.count;
   aing_dic["molarity"] = node.data.molarity;
+  aing_dic["molecularweight"] = node.data.molecularweight;
   //need meshname meshName
   aing_dic["meshFile"] = node.data.geom; //meshfile or v,f,n?
   aing_dic["meshType"] = node.data.geom_type; //meshfile or v,f,n?
@@ -1351,7 +1353,7 @@ function getCurrentNodesAsCP_JSON(some_data, some_links) {
           "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0"
         ]
       ],
-      "name": "",
+      "name": some_data[0].data.name,//root
       "version": "1.0"
     }
   };
@@ -1613,7 +1615,7 @@ function SaveRecipeCellPACK() {
 }
 
 function SaveRecipeCellPACK_serialized() {
-  console.log("save recipe serialized");
+  console.log("save recipe serialized",current_ready_state,totalNbInclude);
   if (current_ready_state === 0 || totalNbInclude === 0 ) {
     alert(" this is recipe is incomplete, can't export "+totalNbInclude.toString()+" selected entity\n"
             //+ JSON.stringify(current_ready_state_value)

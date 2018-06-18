@@ -81,7 +81,7 @@ class sIngredientFiber
 
 }
 
-function oneIngredient(singr,node){
+function oneIngredientSerialized(singr,node){
 	//var aing_dic = {};
 	  //console.log(node);
 	  if (!node.data.source) node.data.source={};
@@ -220,7 +220,7 @@ function serializedRecipe(some_data,some_links){
           if ("include" in node.data && node.data.include === false) continue;
 	      	var cname = node.parent.data.name;
 	      	var sing = new sIngredient(node.data.name,0,sIngredient_static_id);sIngredient_static_id+=1;
-	      	sing = oneIngredient(sing,node);//assign the attributes
+	      	sing = oneIngredientSerialized(sing,node);//assign the attributes
 	      	if (node.parent === aroot) {
 	      		var pgroup;
 	      		if (root.IngredientGroups.length===0){
