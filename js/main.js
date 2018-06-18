@@ -1,6 +1,7 @@
 //main debug flag for console print
 var DEBUGLOG=false;
-
+var recipe_changed = false; //toggle when change occurs, and autosave/save occurs.
+//how to efficiently save work ?
 var current_mode=0;//0-view/curate mode, 1-create mode
 var sql_data;
 var start_drag = {"x":0,"y":0};
@@ -2684,7 +2685,8 @@ function sortNodeByDepth(objects){
 	     var ay = transform.invertY(canvas.height-20);
   	   context.font=(20/transform.k)+"px Georgia";
   	   context.fillStyle = "black";
-   	   context.fillText(d.data.name,ax,ay);
+			 var lb = (recipe_changed)?"*":"";
+   	   context.fillText(d.data.name+lb,ax,ay);
      	}
      //	ingredient label
      //console.log(transform.k);

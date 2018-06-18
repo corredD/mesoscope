@@ -1256,6 +1256,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
   // wire up model events to drive the grid
 
   grid.onCellChange.subscribe(function(e, args) {
+    recipe_changed = true;
     console.log("Cell changed", e, args, grid.gname);
     var cell = args.cell; //grid.getCellFromEvent(e);
     console.log(cell)
