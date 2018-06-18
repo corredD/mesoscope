@@ -1010,7 +1010,7 @@ function CreateNodeColumns() {
       sortable: true,
       editor: Slick.Editors.Text
     },
-    {
+/*    {
       id: "pcpalAxis",
       name: "pcpalAxis",
       field: "pcpalAxis",
@@ -1022,6 +1022,7 @@ function CreateNodeColumns() {
       field: "offset",
       editor: Slick.Editors.Text
     }, //vector3
+*/
     {
       id: "confidence",
       name: "confidence",
@@ -1583,7 +1584,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
               document.getElementById("Query_4").value = arow.name.split("_").join(" ");
               queryPDBfromName(arow.name);
               if (ngl_load_params.dogeom) {
-                NGL_LoadAShapeObj(ngl_load_params.geom);
+                NGL_LoadAShapeObj(null,ngl_load_params.geom);
                 ngl_load_params.dogeom = false;
               }
               if (ngl_load_params.dobeads) {

@@ -12,8 +12,6 @@ var uniprot_viewer_tab_lbl;
 var topology_viewer_lbl;
 var protvista_tab_lbl;
 
-var grid_tab_label=[];
-
 console.log("angular is defined ?",app);
 //add interaction viewer : https://github.com/ebi-uniprot/interaction-viewer
 //add spv https://github.com/Sinnefa/SPV_Signaling_Pathway_Visualizer_v1.0
@@ -634,14 +632,10 @@ var slickgridComponent = function(container, state) {
 slickgridComponent.prototype._setupTab = function() {
   //console.log("tab??",this._container.tab.element[0]);//theactual li tab
   var component = this;
-  grid_tab_label[component._state.ind-1] = $('<div class="messageTab" id="grid_tab_'+(component._state.ind-1).toString()+'">' + '' + '</div>');
-  // Add the counter element whenever a tab is created
-  this._container.tab.element.append( grid_tab_label[component._state.ind-1] );
   this._container.tab.element[0].onclick = function(e) {
     console.log(this.title, comp_titles[this.title]);
     changeCurrentGrid(comp_titles[this.title]);
   };
-  
   //console.log(this._container.getElement()[0]);
   this._container.getElement()[0].onmouseenter = function(e) {
     //console.log("container element mouse over", this);

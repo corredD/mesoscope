@@ -173,7 +173,7 @@ function NGL_updateMetaBalls(anode) {
   if (!anode.data.nodetype === "compartment") return;
   if (!ngl_marching_cube) ngl_marching_cube = new NGL.MarchingCubes(30, null, true, false);
   ngl_marching_cube.reset();
-  if (!("pos" in node_selected.data)||(node_selected.data.pos === null)||(node_selected.data.pos.length===0)) {
+  if (!("pos" in anode.data)||(anode.data.pos === null)||(anode.data.pos.length===0)) {
     anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
     anode.data.radii=[{"radii":[500.0]}];
   }
@@ -226,7 +226,7 @@ function NGL_updateMetaBalls(anode) {
 function NGL_updateMetaBallsGeom(anode)
 {
   if (!anode.data.nodetype === "compartment") return;
-  if (!("pos" in node_selected.data)||(node_selected.data.pos === null)||(node_selected.data.pos.length===0)) {
+  if (!("pos" in anode.data)||(anode.data.pos === null)||(anode.data.pos.length===0)) {
     anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
     anode.data.radii=[{"radii":[500.0]}];
   }
@@ -543,12 +543,13 @@ function NGL_Setup() {
       var mbi = parseInt( (asplit.length>1)? asplit[1]:"0");
       var pi = mbi*3;
       var cpos = new NGL.Vector3();
-      console.log(name,mbi,pi,anode);
-
+      //console.log(name,mbi,pi,anode);
+      //console.log("update ",pi,anode.data.pos[0].coords);
       cpos.copy(ngl_current_pickingProxy.position);
       anode.data.pos[0].coords[pi] = cpos.x;
       anode.data.pos[0].coords[pi+1] = cpos.y;
       anode.data.pos[0].coords[pi+2] = cpos.z;
+      //console.log("update ",pi,anode.data.pos[0].coords);
       if (nlg_preview_isosurface) {
         NGL_updateMetaBalls(anode);
         var geo = ngl_marching_cube.generateGeometry();
@@ -1422,21 +1423,22 @@ function NGL_LoadShapeObj(d) {
   //load geometry mesh
   //extension need to be .obj
   console.log("NGL_LoadShapeObj " + d.data.geom);
-  NGL_LoadAShapeObj(d.data.geom);
+  NGL_LoadAShapeObj(d,d.data.geom);
 }
 
-function NGL_LoadAShapeObj(gpath) {
-  if (!node_selected) return;
-  if (node_selected.data.geom_type === "raw") {
+function NGL_LoadAShapeObj(d,gpath) {
+  if (!d) d = node_selected;
+  if (!d) return;
+  if (d.data.geom_type === "raw") {
     NGL_ShowMeshVFN(gpath);
-  } else if (node_selected.data.geom_type === "None" &&
-    node_selected.data.nodetype !== "compartment") {
+  } else if (d.data.geom_type === "None" &&
+    d.data.nodetype !== "compartment") {
     //build it ?
     //buildCMS();
     //test from atomCoords directly
     console.log("NGL_LoadAShapeObj",node_selected);
     buildFromServer(gpath,true,false,null);
-  } else if (node_selected.data.geom_type === "file") {
+  } else if (d.data.geom_type === "file") {
     //gpath may be different as we pass data.geom
     if (typeof gpath === 'string') {
       console.log("load shape " + gpath); //gpath is either a string or a file
@@ -1452,11 +1454,11 @@ function NGL_LoadAShapeObj(gpath) {
       if (folder_elem && folder_elem.files.length != "") {
         //ftp://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-5239/map/emd_5239.map.gz
         ftoload = pathList_[gname];
-        node_selected.data.geom = ftoload;
+        d.data.geom = ftoload;
       } else {
         ftoload = geom_purl + gname;
         isurl = true;
-        node_selected.data.geom = gname;
+        d.data.geom = gname;
       }
       console.log("try loading geom at " + ftoload);
       console.log(geom_purl);
@@ -2140,7 +2142,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
   }
   sele_elem.value = sele;
   if (ngl_load_params.dogeom) {
-    NGL_LoadAShapeObj(ngl_load_params.geom);
+    NGL_LoadAShapeObj(null,ngl_load_params.geom);
     ngl_load_params.dogeom = false;
   }
   //this is async!
@@ -2301,7 +2303,7 @@ function NGL_noPdbProxy(name, radius) {
   var align_axis = false;
   NGL_ShowOrigin();
   if (ngl_load_params.dogeom) {
-    NGL_LoadAShapeObj(ngl_load_params.geom);
+    NGL_LoadAShapeObj(null,ngl_load_params.geom);
     ngl_load_params.dogeom = false;
   }
   if (ngl_load_params.dobeads) {

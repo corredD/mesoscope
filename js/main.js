@@ -9,6 +9,7 @@ var mousein = false;
 var draw_debug_mouse = false;
 var comp_column = false;
 var comp_column_names =[];//index,name
+var comp_count = 0;
 var csv_mapping = false; //if true, the column index is the column name
 var canvas_label = document.getElementById("canvas_label");
 var canvas_label_options = ["name","None","pdb","uniprot","label"];
@@ -1936,21 +1937,12 @@ function UpdateCompartmentRep(anode,clear_ngl = true){
 	var comptype = ("geom_type" in anode.data)? anode.data.geom_type: "None";
 	if (comptype === "file"||(comptype === "None")){
 
-  if ( anode.data.geom && anode.data.geom!== "None") {
+  if ( anode.data.geom && anode.data.geom !== "None") {
 				//display in ngl
 				if (clear_ngl) stage.removeAllComponents();
-				NGL_LoadAShapeObj(anode.data.geom);
+				NGL_LoadAShapeObj(anode,anode.data.geom);
 				stage.autoView();
-
-				//NGL_LoadShapeFile(anode.data.geom);//is it a file object ?
 		}
-		/*else if (	anode.data.geom_fname ){
-				//file is either on repo or local.
-				console.log(anode.data.geom_fname);//undefined
-				stage.removeAllComponents();
-				NGL_LoadAShapeObj(anode.data.geom_fname)
-				stage.autoView();
-		}*/
 	}
 	else if (comptype === "sphere") {
 		  var name = (anode.data.geom)?anode.data.geom.name:anode.data.name+"_geom";
@@ -1968,9 +1960,10 @@ function UpdateCompartmentRep(anode,clear_ngl = true){
 	}
 	else if (comptype === "raw") {
 		if (clear_ngl) stage.removeAllComponents();
-		NGL_LoadAShapeObj(anode.data.geom);
+		NGL_LoadAShapeObj(anode,anode.data.geom);
 		stage.autoView();
 	}
+	else {if (clear_ngl) stage.removeAllComponents();}
 }
 
 function drawCompRec(anode) {
@@ -2000,6 +1993,7 @@ function SetObjectsOptionsDiv(anode) {
 		title = 'interaction';
 	}
 	else if (!anode.parent) {
+		//root
 		for (var e in anode.data)
 			htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>'
 		//htmlStr+=-'<label> Parent Name '+anode.parent.name+'</label>'
@@ -2826,7 +2820,7 @@ function getNodeByName(aname){
 function addCompartment() {
 	var some_data = {
 		nodetype: "compartment",
-    name: "newCompartment",
+    name: "newCompartment"+comp_count.toString(),
     size: 150,
     children: []
   };
@@ -2838,10 +2832,11 @@ function addCompartment() {
    newNode.r = 150;
    newNode.size = 150;
    newNode.children =[];
-   console.log(newNode);
+   //console.log(newNode);
 	 graph.nodes[0].children.push(newNode);
    graph.nodes.push(newNode);
    updateForce();
+	 comp_count+=1;
    return;
 	/*root.children.push(newNode);
 	var aroot = d3v4.hierarchy(root)
@@ -2942,8 +2937,8 @@ function addIngredient(){
 	var newId = graph.nodes.length;//grid.dataView.getLength();
 	//var arow = grid.dataView.getItem(0);
 	row_to_edit = {};//JSON.parse(JSON.stringify(arow));
-	row_to_edit.id = "id_"+ newId;
-	row_to_edit.name = "protein_name";
+	row_to_edit.id = "id_"+ newId.toString();
+	row_to_edit.name = "protein_name"+newId.toString();
 	row_to_edit.size = 40;
 	row_to_edit.count = 0;
 	row_to_edit.molarity = 0.0;
@@ -3051,7 +3046,7 @@ function traverseTreeForCompartmentNameUpdate(anode){
 
 function ResizeNodeOver(){
 	$(".custom-menu-node").hide(100);
-	console.log("rename over",node_over_to_use.data.name);
+	console.log("resize over",node_over_to_use.data.name);
 	console.log(node_over_to_use);
 	var new_size = prompt("Please enter new size", node_over_to_use.r);
 	if (new_size!=null) {
@@ -3192,13 +3187,20 @@ function asubject(x,y) {
   //var minI = 9999;
   //is this hierarcica
   //sort by depth too ?
+	subject = graph.nodes[0];//root
   for (i = 0; i < n; ++i) {
     d = graph.nodes[i];
     r = d.r;
-    if (d.data.nodeType==="compartment") r = d.r*2;
+    //if (d.data.nodeType==="compartment") r = d.r*2;
     dx = x  - d.x;
     dy = y  - d.y;
     d2 = dx * dx + dy * dy;
+		if (!d.parent)//root
+		{
+			miniD = d2;
+			subject = d;
+			depth_over = d.depth;
+		}
     if (d2 < r*r) {
     	if (d.depth > depth_over) { //if (d2 < miniD) {
     		miniD = d2;
@@ -3280,8 +3282,8 @@ function MouseMove(x,y) {
   {
   	clearHighLight();
   }
-  else if (!d.parent && !line) clearHighLight();
-  else {
+  if (!d.parent && !line) clearHighLight();
+//  else {
   	  if (!line)
   	  {
         if (!node_over){
@@ -3301,7 +3303,7 @@ function MouseMove(x,y) {
       	node_over = null;
       	line_over = d;
       	}
-  }
+  //}
   if (simulation.alpha() < 0.01 && HQ) simulation.alphaTarget(1).restart();
   //console.log(simulation.alpha());
 }
