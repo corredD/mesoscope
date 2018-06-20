@@ -7,8 +7,8 @@
 //var CLIENT_ID = '269053028247-9jg05qr3nr1neeff3q3lnv2dmdkjefa4.apps.googleusercontent.com';
 //var API_KEY = 'AIzaSyCYxfUZ8J1-14pCgfcjNC9Qw2T92wCqoVM';
 //mesoscope
-var CLIENT_ID = '855696681613-dg0f5332lh9f32l6h9qkcofl06erqjvi.apps.googleusercontent.com';
-var API_KEY = 'AIzaSyAgxHLv_22IbL4T2MfptaD24yPOEGxsmqA';
+var CLIENT_ID = '956173114200-knip5dvjdq22nrhp678v39js1ckrqoq1.apps.googleusercontent.com';
+var API_KEY = 'AIzaSyADGusqrHMu-HCWXDINRn3DtUZAFlHQ8n0';
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 var DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v4"];
@@ -142,10 +142,11 @@ function g_createPicker() {
 
         var picker = new google.picker.PickerBuilder()
             .addView(docsView)
-            .enableFeature(google.picker.Feature.NAV_HIDDEN)
+            //.enableFeature(google.picker.Feature.NAV_HIDDEN)
             .hideTitleBar()
             .setSize(DIALOG_DIMENSIONS.width - 2, DIALOG_DIMENSIONS.height - 2)
             .setOAuthToken(token)
+            .setDeveloperKey(API_KEY)
             .setCallback(g_pickerCallback)
             .setOrigin('http://localhost:8000')//https://docs.google.com')
             .build();
@@ -155,6 +156,46 @@ function g_createPicker() {
     } else {
         g_showError('Unable to load the file picker.');
     }
+}
+
+/**
+ * Download a file's content.
+ *
+ * @param {File} file Drive File instance.
+ * @param {Function} callback Function to call when the request is complete.
+ */
+function downloadFile(file, callback) {
+  if (file.downloadUrl) {
+    var accessToken = gapi.auth.getToken().access_token;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', file.downloadUrl);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + accessToken);
+    xhr.onload = function() {
+      callback(xhr.responseText);
+    };
+    xhr.onerror = function() {
+      callback(null);
+    };
+    xhr.send();
+  } else {
+    callback(null);
+  }
+}
+
+/**
+ * Print a file's metadata.
+ *
+ * @param {String} fileId ID of the file to print metadata for.
+ */
+function printFile(fileId) {
+  var request = gapi.client.drive.files.get({
+    'fileId': fileId
+  });
+  request.execute(function(resp) {
+    console.log('Title: ' + resp.title);
+    console.log('Description: ' + resp.description);
+    console.log('MIME type: ' + resp.mimeType);
+  });
 }
 
 /**
@@ -173,8 +214,10 @@ function g_pickerCallback(data) {
         id = doc[google.picker.Document.ID];
         url = doc[google.picker.Document.URL];
         // Show the ID of the Google Drive folder
+        console.log("id is ",cached_spreadshitId,id, typeof id, typeof cached_spreadshitId);
         cached_spreadshitId = id;
-        console.log("id is ",cached_spreadshitId)
+        console.log(doc);
+        printFile(id);
         //g_printSpreadsheet(cached_spreadshitId);
         //g_printSpreadsheetValues(cached_spreadshitId);
         localStorage.setItem('spreadshitId', cached_spreadshitId);
