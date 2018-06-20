@@ -1981,6 +1981,8 @@ function drawCompRec(anode) {
 			if (cnode.children && cnode.data.nodetype === "compartment")
 					UpdateCompartmentRep(cnode,false);
 	});
+	//add the bounding box
+	//NGL_addBB();
 }
 
 function SetObjectsOptionsDiv(anode) {
@@ -2003,8 +2005,9 @@ function SetObjectsOptionsDiv(anode) {
 	}
 	else if (!anode.parent) {
 		//root
-		for (var e in anode.data)
-			htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>'
+		for (var e in anode.data){
+			if (e !== "children") htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>';
+		}
 		//htmlStr+=-'<label> Parent Name '+anode.parent.name+'</label>'
 		var cname = anode.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/');
 		htmlStr+='<label> path: '+cname+'</label>';

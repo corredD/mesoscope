@@ -593,6 +593,15 @@ NGL.DatasourceRegistry.add(
   "data", new NGL.StaticDatasource("//cdn.cdn.rawgit.com/arose/ngl/v0.10.4/data/")
 );
 
+
+function NGL_addBB(){
+  var shape = new NGL.Shape('shape', { dashedCylinder: true });
+  //position,color,size,heighAxis,depthAxis,name
+  shape.addBox([ 23, 1, 2 ], [ 0, 1, 0 ], 2, [ 0, 1, 1 ], [ 1, 0, 1 ],'BoundingBox');
+  var shapeComp = stage.addComponentFromObject(shape)
+  shapeComp.addRepresentation('buffer', { wireframe: true })
+  //shapeComp.autoView()
+}
 //change the picking!
 //stage.signals.clicked.add(function (pickingProxy) {...});
 
@@ -1339,7 +1348,8 @@ function NGL_getCollada_cb(scene) {
   }
   var shapeComp = stage.addComponentFromObject(shape);
   var r = shapeComp.addRepresentation("geom_surface", {
-    opacity: 0.5,
+    opacity: 1,
+    //wireframe: true,
     side: "double"
   });
   NGL_showGeomNode_cb(document.getElementById("showgeom").checked);
@@ -1468,7 +1478,7 @@ function NGL_LoadAShapeObj(d,gpath) {
         //stage.removeAllComponents();
         stage.loadFile(ftoload).then(function(o) {
           o.addRepresentation("geom_surface", {
-            opacity: 0.5,
+            opacity: 1,
             side: "double"
           });
           stage.autoView(1000);
