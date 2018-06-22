@@ -1525,7 +1525,15 @@ function saveCurrentCSV(){//saveCurrentCVJSON() {
   var first = parseInt(gridArray[0].dataView.getItem(0).id.split("_")[1]);
   var k = Object.keys(graph.nodes[first].data);
   for (var j = 0, len = k.length; j < len; j++) {
-    if ((k[j]!="visited") && (k[j]!="nodetype")) colname.push(k[j]);
+    if ((k[j]!="visited") && (k[j]!="nodetype")) {
+      if (k[j]==="source" ){
+        colname.push("pdb");
+        colname.push("model");
+        colname.push("selection");
+        colname.push("bu");
+      }
+      else  colname.push(k[j]);
+    }
   }
   colname.push("compartment");
   rows.push(colname);
@@ -1538,7 +1546,13 @@ function saveCurrentCSV(){//saveCurrentCVJSON() {
       for (var j = 0; j < k.length; j++) {
         if ((k[j]!="visited") && (k[j]!="nodetype"))
         {
-          singlerow.push(node.data[k[j]]);
+          if (k[j]==="source" ){
+            singlerow.push(node.data.source.pdb);
+            singlerow.push(node.data.source.model);
+            singlerow.push(node.data.source.selection);
+            singlerow.push(node.data.source.bu);
+          }
+          else singlerow.push(node.data[k[j]]);
         }
       }
       var cname = node.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('.').slice(0,-1);
