@@ -517,7 +517,7 @@ function saveCurrentState() {
   //var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links); //Links?
   localStorage.setItem('savedRecipe', JSON.stringify(jdata));
   recipe_changed = false;
-  grid_tab_label[0].text ( "" );
+  if (grid_tab_label && grid_tab_label[0]) grid_tab_label[0].text ( "" );
 }
 
 var d3canvasComponent = function(container, state) {

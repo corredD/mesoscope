@@ -687,10 +687,29 @@ function querySequenceMapping(pdbid) {
       });
 }
 
+var processRow = function(row) {
+  var finalVal = '';
+  for (var j = 0; j < row.length; j++) {
+    var innerValue = (row[j] && row[j] !== null) ? row[j].toString() : '';
+    //if (innerValue.split("object").length > 1) innerValue = "";
+    if (innerValue === "[object Object]") innerValue = "";
+    if (row[j] instanceof Date) {
+      innerValue = row[j].toLocaleString();
+    };
+    var result = innerValue.replace(/"/g, '""');
+    if (result.search(/("|,|;|\n)/g) >= 0)
+      result = '"' + result + '"';
+    if (j > 0)
+      finalVal += ',';
+    finalVal += result;
+  }
+  return finalVal + '\n';
+};
+
 //<img width="910" height="496" class="img-responsive" id="chainImageA"
 //style="border: 0px; border-image: none;"
 //src="http://www.rcsb.org/pdb/explore/remediatedChain.do?structureId=1A00&amp;params.annotationsStr=SCOP,Site%20Record,DSSP&amp;chainId=A" usemap="#chainAmap_">
-function saveCurrentCSV(grid) {
+function saveCurrentCSVgrid(grid) {
   //	$("#exporticon").click(function() {
   if (totalNbInclude === 0 ) {
     alert(" this is recipe is incomplete, can't export "+totalNbInclude.toString()+" selected entity\n"
@@ -702,22 +721,7 @@ function saveCurrentCSV(grid) {
     return;
   }
   console.log("saveCurrentCSV");
-  var processRow = function(row) {
-    var finalVal = '';
-    for (var j = 0; j < row.length; j++) {
-      var innerValue = (row[j] && row[j] !== null) ? row[j].toString() : '';
-      if (row[j] instanceof Date) {
-        innerValue = row[j].toLocaleString();
-      };
-      var result = innerValue.replace(/"/g, '""');
-      if (result.search(/("|,|;|\n)/g) >= 0)
-        result = '"' + result + '"';
-      if (j > 0)
-        finalVal += ',';
-      finalVal += result;
-    }
-    return finalVal + '\n';
-  };
+
   //console.log(grid);
   var csvFile = '';
   var rows = [];
@@ -763,9 +767,6 @@ function saveCurrentCSV(grid) {
   grid_tab_label[0].text ( "" );
 }
 
-//current Data to JSON and then Recipe ?
-//current recipe format
-//options/cytoplasme/compartmnes/recipe/ingredients
 
 function saveCurrentXLS() {}
 
@@ -1514,45 +1515,44 @@ function getCurrentNodesAsCP_SER_JSON(some_data) {
   return jsondic;
 }
 
-function saveCurrentCVJSON() {
+function saveCurrentCSV(){//saveCurrentCVJSON() {
+  //var nodes ;graph.nodes, graph.links
   var agrid = gridArray[0]; //gridArray[0].dataView
-  var processRow = function(row) {
-    var finalVal = '';
-    for (var j = 0; j < row.length; j++) {
-      if (row[1] === false) continue; //include column
-      var innerValue = row[j] === null || typeof row[j] == 'undefined' ? '' : row[j].toString();
-      if (row[j] instanceof Date) {
-        innerValue = row[j].toLocaleString();
-      };
-      var result = innerValue.replace(/"/g, '""');
-      if (result.search(/("|,|;|\n)/g) >= 0)
-        result = '"' + result + '"';
-      if (j > 0)
-        finalVal += ',';
-      finalVal += result;
-    }
-    return finalVal + '\n';
-  };
-
   var csvFile = '';
   var rows = [];
   var colname = [];
-  for (var j = 0, len = agrid.getColumns().length; j < len; j++) {
-    colname.push(agrid.getColumns()[j].name);
+  //need first object
+  var first = parseInt(gridArray[0].dataView.getItem(0).id.split("_")[1]);
+  var k = Object.keys(graph.nodes[first].data);
+  for (var j = 0, len = k.length; j < len; j++) {
+    if ((k[j]!="visited") && (k[j]!="nodetype")) colname.push(k[j]);
   }
+  colname.push("compartment");
   rows.push(colname);
-  var singlerow = [];
-  for (var i = 0, l = agrid.dataView.getLength(); i < l; i++) {
-    for (var j = 0, len = agrid.getColumns().length; j < len; j++) {
-      singlerow.push(agrid.getDataItem(i)[agrid.getColumns()[j].field]);
-    }
-    rows.push(singlerow);
-    singlerow = [];
-  }
+  //var cname = n.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/').slice(0,-1);
 
+  for (var i = 0; i < graph.nodes.length; i++) {//graph.nodes.length
+    var node = graph.nodes[i];
+    if (!node.children) {
+      var singlerow = [];
+      for (var j = 0; j < k.length; j++) {
+        if ((k[j]!="visited") && (k[j]!="nodetype"))
+        {
+          singlerow.push(node.data[k[j]]);
+        }
+      }
+      var cname = node.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('.').slice(0,-1);
+      singlerow.push(cname);
+      //console.log(singlerow);
+      rows.push(singlerow);
+    }
+  }
+  console.log( rows.length,rows);
+  //return;
   for (var i = 0; i < rows.length; i++) {
     csvFile += processRow(rows[i]);
   }
+  console.log(csvFile);
   var filename = graph.nodes[0].data.name + "_meso.csv";
   var blob = new Blob([csvFile], {
     type: 'text/csv;charset=utf-8;'

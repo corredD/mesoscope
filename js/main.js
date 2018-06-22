@@ -1675,7 +1675,7 @@ function checkAttributes(agraph){
 		if (!("radii" in agraph[i].data)) agraph[i].data.radii = [];
 		if (!("molecularweight" in agraph[i].data)) agraph[i].data.molecularweight = 0.0;
 		if (!("confidence" in agraph[i].data)) agraph[i].data.confidence = 0.0;
-		//if (!("color" in agraph[i].data)) agraph[i].data.color = [0,0,0];
+		if (!("color" in agraph[i].data)) agraph[i].data.color = [0,0,0];
 		if (!("ingtype" in agraph[i].data)) agraph[i].data.ingtype = "protein";
 		if (!("buildtype" in agraph[i].data)) agraph[i].data.buildtype = "random";
 		if (!("comments" in agraph[i].data)) agraph[i].data.comments = "";

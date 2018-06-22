@@ -183,7 +183,8 @@ function serializedRecipe(some_data,some_links){
     //traverse the hierarchy instead of the flat data?
 		for (var i=0;i<some_data.length;i++)
 		{
-	      var  node = some_data[i];
+	      var node = some_data[i];
+        console.log(i," node ",node.data.name);
 	      if (!node.parent) //root
 	      {
 	      	aroot = node;
@@ -197,21 +198,29 @@ function serializedRecipe(some_data,some_links){
 	      	  var cname = node.data.name;
 	      	  var comp;
 	      	  //add a compartment
-	      	  if (!(cname in list_comp)) {
+            console.log("parent ",list_comp[node.parent.data.name]);
+            console.log(i,"comp ",cname,(cname in list_comp),
+                      (node.parent.data.name in list_comp),
+                      list_comp.hasOwnProperty(cname),
+                      list_comp.hasOwnProperty(node.parent.data.name));
+            if (!(cname in list_comp)) {
 								comp = new sCompartment(cname, sCompartment_static_id);
                 comp = oneCompartment(comp,node);
     						sCompartment_static_id+=1;
 								list_comp[cname] = comp;
-								if (!(node.parent.name in list_comp)) console.log(node.data.name,node.parent.data.name);
-								if (node.parent.name in list_comp) list_comp[node.parent.data.name].addCompartment(comp);
+								//if (!(node.parent.name in list_comp))
+								if (node.parent.data.name in list_comp) {
+                  //list_comp[node.parent.data.name].addCompartment(comp);
+                }
                 else {
                   var acomp = new sCompartment(node.parent.data.name, sCompartment_static_id);
-                  var anode = getNodeByName(node.parent.data.name);
+                  var anode = node.parent;//getNodeByName(node.parent.data.name);
                   acomp = oneCompartment(acomp,anode);
       						sCompartment_static_id+=1;
   								list_comp[node.parent.data.name] = acomp;
-                  list_comp[node.parent.data.name].addCompartment(comp);
+                  console.log("list ??",list_comp);
                 }
+                list_comp[node.parent.data.name].addCompartment(comp);
 	      	  }
 	      	  continue;
 	      }
