@@ -543,8 +543,8 @@ function NGL_Setup() {
       var mbi = parseInt( (asplit.length>1)? asplit[1]:"0");
       var pi = mbi*3;
       var cpos = new NGL.Vector3();
-      //console.log(name,mbi,pi,anode);
-      //console.log("update ",pi,anode.data.pos[0].coords);
+      console.log(name,mbi,pi,anode);
+      console.log("update ",pi,anode.data.pos[0].coords);
       cpos.copy(ngl_current_pickingProxy.position);
       anode.data.pos[0].coords[pi] = cpos.x;
       anode.data.pos[0].coords[pi+1] = cpos.y;

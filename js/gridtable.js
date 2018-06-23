@@ -1278,11 +1278,11 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       var parentstring = parentstring_ar[parentstring_ar.length - 1]; //.slice(-1,parentstring.length);
       var pnode = getNodeByName(parentstring);
       if (n.parent) {
-      var index = n.parent.children.indexOf(n);
-      n.parent.children.splice(index, 1);
-      n.parent = pnode;
-      n.depth = depth;
-    }
+        var index = n.parent.children.indexOf(n);
+        n.parent.children.splice(index, 1);
+        n.parent = pnode;
+        n.depth = depth;
+      }
       /*
       n.data.name = arow.name;
       n.data.size = arow.size;
@@ -1414,6 +1414,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       document.getElementById('ProteinId').innerHTML = arow.name; //arow.compartment+" "+arow.name+" : "+arow.pdb;
       //change the selected node accordingly
       clearHighLight();
+      //or search by name ?
       node_selected_indice = parseInt(arow.id.split("_")[1]);
       node_selected = graph.nodes[node_selected_indice];
       nodes_selections=[];

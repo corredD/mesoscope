@@ -1712,7 +1712,7 @@ function checkAttributes(agraph){
 
 function updateAttributesNode(anode,new_data) {
 		for (var key in new_data) {
-			 if(!(key in anode.data)) continue;
+			 //if(!(key in anode.data)) continue;
 			 console.log("update ",key,anode.data[key],new_data[key]);
 			 if (key === "offset"){
 				 anode.data.offset = (Array.isArray(new_data.offset)) ? new_data.offset : new_data.offset.split(",").map(function(d) {
@@ -1729,7 +1729,8 @@ function updateAttributesNode(anode,new_data) {
 				 anode.data.source.pdb = new_data.pdb;
 			 }
 			 else {
-				 anode.data[key] = new_data[key];
+				 if(key in anode.data)
+				 		anode.data[key] = new_data[key];
 			 }
 		}
 		return anode;
