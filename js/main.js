@@ -164,7 +164,7 @@ function EvaluateCurrentReadyState(){
 	totalNbInclude = 0;
 	for (var i=0;i<graph.nodes.length;i++){
 			var d = graph.nodes[i];
-			if (!d.children)
+			if (!d.children && d.data.include)
 			{
 				ningr++;
 				if  ( !d.data.name || d.data.name === "" || d.data.name === "protein_name")  names_state++;
@@ -294,8 +294,10 @@ var allfield={
 			include_index:-1,
 			color_index:-1,
 			comment_index:-1,
+			label_index:-1,
 	    compartments:-1//special case where one column per comnpartment
 	    };
+
 var allfield_labels={
   		name_index:"protein name",
 	    source_index:"protein structure (PDB,EMD)",
@@ -314,6 +316,7 @@ var allfield_labels={
 			include_index:"include the ingredient (x,null,true,false)",
 			color_index:"predefined color for ingredient (r,g,b)",
 			comment_index:"notes and comments for the ingredient",
+			label_index:"label for the ingredient",
 	    compartments:""//special case where one column per comnpartment
 	    };
 
@@ -335,6 +338,7 @@ var allfield_query={
 			include_index:["include"],
 			color_index:["color","rgb"],
 			comment_index:["note","comment"],
+			label_index:["label","description"],
 	    compartments:""//special case where one column per comnpartment
 	    };
 
@@ -485,7 +489,7 @@ function GetIngredientTypeAndBuildType(an_ing_dic)
 function parseCellPackRecipe(jsondic) {
 		var graph ={};//the main graph
     var interaction = [];//name1,name2,id1,id2,data // pdb, beads, etc...
-    var rootName=""
+    var rootName="root"
     if ("recipe" in jsondic)
         rootName = jsondic["recipe"]["name"];
     graph["name"] = rootName;
@@ -740,20 +744,17 @@ function createOneColumnSelect(field1name,allfield2,divparent) {
 };*/
 function guessCompartmentFromColumn(data, rootName) {
 	var loc_name=[];
-	var comp_name=[];
-	var comp_dic={}
-	var comp_dic_hierarchy={
-		nodetype: "compartment",
-		name: "root",
-		size: 10,
-		children: []
-	};
 	var rootComp = {
 		nodetype: "compartment",
 		name: rootName,
 		size: 10,
 		children: []
 	};
+	var comp_dic_hierarchy=rootComp;
+	var comp_name=[rootName];
+	var comp_dic={rootName:rootComp};
+	//var comp_dic_hierarchy={
+	//};
 
 	//when to use root ?
 	console.log("indexes ", allfield.location_index, allfield.compartment_index);//-1, undefined ?
@@ -844,7 +845,7 @@ function getModalMapping(data_header,jsondic,rootName) {
 		//is it brett format with column per compartments
 		var comp_column_graph ={
 			nodetype: "compartment",
-			name: "root",
+			name: rootName,//"root",
 			size: 10,
 			children: []
 		};
@@ -930,7 +931,7 @@ function getModalMapping(data_header,jsondic,rootName) {
       modal_cont.style.display = "none";
       //$modal.remove();
       //continue to parse
-      parseSpreadShitRecipe(data_header,jsondic,rootName);
+      parseSpreadSheetRecipe(data_header,jsondic,rootName);
 		}
 
 		btn2.onclick = function() {
@@ -1134,7 +1135,7 @@ function getCompartmentDefault(idata,elem){
 	comp_elem["children"].push(elem);
 }
 
-function parseSpreadShitRecipe(data_header,jsondic,rootName)
+function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 {
   var data = getDataFromDic(jsondic);
 	//why the key are not working properly?
@@ -1160,7 +1161,7 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
   console.log("mapping for "+rootName+" is ");
   console.log(allfield);
 	var compartments={};
-	var compgraph = getModalCompGraph() ;//the main graph
+	var compgraph = getModalCompGraph(rootName) ;//the main graph
 	var newgraph = compgraph.graph ;//the main graph
 	var float_compartments = compgraph.flat;
 
@@ -1252,12 +1253,13 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
 				if (allfield.color_index !==-1) {
 					if (idata[allfield.color_index]) color = idata[allfield.color_index].split(',').map(Number);//chain:residues?
 				}
+				var label = (allfield.label_index!==-1)?idata[allfield.label_index]:"";
 				var comments = (allfield.comment_index!==-1)?idata[allfield.comment_index]:"";
         //sele = NGL_GetSelection(sele,model);
         var elem = {
 					"name":name,"size":25,"molecularweight":mw,"confidence":confidence,"color":color,
         	"source":{"pdb":source,"bu":bu,"selection":sele,"model":model},"count":acount,
-        	"molarity":molarity, "surface":false,"geom":geom,"geom_type":"file","include":include,
+        	"molarity":molarity, "surface":false,"label":label,"geom":geom,"geom_type":"file","include":include,
         	"uniprot":uniprot,"pcpalAxis":axis,"offset":offset,  "nodetype":"ingredient","comments":comments};
         //alert(elem.name);
 				var loc_comp = (location_index!==-1)?idata[location_index]:"";
@@ -1333,7 +1335,7 @@ function parseSpreadShitRecipe(data_header,jsondic,rootName)
 
 				//alert(comp_elem.name);
 				elem.surface = IsSurface(loc_comp)
-				console.log("checkforsurface for "+elem.name+" "+loc_comp+" "+elem.surface);
+				console.log("checkforsurface for "+elem.name+" "+loc_comp+" "+elem.surface+" "+comp_elem);
 				comp_elem["children"].push(elem);
 	}
 
@@ -1415,7 +1417,7 @@ function process_wb(wb) {
 		//HTMLOUT.style.width = (window.innerWidth - 50) + "px";
 
 		if(typeof console !== 'undefined') console.log("output", new Date());
-		var result = mainParsingSpreadshit(JSON.parse(jsdata),wb.Props.Title);//parseSpreadShitRecipe(JSON.parse(jsdata),wb.Props.Title);
+		var result = mainParsingSpreadshit(JSON.parse(jsdata),wb.Props.Title);//parseSpreadSheetRecipe(JSON.parse(jsdata),wb.Props.Title);
 		return result;
 	}
 
@@ -1483,7 +1485,7 @@ function selectFile(e){
      	 }
     	  	}
     	  else {
-	    	  	reader.onload = function(event) {
+	    	  reader.onload = function(event) {
 	        var data = reader.result;
 	        data = data.replace(/\\n\\r/gm,'newChar');
 	        //alert(data);
@@ -1528,8 +1530,8 @@ function selectFile(e){
     		//var data_header = Object.keys(book[header_index]);//first raw
     		var data_header = book[header_index];//first raw
     		console.log(data_header);
-    		getModalMapping(data_header,book,thefile.name);
-    		//var adata = mainParsingSpreadshit(book,thefile.name);//parseSpreadShitRecipe(JSON.parse(jsdata),wb.Props.Title);
+    		getModalMapping(data_header,book,thefile.name.split(".")[0]);
+    		//var adata = mainParsingSpreadshit(book,thefile.name);//parseSpreadSheetRecipe(JSON.parse(jsdata),wb.Props.Title);
     		//console.log(adta);
     		}
     	}

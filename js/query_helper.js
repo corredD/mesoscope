@@ -1567,7 +1567,7 @@ function saveCurrentCSV(){//saveCurrentCVJSON() {
     csvFile += processRow(rows[i]);
   }
   console.log(csvFile);
-  var filename = graph.nodes[0].data.name + "_meso.csv";
+  var filename = graph.nodes[0].data.name + ".csv";
   var blob = new Blob([csvFile], {
     type: 'text/csv;charset=utf-8;'
   });

@@ -64,12 +64,13 @@ function modal_drawHtmlTreeList(atree, alistholder)
   else return aStr;
 }
 
-function getModalCompGraph() {
+function getModalCompGraph(rootName) {
   //skip surface one ?
   console.log("modal_nodes ",modal_nodes);
   var agraph = modal_nodes[0] ;//the main graph
-  var new_graph = {"name":"root","children":[],"nodetype":"compartment"};
-  var float_compartments = {"root":new_graph};
+  var new_graph = {"name":rootName,"children":[],"nodetype":"compartment"};
+  var float_compartments = {};
+  float_compartments[new_graph.name]=new_graph;
   //traverse
   var stack=[];
   var animX=0;
@@ -78,7 +79,7 @@ function getModalCompGraph() {
     var element = stack.pop();
     var new_elemt = {"name":element.data.name,"children":[],"nodetype":"compartment"};
     console.log("new element is",element.data.name,element);
-    if (element.data.name !== "root")
+    if (element.data.name !== rootName)
     {
       if ("surface" in element.data && element.data.surface) {
           console.log("skip surface ",element.data.name,element.data.surface);
@@ -128,7 +129,7 @@ function SetupCompartmentModalCanvas(parentdiv, loc_comp) {
 }
 
 function UpdateCompartmentModalCanvas(loc_comp){
-  updateGraph(loc_comp);
+  modal_updateGraph(loc_comp);
   updateModalForce();
 }
 
@@ -224,7 +225,7 @@ function setupModalSimulation() {
   modal_sim.alpha(1).alphaTarget(0).restart();
 }
 
-function updateGraph(loc_comp)
+function modal_updateGraph(loc_comp)
 {
     modal_comp_data = loc_comp;
     //before packing do the mapping on size ?
@@ -437,7 +438,7 @@ function modal_draw() {
     var ay = modal_transform.invertY(modal_canvas.height-20);
     modal_ctx.font=(20/modal_transform.k)+"px Georgia";
     modal_ctx.fillStyle = "black";
-    modal_ctx.fillText("root",ax,ay);
+    modal_ctx.fillText(modal_nodes[0].data.name,ax,ay);
   // }
 }
 
