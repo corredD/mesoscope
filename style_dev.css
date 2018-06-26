@@ -1121,3 +1121,26 @@ section#content p {
 .lm_active .messageTab{
   background: #ee7813;
 }
+
+
+#grid_contextMenu {
+ background: #e1efc7;
+ border: 1px solid gray;
+ padding: 2px;
+ display: inline-block;
+ min-width: 100px;
+ -moz-box-shadow: 2px 2px 2px silver;
+ -webkit-box-shadow: 2px 2px 2px silver;
+ z-index: 99999;
+}
+
+#grid_contextMenu li {
+ padding: 4px 4px 4px 14px;
+ list-style: none;
+ cursor: pointer;
+ //background: url("../images/arrow_right_peppermint.png") no-repeat center left;
+}
+
+#grid_contextMenu li:hover {
+ background-color: white;
+}

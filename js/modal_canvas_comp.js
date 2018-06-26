@@ -145,7 +145,7 @@ function resetAllModalNodePos(agraph) {
     agraph[i].x = agraph[i].x - offx / 2; // - rect.width/2;
     agraph[i].y = agraph[i].y - offy / 2; // - rect.height/2;
     //console.log(agraph[i].x,agraph[i].y);//+ rect.top
-    agraph[i].data.surface = false;
+    //agraph[i].data.surface = false;
   }
   return agraph;
 }
@@ -339,7 +339,8 @@ function drawModalNode(d) {
       d.vx += (d.parent.x - d.x) * 0.15 * 1;
       d.vy += (d.parent.y - d.y) * 0.15 * 1;
     }
-    modal_ctx.arc(ndx, ndy, d.r, 0, 10); //0?
+    if (surface) modal_ctx.arc(ndx, ndy, d.r/5, 0, 10); //0?
+    else modal_ctx.arc(ndx, ndy, d.r, 0, 10); //0?
   }
   //console.log(ndx,ndy);
 }
@@ -408,7 +409,7 @@ function modal_draw() {
       if (fontSizeTitle <= 4) fontSizeTitle = 10;
       if (fontSizeTitle > 4) {
         drawCircularText(modal_ctx, d.data.name,
-          fontSizeTitle, titleFont, d.x, d.y, d.r, rotationText[offset], 0);
+          fontSizeTitle, titleFont, d.x, d.y, (d.data.surface)?d.r/5.0:d.r, rotationText[offset], 0);
       }
       offset += 1;
     }

@@ -1541,6 +1541,7 @@ function saveCurrentCSV(){//saveCurrentCVJSON() {
 
   for (var i = 0; i < graph.nodes.length; i++) {//graph.nodes.length
     var node = graph.nodes[i];
+    console.log(i,node);
     if (!node.children && node.data.nodetype!=="compartment") {
       var singlerow = [];
       for (var j = 0; j < k.length; j++) {

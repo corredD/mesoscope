@@ -1487,6 +1487,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
             customReport(entry);//should update the uniprot
           }
           else {
+            //left or shift click ?
             console.log("fetch uniprot " + arow.uniprot)
             //place the query in the text input
             document.getElementById("Query_3").value = arow.name.split("_").join("+");
@@ -1554,7 +1555,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
           }
 
           //use NGL_UpdateWithNode instead?
-          if (arow.pdb && arow.pdb != "None" && arow.pdb != "") {
+          if (arow.pdb && arow.pdb.toLowerCase() != "none" && arow.pdb != "") {
             if (ngl_current_item_id !== arow.id) {
               console.log("update NGL by removing all component");
               stage.removeAllComponents();
@@ -1582,23 +1583,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
               setupProVista(arow.uniprot);
             }
           } else {
-            console.log("query PDB for " + arow.name);
-            if (arow.name !== "protein_name") {
-              document.getElementById("Query_4").value = arow.name.split("_").join(" ");
-              queryPDBfromName(arow.name);
-              if (ngl_load_params.dogeom) {
-                NGL_LoadAShapeObj(null,ngl_load_params.geom);
-                ngl_load_params.dogeom = false;
-              }
-              if (ngl_load_params.dobeads) {
-                NGL_LoadSpheres(ngl_load_params.beads.pos, ngl_load_params.beads.rad);
-                ngl_load_params.dobeads = false;
-              }
-              if (ngl_load_params.doaxis) {
-                NGL_ShowAxisOffset(ngl_load_params.axis.axis, ngl_load_params.axis.offset);
-                ngl_load_params.doaxis = false;
-              }
-            }
+            //do nothing
           }
           ngl_current_item_id = arow.id;
         }
@@ -1654,6 +1639,53 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
     }
     e.stopPropagation();
   });
+
+  grid.onContextMenu.subscribe(function (e) {
+      e.preventDefault();
+      var cell = grid.getCellFromEvent(e);
+      $("#grid_contextMenu")
+          .data("row", cell.row)
+          .css("top", e.pageY)
+          .css("left", e.pageX)
+          .show();
+
+      $("body").one("click", function () {
+        $("#grid_contextMenu").hide();
+      });
+    });
+
+    $("#grid_contextMenu").click(function (e) {
+       if (!$(e.target).is("li")) {
+         return;
+       }
+       if (!grid.getEditorLock().commitCurrentEdit()) {
+         return;
+       }
+       var arow = grid.dataView.getItem($(this).data("row"));
+       if (!(arow)) arow = node_selected.data;
+       var query_ = $(e.target).attr("data");
+       var query = arow[query_];
+       console.log("query PDB for " + query_+" "+query);
+       if (query !== "protein_name" && query !== "" && query !== null) {
+         document.getElementById("Query_4").value = query.split("_").join(" ");
+         queryPDBfromName(query);
+         if (ngl_load_params.dogeom) {
+           NGL_LoadAShapeObj(null,ngl_load_params.geom);
+           ngl_load_params.dogeom = false;
+         }
+         if (ngl_load_params.dobeads) {
+           NGL_LoadSpheres(ngl_load_params.beads.pos, ngl_load_params.beads.rad);
+           ngl_load_params.dobeads = false;
+         }
+         if (ngl_load_params.doaxis) {
+           NGL_ShowAxisOffset(ngl_load_params.axis.axis, ngl_load_params.axis.offset);
+           ngl_load_params.doaxis = false;
+         }
+       }
+       //data[row].priority = $(e.target).attr("data");
+       //grid.updateRow(row);
+     });
+
   dataView.onRowCountChanged.subscribe(function(e, args) {
     grid.updateRowCount();
     grid.render();

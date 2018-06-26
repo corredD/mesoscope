@@ -748,6 +748,7 @@ function guessCompartmentFromColumn(data, rootName) {
 		nodetype: "compartment",
 		name: rootName,
 		size: 10,
+		surface : false,
 		children: []
 	};
 	var comp_dic_hierarchy=rootComp;
@@ -789,6 +790,7 @@ function guessCompartmentFromColumn(data, rootName) {
 								nodetype: "compartment",
 								name: comp,
 								size: 10,
+								surface : false,
 								children: []
 							};
 							comp_dic[comp]=cdata;
@@ -802,8 +804,11 @@ function guessCompartmentFromColumn(data, rootName) {
 								nodetype: "compartment",
 								name: loc,
 								size: 10,
+								surface : IsSurface(loc),
 								children: []
 							};
+							//if (IsSurface(loc)) cdata.surface = true;
+							console.log("1IsSurface(loc)",loc,cdata.surface);
 							//rootComp.children[rootComp.children.length-1].children.push(cdata);
 							comp_dic_hierarchy.children[comp_dic_hierarchy.children.length-1].children.push(cdata);
 							//check if surface ?
@@ -816,9 +821,11 @@ function guessCompartmentFromColumn(data, rootName) {
 							nodetype: "compartment",
 							name: loc,
 							size: 10,
+							surface : IsSurface(loc),
 							children: []
 						};
-						if (IsSurface(loc)) cdata.surface = true;
+						//if (IsSurface(loc)) cdata.surface = true;
+						console.log("2IsSurface(loc)",loc,cdata.surface);
 						comp_dic_hierarchy.children.push(cdata);//rootComp.children.push(cdata);
 					}
 			}
@@ -973,6 +980,7 @@ function isInteger(n) {
 }
 
 function IsSurface(cellValue) {
+	console.log("IsSurface(cellValue)",cellValue);
 	if (!cellValue) return false;//undefined
 	for (var j=0;j<surface_tag.length;j++) {
 		let comon = findLongestCommonSubstring(surface_tag[j].toLowerCase(),cellValue.toLowerCase().replace(" ",""))
