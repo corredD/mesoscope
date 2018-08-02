@@ -2136,7 +2136,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
           //check if exists
           var search_url = cellpack_repo+"other/"+aname+ ".pdb";
           var results = syncCall(search_url);
-          if (result !=="")
+          if (results !=="")
           {
             purl = cellpack_repo+"other/" + aname + ".pdb";
             ngl_current_node.data.opm === 1;

@@ -3018,7 +3018,7 @@ function AddANode(some_data){
    newNode.y = canvas.height/2;
    newNode.r = 30;
    newNode.data.source = {"pdb":some_data.pdb,"bu":some_data.bu,"selection":some_data.selection,"model":""};
-
+	 newNode.data.opm = 0;
 	 graph.nodes[0].children.push(newNode);
    graph.nodes.push(newNode);
    console.log(newNode);
