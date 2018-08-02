@@ -70,9 +70,25 @@ function stopAll(){
 	});
   toggleHide(document.getElementById("spinner"));
 	}
+
+//synchronous query
+function syncCall(url)
+{
+  var xmlhttp = new XMLHttpRequest();
+  xmlhttp.open('GET',url,false);
+  xmlhttp.send(null);
+  var res = "";
+  if (xmlhttp.status === 200)
+  {
+    console.log(xmlhttp.responseText);
+    res = xmlhttp.responseText;
+  }
+  return res;
+}
+
 // this is asynchronous - result comes back to callback later, while this returns immediately
  // -----------------------------------------------------------------------=======------------
- function callAjax(url, callback,querytxt)
+ function callAjax(url, callback, querytxt)
  {
 
  	// compatible with IE7+, Firefox, Chrome, Opera, Safari

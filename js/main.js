@@ -1707,7 +1707,7 @@ function checkAttributes(agraph){
 
 		if (!("visited" in agraph[i].data)) agraph[i].data.visited = false;
 		if (!("include" in agraph[i].data)) agraph[i].data.include = true;
-
+		if (!("opm" in agraph[i].data)) agraph[i].data.opm = 0;//is it an opm model
 		}
 		else {
  			agraph[i].data.nodetype = "compartment";

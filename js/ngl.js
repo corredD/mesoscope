@@ -535,7 +535,7 @@ function NGL_Setup() {
       //update pcpAxis and rotaiton
       NGL_updateMBcompDrag(ngl_current_pickingProxy.component)
     }
-    else {
+    else if (ngl_current_pickingProxy.sphere) {
       var asplit = ngl_current_pickingProxy.sphere.name.split("_");
       var name = asplit[0];
       //retrieve the node with this name
@@ -1387,7 +1387,7 @@ function NGL_LoadShapeFile(afile) {
   if (ext === "obj" || ext === "ply") {
     //stage.removeAllComponents();
     stage.loadFile(thefile).then(function(o) {
-      o.addRepresentation("geom_surface", {
+      o.addRepresentation("surface", {
         opacity: 1,
         side: "double"
       });
@@ -2125,6 +2125,33 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
 
   if (ngl_current_node && ngl_current_node.data.surface) {
     document.getElementById('surface').setAttribute("class", "show");
+    //replace the pdb if exist in opm ?
+    if (aname.length === 4){
+      if (ngl_current_node.data.opm === 1){
+      //replace purl
+          purl = cellpack_repo+"other/" + aname + ".pdb";
+      }
+      else if (ngl_current_node.data.opm === 0)
+      {
+          //check if exists
+          var search_url = cellpack_repo+"other/"+aname+ ".pdb";
+          var results = syncCall(search_url);
+          if (result !=="")
+          {
+            purl = cellpack_repo+"other/" + aname + ".pdb";
+            ngl_current_node.data.opm === 1;
+          }
+          else {
+            ngl_current_node.data.opm === -1;
+          }
+          //check if exist in opm..doesnt work
+          //var search_url = "http://opm.phar.umich.edu/protein.php?search="+aname//1l7v
+          //var results = syncCall(search_url);
+          //var parser = new DOMParser();
+          //var hdoc = parser.parseFromString(results,"text/xml");
+          //console.log(hdoc);
+      }
+    }
     //update the elem
     NGL_updatePcpElem();
   } else {
@@ -2417,8 +2444,10 @@ function NGL_UpdateWithNode(d) {
       sel_str = d.data.source.selection;
     }
 
-    if (d.data.source.pdb.length === 4)
+    if (d.data.source.pdb.length === 4){
+      //is it a surface protein ? then get the opm
       NGL_LoadOneProtein("rcsb://" + d.data.source.pdb + ".mmtf", d.data.source.pdb, bu, sel_str);
+    }
     else {
       var pdbname = d.data.source.pdb;
       var ext = pdbname.slice(-4, pdbname.length);
