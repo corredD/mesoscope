@@ -420,7 +420,7 @@ function OneIngredient(ing_dic,surface) {
 	  var size = ("encapsulatingRadius" in ing_dic)? ing_dic["encapsulatingRadius"] : 40;
 	  var name = ing_dic["name"];
 	  var pdb = ("pdb" in ing_dic)? ing_dic["pdb"] : "None";
-		var source = {"pdb":pdb,"bu":"","model":"","selection":""};
+		var source = {"pdb":pdb,"bu":"","model":"","selection":""};//should be id,type,model,chain,bu
 	  if ("source" in ing_dic){//} && pdb === "None") {
 			source = ing_dic["source"];
 			if (!("pdb" in source)) source.pdb = "None";

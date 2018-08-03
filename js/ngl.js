@@ -2308,7 +2308,11 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       if (o.name.length === 4){
         pdb_id_elem.innerHTML = '<a href="https://www.rcsb.org/structure/' + o.name + '" target="_blank"> pdb : ' + o.name + '</a>';
         if (ngl_current_node.data.opm === 1)
-          pdb_id_elem.innerHTML = '<a href="http://opm.phar.umich.edu/protein.php?search=' + o.name + '" target="_blank"> opm : ' + o.name + '</a>';
+          {
+            pdb_id_elem.innerHTML = '<a href="http://opm.phar.umich.edu/protein.php?search=' + o.name + '" target="_blank"> opm : ' + o.name + '</a>';
+            ngl_current_node.data.comments += " opm";
+            updateDataGridRowElem(0, ngl_current_item_id, "comments", ngl_current_node.data.comments);
+          }
       }
       //title_annotation = o.addAnnotation(p,(o.structure.title)?o.structure.title:o.name);
       o.autoView();
