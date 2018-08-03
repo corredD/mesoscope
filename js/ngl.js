@@ -960,7 +960,7 @@ function NGL_setChainSelectionOptions(ngl_ob)
    ngl_ob.structure.eachChain( chain => {
     chnames.push( chain.chainname)
   }, new NGL.Selection(aselection));
-  console.log(aselection,chnames);
+  console.log(aselection,chnames,nch);
   layout_addOptionsForMultiSelect("selection_ch_checkboxes",chnames);
 }
 
@@ -2280,7 +2280,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       NGL_ShowOrigin();
       //if (label_elem.selectedOptions[0].value !=="None") {
       //do I need the following code ?
-      /*
+
       var ap = o.structure.getAtomProxy();
       o.structure.eachChain(function(cp) {
         var ign = false;
@@ -2293,7 +2293,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
           e.setVisibility(false);
         }
       }, new NGL.Selection("polymer"))
-      */
+
       //}
       //+o.structure.boundingBox.max.y
       //var p = {"x":o.structureView.center.x,"y":o.structureView.center.y+o.structure.boundingBox.max.y,"z":o.structureView.center.z};

@@ -50,6 +50,7 @@ function layout_addOptionsForMultiSelect(select_id,options){
   for (var i = 0;i<options.length;i++) {
     var opt = options[i];//label
     check_elem.innerHTML += '<label for="'+opt+'"><input type="checkbox" id="'+opt+'" onclick="NGL_ChangeChainsSelection(this)" checked />'+opt+'</label>';
+    if (i > 20) break;//safety ?
   }
 }
 
