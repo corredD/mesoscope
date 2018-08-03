@@ -2305,8 +2305,11 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       title_annotation.innerHTML = o.structure.title;
       pdb_id_elem.innerHTML = o.name;
       console.log("should have changed title and name with ",o.structure.title,o.name);
-      if (o.name.length === 4)
-        pdb_id_elem.innerHTML = '<a href="https://www.rcsb.org/structure/' + o.name + '" target="_blank">' + o.name + '</a>';
+      if (o.name.length === 4){
+        pdb_id_elem.innerHTML = '<a href="https://www.rcsb.org/structure/' + o.name + '" target="_blank"> pdb : ' + o.name + '</a>';
+        if (ngl_current_node.data.opm === 1)
+          pdb_id_elem.innerHTML = '<a href="http://opm.phar.umich.edu/protein.php?search=' + o.name + '" target="_blank"> opm : ' + o.name + '</a>';
+      }
       //title_annotation = o.addAnnotation(p,(o.structure.title)?o.structure.title:o.name);
       o.autoView();
       //console.log(p);
