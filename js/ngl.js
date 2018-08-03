@@ -2139,10 +2139,10 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
           if (results !=="")
           {
             purl = cellpack_repo+"other/" + aname + ".pdb";
-            ngl_current_node.data.opm === 1;
+            ngl_current_node.data.opm == 1;
           }
           else {
-            ngl_current_node.data.opm === -1;
+            ngl_current_node.data.opm == -1;
           }
           //check if exist in opm..doesnt work
           //var search_url = "http://opm.phar.umich.edu/protein.php?search="+aname//1l7v
@@ -2266,6 +2266,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       };
       title_annotation.innerHTML = o.structure.title;
       pdb_id_elem.innerHTML = o.name;
+      console.log("should have changed title and name with ",o.structure.title,o.name);
       if (o.name.length === 4)
         pdb_id_elem.innerHTML = '<a href="https://www.rcsb.org/structure/' + o.name + '" target="_blank">' + o.name + '</a>';
       //title_annotation = o.addAnnotation(p,(o.structure.title)?o.structure.title:o.name);
