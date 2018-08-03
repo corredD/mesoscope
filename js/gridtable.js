@@ -1563,24 +1563,8 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
               console.log(arow.pdb, arow.bu, arow.selection);
               NGL_Load(arow.pdb, arow.bu, arow.selection);
             }
-            //update both PDB component
-            UpdatePDBcomponent(arow.pdb.toLowerCase()); //only work if 4letter
-            if (arow.uniprot === "") {
-              //gather the first uniprot code ?
-              var entry = CleanEntryPDB(arow.pdb.toLowerCase());
-              if (entry !=="") {
-                current_list_pdb=[entry]
-                custom_report_uniprot_only = true;
-        				customReport(entry);//should update the uniprot
-              }
-              else {
-                UpdateUniPDBcomponent("");
-                setupProVista("");
-              }
-            }
             else {
-              UpdateUniPDBcomponent(arow.uniprot);
-              setupProVista(arow.uniprot);
+              NGL_pdbComponentPost(arow.pdb,arow.uniprot);
             }
           } else {
             //do nothing

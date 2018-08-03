@@ -944,6 +944,43 @@ function NGL_setModelOptions(ngl_ob) {
   //if (modelStore.count === 0) model_elem.options[model_elem.options.length] = new Option(0, 0);
 }
 
+function NGL_testSelectedChainInEntity(EntityId){
+  var chindexes = ngl_current_structure.structure.entityList[EntityId].chainIndexList;
+  //what is the current chain selection
+  var elem = sele_elem.value.split(":")
+  var selected_chains = [];
+  elem.forEach(
+    function(el){
+        if  ( el[0] !== " " && !(!(el[0]))) selected_chains.push(el[0]);
+    }
+  )
+  var selected = false;
+  console.log(ngl_current_structure.structure.chainStore,selected_chains);
+  chindexes.forEach(function(elem){
+     console.log(elem);
+      if (ngl_current_structure.structure.chainStore) {
+        var cname = ngl_current_structure.structure.chainStore.getChainname(elem);
+        selected = ( ($.inArray(cname, selected_chains) !== -1) || selected);
+        //console.log(cname, $.inArray(cname, selected_chains));
+    }
+  });
+  console.log("selected",selected);
+  if (selected_chains.length === 0) selected = true;
+  return selected;
+}
+
+function NGL_testSelectedChain(chainName){
+    var elem = sele_elem.value.split(":")
+    var selected_chains = [];
+    elem.forEach(
+      function(el){
+          if  ( el[0] !== " " && !(!(el[0]))) selected_chains.push(el[0]);
+      }
+    )
+    if ( selected_chains.length === 0 ) return true;
+    else return ($.inArray(chainName, selected_chains)!==-1);
+}
+
 function NGL_setChainSelectionOptions(ngl_ob)
 {
   //update the selection div element
@@ -960,7 +997,7 @@ function NGL_setChainSelectionOptions(ngl_ob)
    ngl_ob.structure.eachChain( chain => {
      if ( $.inArray(chain.chainname, chnames) === -1 ) chnames.push( chain.chainname)
   }, new NGL.Selection(aselection));
-  console.log(aselection,chnames,nch);
+  console.log("layout_addOptionsForMultiSelect",aselection,chnames,nch);
   layout_addOptionsForMultiSelect("selection_ch_checkboxes",chnames);
 }
 
@@ -1164,18 +1201,20 @@ function NGL_ChangeColorScheme(col_e) {
 function NGL_ChangeHighlightResidue(resnum,chainId)
 {
   if (!ngl_current_structure) return;
-  var style = 'hyperball';
+  var style = 'licorice';//'hyperball';
+  var radius = 1;//'hyperball';
   var sele = resnum;
   if (chainId !== "") sele+=" and :"+chainId;
   if (node_selected && node_selected.data.source.model && node_selected.data.source.model!=="") sele+=" and /"+node_selected.data.source.model;
   var comp = ngl_current_structure;
+  var color = 'gold';
   stage.getRepresentationsByName('highlightRes').dispose();
   stage.getRepresentationsByName('hLabelRes').dispose();
 
     comp.addRepresentation(style, {
         sele: sele,
         color: color,
-        radius: 2,
+        radius: radius,
         assembly: assambly_elem.selectedOptions[0].value,
 				name:"highlightRes"
       });
@@ -2144,6 +2183,27 @@ function NGL_autoBuildBeads(o, center) {
   }
 }
 
+function NGL_pdbComponentPost(pdb,uniprot){
+  UpdatePDBcomponent(pdb.toLowerCase()); //only work if 4letter
+  if (uniprot === "") {
+    //gather the first uniprot code ?
+    var entry = CleanEntryPDB(pdb.toLowerCase());
+    if (entry !=="") {
+      current_list_pdb=[entry]
+      custom_report_uniprot_only = true;
+      customReport(entry);//should update the uniprot
+    }
+    else {
+      UpdateUniPDBcomponent("");
+      setupProVista("");
+    }
+  }
+  else {
+    UpdateUniPDBcomponent(uniprot);
+    setupProVista(uniprot);
+  }
+}
+
 function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
 
   if (ngl_current_node && ngl_current_node.data.surface) {
@@ -2310,7 +2370,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
         if (ngl_current_node.data.opm === 1)
           {
             pdb_id_elem.innerHTML = '<a href="http://opm.phar.umich.edu/protein.php?search=' + o.name + '" target="_blank"> opm : ' + o.name + '</a>';
-            ngl_current_node.data.comments += " opm";
+            if (!(ngl_current_node.data.comments.includes("opm"))) ngl_current_node.data.comments += " opm";
             updateDataGridRowElem(0, ngl_current_item_id, "comments", ngl_current_node.data.comments);
           }
       }
@@ -2328,6 +2388,9 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
         stage.animationControls.rotate(q, 0);
       } //stage.animationControls.rotate(ngl_load_params.axis.axis.getRotationQuaternion(), 0);
       else stage.animationControls.rotate(o.structure.getPrincipalAxes().getRotationQuaternion(), 0);
+
+      //update PDB components
+      NGL_pdbComponentPost(aname,ngl_current_node.data.uniprot);
     });
 }
 

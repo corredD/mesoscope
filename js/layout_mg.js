@@ -44,12 +44,14 @@ function getSelect(select_id, div_class, label, onchange_cb, list_options, defau
 }
 
 
+
 function layout_addOptionsForMultiSelect(select_id,options){
   var check_elem = document.getElementById(select_id);
   check_elem.innerHTML = "";
   for (var i = 0;i<options.length;i++) {
     var opt = options[i];//label
-    check_elem.innerHTML += '<label for="'+opt+'"><input type="checkbox" id="'+opt+'" onclick="NGL_ChangeChainsSelection(this)" checked />'+opt+'</label>';
+    var ch = (NGL_testSelectedChain(opt))?" checked ":"";
+    check_elem.innerHTML += '<label for="'+opt+'"><input type="checkbox" id="'+opt+'" onclick="NGL_ChangeChainsSelection(this)"'+ch+'/>'+opt+'</label>';
     if (i > 20) break;//safety ?
   }
 }
@@ -927,7 +929,9 @@ function off() {
 
 
 function pdbcomp_click_callback(e) {
-  if (e.eventData.elementData.elementType === "molecule") return;
+  //if (e.eventData.elementData.elementType === "molecule") return;
+  var entityId = e.eventData.entityId;
+  var did = node_selected.data.mapping.unimap[entityId];// e.eventData.elementData.domainId;
   if (e.eventData.elementData.elementType ==="uniprot") {
     //e.eventData.entityId: "1"
     //e.eventData.entryId: "3bc1"
@@ -938,8 +942,10 @@ function pdbcomp_click_callback(e) {
         node_selected.data.uniprot = e.eventData.elementData.domainId;
         updateCellValue(gridArray[0], "uniprot", current_grid_row, node_selected.data.uniprot);
         setupProVista(node_selected.data.uniprot);
+        did = node_selected.data.uniprot ;
     }
   }
+  if (did !== node_selected.data.uniprot ) did = node_selected.data.uniprot ;
   //highligh the clicked residue?
   var start;
   var end;
@@ -954,8 +960,7 @@ function pdbcomp_click_callback(e) {
   }
   var color = "rgb("+e.eventData.elementData.color[0]+", "+e.eventData.elementData.color[1]+", "+e.eventData.elementData.color[2]+")";
   //mapping ?
-  var entityId = e.eventData.entityId;
-  var did = node_selected.data.mapping.unimap[entityId];// e.eventData.elementData.domainId;
+
   var ch = e.eventData.elementData.pathData.chain_id;
   console.log("before mapping ",start,end,entityId,did,ch);
   if (start in node_selected.data.mapping[did][ch].mapping)
@@ -967,9 +972,24 @@ function pdbcomp_click_callback(e) {
 }
 
 function pdbcomp_mouseover_callback(e) {
-  if (e.eventData.elementData.elementType === "molecule") return;
+  //if (e.eventData.elementData.elementType === "molecule") return;
   var entityId = e.eventData.entityId;
   var did = node_selected.data.mapping.unimap[entityId];//
+  //compare with the one in the widget.
+  if (e.eventData.elementData.elementType ==="uniprot") {
+    //e.eventData.entityId: "1"
+    //e.eventData.entryId: "3bc1"
+    //e.eventData.residueNumber: 98
+    //check if its the uniprot we have in the grid ?
+    if (e.eventData.elementData.domainId !== node_selected.data.uniprot)
+    {
+        node_selected.data.uniprot = e.eventData.elementData.domainId;
+        updateCellValue(gridArray[0], "uniprot", current_grid_row, node_selected.data.uniprot);
+        setupProVista(node_selected.data.uniprot);
+        did = e.eventData.elementData.domainId;
+    }
+  }
+  if (did !== node_selected.data.uniprot ) did = node_selected.data.uniprot ;
   var ch = e.eventData.elementData.pathData.chain_id;
   var resnum = e.eventData.residueNumber;
   console.log("before mapping ",resnum,entityId,did,ch);
@@ -1090,16 +1110,20 @@ function UpdatePDBseq(entry){
   }
   if (ngl_current_structure) {
     var nEntity = ngl_current_structure.structure.entityList.length;
+    console.log("UpdatePDBseq", nEntity);//limit this number ?
     for (var i=0;i<nEntity;i++){
       console.log(ngl_current_structure.structure.entityList[i]);
       if (!ngl_current_structure.structure.entityList[i].isPolymer()) continue;
+      if (!NGL_testSelectedChainInEntity(i)) continue;
       seqv.innerHTML += '&lt;pdb-seq-viewer entry-id="'+entry+'" entity-id="'+(i+1).toString()+'" height="370"&gt;&lt;/pdb-seq-viewer&gt;';
+      if (i>=3) break;
     }
   }
   else {
     seqv.innerHTML = '&lt;pdb-seq-viewer entry-id="'+entry+'" entity-id="1" height="370"&gt;&lt;/pdb-seq-viewer&gt;';
   }
 }
+
 
 function UpdatePDBtopo(entry){
   entry = CleanEntryPDB(entry);
@@ -1111,12 +1135,16 @@ function UpdatePDBtopo(entry){
     topo.innerHTML = "";
     return;
   }
+  //use current chain selection
   if (ngl_current_structure) {
     var nEntity = ngl_current_structure.structure.entityList.length;
+    console.log("UpdatePDBseq", nEntity);
     for (var i=0;i<nEntity;i++){
       console.log(ngl_current_structure.structure.entityList[i]);
       if (!ngl_current_structure.structure.entityList[i].isPolymer()) continue;
+      if (!NGL_testSelectedChainInEntity(i)) continue;
       topo.innerHTML += '&lt;pdb-topology-viewer entry-id="'+entry+'" entity-id="'+(i+1).toString()+'" height="370"&gt;&lt;/pdb-topology-viewer&gt;';
+      if (i>=3) break;
     }
   }
   else {
@@ -1124,6 +1152,7 @@ function UpdatePDBtopo(entry){
   }
 }
 
+//if there is too many of them, the website hang...
 function UpdatePDBcomponent(entry)
 {
   //do it for all entity?
@@ -1138,7 +1167,7 @@ function UpdateUniPDBcomponent(entry){
   puv.innerHTML = "";
   if (!(entry) || entry === "" || entry === null)
   {
-    console.log("UpdatePDBcomponent with null");
+    console.log("UpdatePDBcomponent with null ", entry);
     puv = document.getElementById("puv");
     puv.innerHTML = "";
     uniprot_viewer_tab_lbl.text("");
@@ -1185,7 +1214,7 @@ function setupProtVistaEvents()
 function setupProVista(uniid){
   if (uniid===null) uniid = (node_selected)?node_selected.data.uniprot:"";
   if (!(uniid) || uniid ==="" || uniid === null) {
-    console.log("Update ProVista with null");
+    console.log("Update ProVista with null ",uniid);
     protvista_tab_lbl.text("");
     document.getElementById("protvista").innerHTML ="";
     return;

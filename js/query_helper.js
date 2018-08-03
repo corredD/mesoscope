@@ -257,7 +257,7 @@ function customReportCB(response, querytxt) {
         gridArray[0].dataView.refresh();
         //trigger cellchange?
         SyncTableGraphCell(row.id, "uniprot", "uniprot"); //update the graph
-        SyncTableGraphCell(row.id, "label", "label"); //update the graph
+        SyncTableGraphCell(row.id, "label", "label"); //update the graph this overwrite any label
         SyncTableGraphCell(row.id, "pdb", "pdb"); //update the graph
         //SyncTableGraphCell(row.id,"pdb","pdb");//update the graph molecular weight
         //group by structureId
