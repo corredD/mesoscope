@@ -958,7 +958,7 @@ function NGL_setChainSelectionOptions(ngl_ob)
    var chnames = []
    var nch = ngl_ob.structure.getChainnameCount();
    ngl_ob.structure.eachChain( chain => {
-    chnames.push( chain.chainname)
+     if ( $.inArray(chain.chainname, chnames) === -1 ) chnames.push( chain.chainname)
   }, new NGL.Selection(aselection));
   console.log(aselection,chnames,nch);
   layout_addOptionsForMultiSelect("selection_ch_checkboxes",chnames);
