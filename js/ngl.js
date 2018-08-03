@@ -2221,13 +2221,23 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       console.log("gcenter", center, ngl_force_build_beads);
       o.setPosition([-center.x, -center.y, -center.z]); //center molecule
       //ngl_force_build_beads
+
       if (ngl_force_build_beads) NGL_autoBuildBeads(o, center);
       if (ngl_load_params.doaxis) {
         //o.setPosition([ 0,0,0 ]);
         align_axis = true;
         var offset = ngl_load_params.axis.offset;
         console.log("offset?", offset);
-        NGL_ShowAxisOffset(ngl_load_params.axis.axis, offset);
+        var axis = ngl_load_params.axis.axis;
+        if (ngl_current_node.data.opm === 1) {
+          offset = center;
+          axis = new NGL.Vector3(0,0,-1);
+          ngl_load_params.axis.offset = offset;
+          ngl_load_params.axis.axis = axis;
+          NGL_updatePcpElem();
+          NGL_applyPcp();
+        }
+        NGL_ShowAxisOffset(axis, offset);
         //ngl_load_params.doaxis=false;
       }
       o.addRepresentation("axes", {

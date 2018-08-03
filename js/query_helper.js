@@ -1630,12 +1630,16 @@ function SaveRecipeCellPACK() {
 }
 
 function SaveRecipeCellPACK_serialized() {
-  console.log("save recipe serialized",current_ready_state,totalNbInclude);
-  if (current_ready_state === 0 || totalNbInclude === 0 ) {
+  console.log("save recipe serialized",current_ready_state,totalNbInclude,
+          current_ready_state_details.beads,current_ready_state_details.sources);
+  //only check for beads ?
+  if ( current_ready_state_details.beads < 1 || current_ready_state_details.sources < 1)
+  {
+    //if (current_ready_state === 0 || totalNbInclude === 0 ) {
     alert(" this is recipe is incomplete, can't export "+totalNbInclude.toString()+" selected entity\n"
             //+ JSON.stringify(current_ready_state_value)
             + "\nmissing beads " + JSON.stringify(list_missing_beads)
-            + "\nmissing geoms " + JSON.stringify(list_missing_geom)
+            //+ "\nmissing geoms " + JSON.stringify(list_missing_geom)
             + "\nmissing pdb " + JSON.stringify(list_missing_pdb));
     return;
   }

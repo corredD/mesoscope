@@ -25,7 +25,7 @@ var localisation_tag = ["cytosol","periplasm","inner_membrane","outer_membrane",
 var surface_tag = ["membrane","x","surface","tm","true"];
 var current_ready_state = 0;//0-1-2
 var current_ready_state_value;//0-1-2
-
+var current_ready_state_details;
 var list_missing_beads=[];
 var list_missing_geom=[];
 var list_missing_pdb=[];
@@ -204,6 +204,7 @@ function EvaluateCurrentReadyState(){
 						"count":(ningr-count_molarity_state)/ningr,"visited":(ningr-node_view_state)/ningr,
 						"compgeom":(ncomp-comp_geom_state)/ncomp
 					}
+	current_ready_state_details = res;
 	//need either the beads or the geom
 	var score_critical = (res.geom+res.beads+res.compgeom)/3;//critical part need to yellow
 	var perfect_score =  0;
