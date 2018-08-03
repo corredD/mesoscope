@@ -2213,12 +2213,16 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
         showBox: true,
         radius: 0.2
       })
+
+      /*
       o.addRepresentation(rep_elem.selectedOptions[0].value, {
         colorScheme: color_elem.selectedOptions[0].value,
         sele: sele,
         name: "polymer",
         assembly: assambly
       });
+      */
+      console.log("done ?");
     }).then(function() {
       var o = stage.getComponentsByName(aname).list[0];
       //console.log("finished with adding represnetation ");
