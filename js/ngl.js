@@ -134,9 +134,9 @@ function NGL_resetPcp()
   NGL_applyPcp();
 }
 
-function NGL_applyPcp() {
-  var axis = [pcp_elem[0].value / 100.0, pcp_elem[1].value / 100.0, pcp_elem[2].value / 100.0];
-  var offset = [offset_elem[0].value / 1.0, offset_elem[1].value / 1.0, offset_elem[2].value / 1.0];
+function NGL_applyPcp(axis,offset) {
+  if (!axis) axis = [pcp_elem[0].value / 100.0, pcp_elem[1].value / 100.0, pcp_elem[2].value / 100.0];
+  if (!offset) offset = [offset_elem[0].value / 1.0, offset_elem[1].value / 1.0, offset_elem[2].value / 1.0];
   ngl_load_params.axis.axis = axis;
   ngl_load_params.axis.offset = offset;
   //update table and node
@@ -1565,7 +1565,7 @@ function NGL_ShowAxisOffset(axis, offset) //StructureView
 {
   //arrow is start, end ,color, radius
   //axis should go from offset to given length
-  console.log("load axis");
+  console.log("load axis",axis, offset);
   console.log(-offset[0], -offset[1], -offset[2]);
   console.log(axis[0], axis[1], axis[2]);
   if (!axis || axis === "") return;
@@ -2162,10 +2162,10 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
           if (results !=="")
           {
             purl = cellpack_repo+"other/" + aname + ".pdb";
-            ngl_current_node.data.opm == 1;
+            ngl_current_node.data.opm = 1;
           }
           else {
-            ngl_current_node.data.opm == -1;
+            ngl_current_node.data.opm = -1;
           }
           //check if exist in opm..doesnt work
           //var search_url = "http://opm.phar.umich.edu/protein.php?search="+aname//1l7v
@@ -2227,16 +2227,16 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
         //o.setPosition([ 0,0,0 ]);
         align_axis = true;
         var offset = ngl_load_params.axis.offset;
-        console.log("offset?", offset);
         var axis = ngl_load_params.axis.axis;
         if (ngl_current_node.data.opm === 1) {
-          offset = center;
-          axis = new NGL.Vector3(0,0,-1);
+          offset = [center.x,center.y,center.z];
+          axis = [0,0,1];
           ngl_load_params.axis.offset = offset;
           ngl_load_params.axis.axis = axis;
           NGL_updatePcpElem();
           NGL_applyPcp();
         }
+        console.log("offset?", offset,axis);
         NGL_ShowAxisOffset(axis, offset);
         //ngl_load_params.doaxis=false;
       }
