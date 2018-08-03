@@ -113,6 +113,27 @@ function NGL_updatePcpElem() {
   }
 }
 
+function NGL_resetPcp()
+{
+  var acomp = stage.getComponentsByName("mb").list[0];
+  acomp.setRotation([0,0,0,1]);
+  acomp.setPosition([0,0,0]);
+  var axis = new NGL.Vector3(0, 0, 1);//quat.multiplyVector3(new NGL.Vector3(0, 0, 1));
+  var offset = new NGL.Vector3(0, 0, 0);
+  //offset.applyQuaternion() quat.inverse().multiplyVector3(pos);
+  pcp_elem[0].value = axis.x*100;
+  pcp_elem[1].value = axis.y*100;
+  pcp_elem[2].value = axis.z*100;
+  offset_elem[0].value = offset.x*-1;
+  offset_elem[1].value = offset.y*-1;
+  offset_elem[2].value = offset.z*-1;
+  for (var i = 0; i < 3; i++) {
+    $(pcp_elem[i]).siblings('.inputNumber').val(pcp_elem[i].value);
+    $(offset_elem[i]).siblings('.inputNumber').val(offset_elem[i].value);
+  }
+  NGL_applyPcp();
+}
+
 function NGL_applyPcp() {
   var axis = [pcp_elem[0].value / 100.0, pcp_elem[1].value / 100.0, pcp_elem[2].value / 100.0];
   var offset = [offset_elem[0].value / 1.0, offset_elem[1].value / 1.0, offset_elem[2].value / 1.0];
@@ -455,6 +476,7 @@ function NGL_Setup() {
   $('.inputRange, .inputNumber').on('input', function() {
     $(this).siblings('.inputRange, .inputNumber').val(this.value);
     NGL_updateMBcomp();
+    NGL_applyPcp();
   });
 
   slidercluster_elem = document.getElementById("slidercl_params1");
@@ -534,6 +556,7 @@ function NGL_Setup() {
     if(ngl_current_pickingProxy.component && ngl_current_pickingProxy.component.name==="mb") {
       //update pcpAxis and rotaiton
       NGL_updateMBcompDrag(ngl_current_pickingProxy.component)
+      NGL_applyPcp();
     }
     else if (ngl_current_pickingProxy.sphere) {
       var asplit = ngl_current_pickingProxy.sphere.name.split("_");

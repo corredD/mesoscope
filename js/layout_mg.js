@@ -161,7 +161,8 @@ var ngl_options= ''+
       '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetZ" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
       '<input class="inputNumber" id="num6" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
       '</div>' +
-      '<button onclick="NGL_applyPcp()">Apply To Ingredient</button>' +
+      //'<button onclick="NGL_applyPcp()">Apply To Ingredient</button>' +
+      '<button onclick="NGL_resetPcp()">Reset</button>' +
     '</div>' +
     '<label id="pdb_title">pdb TITLE</label>' +
   '</div>' +
