@@ -1564,7 +1564,9 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
               NGL_Load(arow.pdb, arow.bu, arow.selection);
             }
             else {
-              NGL_pdbComponentPost(arow.pdb,arow.uniprot);
+                if ( document.getElementById("sequence_mapping").checked)
+                    NGL_pdbComponentPost(arow.pdb,arow.uniprot);
+                else NGL_cleanpdbComponentPost();
             }
           } else {
             //do nothing
@@ -1760,7 +1762,7 @@ function groupByElem(selem) {
   groupByElem_cb(current_grid, selem.value);
 }
 
-function UpdateSelectionPdbFromId(node_id) {
+function grid_UpdateSelectionPdbFromId(node_id) {
   //dataView.expandAllGroups() so that it goes to itr
   //$('#tabs').tabs('load', 0);
   //$("div#tabs-1").show();

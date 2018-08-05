@@ -218,8 +218,12 @@ var gridoptions = ''
   '<button style="width:20%;" id="QueryBtn_3" onclick="refineQuery(this)">search</button></div>'+
   '<div style="display:flex"><input type="text""  style="width:100%;" placeholder="PDB_Query" id="Query_4" onchange="refineQuery(this)"/>' +
   '<button style="width:20%;" id="QueryBtn_4" onclick="refineQuery(this)">search</button></div>'+
+  '<div style="display:flex">'+
   '<label for="sequence_search"> Use Sequence Blast PDB Search </label><input type="checkbox" name="sequence_search" id="sequence_search">' +
-  '<label for="sequence_search"> Setup mapping uniprot-PDB resnum </label><input type="checkbox" name="sequence_mapping" id="sequence_mapping" checked>' +
+  '<label for="sequence_mapping"> Setup mapping uniprot-PDB resnum </label><input type="checkbox" name="sequence_mapping" id="sequence_mapping" checked>' +
+  '<label for="pdb_component_enable"> Update PDB component library </label><input type="checkbox" name="pdb_component_enable" id="pdb_component_enable" checked>' +
+  '<button style="width:20%;" id="UpdatePDBcomponent" onclick="NGL_UpdatePDBComponent(this)">Update Component</button>'+
+  '</div>'+
   '</div>'+
   '<label id="LoaderTxt" class="hidden" for="aloader"></label>' +
   '<div class="spinner hidden" id="spinner" style="width:200px;height:20px;" >' +

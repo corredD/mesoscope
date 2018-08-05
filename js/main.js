@@ -3517,7 +3517,7 @@ function dragended() {
 		d3v4.event.subject.data.visited = true;
   	//node_selected =  d3v4.event.subject;
   	//node_selected_indice = nodes.indexOf(node_selected);
-  	UpdateSelectionPdbFromId(d3v4.event.subject.data.id);
+  	grid_UpdateSelectionPdbFromId(d3v4.event.subject.data.id);
 		//SelectRowFromId(node_selected.data.id);
   	if (current_mode===0) {
 			NGL_UpdateWithNode(d3v4.event.subject);
@@ -3861,13 +3861,14 @@ function PreviousIgredient(){
      	found = true;
      	node_selected_indice = i;
      	node_selected = graph.nodes[i];
+			nodes_selections=[];
      }
   }
   if (found)
   {
   	//find the row
 		node_selected.data.visited = true;
-  	UpdateSelectionPdbFromId(node_selected.data.id);
+  	grid_UpdateSelectionPdbFromId(node_selected.data.id);
   	NGL_UpdateWithNode(node_selected);
   	wakeUpSim();
   }
@@ -3889,7 +3890,8 @@ function NextIgredient(){
   }
   if (found)
   {
-  	UpdateSelectionPdbFromId(node_selected.data.id);
+		node_selected.data.visited = true;
+  	grid_UpdateSelectionPdbFromId(node_selected.data.id);
   	NGL_UpdateWithNode(node_selected);
   	wakeUpSim();
   }

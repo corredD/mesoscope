@@ -2182,6 +2182,20 @@ function NGL_autoBuildBeads(o, center) {
   }
 }
 
+function NGL_UpdatePDBComponent(){
+  //use current selection
+  if (node_selected) {
+    NGL_pdbComponentPost(node_selected.data.source.pdb,node_selected.data.uniprot);
+  }
+  else NGL_cleanpdbComponentPost();
+}
+
+function NGL_cleanpdbComponentPost(){
+  UpdatePDBcomponent("");
+  UpdateUniPDBcomponent("");
+  setupProVista("");
+}
+
 function NGL_pdbComponentPost(pdb,uniprot){
   UpdatePDBcomponent(pdb.toLowerCase()); //only work if 4letter
   if (uniprot === "") {
@@ -2389,7 +2403,9 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       else stage.animationControls.rotate(o.structure.getPrincipalAxes().getRotationQuaternion(), 0);
 
       //update PDB components
-      NGL_pdbComponentPost(aname,ngl_current_node.data.uniprot);
+      if ( document.getElementById("sequence_mapping").checked)
+          NGL_pdbComponentPost(aname,ngl_current_node.data.uniprot);
+      else NGL_cleanpdbComponentPost();
     });
 }
 
@@ -2693,10 +2709,11 @@ function NGL_UpdateWithNode(d) {
   //what is the id//
   //this is called from the canvas
   console.log("update with ", d);
-  ngl_current_item_id = d.data.id;
+  SetObjectsOptionsDiv(d);
+
   ngl_current_node = d;
   document.getElementById('ProteinId').innerHTML = d.data.name;
-  stage.removeAllComponents();
+
   ngl_force_build_beads = false;
   if (d.data.geom) {
     if ("geom_type" in d.data) {
@@ -2728,12 +2745,22 @@ function NGL_UpdateWithNode(d) {
   }
 
   if ("source" in d.data) {
-    if (!d.data.source.pdb || d.data.source.pdb === "None") {
-      //build a sphere of size radius
-      NGL_noPdbProxy(d.data.name, d.data.size);
-      return;
+    if (ngl_current_item_id !== d.data.id) {
+      if (!d.data.source.pdb || d.data.source.pdb === "None") {
+        //build a sphere of size radius
+        NGL_noPdbProxy(d.data.name, d.data.size);
+        return;
+      }
+      stage.removeAllComponents();
+      NGL_Load(d.data.source.pdb, d.data.source.bu, d.data.source.selection);
+    }else {
+      if ( document.getElementById("sequence_mapping").checked)
+          NGL_pdbComponentPost(d.data.source.pdb,d.data.uniprot);
+      else NGL_cleanpdbComponentPost();
     }
-    var bu = -1;
+    ngl_current_item_id = d.data.id;
+  }
+    /*var bu = -1;
     var sel_str = ""
     if ("bu" in d.data.source) {
       bu = d.data.source.bu;
@@ -2782,7 +2809,7 @@ function NGL_UpdateWithNode(d) {
     //if (ngl_load_params.dogeom) {NGL_LoadAShapeObj(ngl_load_params.geom);ngl_load_params.dogeom=false;}
     //if (ngl_load_params.dobeads) {NGL_LoadSpheres(ngl_load_params.beads.pos,ngl_load_params.beads.rad);ngl_load_params.dobeads=false;}
     //if (ngl_load_params.doaxis) {NGL_ShowAxisOffset(ngl_load_params.axis.axis,ngl_load_params.axis.offset);ngl_load_params.doaxis=false;}
-  }
+  }*/
 }
 
 
