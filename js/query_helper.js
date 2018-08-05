@@ -156,7 +156,7 @@ function submitForm(xmlText, querytxt) {
 					  	}
 					  pdb_picked = 0;
 					  var toload = h.slice(0,5);
-            NGL_loadList(toload);//ngl
+            NGLg_loadList(toload);//ngl
              //document.getElementById('qridHidden').value=qrid;
               */
       }
@@ -338,7 +338,7 @@ function OnFinishPDB() {
   }
   pdb_picked = 0;
   //var toload = h.slice(0,5);
-  // NGL_loadList(toload);//ngl
+  // NGLg_loadList(toload);//ngl
 }
 
 function checkComparator(queryXML) {

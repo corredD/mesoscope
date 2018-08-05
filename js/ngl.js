@@ -1591,18 +1591,23 @@ function NGL_LoadAShapeObj(d,gpath) {
 
 function NGL_ShowOrigin() //StructureView
 {
-  var shape = new NGL.Shape("ori");
-  shape.addArrow([0, 0, 0], [10, 0, 0], [1, 0, 0], 1.0);
-  shape.addArrow([0, 0, 0], [0, 10, 0], [0, 1, 0], 1.0);
-  shape.addArrow([0, 0, 0], [0, 0, 10], [0, 0, 1], 1.0);
-  //compare to the structure getPrincipalAxes?
-  var shapeComp = stage.addComponentFromObject(shape)
-  shapeComp.addRepresentation("Origin");
+  var rep = stage.getComponentsByName("ori");
+  if (rep.list.length !== 0){}
+  else {
+    var shape = new NGL.Shape("ori");
+    shape.addArrow([0, 0, 0], [10, 0, 0], [1, 0, 0], 1.0);
+    shape.addArrow([0, 0, 0], [0, 10, 0], [0, 1, 0], 1.0);
+    shape.addArrow([0, 0, 0], [0, 0, 10], [0, 0, 1], 1.0);
+    //compare to the structure getPrincipalAxes?
+    var shapeComp = stage.addComponentFromObject(shape)
+    shapeComp.addRepresentation("Origin");
+  }
 }
 
-function NGL_ShowAxisOffset(axis, offset) //StructureView
+function NGL_ShowAxisOffset(axis, offset, anode) //StructureView
 {
   //arrow is start, end ,color, radius
+  if (!anode) anode = node_selected;
   //axis should go from offset to given length
   console.log("load axis",axis, offset);
   console.log(-offset[0], -offset[1], -offset[2]);
@@ -1613,44 +1618,42 @@ function NGL_ShowAxisOffset(axis, offset) //StructureView
   axis = (axis.length === 3) ? axis : [0, 0, 1];
   console.log(axis);
   console.log(offset);
-  /*
-  var start = [0,0,0];
-  var end = [axis[0]*axislength,axis[1]*axislength,axis[2]*axislength];
-  var center = [0,0,0];//ngl_current_structure.structureView.center;//center of the view ?
-  console.log(ngl_current_structure);//actual current representation center?
-  console.log(start);
-  console.log(end);
-  console.log(center);
-  var shape = new NGL.Shape("axis");
-  shape.addArrow(start, end, [ 1, 0, 0 ], 2.0);
-  shape.addSphere( offset, [ 1, 0, 0 ], 3.5 );
-  //shape.addSphere( start, [ 1, 0, 0 ], 3.0 );
-  var shapeComp = stage.addComponentFromObject(shape)
-  shapeComp.addRepresentation("principalVector");
-  */
-
-  if (node_selected) {
-    if (node_selected.data.surface) {
+  //check if the component exist otherwise build it
+  if (anode) {
+    if (anode.data.surface) {
       console.log("build membrane along", axis);
-      var shapemb = new NGL.Shape("mb");
-      //two cylinder one red up, one blue down, center is 0,0,0
-      //Sign of Z coordinate is negative at the inner (IN) side and positive at the outer side.
-      var radius = 50;
-      var Z = 14;
-      var thickness = 1.0;
-      //axis = [0,0,1];
-      shapemb.addCylinder([0, 0, Z - 1], [0, 0, Z + 1], [1, 0, 0], radius, "OUT");
-      shapemb.addCylinder([0, 0, -(Z - 1)], [0, 0, -(Z + 1)], [0, 0, 1], radius, "IN");
 
-      var shapembComp = stage.addComponentFromObject(shapemb);
-      shapembComp.name = "mb";
-      var r = shapembComp.addRepresentation("principalVector");
       var q = new NGL.Quaternion();
       q.setFromUnitVectors(new NGL.Vector3(0, 0, 1), new NGL.Vector3(axis[0], axis[1], axis[2]));
       console.log(q, new NGL.Vector3(axis[0], axis[1], axis[2]));
-      shapembComp.setRotation(q);
-      shapembComp.setPosition([-offset[0], -offset[1], -offset[2]]);
-      console.log("axis ?", axis);
+
+      //check if exists
+      var rep = stage.getComponentsByName("mb");
+      if (rep.list.length !== 0){
+        if (rep.list[0].reprList.length !== 0) {
+          rep.list[0].reprList[0].setVisibility(true);
+          rep.list[0].setRotation(q);
+          rep.list[0].setPosition([-offset[0], -offset[1], -offset[2]]);
+        }
+      }
+      else {
+        var shapemb = new NGL.Shape("mb");
+        //two cylinder one red up, one blue down, center is 0,0,0
+        //Sign of Z coordinate is negative at the inner (IN) side and positive at the outer side.
+        var radius = 50;
+        var Z = 14;
+        var thickness = 1.0;
+        //axis = [0,0,1];
+        shapemb.addCylinder([0, 0, Z - 1], [0, 0, Z + 1], [1, 0, 0], radius, "OUT");
+        shapemb.addCylinder([0, 0, -(Z - 1)], [0, 0, -(Z + 1)], [0, 0, 1], radius, "IN");
+
+        var shapembComp = stage.addComponentFromObject(shapemb);
+        shapembComp.name = "mb";
+        var r = shapembComp.addRepresentation("principalVector");
+        shapembComp.setRotation(q);
+        shapembComp.setPosition([-offset[0], -offset[1], -offset[2]]);
+        console.log("axis ?", axis);
+      }
     }
   }
 }
@@ -1674,6 +1677,12 @@ function NGL_LoadSpheres(pos, rad) {
     var lod = i;
     if (!pos[lod].coords) continue;
     var col = Array(pos[lod].coords.length).fill(0).map(Util_makeARandomNumber);
+
+    //check if exist
+    var rep = stage.getComponentsByName("beads_"+i);
+    if (rep.list.length){
+      rep.list.forEach(function(elem){stage.removeComponent(elem);});
+    }
 
     var shape = new NGL.Shape("beads_" + lod, {
       disableImpostor: true,
@@ -2215,6 +2224,86 @@ function NGL_pdbComponentPost(pdb,uniprot){
     UpdateUniPDBcomponent(uniprot);
     setupProVista(uniprot);
   }
+}
+
+function NGL_ReprensentOne(o,anode){
+  var params = {
+    defaultRepresentation: false,
+    name: o.name
+  };
+  var assambly = "AU";
+  var bu = anode.data.source.bu;
+  if (bu !== -1 && bu !== null && bu !== "") {
+    if (!bu.startsWith("BU") && bu !== "AU" && bu != "UNICELL" && bu !== "SUPERCELL") bu = "BU" + bu;
+    params.assembly = bu;
+    assambly = bu;
+  }
+  var sele = "";
+  var sel_str = anode.data.source.selection;
+  if (sel_str && sel_str != "") {
+    sele = sel_str;
+    //update html input string
+  }
+  sele_elem.value = sele;
+  if (document.getElementById("showgeom").checked) {
+    NGL_LoadAShapeObj(anode,ngl_load_params.geom);
+    //ngl_load_params.dogeom = false;
+  }
+  var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
+  o.setPosition([-center.x, -center.y, -center.z]); //center molecule
+  if (anode.data.surface){
+    align_axis = true;
+    var offset = anode.data.offset;
+    var axis = anode.data.pcpalAxis;
+    if (anode.data.opm === 1) {
+      offset = [center.x,center.y,center.z];
+      axis = [0,0,1];
+      NGL_updatePcpElem();
+      //NGL_applyPcp();
+    }
+    console.log("offset?", offset,axis);
+    NGL_ShowAxisOffset(axis, offset);
+  }
+  else {
+    var rep = stage.getComponentsByName("mb");
+    if (rep.list.length !== 0){
+      if (rep.list[0].reprList.length !== 0) {
+        rep.list[0].reprList[0].setVisibility(false);
+      }
+    }
+  }
+  o.addRepresentation("axes", {
+    sele: sele,
+    showAxes: true,
+    showBox: true,
+    radius: 0.2
+  })
+  o.addRepresentation(rep_elem.selectedOptions[0].value, {
+    //colorScheme: color_elem.selectedOptions[0].value,
+    sele: sele,
+    name: "polymer",
+    assembly: assambly
+  });
+  //return {"comp":o,"anode":anode};
+}
+
+function NGL_ReprensentOnePost(o,anode){
+    NGL_UpdateAssamblyList(o);
+    NGL_setModelOptions(o);
+    NGL_setChainSelectionOptions(o);
+    var bu = anode.data.source.bu;
+    var assambly = "AU";
+    if (bu !== -1 && bu !== null && bu !== "") {
+      if (!bu.startsWith("BU") && bu !== "AU" && bu != "UNICELL" && bu !== "SUPERCELL") bu = "BU" + bu;
+      assambly = bu;
+    }
+    if (bu !== -1) $('#ass_type').val(assambly); //assambly_elem.selectedIndex = assambly;//$('#ass_type').val(assambly);//.change();
+    else $('#ass_type').val("AU"); //assambly_elem.selectedIndex = "AU";//$('#ass_type').val("AU");//.change();
+    NGL_LoadSpheres(anode.data.pos, anode.data.radii);
+    ngl_load_params.beads.pos = anode.data.pos;
+    ngl_load_params.beads.rad = anode.data.radii;
+    NGL_showBeadsLevel(beads_elem.selectedOptions[0]);
+    NGL_ShowOrigin();
 }
 
 function NGL_LoadOneProtein(purl, aname, bu, sel_str) {

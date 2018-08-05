@@ -1092,17 +1092,22 @@ function CreateDefaultGrid(elementId, parentId) {
   CreateGrid(elementId, parentId, data, column, options);
 }
 
-function LoadMultiplePDBs(agrid, rowsids) {
+function grid_LoadMultiplePDBs(agrid, rowsids) {
   if (rowsids.length > 1) {
     //use the ngl grid
-    var pdbs = [];
+    var pdbs = {};
     for (var i = 0; i < rowsids.length; i++) {
       console.log(rowsids[i]);
       var row = agrid.dataView.getItem(rowsids[i]);
-      pdbs.push((row.pdb) ? row.pdb : row.structureId);
-      console.log((row.pdb) ? row.pdb : row.structureId);
+
+      var nsi = parseInt(row.id.split("_")[1]);
+
+      if (row.pdb) pdbs[row.pdb] = nsi;
+      else  pdbs[row.structureId] = -1;//.push((row.pdb) ? {row.pdb:nsi} : {row.structureId:-1} );
+      //console.log((row.pdb) ? {row.pdb:nsi}: {row.structureId:-1} );
     }
-    NGL_loadList(pdbs);
+    console.log(pdbs);
+    NGLg_loadList(pdbs);
   }
 }
 //
@@ -1355,7 +1360,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
     var rowsids = grid.getSelectedRows();
     //depends on which grid we are on
     if (grid.gname === "grid_recipe" || grid.gname === "grid_pdb")
-      LoadMultiplePDBs(grid, rowsids);
+      grid_LoadMultiplePDBs(grid, rowsids);
   });
   grid.onDblClick.subscribe(function(e, args) {
     console.log("doubleClick");
