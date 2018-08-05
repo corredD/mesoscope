@@ -546,7 +546,7 @@ function NGL_Setup() {
 
   stage.mouseObserver.signals.dragged.add(function (deltaX,deltaY){
     //update
-    console.log(ngl_current_pickingProxy);
+    //console.log(ngl_current_pickingProxy);
     //console.log(node_selected.data.nodetype);
     //console.log(node_selected);
     //console.log(ngl_current_pickingProxy.component.name);
@@ -691,7 +691,7 @@ function NGL_updateCurrentBeadsLevelClient() {
     asele = "(" + o.object.biomolDict[o.assambly].getSelection().string + ") AND " + asele;
     bu = true;
   }
-  console.log("selection is ",asele);
+  //console.log("selection is ",asele);
   var ngl_sele = new NGL.Selection(asele);
   var center = NGL_GetGeometricCenter(ngl_current_structure, ngl_sele).center;
   ngl_current_structure.ngl_sele = ngl_sele;
@@ -1903,7 +1903,7 @@ function NGL_GetGeometricCenterArray(clusteri, some_data) {
 }
 
 function NGL_ClusterStructure(o, center) {
-  return buildWithKmeans(o, center);
+  return buildWithKmeans(o, center, parseInt(slidercluster_elem.value));
   //if (cluster_elem.selectedOptions[0].value==="Kmeans") return buildWithKmeans(o,center);
   //else if (cluster_elem.selectedOptions[0].value==="Optics") return buildWithOptics(o,center);
   //else if (cluster_elem.selectedOptions[0].value==="DBSCAN") return buildWithDBScan(o,center);
@@ -1965,7 +1965,7 @@ function buildWithDBScan(o, center) {
   return clusters;
 }
 //https://github.com/EtixLabs/clustering
-function buildWithKmeans(o, center) {
+function buildWithKmeans(o, center, ncluster) {
   //slow ?
   var kmeans = new KMEANS();
   var ats = o.structure.atomStore;
@@ -1973,7 +1973,7 @@ function buildWithKmeans(o, center) {
   var asele = (o.ngl_sele) ? o.ngl_sele : "polymer";
   if (o.ngl_sele.string !== null) asele = o.ngl_sele.string;
   if (asele === "") asele = "polymer";
-  console.log("kmeans sele",asele); //current sele undefined
+  //console.log("kmeans sele",asele); //current sele undefined
   var bu = false;
   console.log(o.assambly); //current assambly
   if (o.assambly !== "AU" && o.object.biomolDict[o.assambly]) {
@@ -1983,7 +1983,7 @@ function buildWithKmeans(o, center) {
     asele = "(" + o.object.biomolDict[o.assambly].getSelection().string + ") AND " + asele;
     bu = true;
   }
-  console.log("Kmeans selection". asele);
+  //console.log("Kmeans selection", asele);
   var dataset = NGL_GetAtomDataSet(null,o);
   if (dataset.length === 0 ) return null;
   //var dataset = [];
@@ -1995,16 +1995,15 @@ function buildWithKmeans(o, center) {
   //for (var i=0;i<nAtom;i++) {
   //		 dataset.push([ats.x[i],ats.y[i],ats.z[i]]);
   //	}
-  console.log("cluster!!", parseInt(slidercluster_elem.value), dataset.length);
+  console.log("cluster!!", ncluster, dataset.length);
   //should we use a worker ?
   // parameters: 3 - number of clusters
   //center the selection?
-  var clusters = kmeans.run(dataset, parseInt(slidercluster_elem.value));
+  var clusters = kmeans.run(dataset, ncluster);
   console.log(bu, clusters);
   if (!bu) return NGL_ClusterToBeads(clusters, o, center,dataset);
   else return NGL_applybuToclusters(o,clusters,center,dataset);
 }
-
 
 function NGL_applyBUtoResultsBeads(o,beads,center){
   var pos = []; //flat array
@@ -2100,7 +2099,7 @@ function NGL_ClusterToBeads(some_clusters, astructure, center, dataset) {
   var rad = []; //flat array
   var nCluster = some_clusters.length;
   console.log("use center ", center);
-  var model = (node_selected.data.source.model)?"/"+node_selected.data.source.model:"";
+  //var model = (node_selected.data.source.model)?"/"+node_selected.data.source.model:"";
   for (var i = 0; i < nCluster; i++) {
     var cl = some_clusters[i];
     //if model need to offset all the number ?
@@ -2481,6 +2480,196 @@ function NGL_noPdbProxy(name, radius) {
     stage.animationControls.rotate(q, 0);
   } //stage.animationControls.rotate(ngl_load_params.axis.axis.getRotationQuaternion(), 0);
   stage.autoView();
+}
+
+function NGL_getUrlStructure(anode,pdbname){
+  if (pdbname.length === 4) {
+    if (anode.data.surface)
+    {
+      if (anode.data.opm === 1){
+      //replace purl
+          return cellpack_repo+"other/" + pdbname + ".pdb";
+      }
+      else if (anode.data.opm === 0)
+      {
+          //check if exists
+          var search_url = cellpack_repo+"other/"+pdbname+ ".pdb";
+          var results = syncCall(search_url);
+          if (results !=="")
+          {
+            purl = cellpack_repo+"other/" + pdbname + ".pdb";
+            anode.data.opm = 1;
+            return purl;
+          }
+          else {
+            anode.data.opm = -1;
+          }
+          //check if exist in opm..doesnt work
+          //var search_url = "http://opm.phar.umich.edu/protein.php?search="+aname//1l7v
+          //var results = syncCall(search_url);
+          //var parser = new DOMParser();
+          //var hdoc = parser.parseFromString(results,"text/xml");
+          //console.log(hdoc);
+      }
+    }
+    return "rcsb://" + pdbname + ".mmtf";
+  }
+  else
+  {
+    var ext = pdbname.slice(-4, pdbname.length);
+    if (pdbname.startsWith("EMD") || pdbname.startsWith("EMDB") || pdbname.slice(-4, pdbname.length) === ".map") {
+      var params = {
+        defaultRepresentation: false
+      };
+      //this is async!
+      console.log("try to load ", pdbname, ext);
+      if (ext !== ".map") pdbname = pdbname + ".map";
+      if (folder_elem && folder_elem.files.length != "")
+      {
+        return pathList_[pdbname];
+      }
+      else
+      {
+        return cellpack_repo+"other/" + pdbname;
+      }
+    }
+    else
+    {
+      //what about emdb
+      if (folder_elem && folder_elem.files.length != "") {
+        //alert(pathList_[d.data.source]),
+        return pathList_[pdbname];
+      }
+      else
+      {
+        return cellpack_repo+"other/" + pdbname;
+      }
+    }
+  }
+  return "";
+}
+
+function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
+    var params = {
+      defaultRepresentation: false,
+      name: aname
+    };
+    var assambly = "AU";
+    if (bu !== -1 && bu !== null && bu !== "") {
+      if (!bu.startsWith("BU") && bu !== "AU" && bu != "UNICELL" && bu !== "SUPERCELL") bu = "BU" + bu;
+      params.assembly = bu;
+      assambly = bu;
+    }
+    var sele = "";
+    if (sel_str && sel_str != "") {
+      sele = sel_str;
+      //update html input string
+    }
+    stage.loadFile(purl, params).then(function(o) {
+      o.sele = sele;
+      o.assambly = assambly;
+      var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
+      console.log("gcenter", center, ngl_force_build_beads);
+      //center molecule
+      o.setPosition([-center.x, -center.y, -center.z]);
+      o.ngl_sele = new NGL.Selection(sele);
+      //build a surface and extract the mesh ?
+      //build the kmeans
+      //var ats = o.structure.atomStore;
+      //var nAtom = ats.count;
+      console.log("before kmeans ?");
+      var _cluster_coords = buildWithKmeans(o, center, 10);
+      console.log("after kmeans ?",_cluster_coords);
+      var _pos = {
+        "coords": _cluster_coords.pos
+      };
+      var _rad = {
+        "radii": _cluster_coords.rad
+      };
+      anode.data.pos[0] = JSON.parse(JSON.stringify(_pos));
+      anode.data.radii[0] = JSON.parse(JSON.stringify(_rad));
+      console.log("kmeans done with 10 cluster ",anode.data.pos)
+    }).then(function(){
+        var o = stage.getComponentsByName(aname).list[0];
+        stage.removeComponent(o);
+        //do next
+        document.getElementById("stopbeads_lbl").innerHTML = "building " + current_compute_index + " / " + graph.nodes.length;
+        if (NextComputeIgredient() && (!(stop_current_compute))) {
+          //update label_elem
+          NGL_buildLoopAsync();
+        } else {
+          document.getElementById("stopbeads_lbl").innerHTML = "finished " + current_compute_index + " / " + graph.nodes.length;
+          stopBeads();
+        }
+    });
+}
+
+function NGL_buildLoopAsync() {
+  var d = current_compute_node; //or node_selected.data.bu
+  console.log("d is ", d);
+  var pdb = d.data.source.pdb; //document.getElementById("pdb_str");
+  var bu = (d.data.source.bu) ? d.data.source.bu : ""; //document.getElementById("bu_str");
+  //selection need to be pmv string
+  if (bu === -1) bu = "";
+  var sele = (d.data.source.selection) ? d.data.source.selection : ""; //document.getElementById("sel_str");
+  //sele = sele.replace(":", "");
+  //selection is in NGL format. Need to go in pmv format
+  //every :C is a chainNameScheme
+  var model = (d.data.source.model) ? d.data.source.model : "";
+  if (model.startsWith("S") || model.startsWith("a")) model = "";
+  //if (sele.startsWith("/")) sele = "";
+  //depending on the pdb we will have a file or not
+  var thefile = null;
+  if (pdb && d.data.source.pdb.length !== 4) {
+    //pdb = "";
+    if (folder_elem && folder_elem.files.length != "") {
+      thefile = pathList_[d.data.source.pdb];
+    } else {
+      pdb = d.data.source.pdb;
+      //its a blob we want ?
+    }
+  }
+  if (!pdb || pdb === "") {
+    if (NextComputeIgredient() && (!(stop_current_compute))) {
+      //update label_elem
+      NGL_buildLoopAsync();
+    } else {
+      document.getElementById("stopbeads_lbl").innerHTML = "finished " + current_compute_index + " / " + graph.nodes.length;
+      stopBeads();
+    }
+    return;
+  }
+  var docms = false;
+  var dobeads = false;
+  var d = current_compute_node;
+  if (!d.children && "data" in d &&
+    (!d.data.geom || d.data.geom === "None" ||
+      d.data.geom === "null" || d.data.geom === "")) {
+    //formData.append("cms", true);
+    //docms = true;
+  }
+
+  if (!d.children && "data" in d &&
+    (!d.data.pos || d.data.pos === "None" ||
+      d.data.pos === "null" || d.data.pos.length === 0 ||
+      d.data.pos === "")) {
+    dobeads = true;
+  }
+  if (dobeads )// || docms)
+  {
+    var purl = NGL_getUrlStructure(d,pdb);
+    console.log("query with ", [pdb, bu, sele, model, thefile], purl);
+    NGL_LoadHeadless(purl, pdb, bu, sele, d);
+  }
+  else {
+    if (NextComputeIgredient() && (!(stop_current_compute))) {
+      //update label_elem
+      NGL_buildLoopAsync();
+    } else {
+      document.getElementById("stopbeads_lbl").innerHTML = "finished " + current_compute_index + " / " + graph.nodes.length;
+      stopBeads();
+    }
+  }
 }
 
 /*

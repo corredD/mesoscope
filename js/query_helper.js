@@ -1191,7 +1191,7 @@ function buildLoopAsync() {
       d.data.pos === "null" || d.data.pos.length === 0 ||
       d.data.pos === "")) {
     formData.append("beads", true);
-    formData.append("nbeads", 5); //default is 5 beads
+    formData.append("nbeads", 10); //default is 5 beads // should we calculate a number of beads autoamatically
   }
   //console.log(thefile)
   // add assoc key values, this will be posts values
@@ -1339,7 +1339,7 @@ function BuildAll() {
   BuildDefaultCompartmentsRep();
   current_compute_index = -1;
   NextComputeIgredient();
-  buildLoopAsync();
+  NGL_buildLoopAsync();
   //build geom for compartment by default
   //build beads
 }
