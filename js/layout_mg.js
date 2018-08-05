@@ -52,7 +52,7 @@ function layout_addOptionsForMultiSelect(select_id,options){
     var opt = options[i];//label
     var ch = (NGL_testSelectedChain(opt))?" checked ":"";
     check_elem.innerHTML += '<label for="'+opt+'"><input type="checkbox" id="'+opt+'" onclick="NGL_ChangeChainsSelection(this)"'+ch+'/>'+opt+'</label>';
-    if (i > 20) break;//safety ?
+    //if (i > 20) break;//safety ?
   }
 }
 
