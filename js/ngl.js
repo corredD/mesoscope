@@ -1629,31 +1629,26 @@ function NGL_ShowAxisOffset(axis, offset, anode) //StructureView
 
       //check if exists
       var rep = stage.getComponentsByName("mb");
-      if (rep.list.length !== 0){
-        if (rep.list[0].reprList.length !== 0) {
-          rep.list[0].reprList[0].setVisibility(true);
-          rep.list[0].setRotation(q);
-          rep.list[0].setPosition([-offset[0], -offset[1], -offset[2]]);
-        }
+      if (rep.list.length){
+        rep.list.forEach(function(elem){stage.removeComponent(elem);});
       }
-      else {
-        var shapemb = new NGL.Shape("mb");
-        //two cylinder one red up, one blue down, center is 0,0,0
-        //Sign of Z coordinate is negative at the inner (IN) side and positive at the outer side.
-        var radius = 50;
-        var Z = 14;
-        var thickness = 1.0;
-        //axis = [0,0,1];
-        shapemb.addCylinder([0, 0, Z - 1], [0, 0, Z + 1], [1, 0, 0], radius, "OUT");
-        shapemb.addCylinder([0, 0, -(Z - 1)], [0, 0, -(Z + 1)], [0, 0, 1], radius, "IN");
+      var shapemb = new NGL.Shape("mb");
+      //two cylinder one red up, one blue down, center is 0,0,0
+      //Sign of Z coordinate is negative at the inner (IN) side and positive at the outer side.
+      var radius = 50;
+      var Z = 14;
+      var thickness = 1.0;
+      //axis = [0,0,1];
+      shapemb.addCylinder([0, 0, Z - 1], [0, 0, Z + 1], [1, 0, 0], radius, "OUT");
+      shapemb.addCylinder([0, 0, -(Z - 1)], [0, 0, -(Z + 1)], [0, 0, 1], radius, "IN");
 
-        var shapembComp = stage.addComponentFromObject(shapemb);
-        shapembComp.name = "mb";
-        var r = shapembComp.addRepresentation("principalVector");
-        shapembComp.setRotation(q);
-        shapembComp.setPosition([-offset[0], -offset[1], -offset[2]]);
-        console.log("axis ?", axis);
-      }
+      var shapembComp = stage.addComponentFromObject(shapemb);
+      shapembComp.name = "mb";
+      var r = shapembComp.addRepresentation("principalVector");
+      shapembComp.setRotation(q);
+      shapembComp.setPosition([-offset[0], -offset[1], -offset[2]]);
+      console.log("axis ?", axis);
+
     }
   }
 }
@@ -2262,14 +2257,12 @@ function NGL_ReprensentOne(o,anode){
       //NGL_applyPcp();
     }
     console.log("offset?", offset,axis);
-    NGL_ShowAxisOffset(axis, offset);
+    NGL_ShowAxisOffset(axis, offset, anode);
   }
   else {
     var rep = stage.getComponentsByName("mb");
-    if (rep.list.length !== 0){
-      if (rep.list[0].reprList.length !== 0) {
-        rep.list[0].reprList[0].setVisibility(false);
-      }
+    if (rep.list.length){
+      rep.list.forEach(function(elem){stage.removeComponent(elem);});
     }
   }
   o.addRepresentation("axes", {
@@ -2399,7 +2392,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
           NGL_applyPcp();
         }
         console.log("offset?", offset,axis);
-        NGL_ShowAxisOffset(axis, offset);
+        NGL_ShowAxisOffset(axis, offset, ngl_current_node);
         //ngl_load_params.doaxis=false;
       }
       o.addRepresentation("axes", {
