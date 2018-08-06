@@ -1375,7 +1375,9 @@ function NGL_ShowMeshVFN(mesh) {
   console.log(mesh);
   var comp = stage.getComponentsByName("geom_surface");
   if (comp.list) {
-    stage.removeComponent(comp.list[0]);
+    for (var i = 0; i < comp.list.length; i++) {
+      stage.removeComponent(comp.list[i]);
+    }
   }
   var shape = new NGL.Shape("geom_surface");
   var col = Array(mesh.verts.length).fill(1);
@@ -1449,7 +1451,7 @@ function NGL_LoadShapeFile(afile) {
   if (ext === "obj" || ext === "ply") {
     //stage.removeAllComponents();
     stage.loadFile(thefile).then(function(o) {
-      o.addRepresentation("surface", {
+      o.addRepresentation("geom_surface", {
         opacity: 1,
         side: "double"
       });
@@ -1501,6 +1503,12 @@ function NGL_LoadShapeObj(d) {
 function NGL_LoadAShapeObj(d,gpath) {
   if (!d) d = node_selected;
   if (!d) return;
+  var comp = stage.getComponentsByName("geom_surface");
+  if (comp.list) {
+    for (var i = 0; i < comp.list.length; i++) {
+      stage.removeComponent(comp.list[i]);
+    }
+  }
   if (d.data.geom_type === "raw") {
     NGL_ShowMeshVFN(gpath);
   } else if (d.data.geom_type === "None" &&
@@ -2241,8 +2249,8 @@ function NGL_ReprensentOne(o,anode){
   }
   sele_elem.value = sele;
   if (document.getElementById("showgeom").checked) {
-    NGL_LoadAShapeObj(anode,ngl_load_params.geom);
-    //ngl_load_params.dogeom = false;
+    NGL_LoadAShapeObj(anode, anode.data.geom);
+    NGL_showGeomNode_cb(true);
   }
   var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
   o.setPosition([-center.x, -center.y, -center.z]); //center molecule
