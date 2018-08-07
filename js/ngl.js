@@ -1072,7 +1072,8 @@ function NGL_ChangeRepresentation(selectedO) {
       sele: sele_elem.value,
       showAxes: true,
       showBox: true,
-      radius: 0.2
+      radius: 0.2,
+      assembly: assambly_elem.selectedOptions[0].value
     });
   });
 
@@ -1795,12 +1796,12 @@ function NGL_GetAtomDataSet(pdb,struture_object){
       }
     });
   }*/
-      o.structure.eachAtom(function(ap) {
-        if (ap.atomname==="CA" || nAtom < 20000) {
-          dataset.push([ap.x, ap.y, ap.z]);
-          //console.log(ap.modelIndex,ap.index);
-        }
-      }, new NGL.Selection(asele));
+  o.structure.eachAtom(function(ap) {
+    if (ap.atomname ==="CA" || ap.atomname==="C4'" || nAtom < 20000) {//problem with DNA no CA
+      dataset.push([ap.x, ap.y, ap.z]);
+      //console.log(ap.modelIndex,ap.index);
+    }
+  }, new NGL.Selection(asele));
 
   console.log("dataset is ", dataset.length, dataset);
   return dataset;
@@ -1995,7 +1996,7 @@ function buildWithKmeans(o, center, ncluster) {
     asele = "(" + o.object.biomolDict[o.assambly].getSelection().string + ") AND " + asele;
     bu = true;
   }
-  //console.log("Kmeans selection", asele);
+  console.log("Kmeans selection", asele);
   var dataset = NGL_GetAtomDataSet(null,o);
   if (dataset.length === 0 ) return null;
   //var dataset = [];
@@ -2352,18 +2353,20 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
     defaultRepresentation: false,
     name: aname
   };
-  var assambly = "AU";
-  if (bu !== -1 && bu !== null && bu !== "") {
-    if (!bu.startsWith("BU") && bu !== "AU" && bu != "UNICELL" && bu !== "SUPERCELL") bu = "BU" + bu;
-    params.assembly = bu;
-    assambly = bu;
-  }
   var sele = "";
   if (sel_str && sel_str != "") {
     sele = sel_str;
     //update html input string
   }
   sele_elem.value = sele;
+
+  var assambly = "AU";
+  if (bu !== -1 && bu !== null && bu !== "") {
+    if (!bu.startsWith("BU") && bu !== "AU" && bu != "UNICELL" && bu !== "SUPERCELL") bu = "BU" + bu;
+    params.assembly = bu;
+    assambly = bu;
+  }
+
   if (ngl_load_params.dogeom) {
     NGL_LoadAShapeObj(null,ngl_load_params.geom);
     ngl_load_params.dogeom = false;
@@ -2372,6 +2375,10 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
   stage.loadFile(purl, params)
     .then(function(o) {
       ngl_current_structure = o;
+      if (sele === ""  && bu !== "AU"){
+        //take the chain selection from the bu
+        sele = ngl_current_structure.object.biomolDict[assambly].getSelection().string;
+      }
       ngl_current_structure.sele = sele;
       ngl_current_structure.assambly = assambly;
       //const symmetryData = NGL_processSymmetry(o.symmetry)
@@ -2407,7 +2414,8 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
         sele: sele,
         showAxes: true,
         showBox: true,
-        radius: 0.2
+        radius: 0.2,
+        assembly: assambly
       })
 
       o.addRepresentation(rep_elem.selectedOptions[0].value, {
