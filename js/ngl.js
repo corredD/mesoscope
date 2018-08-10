@@ -2947,19 +2947,24 @@ function NGL_UpdateWithNodePair(d) {
 }
 
 
+function NGL_ClearGridMode(){
+  NGL_Clear();
+  console.log("clean gridmode");
+  //change back the style
+  ngl_grid_mode = false;
+  //remove the div
+  viewport.parentNode.removeChild(viewport);
+  pcontainer.appendChild(viewport);
+  //"width:100%; height:95%;"
+  viewport.setAttribute("style", "width:100%; height:95%;");
+  stage.handleResize();
+  $('.nglgrid').remove();
+  ngl_grid_heading.innerText = "";
+}
+
 function NGL_Load(pdbname, bu, sel_str) {
   if (ngl_grid_mode) {
-    console.log("clean gridmode");
-    //change back the style
-    ngl_grid_mode = false;
-    //remove the div
-    viewport.parentNode.removeChild(viewport);
-    pcontainer.appendChild(viewport);
-    //"width:100%; height:95%;"
-    viewport.setAttribute("style", "width:100%; height:95%;");
-    stage.handleResize();
-    $('.nglgrid').remove();
-    ngl_grid_heading.innerText = "";
+    NGL_ClearGridMode();
   }
 
   if (pdbname.length === 4) {
