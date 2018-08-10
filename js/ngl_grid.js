@@ -50,7 +50,12 @@ function NGLg_loadList( pdbList ){
 								nameurl = NGL_getUrlStructure(graph.nodes[nsi],name);
             else
 								nameurl = NGL_GetPDBURL(name);
-            return stage.loadFile( nameurl )
+						console.log("found "+nameurl);
+						var params = {
+							defaultRepresentation: true,
+							name: name
+						};
+            return stage.loadFile( nameurl, params )
                 .then( NGLg_addDiv )
                 .then( NGLg_prepareImage )
                 .then( NGLg_makeImage )
@@ -72,7 +77,7 @@ function NGLg_addDiv( o ){
 		//var label = document.createElement('label');
     //label.innerHTML = graph.nodes[NGLg_current_list[o.name]].data.name +" "+o.name;
 		//div.appendChild( label );
-		activeName = name;
+		activeName = o.name;
 		//o.nodeid = nlgg_current;
 		console.log("loaded ",o.name," with id ",NGLg_current_list[o.name]);
     //document.body.appendChild( div );
