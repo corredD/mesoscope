@@ -2816,6 +2816,10 @@ function NGL_UpdateWithNode(d, force = false) {
   console.log("update with ", d);
   SetObjectsOptionsDiv(d);
 
+  if (ngl_grid_mode) {
+    NGL_ClearGridMode();
+  }
+  
   ngl_current_node = d;
   document.getElementById('ProteinId').innerHTML = d.data.name;
 
