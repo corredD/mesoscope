@@ -1269,7 +1269,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
     var arow = grid.dataView.getItem(args.row);
     var ni = parseInt(arow.id.split("_")[1]);
     console.log(ni);
-    var cid = grid.getColumns()[cell].id;
+    var cid = grid.getColumns()[cell].id;//"pdb"?
     console.log(cid);
     if (grid.gname === "grid_recipe") {
       console.log(ni); //11
@@ -1323,7 +1323,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       //update ngl?
       //if (!n.data.source) n.data.source = {};
       //n.data.source.pdb = arow.pdb;
-      if (arow.pdb) NGL_UpdateWithNode(n);
+      if (arow.pdb) NGL_UpdateWithNode(n,true);
       //NGL_Load(arow.pdb,arow.bu,arow.selection);	also update pcp and offset
     } else if (grid.gname === "grid_uniprot") {
       //is it the picked  checkbox

@@ -266,7 +266,9 @@ function CreateNew(){
 	//clear highligh
 	clearHighLight();
 	//clear NGL
-	if (stage) stage.removeAllComponents();
+	if (stage) {
+		NGL_Clear();
+	}
 	//clear PDB component widget
 	setupProVista(null);
 	UpdatePDBcomponent(null);

@@ -89,6 +89,13 @@ var ngl_styles = ["cartoon","spacefill","licorice","surface"];
 
 var geom_purl = cellpack_repo+"geometries/"
 
+function NGL_Clear(){
+  stage.removeAllComponents();
+  ngl_current_structure = null;
+  ngl_current_node = null;
+  ngl_current_item_id = null;
+}
+
 function NGL_GetPDBURL(aname) {
   console.log(aname);
   if (aname.length === 4)
@@ -2803,7 +2810,7 @@ stage.loadFile( "rcsb://1crn", { name: "myProtein" } ).then( function( o ){
 } );
 */
 
-function NGL_UpdateWithNode(d) {
+function NGL_UpdateWithNode(d, force = false) {
   //what is the id//
   //this is called from the canvas
   console.log("update with ", d);
@@ -2843,7 +2850,7 @@ function NGL_UpdateWithNode(d) {
   }
 
   if ("source" in d.data) {
-    if (ngl_current_item_id !== d.data.id) {
+    if ((ngl_current_item_id !== d.data.id)||(force)) {
       if (!d.data.source.pdb || d.data.source.pdb === "None") {
         //build a sphere of size radius
         NGL_noPdbProxy(d.data.name, d.data.size);
