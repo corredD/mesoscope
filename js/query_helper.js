@@ -650,7 +650,7 @@ function querySequenceMapping(pdbid) {
   var formData = new FormData();
   formData.append("mapping", "true");//array of x,y,z
   formData.append("pdbId", pdbid.toLowerCase());
-
+  console.log("querySequenceMapping");
   console.log(formData);
   //should check if not already done...
   //or just check if begin-end is different between upr and pdb ?
@@ -1359,6 +1359,12 @@ function getCurrentNodesAsCP_JSON(some_data, some_links) {
     }
   };
   //options dictionary
+  //get the bounding box from the different compartment bb
+  var rootnode = graph.nodes[0];
+  if (!(rootnode.data.boundingBox)){
+      drawCompRec(rootnode);
+  }
+
   jsondic["options"] = {
     "cancelDialog": false,
     "_hackFreepts": false,
@@ -1368,14 +1374,10 @@ function getCurrentNodesAsCP_JSON(some_data, some_links) {
     "saveResult": false,
     "runTimeDisplay": false,
     "overwritePlaceMethod": true,
-    "innerGridMethod": "jordan3",
+    "innerGridMethod": "jordan",
     "boundingBox": [
-      [-800, -1272, -1734],
-      [
-        881.659,
-        1272,
-        1734
-      ]
+      [rootnode.data.boundingBox.min.x,rootnode.data.boundingBox.min.y,rootnode.data.boundingBox.min.z],
+      [rootnode.data.boundingBox.max.x,rootnode.data.boundingBox.max.y,rootnode.data.boundingBox.max.z]
     ],
     "gradients": [],
     "smallestProteinSize": 0,

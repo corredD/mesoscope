@@ -625,12 +625,21 @@ NGL.DatasourceRegistry.add(
 
 
 function NGL_addBB(){
-  var shape = new NGL.Shape('shape', { dashedCylinder: true });
+  var comp = stage.getComponentsByName("BoundingBox");
+  if (comp.list) {
+    for (var i = 0; i < comp.list.length; i++) {
+      stage.removeComponent(comp.list[i]);
+    }
+  }
+  //showBox
+  var shape = new NGL.Shape('BoundingBox', { dashedCylinder: true });
   //position,color,size,heighAxis,depthAxis,name
   shape.addBox([ 23, 1, 2 ], [ 0, 1, 0 ], 2, [ 0, 1, 1 ], [ 1, 0, 1 ],'BoundingBox');
   var shapeComp = stage.addComponentFromObject(shape)
-  shapeComp.addRepresentation('buffer', { wireframe: true })
+  shapeComp.addRepresentation('buffer', { wireframe: true,name:'BoundingBox' })
   //shapeComp.autoView()
+  //stage.viewer.boundingBox.min
+  //stage.viewer.boundingBox.max
 }
 //change the picking!
 //stage.signals.clicked.add(function (pickingProxy) {...});
@@ -1608,8 +1617,11 @@ function NGL_LoadAShapeObj(d,gpath) {
 function NGL_ShowOrigin() //StructureView
 {
   var rep = stage.getComponentsByName("ori");
-  if (rep.list.length !== 0){}
-  else {
+  if (rep.list) {
+    for (var i = 0; i < rep.list.length; i++) {
+      stage.removeComponent(rep.list[i]);
+    }
+  }
     var shape = new NGL.Shape("ori");
     shape.addArrow([0, 0, 0], [10, 0, 0], [1, 0, 0], 1.0);
     shape.addArrow([0, 0, 0], [0, 10, 0], [0, 1, 0], 1.0);
@@ -1618,7 +1630,6 @@ function NGL_ShowOrigin() //StructureView
     var shapeComp = stage.addComponentFromObject(shape)
     shapeComp.addRepresentation("Origin");
   }
-}
 
 function NGL_ShowAxisOffset(axis, offset, anode) //StructureView
 {
@@ -2256,10 +2267,7 @@ function NGL_ReprensentOne(o,anode){
     //update html input string
   }
   sele_elem.value = sele;
-  if (document.getElementById("showgeom").checked) {
-    NGL_LoadAShapeObj(anode, anode.data.geom);
-    NGL_showGeomNode_cb(true);
-  }
+
   var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
   o.setPosition([-center.x, -center.y, -center.z]); //center molecule
   if (anode.data.surface){
@@ -2293,6 +2301,10 @@ function NGL_ReprensentOne(o,anode){
     name: "polymer",
     assembly: assambly
   });
+  if (document.getElementById("showgeom").checked) {
+    NGL_LoadAShapeObj(anode, anode.data.geom);
+    NGL_showGeomNode_cb(true);
+  }
   //return {"comp":o,"anode":anode};
 }
 
@@ -2352,9 +2364,9 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
     document.getElementById('surface').setAttribute("class", "hidden");
   }
   var isseq = document.getElementById("sequence_mapping").checked;
-  if (isseq) querySequenceMapping(aname);
+  if (isseq) querySequenceMapping(aname);//async call
   if (!bu) bu="";
-  console.log("load " + purl + " " + bu + " " + sel_str);
+  console.log("load url " + purl + " " + bu + " " + sel_str);
   //if its a surface protein show the modal for the pcpalAxis and the offset
   var params = {
     defaultRepresentation: false,
@@ -2374,15 +2386,12 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
     assambly = bu;
   }
 
-  if (ngl_load_params.dogeom) {
-    NGL_LoadAShapeObj(null,ngl_load_params.geom);
-    ngl_load_params.dogeom = false;
-  }
   //this is async!
   stage.loadFile(purl, params)
     .then(function(o) {
       ngl_current_structure = o;
-      if (sele === ""  && bu !== "AU"){
+      console.log("loading "+sele+" "+bu+" "+assambly);
+      if (sele === ""  && assambly !== "AU"){
         //take the chain selection from the bu
         sele = ngl_current_structure.object.biomolDict[assambly].getSelection().string;
       }
@@ -2454,6 +2463,11 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
         ngl_load_params.dobeads = false;
         NGL_showBeadsLevel(beads_elem.selectedOptions[0]);
       }
+      if (ngl_load_params.dogeom) {
+        NGL_LoadAShapeObj(null,ngl_load_params.geom);
+        ngl_load_params.dogeom = false;
+      }
+
       //label
       NGL_ShowOrigin();
       //if (label_elem.selectedOptions[0].value !=="None") {
@@ -2819,7 +2833,7 @@ function NGL_UpdateWithNode(d, force = false) {
   if (ngl_grid_mode) {
     NGL_ClearGridMode();
   }
-  
+
   ngl_current_node = d;
   document.getElementById('ProteinId').innerHTML = d.data.name;
 

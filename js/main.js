@@ -1995,6 +1995,11 @@ function drawCompRec(anode) {
 			if (cnode.children && cnode.data.nodetype === "compartment")
 					UpdateCompartmentRep(cnode,false);
 	});
+	//anode is root
+	//stage.viewer.boundingBox.min
+	//stage.viewer.boundingBox.max
+	anode.data.boundingBox = stage.viewer.boundingBox.clone();
+	anode.data.boundingBox.expandByScalar(100);
 	//add the bounding box
 	//NGL_addBB();
 }
