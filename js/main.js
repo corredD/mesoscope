@@ -3082,8 +3082,8 @@ function ChangeColorNodeOver(){
 	$(".custom-menu-node").hide(100);
 	console.log("change color over",node_over_to_use.data.name);
 	console.log(node_over_to_use);
-	var rgb = node_over_to_use.data.color;
-	var hx = Util_rgbToHex(rgb[0]*255,rgb[1]*255,rgb[2]*255);
+	//var rgb = node_over_to_use.data.color;
+	//var hx = Util_rgbToHex(rgb[0]*255,rgb[1]*255,rgb[2]*255);
 	var color = Util_getRGB(document.getElementById("node_color").value);
 	node_over_to_use.data.color =[color.arr[0]/255.0,color.arr[1]/255.0,color.arr[2]/255.0];
 	/*
@@ -4102,7 +4102,7 @@ $(document).bind("contextmenu", function (event) {
     event.preventDefault();
     node_over_to_use = node_over || line_over;
     console.log("use over ",node_over_to_use)
-		var rgb = node_over_to_use.data.color;
+		var rgb = ("color" in node_over_to_use.data)? node_over_to_use.data.color: [1,0,0];
 		var hx = Util_rgbToHex(rgb[0]*255,rgb[1]*255,rgb[2]*255);
 		document.getElementById("node_color").value = hx;
 		//var x = document.getElementById("node_color").value;
