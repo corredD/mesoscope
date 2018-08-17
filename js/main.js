@@ -466,12 +466,13 @@ function OneIngredient(ing_dic,surface) {
 		var atype = ("Type" in ing_dic)? ing_dic["Type"] :"";//Grow,MultiSphere,etc...
 		var packingMode = ("packingMode" in ing_dic)? ing_dic["packingMode"] :"";//random,close,etc...
 		var btype = GetIngredientTypeAndBuildType(ing_dic);//"ingtype":btype.type,"buildtype":btype.build,
+		var color = ("color" in ing_dic) ? ing_dic["color"] :null;
 		var elem ={"name":name,"size":size,"molecularweight":mw,"confidence":confidence,
 	  	"source":source,"count":acount,"ingtype":btype.type,"buildtype":btype.build,
 	  	"molarity":molarity, "surface":surface,"geom":geom,"geom_type":geom_type,
 			"label":label,"comments":comments,
 	  	"uniprot":uniprot,"pcpalAxis":principalVector,"offset":offset,"pos":p,
-			"radii":r,"nodetype":"ingredient"};
+			"radii":r,"nodetype":"ingredient","color":color};
 	  //console.log(JSON.stringify(elem));
 	  //console.log(elem);
 	  return elem;

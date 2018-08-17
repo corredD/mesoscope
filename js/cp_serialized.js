@@ -121,6 +121,7 @@ function oneIngredientSerialized(singr,node){
     singr["ingtype"] = node.data.ingtype;
     singr["buildtype"] = node.data.buildtype;
     singr["comments"] = node.data.comments;
+    singr["color"] = node.data.color;
 	  //parse
 	  //description=label,organism,score,
 	  //partners_properties
@@ -358,6 +359,7 @@ function OneIngredientDeserialized(ing_dic,surface,comp) {
     var buildtype = ("buildtype" in ing_dic)? ing_dic.buildtype : "random";
 	  var id = "id_"+ingr_uniq_id;//ing_dic.ingredient_id;//unique ingredient id
     ingr_uniq_id+=1;
+    var color = ("color" in ing_dic) ? ing_dic["color"] :null;
     var elem ={"name":name,"size":size,"molecularweight":mw,"confidence":confidence,
 	  	"source":source,"count":acount,
 	  	"molarity":molarity, "surface":surface,"geom":geom,
@@ -366,6 +368,7 @@ function OneIngredientDeserialized(ing_dic,surface,comp) {
       "offset":offset,"pos":p,"radii":r,
       "ingtype":ingtype,"buildtype":buildtype,
       "comments":comments,
+      "color":color,
       "nodetype":"ingredient"};//,"id":id};
 	  return elem;
 	}
