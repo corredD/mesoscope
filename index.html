@@ -503,17 +503,19 @@
   <div id="svgexport"></div>
 
   <ul class='custom-menu-node'>
+    <li "><input type="color" id="node_color" onchange="ChangeColorNodeOver()" name="color" value="#e66465" /></li>
     <li onclick="RenameNodeOver()">rename</li>
     <li onclick="DeleteNodeOver()">delete</li>
     <li onclick="ResizeNodeOver()">resize</li>
   </ul>
+
   <div hidden>
   <div id="topov" class="topov"  height="100%" width="100%"></div>
   <div id="seqv" class="seqv"  height="100%" width="100%"></div>
   <div id="puv" class="puv"  height="100%" width="100%"></div>
   </div>
 </body>
-
+<!--script src="extras/jscolor.js"></script-->
 <script src="extras/clustering.min.js"></script>
 <script src="js/util.js"></script>
 <script src="js/pycallback.js"></script>
