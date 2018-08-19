@@ -1,5 +1,31 @@
 var util_expanded = false;
 
+function componentToHex(c) {
+    var hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+}
+
+function Util_getRGB(avalue){
+  // #XXXXXX -> ["XX", "XX", "XX"]
+  var value = avalue.match(/[A-Za-z0-9]{2}/g);
+
+  // ["XX", "XX", "XX"] -> [n, n, n]
+  value = value.map(function(v) { return parseInt(v, 16) });
+
+  // [n, n, n] -> rgb(n,n,n)
+  return {"rgb":"rgb(" + value.join(",") + ")","arr":value};
+}
+
+function Util_rgbToHex(r, g, b) {
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+
+function Util_getVolumeCA(nca){
+    var radiusca = 0.77;//angstrom
+    var volume_one = 1.912;//angstrom3
+    return volume_one*nca;
+}
+
 function Util_showCheckboxes() {
   var checkboxes = document.getElementById("selection_ch_checkboxes");
   if (!util_expanded) {

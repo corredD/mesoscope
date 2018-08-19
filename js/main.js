@@ -466,12 +466,13 @@ function OneIngredient(ing_dic,surface) {
 		var atype = ("Type" in ing_dic)? ing_dic["Type"] :"";//Grow,MultiSphere,etc...
 		var packingMode = ("packingMode" in ing_dic)? ing_dic["packingMode"] :"";//random,close,etc...
 		var btype = GetIngredientTypeAndBuildType(ing_dic);//"ingtype":btype.type,"buildtype":btype.build,
+		var color = ("color" in ing_dic) ? ing_dic["color"] :null;
 		var elem ={"name":name,"size":size,"molecularweight":mw,"confidence":confidence,
 	  	"source":source,"count":acount,"ingtype":btype.type,"buildtype":btype.build,
 	  	"molarity":molarity, "surface":surface,"geom":geom,"geom_type":geom_type,
 			"label":label,"comments":comments,
 	  	"uniprot":uniprot,"pcpalAxis":principalVector,"offset":offset,"pos":p,
-			"radii":r,"nodetype":"ingredient"};
+			"radii":r,"nodetype":"ingredient","color":color};
 	  //console.log(JSON.stringify(elem));
 	  //console.log(elem);
 	  return elem;
@@ -2438,8 +2439,8 @@ function colorNode(d) {
 	}
 	else if (colorby === "color") {
 		return (!d.children && "data" in d && "color" in d.data
-			&& d.data.color )? 'rgb('+ Math.floor(d.data.color[0]*255)
-															 + Math.floor(d.data.color[1]*255)
+			&& d.data.color !== null)? 'rgb('+ Math.floor(d.data.color[0]*255)+","
+															 + Math.floor(d.data.color[1]*255)+","
 															 + Math.floor(d.data.color[2]*255)+')' : color(d.depth);//rgb list ?
 	}
 	else if (colorby === "confidence") {
@@ -3075,6 +3076,26 @@ function traverseTreeForCompartmentNameUpdate(anode){
 	  		  if (n.children) traverseTreeForCompartmentNameUpdate(n);
 		});
 	}
+
+
+function ChangeColorNodeOver(){
+	$(".custom-menu-node").hide(100);
+	console.log("change color over",node_over_to_use.data.name);
+	console.log(node_over_to_use);
+	//var rgb = node_over_to_use.data.color;
+	//var hx = Util_rgbToHex(rgb[0]*255,rgb[1]*255,rgb[2]*255);
+	var color = Util_getRGB(document.getElementById("node_color").value);
+	node_over_to_use.data.color =[color.arr[0]/255.0,color.arr[1]/255.0,color.arr[2]/255.0];
+	/*
+	var new_size = prompt("Please enter new size", node_over_to_use.r);
+	if (new_size!=null) {
+		node_over_to_use.data.size = parseFloat(new_size);
+		node_over_to_use.r = parseFloat(new_size);
+		if (node_over_to_use.data.nodetype!=="compartment")
+				updateCellValue(gridArray[0],"size",node_over_to_use.data.id,parseFloat(new_size));
+	}
+	*/
+}
 
 function ResizeNodeOver(){
 	$(".custom-menu-node").hide(100);
@@ -4081,6 +4102,12 @@ $(document).bind("contextmenu", function (event) {
     event.preventDefault();
     node_over_to_use = node_over || line_over;
     console.log("use over ",node_over_to_use)
+		var rgb = ("color" in node_over_to_use.data)? node_over_to_use.data.color: [1,0,0];
+		var hx = Util_rgbToHex(rgb[0]*255,rgb[1]*255,rgb[2]*255);
+		document.getElementById("node_color").value = hx;
+		//var x = document.getElementById("node_color").value;
+		//var x = document.getElementById("myColor").value;
+
     // Show contextmenu
     $(".custom-menu-node").finish().toggle(100).
 
