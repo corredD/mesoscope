@@ -48,6 +48,12 @@ function setupRecipe(){
 }
 
 function createOneMesh(anode,start,count) {
+  var color = [1,0,0];
+  if (("color" in anode.data)&&(anode.data.color!==null)) color = anode.data.color;
+  else {
+    color = [Math.random(), Math.random(), Math.random()];
+    anode.data.color = [color[0],color[1],color[2]];
+  }
   var bufferGeometry = new THREE.BufferGeometry();
   var positions = new Float32Array(anode.data.geom.verts);
   var normals = new Float32Array(anode.data.geom.normals);
@@ -65,10 +71,12 @@ function createOneMesh(anode,start,count) {
   }
   meshGeometry.setIndex( bufferGeometry.index.clone() );
   var bodyIndices = new THREE.InstancedBufferAttribute( new Float32Array( bodyInstances * 1 ), 1, 1 );
+  var bodyColors = new THREE.InstancedBufferAttribute( new Float32Array( bodyInstances * 3 ), 3, 1  );
   for ( var i = 0, ul = bodyIndices.count; i < ul; i++ ) {
       bodyIndices.setX( i, start + i ); // one index per instance
+      bodyColors.setXYZ(i,color[0],color[1],color[2]);//rgb of the current anode
   }
-
+  meshGeometry.addAttribute( 'bodyColor', bodyColors );
   meshGeometry.addAttribute( 'bodyIndex', bodyIndices );
   meshGeometry.boundingSphere = null;
 
@@ -138,7 +146,7 @@ function init(){
             ySpread = 0.001;
             break;
     }
-    gridResolution.set(64, 64, 64);
+    gridResolution.set(numParticles/2, numParticles/2, numParticles/2);
     var numBodies = numParticles / 2;
     radius = (1/numParticles * 0.5)*2.0;
     ascale = radius/20;
@@ -194,7 +202,7 @@ function init(){
 
     // Physics
     world = window.world = new gp.World({
-        maxSubSteps: 1, // TODO: fix
+        maxSubSteps: 2, // TODO: fix
         gravity: new THREE.Vector3(0,0,0),
         renderer: renderer,
         maxBodies: numBodies * numBodies,
@@ -216,78 +224,14 @@ function init(){
 
     // Add bodies
     console.log("ingredients nodes type",nodes.length);
-    //theses are instance ID
-    /*var pid = 10;
-    for(var bodyId=0; bodyId<20; bodyId++){//world.maxBodies
-        var x = -boxSize.x + 2*boxSize.x*Math.random();
-        var y = ySpread*Math.random();
-        var z = -boxSize.z + 2*boxSize.z*Math.random();
 
-        var q = new THREE.Quaternion();
-        var axis = new THREE.Vector3(
-            Math.random()-0.5,
-            Math.random()-0.5,
-            Math.random()-0.5
-        );
-        axis.normalize();
-        q.setFromAxisAngle(axis, Math.random() * Math.PI * 2);
-
-        var inertia = new THREE.Vector3();
-        var mass = 1;
-        //bounding box of object
-        if(bodyId < world.maxBodies / 2){
-            calculateBoxInertia(inertia, mass, new THREE.Vector3(radius*2*4,radius*2,radius*2));
-        } else {
-            calculateBoxInertia(inertia, mass, new THREE.Vector3(radius*4,radius*4,radius*2));
-        }
-        //var pid = Util_getRandomInt(nodes.length-1)+1;//remove root
-        //if (nodes[pid].children) {bodyId=bodyId-1;continue;}
-
-        world.addBody(x,y,z, q.x, q.y, q.z, q.w, mass, inertia.x, inertia.y, inertia.z);
-        //world.addBody(0,0,0, q.x, q.y, q.z, q.w, mass, inertia.x, inertia.y, inertia.z);
-        //add the beads here
-
-        console.log(pid,nodes[pid].data);
-        console.log("radius is ",radius);//radius is  0.0078125
-        console.log("box is ",boxSize);//x: 0.25 y: 1 z: 0.25
-        //nodes[pid].data.radii[0].radii
-        //nodes[pid].data.pos[0].coords
-        for (var i=0;i<nodes[pid].data.radii[0].radii.length;i++){
-            //transform beads
-            var x=nodes[pid].data.pos[0].coords[i*3]*ascale,
-                y=nodes[pid].data.pos[0].coords[i*3+1]*ascale,
-                z=nodes[pid].data.pos[0].coords[i*3+2]*ascale;
-            world.addParticle(bodyId, x,y,z);
-        }
-        instance_infos.push(pid);
-        if (! (pid in type_meshs) ){
-          type_meshs[pid] = createOneMesh(nodes[pid],0,10);
-        }
-    }
-    */
-    // Add particles to bodies e.g. particles ID
-    /*for(var particleId=0; particleId<world.maxParticles; ++particleId){
-        var bodyId = Math.floor(particleId / 4);
-        var x=0, y=0; z=0;
-
-        if(bodyId < world.maxBodies / 2){
-            x = (particleId % 4 - 1.5) * radius * 2.01;
-        } else {
-            var i = particleId - bodyId * 4;
-            x = ((i % 2)-0.5) * radius * 2.01;
-            y = (Math.floor(i / 2)-0.5) * radius * 2.01;
-        }
-        //are theses local?
-        world.addParticle(bodyId, x,y,z);
-    }
-    */
     var n = nodes.length;
     var start = 0;
     var total = 0;
     var count = 500;//total ?
     for (var i=0;i<n;i++){//nodes.length
       if (nodes[i].children) continue;
-      count = Util_getRandomInt(3000)+1;//remove root
+      count = Util_getRandomInt( numBodies * 4)+1;//remove root
       createInstancesMesh(i,nodes[i],start,count);
       start = start + count;
       total = total + count;
@@ -337,40 +281,6 @@ function init(){
     initDebugGrid();
     //create the mesh
 
-    /*
-    // Create an instanced mesh for cylinders
-    var cylinderGeometry = new THREE.CylinderBufferGeometry(radius, radius, 2*4*radius, 8);
-    cylinderGeometry.rotateZ(Math.PI / 2);// particles are spread along x, not y
-    var bodyInstances = numBodies*numBodies / 2;
-    var meshGeometry = new THREE.InstancedBufferGeometry();
-    meshGeometry.maxInstancedCount = bodyInstances;
-    for(var attributeName in cylinderGeometry.attributes){
-        meshGeometry.addAttribute( attributeName, cylinderGeometry.attributes[attributeName].clone() );
-    }
-    meshGeometry.setIndex( cylinderGeometry.index.clone() );
-    var bodyIndices = new THREE.InstancedBufferAttribute( new Float32Array( bodyInstances * 1 ), 1, 1 );
-    for ( var i = 0, ul = bodyIndices.count; i < ul; i++ ) {
-        bodyIndices.setX( i, i ); // one index per instance
-    }
-    meshGeometry.addAttribute( 'bodyIndex', bodyIndices );
-    meshGeometry.boundingSphere = null;
-
-    // Create an instanced mesh for boxes
-    var boxGeometry = new THREE.BoxBufferGeometry(4*radius, 4*radius, 2*radius, 8);
-    var bodyInstances = numBodies*numBodies / 2;
-    var boxMeshGeometry = new THREE.InstancedBufferGeometry();
-    boxMeshGeometry.maxInstancedCount = bodyInstances;
-    for(var attributeName in boxGeometry.attributes){
-        boxMeshGeometry.addAttribute( attributeName, boxGeometry.attributes[attributeName].clone() );
-    }
-    boxMeshGeometry.setIndex( boxGeometry.index.clone() );
-    var bodyIndices2 = new THREE.InstancedBufferAttribute( new Float32Array( bodyInstances * 1 ), 1, 1 );
-    for ( var i = 0, ul = bodyIndices2.count; i < ul; i++ ) {
-        bodyIndices2.setX( i, i + numBodies*numBodies / 2 ); // one index per instance
-    }
-    boxMeshGeometry.addAttribute( 'bodyIndex', bodyIndices2 );
-    boxMeshGeometry.boundingSphere = null;
-    */
     // Mesh material - extend the phong shader
     var meshUniforms = THREE.UniformsUtils.clone(phongShader.uniforms);
     meshUniforms.bodyQuatTex = { value: null };
@@ -379,8 +289,9 @@ function init(){
     meshMaterial = new THREE.ShaderMaterial({
         uniforms: meshUniforms,
         vertexShader: sharedShaderCode.innerText + renderBodiesVertex.innerText,
-        fragmentShader: phongShader.fragmentShader,
+        fragmentShader:phongShader.fragmentShader,// fragmentShader.innerText,//phongFragmentShaderCode.innerText,//phongShader.fragmentShader,
         lights: true,
+        vertexColors: true,
         defines: {
             bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
             resolution: 'vec2(' + world.particleTextureSize.toFixed(1) + ',' + world.particleTextureSize.toFixed(1) + ')'

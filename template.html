@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <meta name="twitter:creator" content="@schteppe" />
-    <meta property="og:title" content="gpu-physics.js by schteppe" />
+    <meta property="og:title" content="gpu-physics.js by schteppe adapted to cellPACK" />
     <meta property="og:description" content="Play around with a massive amount of rigid bodies in this demo." />
     <meta property="og:url" content="https://schteppe.github.io/gpu-physics.js/" />
     <meta property="og:type" content="website" />
@@ -71,11 +71,14 @@ vec3 vec3_applyQuat(vec3 v, vec4 q){
     Copy of THREE.ShaderLib.phong + modifications to render instances
 -->
 <script id="renderBodiesVertex" type="x-shader/x-vertex">
+#define USE_COLOR
 uniform sampler2D bodyPosTex;
 uniform sampler2D bodyQuatTex;
 attribute float bodyIndex;
+attribute vec3 bodyColor;
 #define PHONG
 varying vec3 vViewPosition;
+//varying vec3 vColor;
 #ifndef FLAT_SHADED
     varying vec3 vNormal;
 #endif
@@ -97,8 +100,11 @@ void main() {
     #include <color_vertex>
     vec2 bodyUV = indexToUV(bodyIndex,bodyTextureResolution);
 #ifdef USE_COLOR
-    vColor = vec3((floor(bodyUV*3.0)+1.0)/3.0,0);
+    //vColor = vec3((floor(bodyUV*3.0)+1.0)/3.0,0);
+    vColor = vec3(bodyColor);
 #endif
+
+    //vColor = vec3(1,0,0);
     #include <beginnormal_vertex>
     #include <morphnormal_vertex>
     #include <skinbase_vertex>
