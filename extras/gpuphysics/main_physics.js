@@ -287,7 +287,7 @@ function init(){
     var count = 500;//total ?
     for (var i=0;i<n;i++){//nodes.length
       if (nodes[i].children) continue;
-      count = Util_getRandomInt(1000)+1;//remove root
+      count = Util_getRandomInt(3000)+1;//remove root
       createInstancesMesh(i,nodes[i],start,count);
       start = start + count;
       total = total + count;
