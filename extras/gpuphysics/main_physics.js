@@ -120,6 +120,21 @@ function createInstancesMesh(pid,anode,start,count) {
   }
 }
 
+function createShaderMaterial( id, light, ambientLight ) {
+  var shader = THREE.ShaderToon[ id ];
+  var u = THREE.UniformsUtils.clone( shader.uniforms );
+  var phongShader = THREE.ShaderLib.phong;
+  var u2 = THREE.UniformsUtils.clone(phongShader.uniforms);
+  var unif = THREE.UniformsUtils.merge([u,u2]);
+  var vs = shader.vertexShader;
+  var fs = shader.fragmentShader;
+  var material = new THREE.ShaderMaterial( { uniforms: unif, vertexShader: vs, fragmentShader: fs } );
+  material.uniforms.uDirLightPos.value = light.position;
+  material.uniforms.uDirLightColor.value = light.color;
+  material.uniforms.uAmbientLightColor.value = ambientLight.color;
+  return material;
+}
+
 function init(){
     var query = parseParams();
     numParticles = query.n ? parseInt(query.n,10) : 64;
@@ -281,15 +296,30 @@ function init(){
     initDebugGrid();
     //create the mesh
 
+    var toonMaterial1 = createShaderMaterial( "toon1", light, ambientLight ),
+			toonMaterial2 = createShaderMaterial( "toon2", light, ambientLight ),
+			hatchingMaterial = createShaderMaterial( "hatching", light, ambientLight ),
+			hatchingMaterial2 = createShaderMaterial( "hatching", light, ambientLight ),
+			dottedMaterial = createShaderMaterial( "dotted", light, ambientLight ),
+			dottedMaterial2 = createShaderMaterial( "dotted", light, ambientLight );
+			hatchingMaterial2.uniforms.uBaseColor.value.setRGB( 0, 0, 0 );
+			hatchingMaterial2.uniforms.uLineColor1.value.setHSL( 0, 0.8, 0.5 );
+			hatchingMaterial2.uniforms.uLineColor2.value.setHSL( 0, 0.8, 0.5 );
+			hatchingMaterial2.uniforms.uLineColor3.value.setHSL( 0, 0.8, 0.5 );
+			hatchingMaterial2.uniforms.uLineColor4.value.setHSL( 0.1, 0.8, 0.5 );
+			dottedMaterial2.uniforms.uBaseColor.value.setRGB( 0, 0, 0 );
+			dottedMaterial2.uniforms.uLineColor1.value.setHSL( 0.05, 1.0, 0.5 );
+
+
     // Mesh material - extend the phong shader
-    var meshUniforms = THREE.UniformsUtils.clone(phongShader.uniforms);
+    var meshUniforms = THREE.UniformsUtils.clone(hatchingMaterial2.uniforms);//phongShader.uniforms);
     meshUniforms.bodyQuatTex = { value: null };
     meshUniforms.bodyPosTex = { value: null };
 
     meshMaterial = new THREE.ShaderMaterial({
         uniforms: meshUniforms,
         vertexShader: sharedShaderCode.innerText + renderBodiesVertex.innerText,
-        fragmentShader:phongShader.fragmentShader,// fragmentShader.innerText,//phongFragmentShaderCode.innerText,//phongShader.fragmentShader,
+        fragmentShader:hatchingMaterial2.fragmentShader,//phongShader.fragmentShader,// fragmentShader.innerText,//phongFragmentShaderCode.innerText,//phongShader.fragmentShader,
         lights: true,
         vertexColors: true,
         defines: {
