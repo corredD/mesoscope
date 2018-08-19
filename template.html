@@ -1,261 +1,239 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8" />
-  <title>ProtList</title>
-  <style>
-  .NGLP {
-    width: 100%;
-    height: 500px; //order:2;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    max-width: 100%; //background: url(images/Pane.png) repeat;
-    //border-radius: 25px 25px 25px 25px;
-    //box-shadow: 5px 5px 20px LightGrey;
-    //background-size: contain;
-    //box-sizing: border-box;
-    //padding: 25px;
-  }
-  .NGLOptions {
-    width:30%;
-    height: 100%;
-    //display: flex;
-    flex-flow: column;
-    justify-content: space-between;
-    align-items: flex-start;
-    max-width: 20%;
-    background-size: contain;
-  }
-  .NGL {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    overflow: scroll;
-    flex-flow: row wrap;
-    max-width: 100%;
-    background-size: contain; //margin-bottom: 20px;
-  }
-  //accordeon
+    <title>gpu-physics.js by schteppe</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <meta name="twitter:creator" content="@schteppe" />
+    <meta property="og:title" content="gpu-physics.js by schteppe" />
+    <meta property="og:description" content="Play around with a massive amount of rigid bodies in this demo." />
+    <meta property="og:url" content="https://schteppe.github.io/gpu-physics.js/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://schteppe.github.io/gpu-physics.js/gpu-physics.jpg" />
 
-  .accordion {
-    background-color: #eee;
-    color: #444;
-    cursor: pointer;
-    padding: 18px;
-    width: 100%;
-    height:10%;
-    border: none;
-    text-align: left;
-    outline: none;
-    font-size: 15px;
-    transition: 0.4s;
-  }
+    <style>
+        body {
+            color: #000000;
+            font-family: "Lucida Grande", sans-serif;
+            font-size: 12px;
+            font-weight: normal;
+            text-align: center;
+            background-color: #000000;
+            margin: 0px;
+            overflow: hidden;
+        }
 
-  .active, .accordion:hover {
-    background-color: #ccc;
-  }
+        #info {
+            position: absolute;
+            bottom: 0px;
+            width: 100%;
+            padding: 5px;
+        }
 
-  .accordion:after {
-    content: '\002B';
-    color: #777;
-    font-weight: bold;
-    float: right;
-    margin-left: 5px;
-  }
-
-  .active:after {
-    content: "\2212";
-  }
-
-  .accordion_panel {
-    padding: 0 18px;
-    background-color: white;
-    max-height: 0;
-    overflow: hidden;
-    display: flex;
-    flex-flow: column;
-    justify-content: space-between;
-    align-items: flex-start;
-    transition: max-height 0.2s ease-out;
-  }
-  </style>
-  <script src="extras/collada/gl-matrix-min.js"></script>
-  <script src="extras/collada/tinyxml.js"></script>
-  <script src="extras/collada/collada.js"></script>
-  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
-  <!-- NGL  -->
-  <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js"></script>
-
+        a {
+            color: #000000;
+            font-weight: bold;
+            text-decoration: none;
+        }
+    </style>
 </head>
-
 <body>
-  <p>PDBid :<input type="text" id="pdb_str" onchange="loadPDB(this)"/></p>
-  <p>Selection:<input type="text" id="sel_str" /></p>
-  <p>BU:<input type="text" id="bu_str" /></p>
-  <p>Model:<input type="text" id="mo_str" /></p>
-  <p>File: <input type="file" name="inputfile" onchange="selectFile(event)"></p>
-  <p><button onclick="callServer()">Submit</button></p>
 
-  <div id="NGLP" class="NGLP">
-    <div class="NGLOptions">
-      <button class="accordion">NGL options</button>
-      <div class="accordion_panel">
-        <div class="clusterBtn">
-          <button onclick="NGL_CenterView()" style="">Center</button>
-          <button onclick="PreviousIgredient()" style="">Previous</button>
-          <button onclick="NextIgredient()" style="">Next</button>
-        </div>
-        <label id="ProteinId">protein name</label>
-        <label id="pdb_id">pdb id</label>
-        <input type="text" id="sel_str" style="width:100%" placeholder="Selection" onchange="NGL_ChangeSelection(this)" />
-        <label id="ngl_status"></label>
+<div id="container"></div>
+<div id="info">
+    <b>gpu physics</b> by <a href="http://twitter.com/schteppe">@schteppe</a> | <a href="https://www.youtube.com/watch?v=PfCZEQxTvqA">video</a> | <a href="https://github.com/schteppe/gpu-physics.js">github</a>
+</div>
 
-        <select id="rep_type" name="rep_type" onchange="NGL_ChangeRepresentation(this)">
-          <option value="representation"> Representation: </option>
-          <option value="cartoon" selected> cartoon </option>
-          <option value="spacefill"> spacefill </option>
-          <option value="licorice" > licorice </option>
-          <option value="surface"> surface </option>
-        </select>
+<script id="sharedShaderCode" type="x-shader/x-fragment">
+// Convert an index to an UV-coordinate
+vec2 indexToUV(float index, vec2 res){
+    vec2 uv = vec2(mod(index/res.x,1.0), floor( index/res.y ) / res.x);
+    return uv;
+}
 
-        <select id="ass_type" name="ass_type" onchange="NGL_ChangeBiologicalAssambly(this)">
-          <option value="Assambly"> Assambly: </option>
-          <option value="AU" selected> AU </option>
-        </select>
-        <select id="mod_type" name="mod_type" onchange="NGL_ChangeModel(this)">
-          <option value="showmodel" selected> Show model: </option>
-        </select>
-        <label for="color_type">Color</label>
-        <select id="color_type" name="color_type" onchange="NGL_ChangeColorScheme(this)">
-          <option value="Colorby"> Color by: </option>
-        </select>
-        <select id="label_elem" name="label_elem" onchange="NGL_Changelabel(this)">
-          <option value="showlabel" selected> Show labels for: </option>
-      		<option value="None"> None </option>
-      		<option value="Chain" > Chain </option>
-      	</select>
-        <div>
-           <input type="checkbox" id="showgeom" onclick="NGL_showGeomNode(this)" checked>
-           <label for="showgeom"> Show geometry </label> <button onclick="buildCMS()">Rebuild</button>
-         </div>
-         <select id="beads_elem" name="beads_elem" onchange="NGL_showBeadsLevel(this)">
-            <option value="showbeads" selected> Show beads for lvl </option>
-            <option value="All" > All </option>
-            <option value="0" > 0 </option>
-            <option value="1" > 1 </option>
-            <option value="2" > 2 </option>
-            <option value="None" > None </option>
-          </select>
-          <input id="slidercl_params1" style="width:80%" height: "40px" type="range" min="1" max="100" " step="1 " value="10 " />
-          <label id="cl_params1 " for="slidercl_params1 " style="width:20% ">10</label>
-          <label id="nbBeads">0 beads</label>
-          <div id="query_search">
-            <label id="heading"></label>
-          </div>
+// Rotate a vector by a quaternion
+vec3 vec3_applyQuat(vec3 v, vec4 q){
+    float ix =  q.w * v.x + q.y * v.z - q.z * v.y;
+    float iy =  q.w * v.y + q.z * v.x - q.x * v.z;
+    float iz =  q.w * v.z + q.x * v.y - q.y * v.x;
+    float iw = -q.x * v.x - q.y * v.y - q.z * v.z;
 
-          <label id="pdb_title">pdb TITLE</label>
-    </div>
-   <button class="accordion">object properties</button>
-   <div class="accordion_panel" id="objectOptions">
-   </div>
-   </div>
-    <div class="NGL" id="NGL">
-      <div id="viewport" style="width:100%; height:100%;"></div>
-    </div>
-  </div>
-
-  </div>
-
-  <div id="server_result">results?</div>
-
-</body>
-<script>
-  var thefile = null;
-  var ngl_current_structure;
-  var pcontainer = document.getElementById("NGLP");
-  var acc = document.getElementsByClassName("accordion");
-  var i;
-
-  for (i = 0; i < acc.length; i++) {
-    acc[i].addEventListener("click", function() {
-      this.classList.toggle("active");
-      var panel = this.nextElementSibling;
-      if (panel.style.maxHeight) {
-        panel.style.maxHeight = null;
-      } else {
-        panel.style.maxHeight = pcontainer.scrollHeight + "px"; //parent heigh?
-      }
-    });
-  }
-  //start NGL
-  var stage = new NGL.Stage("viewport", {
-    backgroundColor: "white"
-  });
-  document.getElementById("viewport").setAttribute("style", "width:100%; height:100%;");
-  stage.loadFile( "rcsb://1crn", { defaultRepresentation: true } );
-  stage.autoView();
-
-  function selectFile(e) {
-    var theFiles = e.target.files;
-    thefile = theFiles[0];
-  }
-
-  function callServer() {
-    var pdb = document.getElementById("pdb_str");
-    var bu = document.getElementById("bu_str");
-    var sele = document.getElementById("sel_str");
-    var model = document.getElementById("mo_str");
-
-    var formData = new FormData();
-    //console.log(thefile)
-    // add assoc key values, this will be posts values
-    if (thefile !== null) {
-      formData.append("inputfile", thefile, thefile.name);
-      formData.append("upload_file", true);
-    }
-    if (pdb !== "") formData.append("pdbId", pdb.value);
-    if (bu !== "") formData.append("bu", bu.value);
-    if (sele !== "") formData.append("selection", sele.value);
-    if (model !== "") formData.append("modelId", model.value);
-    //formData.append(name, value);
-    console.log([pdb.value, bu.value, sele.value, model.value, thefile]);
-    console.log(formData);
-    $.ajax({
-      type: "POST",
-      url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
-      success: function(data) {
-        console.log(data);
-        var e = document.getElementById("server_result");
-        e.innerHTML = data;
-        var x = JSON.parse(data.replace(/[\x00-\x1F\x7F-\x9F]/g, " "));
-        console.log(x);
-      },
-      error: function(error) {
-        console.log(error);
-      },
-      async: true,
-      data: formData,
-      cache: false,
-      contentType: false,
-      processData: false,
-      timeout: 60000
-    });
-  }
-  //setup accordeon
-
-  //let and var can be used to define a variable
-  function loadPDB(e){
-    let pdbname = e.value;
-    stage.removeAllComponents();
-    stage.loadFile("rcsb://" + pdbname + ".mmtf", { defaultRepresentation: true });
-    stage.autoView();
-  }
-
-
-
+    return vec3(
+        ix * q.w + iw * -q.x + iy * -q.z - iz * -q.y,
+        iy * q.w + iw * -q.y + iz * -q.x - ix * -q.z,
+        iz * q.w + iw * -q.z + ix * -q.y - iy * -q.x
+    );
+}
 </script>
 
+<!--
+    Render body instances vertex shader
+    Copy of THREE.ShaderLib.phong + modifications to render instances
+-->
+<script id="renderBodiesVertex" type="x-shader/x-vertex">
+uniform sampler2D bodyPosTex;
+uniform sampler2D bodyQuatTex;
+attribute float bodyIndex;
+#define PHONG
+varying vec3 vViewPosition;
+#ifndef FLAT_SHADED
+    varying vec3 vNormal;
+#endif
+#include <common>
+#include <uv_pars_vertex>
+#include <uv2_pars_vertex>
+#include <displacementmap_pars_vertex>
+#include <envmap_pars_vertex>
+#include <color_pars_vertex>
+#include <fog_pars_vertex>
+#include <morphtarget_pars_vertex>
+#include <skinning_pars_vertex>
+#include <shadowmap_pars_vertex>
+#include <logdepthbuf_pars_vertex>
+#include <clipping_planes_pars_vertex>
+void main() {
+    #include <uv_vertex>
+    #include <uv2_vertex>
+    #include <color_vertex>
+    vec2 bodyUV = indexToUV(bodyIndex,bodyTextureResolution);
+#ifdef USE_COLOR
+    vColor = vec3((floor(bodyUV*3.0)+1.0)/3.0,0);
+#endif
+    #include <beginnormal_vertex>
+    #include <morphnormal_vertex>
+    #include <skinbase_vertex>
+    #include <skinnormal_vertex>
+    vec3 bodyPos = texture2D(bodyPosTex,bodyUV).xyz;
+    vec4 bodyQuat = texture2D(bodyQuatTex,bodyUV).xyzw;
+    objectNormal.xyz = vec3_applyQuat(objectNormal.xyz, bodyQuat);
+    #include <defaultnormal_vertex>
+#ifndef FLAT_SHADED
+    vNormal = normalize( transformedNormal );
+#endif
+    #include <begin_vertex>
+    transformed.xyz = vec3_applyQuat(transformed.xyz, bodyQuat);
+    transformed.xyz += bodyPos;
+    #include <displacementmap_vertex>
+    #include <morphtarget_vertex>
+    #include <skinning_vertex>
+    #include <project_vertex>
+    #include <logdepthbuf_vertex>
+    #include <clipping_planes_vertex>
+    vViewPosition = - mvPosition.xyz;
+    #include <worldpos_vertex>
+    #include <envmap_vertex>
+    #include <shadowmap_vertex>
+    #include <fog_vertex>
+}
+</script>
 
+<!--
+    Render body instances vertex shader
+    Copy of THREE.ShaderLib.phong + modifications to render body instances with correct transform
+-->
+<script id="renderParticlesVertex" type="x-shader/x-vertex">
+uniform sampler2D particleWorldPosTex;
+uniform sampler2D quatTex;
+attribute float particleIndex;
+#define PHONG
+varying vec3 vViewPosition;
+#ifndef FLAT_SHADED
+    varying vec3 vNormal;
+#endif
+#include <common>
+#include <uv_pars_vertex>
+#include <uv2_pars_vertex>
+#include <displacementmap_pars_vertex>
+#include <envmap_pars_vertex>
+#include <color_pars_vertex>
+#include <fog_pars_vertex>
+#include <morphtarget_pars_vertex>
+#include <skinning_pars_vertex>
+#include <shadowmap_pars_vertex>
+#include <logdepthbuf_pars_vertex>
+#include <clipping_planes_pars_vertex>
+void main() {
+    #include <uv_vertex>
+    #include <uv2_vertex>
+    #include <color_vertex>
+    vec2 particleUV = indexToUV(particleIndex,resolution);
+#ifdef USE_COLOR
+    vColor = vec3((floor(particleUV*3.0)+1.0)/3.0,0);
+#endif
+    #include <beginnormal_vertex>
+    #include <morphnormal_vertex>
+    #include <skinbase_vertex>
+    #include <skinnormal_vertex>
+    vec4 particlePosAndBodyId = texture2D(particleWorldPosTex,particleUV);
+    vec2 bodyUV = indexToUV(particlePosAndBodyId.w,bodyTextureResolution);
+    vec4 bodyQuat = texture2D(quatTex,bodyUV).xyzw;
+    objectNormal.xyz = vec3_applyQuat(objectNormal.xyz, bodyQuat);
+#include <defaultnormal_vertex>
+#ifndef FLAT_SHADED
+    vNormal = normalize( transformedNormal );
+#endif
+    #include <begin_vertex>
+    vec3 particlePos = particlePosAndBodyId.xyz;
+    transformed.xyz = vec3_applyQuat(transformed.xyz, bodyQuat);
+    transformed.xyz += particlePos;
+    #include <displacementmap_vertex>
+    #include <morphtarget_vertex>
+    #include <skinning_vertex>
+    #include <project_vertex>
+    #include <logdepthbuf_vertex>
+    #include <clipping_planes_vertex>
+    vViewPosition = - mvPosition.xyz;
+    #include <worldpos_vertex>
+    #include <envmap_vertex>
+    #include <shadowmap_vertex>
+    #include <fog_vertex>
+}
+</script>
+
+<!--
+    Render depth. This is for rendering shadows.
+-->
+<script id="renderBodiesDepth" type="x-shader/x-vertex">
+uniform sampler2D bodyPosTex;
+uniform sampler2D bodyQuatTex;
+attribute float bodyIndex;
+#include <common>
+#include <uv_pars_vertex>
+#include <displacementmap_pars_vertex>
+#include <morphtarget_pars_vertex>
+#include <skinning_pars_vertex>
+#include <logdepthbuf_pars_vertex>
+#include <clipping_planes_pars_vertex>
+void main() {
+	#include <uv_vertex>
+	#include <skinbase_vertex>
+	#include <begin_vertex>
+
+    vec2 bodyUV = indexToUV(bodyIndex,bodyTextureResolution);
+    vec3 bodyPos = texture2D(bodyPosTex,bodyUV).xyz;
+    vec4 bodyQuat = texture2D(bodyQuatTex,bodyUV).xyzw;
+    transformed.xyz = vec3_applyQuat(transformed.xyz, bodyQuat);
+    transformed.xyz += bodyPos;
+
+	#include <displacementmap_vertex>
+	#include <morphtarget_vertex>
+	#include <skinning_vertex>
+	#include <project_vertex>
+	#include <logdepthbuf_vertex>
+	#include <clipping_planes_vertex>
+}
+</script>
+<script src="js/cp_serialized.js"></script>
+<script src="js/util.js"></script>
+<script src="extras/d3.v4.min.js"></script>
+<script src="extras/gpuphysics/lib/three.min.js"></script>
+<script src="extras/gpuphysics/lib/stats.min.js"></script>
+<script src="extras/gpuphysics/lib/dat.gui.min.js"></script>
+<script src="extras/gpuphysics/lib/three.orbitcontrols.js"></script>
+<script src="extras/gpuphysics/lib/three.transformcontrols.js"></script>
+<!-- NGL  -->
+<script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js"></script>
+<script src="extras/gpuphysics/build/gp.js"></script>
+<script src="extras/gpuphysics/main_physics.js"></script>
+</body>
 </html>

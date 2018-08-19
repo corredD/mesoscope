@@ -15,6 +15,10 @@ var Util_makeARandomNumber = function() {
    return Math.random();
  }
 
+ function Util_getRandomInt(max) {
+   return Math.floor(Math.random() * Math.floor(max));
+ }
+
 function Util_ComputeBounds(points,radius)
 {
   var bbMin = new NGL.Vector3(Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY);
