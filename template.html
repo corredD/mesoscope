@@ -71,7 +71,6 @@ vec3 vec3_applyQuat(vec3 v, vec4 q){
     Copy of THREE.ShaderLib.phong + modifications to render instances
 -->
 <script id="renderBodiesVertex" type="x-shader/x-vertex">
-#define USE_COLOR
 uniform sampler2D bodyPosTex;
 uniform sampler2D bodyQuatTex;
 attribute float bodyIndex;
@@ -79,9 +78,7 @@ attribute vec3 bodyColor;
 #define PHONG
 varying vec3 vViewPosition;
 //varying vec3 vColor;
-#ifndef FLAT_SHADED
-    varying vec3 vNormal;
-#endif
+varying vec3 vNormal;
 #include <common>
 #include <uv_pars_vertex>
 #include <uv2_pars_vertex>

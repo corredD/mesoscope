@@ -59,6 +59,7 @@ THREE.ShaderToon = {
 			"varying vec3 vNormal;",
 
 			"varying vec3 vRefract;",
+      "varying vec3 vColor;",
 
 			"void main() {",
 
@@ -74,11 +75,11 @@ THREE.ShaderToon = {
 
 				"if ( intensity < 0.50 ) {",
 
-					"gl_FragColor = vec4( 2.0 * intensity * uBaseColor, 1.0 );",
+					"gl_FragColor = vec4( 2.0 * intensity * vColor, 1.0 );",
 
 				"} else {",
 
-					"gl_FragColor = vec4( 1.0 - 2.0 * ( 1.0 - intensity ) * ( 1.0 - uBaseColor ), 1.0 );",
+					"gl_FragColor = vec4( 1.0 - 2.0 * ( 1.0 - intensity ) * ( 1.0 - vColor ), 1.0 );",
 
 				"}",
 
@@ -132,13 +133,14 @@ THREE.ShaderToon = {
 			"uniform vec3 uAmbientLightColor;",
 
 			"varying vec3 vNormal;",
+      "varying vec3 vColor;",
 
 			"void main() {",
 
 				"float camera = max( dot( normalize( vNormal ), vec3( 0.0, 0.0, 1.0 ) ), 0.4);",
 				"float light = max( dot( normalize( vNormal ), uDirLightPos ), 0.0);",
 
-				"gl_FragColor = vec4( uBaseColor, 1.0 );",
+				"gl_FragColor = vec4( vColor, 1.0 );",
 
 				"if ( length(uAmbientLightColor + uDirLightColor * light) < 1.00 ) {",
 
@@ -300,7 +302,7 @@ THREE.ShaderToon = {
 				"float directionalLightWeighting = max( dot( normalize(vNormal), uDirLightPos ), 0.0);",
 				"vec3 lightWeighting = uAmbientLightColor + uDirLightColor * directionalLightWeighting;",
 
-				"gl_FragColor = vec4( uBaseColor, 1.0 );",
+				"gl_FragColor = vec4( vColor, 1.0 );",
 
 				"if ( length(lightWeighting) < 1.00 ) {",
 

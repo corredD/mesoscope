@@ -21,6 +21,8 @@ var radius;
 
 var meshMaterial;
 var customDepthMaterial;
+var all_materials;
+var current_material;
 
 (function(){
 
@@ -120,15 +122,43 @@ function createInstancesMesh(pid,anode,start,count) {
   }
 }
 
+/*
+var meshUniforms = THREE.UniformsUtils.clone(hatchingMaterial2.uniforms);//phongShader.uniforms);
+meshUniforms.bodyQuatTex = { value: null };
+meshUniforms.bodyPosTex = { value: null };
+
+meshMaterial = new THREE.ShaderMaterial({
+    uniforms: meshUniforms,
+    vertexShader: sharedShaderCode.innerText + renderBodiesVertex.innerText,
+    fragmentShader:phongShader.fragmentShader,//all_materials["dotted"].m.fragmentShader,//phongShader.fragmentShader,// fragmentShader.innerText,//phongFragmentShaderCode.innerText,//phongShader.fragmentShader,
+    lights: true,
+    vertexColors: true,
+    defines: {
+        bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
+        resolution: 'vec2(' + world.particleTextureSize.toFixed(1) + ',' + world.particleTextureSize.toFixed(1) + ')'
+    }
+});*/
+
 function createShaderMaterial( id, light, ambientLight ) {
   var shader = THREE.ShaderToon[ id ];
   var u = THREE.UniformsUtils.clone( shader.uniforms );
   var phongShader = THREE.ShaderLib.phong;
   var u2 = THREE.UniformsUtils.clone(phongShader.uniforms);
   var unif = THREE.UniformsUtils.merge([u,u2]);
-  var vs = shader.vertexShader;
+  unif.bodyQuatTex = { value: null };
+  unif.bodyPosTex = { value: null };
+  var vs = sharedShaderCode.innerText + renderBodiesVertex.innerText;//shader.vertexShader;
   var fs = shader.fragmentShader;
-  var material = new THREE.ShaderMaterial( { uniforms: unif, vertexShader: vs, fragmentShader: fs } );
+  var material = new THREE.ShaderMaterial( {
+    uniforms: unif,
+    vertexShader: vs,
+    fragmentShader: fs,
+    lights: true,
+    vertexColors: true,
+    defines: {
+          bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
+          resolution: 'vec2(' + world.particleTextureSize.toFixed(1) + ',' + world.particleTextureSize.toFixed(1) + ')'
+      }} );
   material.uniforms.uDirLightPos.value = light.position;
   material.uniforms.uDirLightColor.value = light.color;
   material.uniforms.uAmbientLightColor.value = ambientLight.color;
@@ -296,8 +326,7 @@ function init(){
     initDebugGrid();
     //create the mesh
 
-    var toonMaterial1 = createShaderMaterial( "toon1", light, ambientLight ),
-			toonMaterial2 = createShaderMaterial( "toon2", light, ambientLight ),
+    var toonMaterial2 = createShaderMaterial( "toon2", light, ambientLight ),
 			hatchingMaterial = createShaderMaterial( "hatching", light, ambientLight ),
 			hatchingMaterial2 = createShaderMaterial( "hatching", light, ambientLight ),
 			dottedMaterial = createShaderMaterial( "dotted", light, ambientLight ),
@@ -310,16 +339,42 @@ function init(){
 			dottedMaterial2.uniforms.uBaseColor.value.setRGB( 0, 0, 0 );
 			dottedMaterial2.uniforms.uLineColor1.value.setHSL( 0.05, 1.0, 0.5 );
 
-
+      all_materials = {
+			"toon2" :
+			{
+				m: toonMaterial2,
+				h: 0.4, s: 1, l: 0.75
+			},
+			"hatching" :
+			{
+				m: hatchingMaterial,
+				h: 0.2, s: 1, l: 0.9
+			},
+			"hatching2" :
+			{
+				m: hatchingMaterial2,
+				h: 0.0, s: 0.8, l: 0.5
+			},
+			"dotted" :
+			{
+				m: dottedMaterial,
+				h: 0.2, s: 1, l: 0.9
+			},
+			"dotted2" :
+			{
+				m: dottedMaterial2,
+				h: 0.1, s: 1, l: 0.5
+			}
+			};
     // Mesh material - extend the phong shader
-    var meshUniforms = THREE.UniformsUtils.clone(hatchingMaterial2.uniforms);//phongShader.uniforms);
+    var meshUniforms = THREE.UniformsUtils.clone(phongShader.uniforms);//phongShader.uniforms);
     meshUniforms.bodyQuatTex = { value: null };
     meshUniforms.bodyPosTex = { value: null };
 
     meshMaterial = new THREE.ShaderMaterial({
         uniforms: meshUniforms,
         vertexShader: sharedShaderCode.innerText + renderBodiesVertex.innerText,
-        fragmentShader:hatchingMaterial2.fragmentShader,//phongShader.fragmentShader,// fragmentShader.innerText,//phongFragmentShaderCode.innerText,//phongShader.fragmentShader,
+        fragmentShader:phongShader.fragmentShader,//all_materials["dotted"].m.fragmentShader,//phongShader.fragmentShader,// fragmentShader.innerText,//phongFragmentShaderCode.innerText,//phongShader.fragmentShader,
         lights: true,
         vertexColors: true,
         defines: {
@@ -327,6 +382,8 @@ function init(){
             resolution: 'vec2(' + world.particleTextureSize.toFixed(1) + ',' + world.particleTextureSize.toFixed(1) + ')'
         }
     });
+    all_materials["default"] = {m:meshMaterial,h: 0.1, s: 1, l: 0.5};
+    current_material = "default";
 
     customDepthMaterial = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge([
@@ -451,8 +508,8 @@ function render() {
     // Render main scene
     updateDebugGrid();
 
-    meshMaterial.uniforms.bodyPosTex.value = world.bodyPositionTexture;
-    meshMaterial.uniforms.bodyQuatTex.value = world.bodyQuaternionTexture;
+    all_materials[ current_material ].m.uniforms.bodyPosTex.value = world.bodyPositionTexture;
+    all_materials[ current_material ].m.uniforms.bodyQuatTex.value = world.bodyQuaternionTexture;
 
     customDepthMaterial.uniforms.bodyPosTex.value = world.bodyPositionTexture;
     customDepthMaterial.uniforms.bodyQuatTex.value = world.bodyQuaternionTexture;
@@ -484,9 +541,21 @@ function initGUI(){
     renderShadows: true,
     gravity: world.gravity.y,
     interaction: 'none',
-    sphereRadius: world.getSphereRadius(0)
+    sphereRadius: world.getSphereRadius(0),
+    material: "shiny"
   };
-
+  var createHandler = function( id ) {
+    return function() {
+      var mat_old = all_materials[ current_material ];
+      current_material = id;
+      var mat = all_materials[ id ];
+      var keys = Object.keys(type_meshs);
+      var nMeshs = keys.length;
+      for (var i=0;i<nMeshs;i++) {
+        meshMeshs[i].material = mat.m;
+      }
+    };
+  };
   function guiChanged() {
     world.gravity.y = controller.gravity;
     if(controller.renderParticles){
@@ -541,6 +610,13 @@ function initGUI(){
   gui.add( controller, "renderShadows" ).onChange( guiChanged );
   gui.add( controller, 'interaction', [ 'none', 'sphere', 'broadphase' ] ).onChange( guiChanged );
   gui.add( controller, 'sphereRadius', boxSize.x/10, boxSize.x/2 ).onChange( guiChanged );
+
+  var h = gui.addFolder( "Materials" );
+	for ( var m in all_materials ) {
+		controller[ m ] = createHandler( m );
+		h.add( controller, m ).name( m );
+	}
+
   guiChanged();
 
   var raycaster = new THREE.Raycaster();
