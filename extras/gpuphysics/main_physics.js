@@ -140,7 +140,7 @@ meshMaterial = new THREE.ShaderMaterial({
 });*/
 
 function createShaderMaterial( id, light, ambientLight ) {
-  var shader = THREE.ShaderToon[ id ];
+  var shader = ShaderToon[ id ];
   var u = THREE.UniformsUtils.clone( shader.uniforms );
   var phongShader = THREE.ShaderLib.phong;
   var u2 = THREE.UniformsUtils.clone(phongShader.uniforms);
