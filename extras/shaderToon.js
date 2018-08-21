@@ -10,7 +10,7 @@
  *	dotted
  */
 
-ShaderToon = {
+THREE.ShaderToon = {
 
 	'toon1' : {
 
