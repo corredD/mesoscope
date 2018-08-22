@@ -1767,6 +1767,7 @@ for (var j = 0; j < o.object.biomolDict[o.assambly].partList.length; j++) {
   }
 }*/
 
+
 function NGL_GetAtomDataSet(pdb,struture_object){
   var dataset = [];
   var o = struture_object;

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>gpu-physics.js by schteppe</title>
+    <title>gpu-physics.js by schteppe adapted to cellPACK</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <meta name="twitter:creator" content="@schteppe" />
+    <meta name="twitter:creator" content="@schteppe&@ludo" />
     <meta property="og:title" content="gpu-physics.js by schteppe adapted to cellPACK" />
     <meta property="og:description" content="Play around with a massive amount of rigid bodies in this demo." />
     <meta property="og:url" content="https://schteppe.github.io/gpu-physics.js/" />
@@ -41,7 +41,7 @@
 
 <div id="container"></div>
 <div id="info">
-    <b>gpu physics</b> by <a href="http://twitter.com/schteppe">@schteppe</a> | <a href="https://www.youtube.com/watch?v=PfCZEQxTvqA">video</a> | <a href="https://github.com/schteppe/gpu-physics.js">github</a>
+    <b>gpu physics adapted to cellPACK</b> by <a href="http://twitter.com/schteppe">@schteppe</a> and @ludo
 </div>
 
 <script id="sharedShaderCode" type="x-shader/x-fragment">
@@ -227,8 +227,82 @@ void main() {
 }
 </script>
 
-<script src="js/cp_serialized.js"></script>
+<script id="cv_vertexShader" type="x-shader/x-vertex">
+  uniform float scale;
+  uniform sampler2D bodyPosTex;
+  uniform sampler2D bodyQuatTex;
+  uniform sampler2D atomPositionsTex;//xyz,1
+  //uniform sampler2D bodyInfoTex;//start,count for eveyt type
+
+  // = camera.projectionMatrix
+  uniform mat4 projectionMatrix;
+
+  // = camera.matrixWorldInverse
+  uniform mat4 viewMatrix;
+
+  attribute vec2 instanceInfos;//for every bead?
+
+  attribute vec2 _TriUVs;
+  attribute float  _TriIndices;
+  attribute vec3 _TriVertices;
+  attribute float gl_VertexID;
+
+	varying vec3 vPosition;
+	varying vec4 vColor;
+  varying float radius;
+  varying vec3 vPosition;
+  varying vec2 uv;
+
+	void main(){
+    int vertexId = (int) gl_VertexID;
+    int particleId = (int) instanceInfos.x;
+    int instanceId = (int) instanceInfos.y;
+
+    vec2 bodyUV = indexToUV(instanceId,bodyTextureResolution);
+    vec4 bodyQuat = texture2D(bodyQuatTex,bodyUV).xyzw;
+    vec2 start_count = texture2D(bodyInfoTex,nodeUV).xy;
+    vec4 sphere = texture2D(bodyPosTex,bodyUV).xyzw;
+
+    vec2 atomUV = indexToUV(particleId,bodyTextureResolution);
+
+    vec4 spherePosition = texture2D(atomPositionsTex,atomUV).xyzw * scale;//(lodLevel == 0) ? _ProteinAtomPositions[sphereBatchInfo.w + vertexId / 3] : _ProteinClusterPositions[sphereBatchInfo.w + vertexId / 3];
+    radius = sphere.w;
+    vec3 vertexPos = _TriVertices * scale * radius;
+    vec3 billboardWorldPos = pos + vec3_applyQuat(spherePosition.xyz, bodyQuat) * scale;// _InstancePositions[instanceId].xyz;
+    vec4 billboardVertexWorldPos = vec4(billboardWorldPos, 0)
+              + _CameraRight * vertexPos.x + _CameraUp * vertexPos.y;
+    billboardVertexWorldPos = vec4(billboardWorldPos, 0) + viewMatrix * float4(vertexPos,0);
+		vPosition = billboardVertexWorldPos.xyz;
+    uv = _TriUVs;
+    gl_Position =  projectionMatrix * vec4( vPosition, 1.0 );
+	}
+
+</script>
+
+<script id="cv_fragmentShader" type="x-shader/x-fragment">
+	varying vec4 vColor;
+  varying float radius;
+  varying vec3 vPosition;
+  varying vec2 uv;
+  //depth buffer?
+	void main() {
+    //float lensqr = dot(uv, uv);
+    //if (lensqr > 1) discard;
+    //if (radius == 0) discard;
+    //vec3 normal = normalize(vec3(uv, sqrt(1.0 - lensqr)));
+    // Find depth
+		//float eyeDepth = LinearEyeDepth(input.vertex.z) + input.radius * (1 - normal.z);
+		//float depth = 1 / (eyeDepth * _ZBufferParams.z) - _ZBufferParams.w / _ZBufferParams.z;
+		gl_FragColor = vec4(1,0,0,1);//normal,1);
+	}
+</script>
+<!-- NGL  -->
+<script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js"></script>
 <script src="js/util.js"></script>
+
+<script src="js/query_helper.js"></script>
+<script src="js/cp_serialized.js"></script>
+<script src="js/ngl.js"></script>
 <script src="extras/d3.v4.min.js"></script>
 <script src="extras/gpuphysics/lib/three.min.js"></script>
 <script src="extras/gpuphysics/lib/stats.min.js"></script>

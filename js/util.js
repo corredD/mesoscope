@@ -369,3 +369,26 @@ function Util_gunzip(compressed_data){
 function Util_parseXML(plaintxt) {
   return $.parseXML( plaintxt );
 }
+
+
+// Compute upper closest power of 2 for a number
+function Util_powerOfTwoCeil(x){
+    var result = 1;
+    while(result * result < x){
+        result *= 2;
+    }
+    return result;
+}
+
+function Util_idToX(id,sx,sy){
+    return id % sx;
+}
+function Util_idToY(id,sx,sy){
+    return Math.floor(id / sy);
+}
+function Util_idToDataIndex(id, w, h){
+    var px = Util_idToX(id, w, h);
+    var py = Util_idToY(id, w, h);
+    var p = 4 * (py * w + px);
+    return p;
+}
