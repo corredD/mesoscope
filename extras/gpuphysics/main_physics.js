@@ -94,7 +94,7 @@ function distributesMesh(){
     || pdbname.slice(-4, pdbname.length) === ".map") {
       continue;
     }
-    count = Util_getRandomInt( 10 )+1;//remove root
+    count = Util_getRandomInt( 2 )+1;//remove root
     createInstancesMesh(i,nodes[i],start,count);
     start = start + count;
     total = total + count;
@@ -169,7 +169,8 @@ function createCellVIEW(){
   uniforms.bodyPosTex = { value: null };
   uniforms.atomPositionsTex = { value: atomData };
   uniforms.scale = {value : ascale};
-
+  uniforms.cameraNear =   { value: camera.near };
+  uniforms.cameraFar = { value: camera.far };
   //1024
   var tsize = 1024;
 	cv_Material = new THREE.ShaderMaterial( {
@@ -178,14 +179,17 @@ function createCellVIEW(){
 		fragmentShader: document.getElementById( 'xfragmentShader' ).textContent,
 		side: THREE.DoubleSide,
     lights: true,
+    depthWrite: true,
     defines: {
         USE_MAP: true,
+        DEPTH_PACKING: 3201,
         bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
         resolution: 'vec2(' + world.particleTextureSize.toFixed(1) + ',' + world.particleTextureSize.toFixed(1) + ')',
         atomTextureResolution: 'vec2(' + tsize.toFixed(1) + ',' + tsize.toFixed(1) + ')',
     }
 		//transparent: true
 	} );
+  cv_Material.extensions.fragDepth = true;
 	//
 	cv_Mesh = new THREE.Mesh( geometry, cv_Material );
   //cv_Mesh.material.uniforms.atomPositionsTex.value = atomData;

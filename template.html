@@ -249,9 +249,11 @@ void main() {
 		//attribute vec4 color;
 		//attribute vec4 orientationStart;
 		//attribute vec4 orientationEnd;
+    varying float vRadius;
 		varying vec3 vPosition;
 		varying vec4 vColor;
     varying vec2 vUv;
+    varying mat4 modelView;
 		void main(){
       float particleId = instanceInfos.y;
       float instanceId = instanceInfos.x;
@@ -262,10 +264,11 @@ void main() {
       //centered!!
       vec4 spherePosition = texture2D(atomPositionsTex,atomUV).xyzw;//(lodLevel == 0) ? _ProteinAtomPositions[sphereBatchInfo.w + vertexId / 3] : _ProteinClusterPositions[sphereBatchInfo.w + vertexId / 3];
       vec3 billboardWorldPos = sphere.xyz + vec3_applyQuat(spherePosition.xyz, bodyQuat);// _InstancePositions[instanceId].xyz;
-      float radius = spherePosition.w;
-      vec3 vertexPos = position * radius;
 
-      mat4 modelView = modelViewMatrix;
+      vRadius = spherePosition.w;
+      vec3 vertexPos = position * spherePosition.w;
+
+      modelView = modelViewMatrix;
       mat4 VP = projectionMatrix * modelViewMatrix;
       vec3 CameraRight = vec3(modelViewMatrix[0][0], modelViewMatrix[1][0], modelViewMatrix[2][0]);
       vec3 CameraUp = vec3(modelViewMatrix[0][1], modelViewMatrix[1][1], modelViewMatrix  [2][1]);
@@ -276,22 +279,72 @@ void main() {
 			vColor = vec4(bodyUV,0,1);
       vUv = uv;
 			gl_Position = VP  * vec4( billboardVertexWorldPos.xyz , 1.0 );
+      //vPosition = VP  * vec4( billboardVertexWorldPos.xyz , 1.0 );
+      vPosition = billboardVertexWorldPos;//clamp((projectionMatrix * modelViewMatrix * vec4(billboardVertexWorldPos.xyz, 1.0)).z, 0.0, 1.0);//Use depth pos to set depth
+
 		}
 	</script>
 
 	<script id="xfragmentShader" type="x-shader/x-fragment">
 		precision highp float;
 		//uniform float time;
-		//varying vec3 vPosition;
+    #include <logdepthbuf_pars_fragment>
+    #include <packing>
+    uniform mat4 projectionMatrix;
+    uniform float cameraNear;
+    uniform float cameraFar;
+    varying float vRadius;
+		varying vec3 vPosition;
 		varying vec4 vColor;
     varying vec2 vUv;
+    varying mat4 modelView;
+
+    vec4 getZparams(){
+      // OpenGL would be this:
+      float zc0 = (1.0 - cameraFar / cameraNear) / 2.0;
+      float zc1 = (1.0 + cameraFar / cameraNear) / 2.0;
+      // D3D is this:
+      //zc0 = 1.0 - m_FarClip / m_NearClip;
+      //zc1 = m_FarClip / m_NearClip;
+      // now set _ZBufferParams with (zc0, zc1, zc0/m_FarClip, zc1/m_FarClip);
+      return vec4(zc0, zc1, zc0/cameraFar, zc1/cameraNear);
+    }
+
+    float LinearEyeDepth(vec4 _ZBufferParams,float z){
+      return 1.0 / (_ZBufferParams.x * z + _ZBufferParams.y);
+    }
+
+    float calcDepth( float z ){
+        vec2 clipZW = z * projectionMatrix[2].zw + projectionMatrix[3].zw;
+        return 0.5 + 0.5 * clipZW.x / clipZW.y;
+    }
+
 		void main() {
       float lensqr = dot(vUv, vUv);
       if (lensqr > 1.0) discard;
       vec3 normal = normalize(vec3(vUv, sqrt(1.0 - lensqr)));
+      vec3 cameraPos = (normal * vRadius) + vPosition;
+      vec4 clipPos = projectionMatrix * modelView * vec4(cameraPos, 1.0);
+      float ndcDepth = clipPos.z / clipPos.w;
+      float gdepth = ( ( (cameraFar-cameraNear) * ndcDepth) +
+          cameraNear + cameraFar) / 2.0;
+      float gldepth = ((gl_DepthRange.diff * ndcDepth) +
+            gl_DepthRange.near + gl_DepthRange.far) / 2.0;
 			//vec4 color = vec4( vColor );
 			//color.r += sin( vPosition.x * 10.0 + time ) * 0.5;
-			gl_FragColor = vec4(normal.rgb,1);
+      // Find depth
+  		//float eyeDepth = LinearEyeDepth(input.vertex.z) + input.radius * (1 - normal.z);
+  		//depth = 1 / (eyeDepth * _ZBufferParams.z) - _ZBufferParams.w / _ZBufferParams.z;
+      #include <logdepthbuf_fragment>
+      vec4 _ZBufferParams = getZparams();
+      float yd = vPosition.z;//1.0 / (_ZBufferParams.x * vPosition.z + _ZBufferParams.y);
+      float eyeDepth = yd + vRadius * (1.0 - normal.z);
+      float depth = 1.0 / (ndcDepth * _ZBufferParams.z) - _ZBufferParams.w / _ZBufferParams.z;
+      float d = viewZToPerspectiveDepth(ndcDepth,cameraNear,cameraFar);
+      gl_FragDepthEXT = gldepth;
+      //viewZToPerspectiveDepth
+      //perspectiveDepthToViewZ
+			gl_FragColor = vec4(normal.rgb,1.0);//packDepthToRGBA(gdepth);//vec4(d,0.0,0.0,1.0);
 		}
 	</script>
 <!-- NGL  -->
