@@ -15,6 +15,7 @@ var world;
 var num_instances=0;
 var num_beads_total=0;
 var scene, ambientLight, light, camera, controls, renderer;
+var amesh;
 
 var debugMesh, debugGridMesh, cv_Mesh;
 var controller;
@@ -23,6 +24,7 @@ var numParticles;
 var radius;
 
 var meshMaterial;
+var cv_Material;
 var customDepthMaterial;
 var all_materials;
 var current_material;
@@ -49,24 +51,27 @@ function BuildMeshTriangle(radius)
     var triBaseHalf = triBase * 0.5;
     var triOffset = new THREE.Vector2(triBaseHalf, 1.0);
 
-    var uv = new THREE.Vector2(0, 0).sub(triOffset);
+    var uv = new THREE.Vector2(0, 0);
+    uv.sub(triOffset);
     uvs.push(uv.x);uvs.push(uv.y);
-    var uvo = uv * offset;
-    var v = new THREE.Vector3(uvo.x, uvo.y, 0);
+    uv.multiply(offset)
+    var v = new THREE.Vector3(uv.x, uv.y, 0);
     vertices.push(v.x);vertices.push(v.y);vertices.push(v.z);// output.pos = projPos + float4(output.uv * offset.xy, 0, 0);
     indices.push(0);
 
-    uv = new THREE.Vector2(triBaseHalf, triHeigth).sub(triOffset);
+    uv = new THREE.Vector2(triBaseHalf, triHeigth)
+    uv.sub(triOffset);
     uvs.push(uv.x);uvs.push(uv.y);
-    uvo = uv * offset;
-    v = new THREE.Vector3(uvo.x, uvo.y, 0);
+    uv.multiply(offset)
+    v = new THREE.Vector3(uv.x, uv.y, 0);
     vertices.push(v.x);vertices.push(v.y);vertices.push(v.z);///output.pos = projPos + float4(output.uv * offset.xy, 0, 0);
     indices.push(1);
 
-    uv = new THREE.Vector2(triBase, 0).sub(triOffset);
+    uv = new THREE.Vector2(triBase, 0)
+    uv.sub(triOffset);
     uvs.push(uv.x);uvs.push(uv.y);
-    uvo = uv * offset;
-    v = new THREE.Vector3(uvo.x, uvo.y, 0);
+    uv.multiply(offset)
+    v = new THREE.Vector3(uv.x, uv.y, 0);
     vertices.push(v.x);vertices.push(v.y);vertices.push(v.z);///output.pos = projPos + float4(output.uv * offset.xy, 0, 0);
     indices.push(2);
 
@@ -89,11 +94,12 @@ function distributesMesh(){
     || pdbname.slice(-4, pdbname.length) === ".map") {
       continue;
     }
-    count = Util_getRandomInt( 2 )+1;//remove root
+    count = Util_getRandomInt( 10 )+1;//remove root
     createInstancesMesh(i,nodes[i],start,count);
     start = start + count;
     total = total + count;
   }
+  createCellVIEW();
   console.log ( "there is instances ",total);
   console.log ( "there is atoms ",num_beads_total);
   num_instances = total;
@@ -113,62 +119,84 @@ function distributesMesh(){
       console.log("mesh builded",keys[i]);
   }
 
-  createCellVIEW();
+
 }
 
 //when all atoms are loaded
 function createCellVIEW(){
-  //create object and material to draw imposter triangle for given LOD.
-  //lod 1 - beads
-  //lod 0 - atoms
-  // Create an instanced mesh for triangle
+  //split in multiple calls ?
+  //one call per object-> maybe faster and less data ?
+  //var offsets = [];
+  var instances = num_beads_total;
+  //for ( var i = 0; i < instances; i ++ ) {
+	//			// offsets
+	//			offsets.push( Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5 );
+  //    }
+  console.log(instances);
   var tri_mesh = BuildMeshTriangle(1.0);
-  //var instances = world.numParticles*world.numParticles;
-  var aGeometry = new THREE.InstancedBufferGeometry();
-  aGeometry.maxInstancedCount = num_beads_total;
-  aGeometry.addAttribute( '_TriVertices', new THREE.Float32BufferAttribute( tri_mesh.vertices, 3 ) );
-  aGeometry.addAttribute( '_TriIndices', new THREE.Float32BufferAttribute( tri_mesh.indices, 1 ) );
-  aGeometry.addAttribute( '_TriUVs', new THREE.Float32BufferAttribute( tri_mesh.uv, 2 ) );
-  aGeometry.addAttribute( 'gl_VertexID', new THREE.Float32BufferAttribute( [0,1,2], 1 ) );
-  aGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(tri_mesh.indices), 1));
-
-  //particles infos should be -> particle_id, protein_type_id, etc..
+  var geometry = new THREE.InstancedBufferGeometry();
+	geometry.maxInstancedCount = instances; // set so its initalized for dat.GUI, will be set in first draw otherwise
+	geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( tri_mesh.vertices, 3 ) );
+	//geometry.addAttribute( 'offset', new THREE.InstancedBufferAttribute( new Float32Array( offsets ), 3 ) );
+  geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(tri_mesh.indices), 1));
+  geometry.addAttribute( 'uv', new THREE.Float32BufferAttribute( new Float32Array( tri_mesh.uv ), 2 ) );
+	//geometry.addAttribute( 'color', new THREE.InstancedBufferAttribute( new Float32Array( colors ), 4 ) );
+	//geometry.addAttribute( 'orientationStart', new THREE.InstancedBufferAttribute( new Float32Array( orientationsStart ), 4 ) );
+	//geometry.addAttribute( 'orientationEnd', new THREE.InstancedBufferAttribute( new Float32Array( orientationsEnd ), 4 ) );
+	// material
+  geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(tri_mesh.triangles), 1));
   var instanceInfos = new THREE.InstancedBufferAttribute(
-    new Float32Array( atomData_mapping_instance ), 2, 1 );
+    new Float32Array( atomData_mapping_instance.slice(0,instances*2) ), 2, 1 );
   //aGeometry.addAttribute( 'bodyColor', bodyColors );
-  aGeometry.addAttribute( 'instanceInfos', instanceInfos );
-  aGeometry.boundingSphere = null;
+  geometry.addAttribute( 'instanceInfos', instanceInfos );
+  /*
+  var bodyIndices = new THREE.InstancedBufferAttribute( new Float32Array( instances * 1 ), 1, 1  );
+  var partIndices = new THREE.InstancedBufferAttribute( new Float32Array( instances * 1 ), 1, 1  );
+  var j = 0;
+  for ( var i = 0, ul = bodyIndices.count; i < ul; i++ ) {//num_beads_total
+      bodyIndices.setX( i, atomData_mapping_instance[j] ); // one index per instance
+      partIndices.setX( i, atomData_mapping_instance[j+1] );//rgb of the current anode
+      j+=2;
+  }
+  geometry.addAttribute( 'partIndex', partIndices );
+  geometry.addAttribute( 'bodyIndex', bodyIndices );
+  */
+  geometry.boundingSphere = null;
 
-  // Particle spheres material / debug material - extend the phong shader in three.js
   var phongShader = THREE.ShaderLib.phong;
   var uniforms = THREE.UniformsUtils.clone(phongShader.uniforms);
   uniforms.bodyQuatTex = { value: null };
   uniforms.bodyPosTex = { value: null };
-  uniforms.atomPositionsTex = { value: null };
-  uniforms.bodyInfoTex = { value: null };
+  uniforms.atomPositionsTex = { value: atomData };
   uniforms.scale = {value : ascale};
-  var cv_Material = new THREE.ShaderMaterial({
-      uniforms: uniforms,
-      vertexShader: sharedShaderCode.innerText + cv_vertexShader.innerText,
-      fragmentShader: cv_fragmentShader.innerText,
-      lights: true,
-      defines: {
-          USE_MAP: true,
-          bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
-          resolution: 'vec2(' + world.particleTextureSize.toFixed(1) + ',' + world.particleTextureSize.toFixed(1) + ')'
-      }
-  });
-  cv_Mesh = new THREE.Mesh( aGeometry, cv_Material );
+
+  //1024
+  var tsize = 1024;
+	cv_Material = new THREE.ShaderMaterial( {
+		uniforms: uniforms,
+		vertexShader: sharedShaderCode.innerText + document.getElementById( 'xvertexShader' ).textContent,
+		fragmentShader: document.getElementById( 'xfragmentShader' ).textContent,
+		side: THREE.DoubleSide,
+    lights: true,
+    defines: {
+        USE_MAP: true,
+        bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
+        resolution: 'vec2(' + world.particleTextureSize.toFixed(1) + ',' + world.particleTextureSize.toFixed(1) + ')',
+        atomTextureResolution: 'vec2(' + tsize.toFixed(1) + ',' + tsize.toFixed(1) + ')',
+    }
+		//transparent: true
+	} );
+	//
+	cv_Mesh = new THREE.Mesh( geometry, cv_Material );
+  //cv_Mesh.material.uniforms.atomPositionsTex.value = atomData;
   cv_Mesh.frustumCulled = false;
   //cv_Mesh.customDepthMaterial = customDepthMaterial;
-  cv_Mesh.castShadow = true;
-  cv_Mesh.receiveShadow = true;
+  //cv_Mesh.castShadow = true;
+  //cv_Mesh.receiveShadow = true;
 
-  cv_Mesh.material.uniforms.atomPositionsTex = atomData;
-  //cv_Mesh.material.uniforms.bodyInfoTex = instance_infosData;
-  scene.add( cv_Mesh   );
-  console.log("done with cv_mesh");
+	scene.add( cv_Mesh );
 }
+
 
 //(function(){
 
@@ -272,6 +300,7 @@ function LoadProteinAtoms(anode,pid,callback){
 
 //
 function addAtoms(anode,pid,start,o){
+  var center = NGL_GetGeometricCenter(o, new NGL.Selection("polymer and /0")).center;
   atomData.needsUpdate = true;
   var data = atomData.image.data;
   var w = atomData.image.width;
@@ -281,14 +310,14 @@ function addAtoms(anode,pid,start,o){
   if (o===null) o = stage.getComponentsByName(anode.data.source.name).list[0];
   console.log("found ",o);
   //var dataset=[];
-  var asele = "polymer";
+  var asele = "polymer and /0";
   var count = 0;
   o.structure.eachAtom(function(ap) {
       //dataset.push([ap.x, ap.y, ap.z]);
-      data[p +count+ 0] = ap.x;
-      data[p +count+ 1] = ap.y;
-      data[p +count+ 2] = ap.z;
-      data[p +count+ 3] = 1.8;
+      data[p +count+ 0] = (ap.x-center.x)*ascale;
+      data[p +count+ 1] = (ap.y-center.y)*ascale;
+      data[p +count+ 2] = (ap.z-center.z)*ascale;
+      data[p +count+ 3] = 1.8*ascale;
       count+=4;
   }, new NGL.Selection(asele));
   return count;
@@ -329,8 +358,7 @@ function createInstancesMesh(pid,anode,start,count) {
     atomData_mapping[pid]["instances_start"]=start;
     atomData_mapping[pid]["instances_count"]=count;
     for (var j=0;j < atomData_mapping[pid].count ; j++){
-          atomData_mapping_instance.push(bodyId);
-          atomData_mapping_instance.push(atomData_mapping[pid].start+j);
+          atomData_mapping_instance.push(bodyId,atomData_mapping[pid].start+j);
     }
     num_beads_total = num_beads_total + atomData_mapping[pid].count;
   }
@@ -708,7 +736,11 @@ function render() {
 
     customDepthMaterial.uniforms.bodyPosTex.value = world.bodyPositionTexture;
     customDepthMaterial.uniforms.bodyQuatTex.value = world.bodyQuaternionTexture;
-
+    if (cv_Material) {
+      cv_Material.uniforms.bodyPosTex.value = world.bodyPositionTexture;
+      cv_Material.uniforms.bodyQuatTex.value = world.bodyQuaternionTexture;
+      //cv_Material.uniforms.atomPositionsTex.value = atomData;
+    }
     debugMesh.material.uniforms.particleWorldPosTex.value = world.particlePositionTexture;
     debugMesh.material.uniforms.quatTex.value = world.bodyQuaternionTexture;
 
@@ -732,7 +764,9 @@ function initGUI(){
     moreObjects: function(){ location.href = "?n=" + (numParticles*2); },
     lessObjects: function(){ location.href = "?n=" + Math.max(2,numParticles/2); },
     paused: false,
+    renderAtoms: true,
     renderParticles: false,
+    renderMeshs: true,
     renderShadows: true,
     gravity: world.gravity.y,
     interaction: 'none',
@@ -753,18 +787,26 @@ function initGUI(){
   };
   function guiChanged() {
     world.gravity.y = controller.gravity;
+    if (controller.renderAtoms) {
+      scene.add(cv_Mesh);
+    }else {
+      scene.remove(cv_Mesh);
+    }
     if(controller.renderParticles){
-
-      var nMeshs = Object.keys(type_meshs).length;
-      for (var i=0;i<nMeshs;i++) {
-        scene.remove(meshMeshs[i]);
-      }
       scene.add(debugMesh);
-    } else {
+    }
+    else {
       scene.remove(debugMesh);
+    }
+    if(controller.renderMeshs)  {
       var nMeshs = Object.keys(type_meshs).length;
       for (var i=0;i<nMeshs;i++) {
         scene.add(meshMeshs[i]);
+      }
+    }else {
+      var nMeshs = Object.keys(type_meshs).length;
+      for (var i=0;i<nMeshs;i++) {
+        scene.remove(meshMeshs[i]);
       }
     }
 
@@ -802,6 +844,8 @@ function initGUI(){
   gui.add( controller, "moreObjects" );
   gui.add( controller, "lessObjects" );
   gui.add( controller, "renderParticles" ).onChange( guiChanged );
+  gui.add( controller, "renderMeshs" ).onChange( guiChanged );
+  gui.add( controller, "renderAtoms" ).onChange( guiChanged );
   gui.add( controller, "renderShadows" ).onChange( guiChanged );
   gui.add( controller, 'interaction', [ 'none', 'sphere', 'broadphase' ] ).onChange( guiChanged );
   gui.add( controller, 'sphereRadius', boxSize.x/10, boxSize.x/2 ).onChange( guiChanged );
