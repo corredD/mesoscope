@@ -149,7 +149,7 @@ function createCellVIEW(){
   uniforms.scale = {value : ascale};
   var cv_Material = new THREE.ShaderMaterial({
       uniforms: uniforms,
-      vertexShader: cv_vertexShader.innerText,
+      vertexShader: sharedShaderCode.innerText + cv_vertexShader.innerText,
       fragmentShader: cv_fragmentShader.innerText,
       lights: true,
       defines: {

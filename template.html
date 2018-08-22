@@ -245,22 +245,21 @@ void main() {
   attribute vec2 _TriUVs;
   attribute float  _TriIndices;
   attribute vec3 _TriVertices;
-  attribute float gl_VertexID;
+  //attribute float _VertexID;
 
 	varying vec3 vPosition;
 	varying vec4 vColor;
   varying float radius;
-  varying vec3 vPosition;
   varying vec2 uv;
 
 	void main(){
-    int vertexId = (int) gl_VertexID;
-    int particleId = (int) instanceInfos.x;
-    int instanceId = (int) instanceInfos.y;
+    //int vertexId = (int) gl_VertexID;
+    float particleId = instanceInfos.x ;
+    float instanceId = instanceInfos.y;
 
     vec2 bodyUV = indexToUV(instanceId,bodyTextureResolution);
     vec4 bodyQuat = texture2D(bodyQuatTex,bodyUV).xyzw;
-    vec2 start_count = texture2D(bodyInfoTex,nodeUV).xy;
+    //vec2 start_count = texture2D(bodyInfoTex,nodeUV).xy;
     vec4 sphere = texture2D(bodyPosTex,bodyUV).xyzw;
 
     vec2 atomUV = indexToUV(particleId,bodyTextureResolution);
@@ -268,10 +267,10 @@ void main() {
     vec4 spherePosition = texture2D(atomPositionsTex,atomUV).xyzw * scale;//(lodLevel == 0) ? _ProteinAtomPositions[sphereBatchInfo.w + vertexId / 3] : _ProteinClusterPositions[sphereBatchInfo.w + vertexId / 3];
     radius = sphere.w;
     vec3 vertexPos = _TriVertices * scale * radius;
-    vec3 billboardWorldPos = pos + vec3_applyQuat(spherePosition.xyz, bodyQuat) * scale;// _InstancePositions[instanceId].xyz;
-    vec4 billboardVertexWorldPos = vec4(billboardWorldPos, 0)
-              + _CameraRight * vertexPos.x + _CameraUp * vertexPos.y;
-    billboardVertexWorldPos = vec4(billboardWorldPos, 0) + viewMatrix * float4(vertexPos,0);
+    vec3 billboardWorldPos = sphere.xyz + vec3_applyQuat(spherePosition.xyz, bodyQuat) * scale;// _InstancePositions[instanceId].xyz;
+    //vec4 billboardVertexWorldPos = vec4(billboardWorldPos, 0)
+  //            + _CameraRight * vertexPos.x + _CameraUp * vertexPos.y;
+    vec4 billboardVertexWorldPos = vec4(billboardWorldPos, 0) + viewMatrix * vec4(vertexPos,0);
 		vPosition = billboardVertexWorldPos.xyz;
     uv = _TriUVs;
     gl_Position =  projectionMatrix * vec4( vPosition, 1.0 );
@@ -280,16 +279,17 @@ void main() {
 </script>
 
 <script id="cv_fragmentShader" type="x-shader/x-fragment">
-	varying vec4 vColor;
+precision highp float;
+  varying vec4 vColor;
   varying float radius;
   varying vec3 vPosition;
   varying vec2 uv;
   //depth buffer?
 	void main() {
-    //float lensqr = dot(uv, uv);
-    //if (lensqr > 1) discard;
-    //if (radius == 0) discard;
-    //vec3 normal = normalize(vec3(uv, sqrt(1.0 - lensqr)));
+    float lensqr = dot(uv, uv);
+    if (lensqr > 1.0) discard;
+    if (radius == 0.0) discard;
+    vec3 normal = normalize(vec3(uv, sqrt(1.0 - lensqr)));
     // Find depth
 		//float eyeDepth = LinearEyeDepth(input.vertex.z) + input.radius * (1 - normal.z);
 		//float depth = 1 / (eyeDepth * _ZBufferParams.z) - _ZBufferParams.w / _ZBufferParams.z;
