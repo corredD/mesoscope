@@ -36,6 +36,24 @@ var atomData_build = false;
 var atomData_mapping = {};
 var atomData_mapping_instance = [];//for every beads what is the atomid?
 
+/*SSAO PARAMATER AND VARIABLE*/
+var ssao_params= {
+				output: 0,
+				saoBias: 0.5,
+				saoIntensity: 0.25,
+				saoScale: 1,
+				saoKernelRadius: 100,
+				saoMinResolution: 0,
+				saoBlur: true,
+				saoBlurRadius: 12,
+				saoBlurStdDev: 6,
+				saoBlurDepthCutoff: 0.01
+			}
+
+var depthMaterial, saoMaterial, saoModulateMaterial, normalMaterial, vBlurMaterial, hBlurMaterial, copyMaterial;
+var depthRenderTarget, normalRenderTarget, saoRenderTarget, beautyRenderTarget, blurIntermediateRenderTarget;
+var composer, renderPass, saoPass1,saoPass2, copyPass;
+
 function BuildMeshTriangle(radius)
 {
     var triMesh={};
@@ -397,6 +415,78 @@ function createShaderMaterial( id, light, ambientLight ) {
   return material;
 }
 
+
+function setupSSAOPass(){
+  composer = new THREE.EffectComposer( renderer );
+  renderPass = new THREE.RenderPass( scene, camera );
+  composer.addPass( renderPass );
+  saoPass1 = new THREE.SAOPass( scene, camera, true, true );
+  saoPass1.renderToScreen = true;
+  saoPass1.params.output= 0;
+  saoPass1.params.saoBias= 1;
+  saoPass1.params.saoIntensity= 0.02;
+  saoPass1.params.saoScale= 2.3;
+  saoPass1.params.saoKernelRadius= 9;//first pass, second should be 40
+  saoPass1.params.saoMinResolution= 0;
+  saoPass1.params.saoBlur= false;
+  saoPass1.params.saoBlurRadius= 0.5;
+  saoPass1.params.saoBlurStdDev= 1;
+  saoPass1.params.saoBlurDepthCutoff= 0.001;
+  composer.addPass( saoPass1 );
+  /*
+  saoPass2 = new THREE.SAOPass( scene, camera, true, true );
+  saoPass2.renderToScreen = true;
+  saoPass2.params.output= 0;
+  saoPass2.params.saoBias= 1;
+  saoPass2.params.saoIntensity= 0.02;
+  saoPass2.params.saoScale= 3.5;
+  saoPass2.params.saoKernelRadius= 61;//first pass, second should be 40
+  saoPass2.params.saoMinResolution= 0;
+  saoPass2.params.saoBlur= true;
+  saoPass2.params.saoBlurRadius= 1;
+  saoPass2.params.saoBlurStdDev= 1;
+  saoPass2.params.saoBlurDepthCutoff= 0.01;
+  composer.addPass( saoPass2 );
+  */
+}
+
+function setupSSAOGui(agui){
+  var gui = agui.addFolder( "SSAO1" );
+  gui.add( saoPass1.params, 'output', {
+  'Beauty': THREE.SAOPass.OUTPUT.Beauty,
+  'Beauty+SAO': THREE.SAOPass.OUTPUT.Default,
+  'SAO': THREE.SAOPass.OUTPUT.SAO,
+  'Depth': THREE.SAOPass.OUTPUT.Depth,
+  'Normal': THREE.SAOPass.OUTPUT.Normal} ).onChange( function ( value ) { saoPass1.params.output = parseInt( value ); } );
+  gui.add( saoPass1.params, 'saoBias', - 1, 1 );
+  gui.add( saoPass1.params, 'saoIntensity', 0, 1 );
+  gui.add( saoPass1.params, 'saoScale', 0, 10 );
+  gui.add( saoPass1.params, 'saoKernelRadius', 1, 100 );
+  gui.add( saoPass1.params, 'saoMinResolution', 0, 1 );
+  gui.add( saoPass1.params, 'saoBlur' );
+  gui.add( saoPass1.params, 'saoBlurRadius', 0, 200 );
+  gui.add( saoPass1.params, 'saoBlurStdDev', 0.5, 150 );
+  gui.add( saoPass1.params, 'saoBlurDepthCutoff', 0.0, 0.1 );
+  /*
+  gui = agui.addFolder( "SSAO2" );
+  gui.add( saoPass2.params, 'output', {
+  'Beauty': THREE.SAOPass.OUTPUT.Beauty,
+  'Beauty+SAO': THREE.SAOPass.OUTPUT.Default,
+  'SAO': THREE.SAOPass.OUTPUT.SAO,
+  'Depth': THREE.SAOPass.OUTPUT.Depth,
+  'Normal': THREE.SAOPass.OUTPUT.Normal} ).onChange( function ( value ) { saoPass2.params.output = parseInt( value ); } );
+  gui.add( saoPass2.params, 'saoBias', - 1, 1 );
+  gui.add( saoPass2.params, 'saoIntensity', 0, 1 );
+  gui.add( saoPass2.params, 'saoScale', 0, 10 );
+  gui.add( saoPass2.params, 'saoKernelRadius', 1, 100 );
+  gui.add( saoPass2.params, 'saoMinResolution', 0, 1 );
+  gui.add( saoPass2.params, 'saoBlur' );
+  gui.add( saoPass2.params, 'saoBlurRadius', 0, 200 );
+  gui.add( saoPass2.params, 'saoBlurStdDev', 0.5, 150 );
+  gui.add( saoPass2.params, 'saoBlurDepthCutoff', 0.0, 0.1 );
+  */
+}
+
 function init(){
     var query = parseParams();
     numParticles = query.n ? parseInt(query.n,10) : 64;
@@ -465,11 +555,13 @@ function init(){
     camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 0.01, 100 );
     camera.position.set(0,0.6,1.4);
 
+    /*
     var groundMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x000000 } );
     groundMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2000, 2000 ), groundMaterial );
     groundMesh.rotation.x = - Math.PI / 2;
     groundMesh.receiveShadow = true;
     scene.add( groundMesh );
+    */
 
     // Add controls
     controls = new THREE.OrbitControls( camera, renderer.domElement );
@@ -667,6 +759,7 @@ function init(){
     interactionSphereMesh.castShadow = true;
     interactionSphereMesh.receiveShadow = true;
 
+    setupSSAOPass();
     initGUI();
     //controller.paused  = true;
 
@@ -748,7 +841,8 @@ function render() {
     debugMesh.material.uniforms.particleWorldPosTex.value = world.particlePositionTexture;
     debugMesh.material.uniforms.quatTex.value = world.bodyQuaternionTexture;
 
-    renderer.render( scene, camera );
+    composer.render();
+    //renderer.render( scene, camera );
 
     debugMesh.material.uniforms.particleWorldPosTex.value = null;
     debugMesh.material.uniforms.quatTex.value = null;
@@ -768,7 +862,7 @@ function initGUI(){
     moreObjects: function(){ location.href = "?n=" + (numParticles*2); },
     lessObjects: function(){ location.href = "?n=" + Math.max(2,numParticles/2); },
     paused: false,
-    renderAtoms: true,
+    renderAtoms: false,
     renderParticles: false,
     renderMeshs: true,
     renderShadows: true,
@@ -838,27 +932,31 @@ function initGUI(){
   }
 
   gui = new dat.GUI();
-  gui.add( world, "stiffness", 0, 5000, 0.1 );
-  gui.add( world, "damping", 0, 100, 0.1 );
-  gui.add( world, "drag", 0, 1, 0.01 );
-  gui.add( world, "friction", 0, 10, 0.001 );
-  gui.add( world, "fixedTimeStep", 0, 0.1, 0.001 );
-  gui.add( controller, "paused" ).onChange( guiChanged );
-  gui.add( controller, "gravity", -2, 2, 0.1 ).onChange( guiChanged );
-  gui.add( controller, "moreObjects" );
-  gui.add( controller, "lessObjects" );
-  gui.add( controller, "renderParticles" ).onChange( guiChanged );
-  gui.add( controller, "renderMeshs" ).onChange( guiChanged );
-  gui.add( controller, "renderAtoms" ).onChange( guiChanged );
-  gui.add( controller, "renderShadows" ).onChange( guiChanged );
-  gui.add( controller, 'interaction', [ 'none', 'sphere', 'broadphase' ] ).onChange( guiChanged );
-  gui.add( controller, 'sphereRadius', boxSize.x/10, boxSize.x/2 ).onChange( guiChanged );
+  var gh = gui.addFolder( "GPhysics" );
+
+  gh.add( world, "stiffness", 0, 5000, 0.1 );
+  gh.add( world, "damping", 0, 100, 0.1 );
+  gh.add( world, "drag", 0, 1, 0.01 );
+  gh.add( world, "friction", 0, 10, 0.001 );
+  gh.add( world, "fixedTimeStep", 0, 0.1, 0.001 );
+  gh.add( controller, "paused" ).onChange( guiChanged );
+  gh.add( controller, "gravity", -2, 2, 0.1 ).onChange( guiChanged );
+  gh.add( controller, "moreObjects" );
+  gh.add( controller, "lessObjects" );
+  gh.add( controller, "renderParticles" ).onChange( guiChanged );
+  gh.add( controller, "renderMeshs" ).onChange( guiChanged );
+  gh.add( controller, "renderAtoms" ).onChange( guiChanged );
+  gh.add( controller, "renderShadows" ).onChange( guiChanged );
+  gh.add( controller, 'interaction', [ 'none', 'sphere', 'broadphase' ] ).onChange( guiChanged );
+  gh.add( controller, 'sphereRadius', boxSize.x/10, boxSize.x/2 ).onChange( guiChanged );
 
   var h = gui.addFolder( "Materials" );
 	for ( var m in all_materials ) {
 		controller[ m ] = createHandler( m );
 		h.add( controller, m ).name( m );
 	}
+
+  setupSSAOGui(gui);
 
   guiChanged();
 

@@ -1257,7 +1257,7 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 					var tmp = idata[allfield.include_index];
 					console.log("include is ",include);
 					if (tmp === "x") include = true;
-					if (tmp === "" || tmp === 'undefined') include = false;
+					if (tmp === "" || tmp === 'undefined' || tmp === null) include = false;
 					if (tmp === true) include = true;
 					if (tmp === false) include = false;
 				}

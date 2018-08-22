@@ -265,7 +265,7 @@ void main() {
       vec4 spherePosition = texture2D(atomPositionsTex,atomUV).xyzw;//(lodLevel == 0) ? _ProteinAtomPositions[sphereBatchInfo.w + vertexId / 3] : _ProteinClusterPositions[sphereBatchInfo.w + vertexId / 3];
       vec3 billboardWorldPos = sphere.xyz + vec3_applyQuat(spherePosition.xyz, bodyQuat);// _InstancePositions[instanceId].xyz;
 
-      vRadius = spherePosition.w;
+      vRadius = spherePosition.w;//could use w as the type and then access the texture with all the color?
       vec3 vertexPos = position * spherePosition.w;
 
       modelView = modelViewMatrix;
@@ -344,7 +344,7 @@ void main() {
       gl_FragDepthEXT = gldepth;
       //viewZToPerspectiveDepth
       //perspectiveDepthToViewZ
-			gl_FragColor = vec4(normal.rgb,1.0);//packDepthToRGBA(gdepth);//vec4(d,0.0,0.0,1.0);
+			gl_FragColor = vec4(0.78,0.78,0.78,1.0);//packDepthToRGBA(gdepth);//vec4(d,0.0,0.0,1.0);
 		}
 	</script>
 <!-- NGL  -->
@@ -355,15 +355,24 @@ void main() {
 <script src="js/cp_serialized.js"></script>
 <script src="js/ngl.js"></script>
 <script src="extras/d3.v4.min.js"></script>
-<script src="extras/gpuphysics/lib/three.min.js"></script>
+<script src="https://cdn.rawgit.com/mrdoob/three.js/master/build/three.min.js"></script>
+<!--script src="extras/gpuphysics/lib/three.min.js"></script-->
 <script src="extras/gpuphysics/lib/stats.min.js"></script>
 <script src="extras/gpuphysics/lib/dat.gui.min.js"></script>
 <script src="extras/gpuphysics/lib/three.orbitcontrols.js"></script>
 <script src="extras/gpuphysics/lib/three.transformcontrols.js"></script>
 <script src="extras/shaderToon.js"></script>
 
-<!-- NGL  -->
-<script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js"></script>
+<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/postprocessing/SAOPass.js"></script>
+
+<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/shaders/SAOShader.js"></script>
+<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/shaders/DepthLimitedBlurShader.js"></script>
+<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/shaders/UnpackDepthRGBAShader.js"></script>
+
 <script src="extras/gpuphysics/build/gp.js"></script>
 <script src="extras/gpuphysics/main_physics.js"></script>
 </body>
