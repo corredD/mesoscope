@@ -44,7 +44,7 @@ var atomData_done = false;
 var atomData_build = false;
 var atomData_mapping = {};
 var atomData_mapping_instance = [];//for every beads what is the atomid?
-
+var rb_init = false;
 /*SSAO PARAMATER AND VARIABLE*/
 var ssao_params= {
 				output: 0,
@@ -63,8 +63,7 @@ var depthMaterial, saoMaterial, saoModulateMaterial, normalMaterial, vBlurMateri
 var depthRenderTarget, normalRenderTarget, saoRenderTarget, beautyRenderTarget, blurIntermediateRenderTarget;
 var composer, renderPass, saoPass1,saoPass2, copyPass;
 
-function BuildMeshTriangle(radius)
-{
+function BuildMeshTriangle(radius){
     var triMesh={};
     //Vector4 offset = new Vector4(radius,radius,0,0);
     var offset = new THREE.Vector2(radius, radius);
@@ -107,7 +106,6 @@ function BuildMeshTriangle(radius)
     triMesh.triangles = indices;
     return triMesh;
 }
-
 
 function GP_createOneCompartmentMesh(anode) {
   var w = world.broadphase.resolution.x * world.radius * 2;
@@ -153,13 +151,15 @@ function distributesMesh(){
         nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
         continue;
     };
+    //if (!nodes[i].data.surface) continue;
     var pdbname = nodes[i].data.source.pdb;
     if (pdbname.startsWith("EMD")
     || pdbname.startsWith("EMDB")
     || pdbname.slice(-4, pdbname.length) === ".map") {
       continue;
     }
-    count = Util_getRandomInt( copy_number )+1;//remove root
+    if (nodes[i].data.count !== 0) count = nodes[i].data.count;
+    else count = Util_getRandomInt( copy_number )+1;//remove root
     createInstancesMesh(i,nodes[i],start,count);
     start = start + count;
     total = total + count;
@@ -423,7 +423,12 @@ function createInstancesMesh(pid,anode,start,count) {
   var w = world.broadphase.resolution.x * world.radius * 2;
   var h = world.broadphase.resolution.y * world.radius * 2;
   var d = world.broadphase.resolution.z * world.radius * 2;
-
+  var up = new THREE.Vector3();
+  var offset = new THREE.Vector3();
+  if (anode.data.surface && anode.parent.data.mesh){
+    offset.set(anode.data.offset[0]*ascale,anode.data.offset[1]*ascale,anode.data.offset[2]*ascale);
+    up.set(anode.data.pcpalAxis[0],anode.data.pcpalAxis[1],anode.data.pcpalAxis[2]);
+  }
   //position should use the halton sequence and the grid size
   for (var bodyId=start;bodyId<start+count;bodyId++) {
     //if (loading_bar) loading_bar.set(bodyId/start+count);
@@ -441,6 +446,29 @@ function createInstancesMesh(pid,anode,start,count) {
     );
     axis.normalize();
     q.setFromAxisAngle(axis, Math.random() * Math.PI * 2);
+    //per compartments?
+    if (anode.data.surface && anode.parent.data.mesh){
+      //q should align the object to the surface, and pos should put on a vertices/faces
+      var v = anode.parent.data.mesh.geometry.attributes.position.array;
+      var n = anode.parent.data.mesh.geometry.attributes.normal.array;
+      //pick a random one.
+      var mscale = nodes[1].data.mesh.scale;
+      var vi = Math.round(Util_halton(bodyId,2)*v.length/3);
+      var ni = new THREE.Vector3( n[vi*3],n[vi*3+1],n[vi*3+2]);
+      var rotation = Util_computeOrientation(ni,up);
+    	var rand_rot = new THREE.Quaternion();
+      rand_rot.setFromAxisAngle(up, Math.random() * Math.PI * 2);
+      var pos = new THREE.Vector3(v[vi*3]*mscale.x,
+                                  v[vi*3+1]*mscale.y,
+                                  v[vi*3+2]*mscale.z);
+      pos.add(anode.parent.data.mesh.position);
+      var roff = new THREE.Vector3(offset.x,offset.y,offset.z);
+      roff.applyQuaternion( rotation );
+      pos.add(roff);// = pos + QuaternionTransform(rotation,off) ;
+      rotation.multiply(rand_rot); // or premultiply
+      x=pos.x;y=pos.y;z=pos.z;
+      q.copy(rotation);
+    }
 
     var inertia = new THREE.Vector3();
     var mass = 1;
@@ -479,8 +507,8 @@ function createShaderMaterial( id, light, ambientLight ) {
   var phongShader = THREE.ShaderLib.phong;
   var u2 = THREE.UniformsUtils.clone(phongShader.uniforms);
   var unif = THREE.UniformsUtils.merge([u,u2]);
-  unif.bodyQuatTex = { value: null };
-  unif.bodyPosTex = { value: null };
+  unif.bodyQuatTex = { value: world.dataTextures.bodyQuaternions };
+  unif.bodyPosTex = { value: world.dataTextures.bodyPositions };
   var vs = sharedShaderCode.innerText + renderBodiesVertex.innerText;//shader.vertexShader;
   var fs = shader.fragmentShader;
   var material = new THREE.ShaderMaterial( {
@@ -793,8 +821,8 @@ function init(){
 			};
     // Mesh material - extend the phong shader
     var meshUniforms = THREE.UniformsUtils.clone(phongShader.uniforms);//phongShader.uniforms);
-    meshUniforms.bodyQuatTex = { value: null };
-    meshUniforms.bodyPosTex = { value: null };
+    meshUniforms.bodyQuatTex = { value: world.dataTextures.bodyQuaternions };
+    meshUniforms.bodyPosTex = { value: world.dataTextures.bodyPositions };
 
     meshMaterial = new THREE.ShaderMaterial({
         uniforms: meshUniforms,
@@ -888,10 +916,10 @@ function onWindowResize() {
 }
 
 function animate( time ) {
-   if (!(loading_bar)) {
-     loading_bar = document.getElementById('loading_bar').ldBar;
-     if (loading_bar) loading_bar.set(0);
-   }
+    if (!(loading_bar)) {
+      loading_bar = document.getElementById('loading_bar').ldBar;
+      if (loading_bar) loading_bar.set(0);
+    }
     requestAnimationFrame( animate );
     updatePhysics( time );
     render();
@@ -919,6 +947,12 @@ function updatePhysics(time){
         }
 
         world.step( deltaTime );
+    }
+    else {
+      if(!rb_init) {
+        world.step(0.001);
+        rb_init = true;
+      }
     }
     prevTime = time;
 }
@@ -980,7 +1014,7 @@ function initGUI(){
   controller  = {
     moreObjects: function(){ location.href = "?n=" + (numParticles*2); },
     lessObjects: function(){ location.href = "?n=" + Math.max(2,numParticles/2); },
-    paused: false,
+    paused: true,
     renderAtoms: false,
     renderParticles: false,
     renderMeshs: true,

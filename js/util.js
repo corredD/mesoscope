@@ -1,4 +1,8 @@
 var util_expanded = false;
+var Epsilon = 1e-10;
+var  X_AXIS = new NGL.Vector3(1, 0, 0);
+var  Y_AXIS = new NGL.Vector3(0, 1, 0);
+var  Z_AXIS = new NGL.Vector3(0, 0, 1);
 
 function componentToHex(c) {
     var hex = c.toString(16);
@@ -404,3 +408,50 @@ function Util_halton(index, base) {
     }
     return result;
 };
+
+//from http://stackoverflow.com/questions/1171849/finding-quaternion-representing-the-rotation-from-one-vector-to-another
+function Util_orthogonal(v)
+{
+	var x = Math.abs(v.x);
+	var y = Math.abs(v.y);
+	var z = Math.abs(v.z);
+	var other = x < y ? (x < z ? X_AXIS : Z_AXIS) : (y < z ? Y_AXIS : Z_AXIS);
+  var across = new NGL.Vector3();
+  across.crossVectors(v, other);
+	return across;
+}
+
+function Util_get_rotation_between(u, v)
+{
+  //assume THREE.Vector3
+	// It is important that the inputs are of equal length when
+	// calculating the half-way vector.
+  u.normalize();
+  v.normalize();
+  var uv = new NGL.Vector3();
+  uv.addVectors(u,v);
+	// Unfortunately, we have to check for when u == -v, as u + v
+	// in this case will be (0, 0, 0), which cannot be normalized.
+	if (uv.length()==0)
+	{
+		// 180 degree rotation around any orthogonal vector
+		var no = Util_orthogonal(u);
+    no.normalize();
+		return new NGL.Quaternion(no.x,no.y,no.z,0);
+	}
+  uv.normalize();
+	//var halfv = normalize(u + v);
+	var w = u.dot(uv);
+  var a = new NGL.Vector3();
+	a.crossVectors(u, uv);
+	return new NGL.Quaternion(a.x, a.y, a.z, w);
+}
+
+function Util_computeOrientation(norm, up)
+{
+	norm.normalize();
+	up.normalize();
+	var rot = Util_get_rotation_between(up, norm);
+  rot.normalize();
+	return rot;//float4(0,0,0,1);
+}
