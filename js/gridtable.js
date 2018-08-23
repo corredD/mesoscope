@@ -1306,7 +1306,8 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       n.data.offset = (Array.isArray(arow.offset)) ? arow.offset : arow.offset.split(",").map(function(d) {
         return parseFloat(d);
       });*/
-      n = updateAttributesNode(n,arow);
+      //update with only the changed data
+      n = updateAttributesNode(n,arow,cid);
       console.log(n);
       console.log("offset is ", n.data.offset, n.data.pcpalAxis);
       //n.data."pos":p,"radii":r};
@@ -1323,7 +1324,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       //update ngl?
       //if (!n.data.source) n.data.source = {};
       //n.data.source.pdb = arow.pdb;
-      if (arow.pdb) NGL_UpdateWithNode(n,true);
+      if (cid==="pdb") NGL_UpdateWithNode(n,true);//arow.pdb)
       //NGL_Load(arow.pdb,arow.bu,arow.selection);	also update pcp and offset
     } else if (grid.gname === "grid_uniprot") {
       //is it the picked  checkbox

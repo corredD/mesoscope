@@ -112,7 +112,7 @@ function distributesMesh(){
     || pdbname.slice(-4, pdbname.length) === ".map") {
       continue;
     }
-    count = Util_getRandomInt( 2 )+1;//remove root
+    count = Util_getRandomInt( 20 )+1;//remove root
     createInstancesMesh(i,nodes[i],start,count);
     start = start + count;
     total = total + count;
@@ -339,7 +339,7 @@ function addAtoms(anode,pid,start,o){
       data[p +count+ 0] = (ap.x-center.x)*ascale;
       data[p +count+ 1] = (ap.y-center.y)*ascale;
       data[p +count+ 2] = (ap.z-center.z)*ascale;
-      data[p +count+ 3] = 1.8*ascale;
+      data[p +count+ 3] = 1.8*ascale;//or type normalized ?
       count+=4;
   }, new NGL.Selection(asele));
   return count;
@@ -415,7 +415,8 @@ function createShaderMaterial( id, light, ambientLight ) {
   return material;
 }
 
-
+//https://repository.asu.edu/attachments/186203/content/Li_asu_0010N_16699.pdf
+//https://github.com/RadiumP/WebAO
 function setupSSAOPass(){
   composer = new THREE.EffectComposer( renderer );
   renderPass = new THREE.RenderPass( scene, camera );
