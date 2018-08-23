@@ -12,6 +12,7 @@ var max_atoms = 100000;
 var type_meshs={};
 var meshMeshs=[];
 var world;
+var copy_number=20;
 var num_instances=0;
 var num_beads_total=0;
 var scene, ambientLight, light, camera, controls, renderer;
@@ -112,7 +113,7 @@ function distributesMesh(){
     || pdbname.slice(-4, pdbname.length) === ".map") {
       continue;
     }
-    count = Util_getRandomInt( 20 )+1;//remove root
+    count = Util_getRandomInt( copy_number )+1;//remove root
     createInstancesMesh(i,nodes[i],start,count);
     start = start + count;
     total = total + count;
@@ -126,7 +127,7 @@ function distributesMesh(){
   var keys = Object.keys(type_meshs);
   var nMeshs = keys.length;
   for (var i=0;i<nMeshs;i++) {
-      var amesh = new THREE.Mesh( type_meshs[keys[i]], meshMaterial );
+      var amesh = new THREE.Mesh( type_meshs[keys[i]], all_materials["toon2"].m );
       amesh.frustumCulled = false; // Instances can't be culled like normal meshes
       // Create a depth material for rendering instances to shadow map
       amesh.customDepthMaterial = customDepthMaterial;
@@ -217,6 +218,7 @@ function createCellVIEW(){
   //cv_Mesh.receiveShadow = true;
 
 	scene.add( cv_Mesh );
+  scene.remove(cv_Mesh);
 }
 
 
@@ -423,7 +425,7 @@ function setupSSAOPass(){
   composer.addPass( renderPass );
   saoPass1 = new THREE.SAOPass( scene, camera, true, true );
   saoPass1.renderToScreen = true;
-  saoPass1.params.output= 0;
+  saoPass1.params.output= 0;//THREE.SAOPass.OUTPUT.Beauty;
   saoPass1.params.saoBias= 1;
   saoPass1.params.saoIntensity= 0.02;
   saoPass1.params.saoScale= 2.3;
@@ -491,6 +493,7 @@ function setupSSAOGui(agui){
 function init(){
     var query = parseParams();
     numParticles = query.n ? parseInt(query.n,10) : 64;
+    copy_number = query.c ? parseInt(query.c,10) : 10;
     var gridResolution = new THREE.Vector3();
     switch(numParticles){
         default:
@@ -713,7 +716,7 @@ function init(){
         }
     });
     all_materials["default"] = {m:meshMaterial,h: 0.1, s: 1, l: 0.5};
-    current_material = "default";
+    current_material = "toon2";
 
     customDepthMaterial = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge([
