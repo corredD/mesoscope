@@ -392,3 +392,15 @@ function Util_idToDataIndex(id, w, h){
     var p = 4 * (py * w + px);
     return p;
 }
+
+function Util_halton(index, base) {
+	var result = 0;
+    var f = 1 / base;
+    var i = index;
+    while(i > 0) {
+       result = result + f * (i % base);
+       i = Math.floor(i / base);
+       f = f / base;
+    }
+    return result;
+};

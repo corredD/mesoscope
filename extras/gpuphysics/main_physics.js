@@ -1,3 +1,10 @@
+//http://mgldev.scripps.edu/projects/mesoscopebeta/template.html?n=256&c=10&atom=false
+// TODO:
+// compartments
+// compartments-forces
+// fiber
+// fiber-forces
+//var loading_bar;
 var ySpread = 0.1;
 var nodes;
 var root;
@@ -30,6 +37,7 @@ var customDepthMaterial;
 var all_materials;
 var current_material;
 var atomData;
+var atomData_do=false;
 var current_node_id = 0;
 var current_atom_start = 0;
 var atomData_done = false;
@@ -100,13 +108,51 @@ function BuildMeshTriangle(radius)
     return triMesh;
 }
 
+
+function GP_createOneCompartmentMesh(anode) {
+  var w = world.broadphase.resolution.x * world.radius * 2;
+  var h = world.broadphase.resolution.y * world.radius * 2;
+  var d = world.broadphase.resolution.z * world.radius * 2;
+
+  NGL_updateMetaBallsGeom(anode);
+  var geo = ngl_marching_cube.generateGeometry();
+  var bufferGeometry = new THREE.BufferGeometry();
+  var positions = new Float32Array(geo.vertices);
+  var normals = new Float32Array(geo.normals);
+  bufferGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+  bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+  //bufferGeometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
+  bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(geo.faces), 1));
+  //bufferGeometry.scale(ascale,ascale,ascale);
+  //bufferGeometry.scale(ngl_marching_cube.data_bound.maxsize,
+  //                    ngl_marching_cube.data_bound.maxsize,
+  //                    ngl_marching_cube.data_bound.maxsize);//this is the scale,
+  //shapeComp.setPosition(ngl_marching_cube.data_bound.center);//this is the position,
+  var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true });
+  var compMesh = new THREE.Mesh(bufferGeometry, wireframeMaterial);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
+  compMesh.position.x = world.broadphase.position.x+ngl_marching_cube.data_bound.center.x+w/2.0;//center of the box
+  compMesh.position.y = world.broadphase.position.y+ngl_marching_cube.data_bound.center.y+h/2.0;
+  compMesh.position.z = world.broadphase.position.z+ngl_marching_cube.data_bound.center.z+d/2.0;
+  compMesh.scale.x = ngl_marching_cube.data_bound.maxsize*ascale;
+  compMesh.scale.y = ngl_marching_cube.data_bound.maxsize*ascale;
+  compMesh.scale.z = ngl_marching_cube.data_bound.maxsize*ascale;
+  scene.add(compMesh);
+  return compMesh;
+}
+
 function distributesMesh(){
   var n = nodes.length;
   var start = 0;
   var total = 0;
   var count = 500;//total ?
   for (var i=0;i<n;i++){//nodes.length
-    if (nodes[i].children) continue;
+    console.log(i,nodes[i].data.name);
+    if (nodes[i].children!== null && nodes[i].parent === null) continue;
+    if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+        //use NGL to load the object?
+        nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
+        continue;
+    };
     var pdbname = nodes[i].data.source.pdb;
     if (pdbname.startsWith("EMD")
     || pdbname.startsWith("EMDB")
@@ -118,7 +164,7 @@ function distributesMesh(){
     start = start + count;
     total = total + count;
   }
-  createCellVIEW();
+  if (atomData_do) createCellVIEW();
   console.log ( "there is instances ",total);
   console.log ( "there is atoms ",num_beads_total);
   num_instances = total;
@@ -223,12 +269,38 @@ function createCellVIEW(){
 
 
 //(function(){
+function LoadExampleMpn(){
+	  if (stage)stage.removeAllComponents();
+	  var url = "data/Mpn_1.0_2.json";
+	  d3v4.json(url, function (json) {
+    	      var adata = parseCellPackRecipe(json)
+            console.log(adata);
+            root = d3v4.hierarchy(adata.nodes)
+              .sum(function(d) { return d.size; })
+              .sort(function(a, b) { return b.value - a.value; });
+            nodes = pack(root).descendants();//flatten--error ?
+            console.log(nodes);
+            init();
+            })
+	}
 
-
-
-
-function setupRecipe(){
+function loadExampleBlood(){
   var url = "data/BloodPlasmaHIV_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
+  console.log(url);
+  d3v4.json(url, function (error,json) {
+          var adata = parseCellPackRecipeSerialized(json)
+          console.log(adata);
+          root = d3v4.hierarchy(adata.nodes)
+            .sum(function(d) { return d.size; })
+            .sort(function(a, b) { return b.value - a.value; });
+          nodes = pack(root).descendants();//flatten--error ?
+          console.log(nodes);
+          init();
+          })
+}
+
+function loadExampleHIV(){
+  var url = "data/hivfull_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
   console.log(url);
   d3v4.json(url, function (error,json) {
           var adata = parseCellPackRecipeSerialized(json)
@@ -348,11 +420,19 @@ function addAtoms(anode,pid,start,o){
 }
 
 function createInstancesMesh(pid,anode,start,count) {
+  var w = world.broadphase.resolution.x * world.radius * 2;
+  var h = world.broadphase.resolution.y * world.radius * 2;
+  var d = world.broadphase.resolution.z * world.radius * 2;
+
+  //position should use the halton sequence and the grid size
   for (var bodyId=start;bodyId<start+count;bodyId++) {
+    //if (loading_bar) loading_bar.set(bodyId/start+count);
     var x = -boxSize.x + 2*boxSize.x*Math.random();
     var y = ySpread*Math.random();
     var z = -boxSize.z + 2*boxSize.z*Math.random();
-
+    x = -boxSize.x + Util_halton(bodyId,2)*w;
+    y = Util_halton(bodyId,3)*h;
+    z = -boxSize.z + Util_halton(bodyId,5)*d;
     var q = new THREE.Quaternion();
     var axis = new THREE.Vector3(
         Math.random()-0.5,
@@ -379,12 +459,14 @@ function createInstancesMesh(pid,anode,start,count) {
     }
     //add the atomic information
     instance_infos.push(pid);
-    atomData_mapping[pid]["instances_start"]=start;
-    atomData_mapping[pid]["instances_count"]=count;
-    for (var j=0;j < atomData_mapping[pid].count ; j++){
-          atomData_mapping_instance.push(bodyId,atomData_mapping[pid].start+j);
+    if (atomData_do) {
+      atomData_mapping[pid]["instances_start"]=start;
+      atomData_mapping[pid]["instances_count"]=count;
+      for (var j=0;j < atomData_mapping[pid].count ; j++){
+            atomData_mapping_instance.push(bodyId,atomData_mapping[pid].start+j);
+      }
+      num_beads_total = num_beads_total + atomData_mapping[pid].count;
     }
-    num_beads_total = num_beads_total + atomData_mapping[pid].count;
   }
   if (!(pid in type_meshs) ){
     type_meshs[pid] = createOneMesh(anode,start,count);
@@ -490,10 +572,100 @@ function setupSSAOGui(agui){
   */
 }
 
+function GP_initRenderer(){
+  renderer = new THREE.WebGLRenderer();
+  renderer.setPixelRatio( 1 );
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  renderer.shadowMap.enabled = true;
+  var container = document.getElementById( 'container' );
+  container.appendChild( renderer.domElement );
+  window.addEventListener( 'resize', onWindowResize, false );
+
+  if (!stage) stage = new NGL.Stage("container");
+
+  stats = new Stats();
+  stats.domElement.style.position = 'absolute';
+  stats.domElement.style.top = '0px';
+  container.appendChild( stats.domElement );
+
+  scene = window.mainScene = new THREE.Scene();
+
+  light = new THREE.DirectionalLight();
+  light.castShadow = true;
+  light.shadow.mapSize.width = light.shadow.mapSize.height = 1024;
+  var d = 0.5;
+  light.shadow.camera.left = - d;
+  light.shadow.camera.right = d;
+  light.shadow.camera.top = d;
+  light.shadow.camera.bottom = - d;
+  light.shadow.camera.far = 100;
+  light.position.set(1,1,1);
+  scene.add(light);
+
+  ambientLight = new THREE.AmbientLight( 0x222222 );
+  scene.add( ambientLight );
+  renderer.setClearColor(ambientLight.color, 1.0);
+
+  camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 0.01, 100 );
+  camera.position.set(0,0.6,1.4);
+
+  /*
+  var groundMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x000000 } );
+  groundMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2000, 2000 ), groundMaterial );
+  groundMesh.rotation.x = - Math.PI / 2;
+  groundMesh.receiveShadow = true;
+  scene.add( groundMesh );
+  */
+
+  // Add controls
+  controls = new THREE.OrbitControls( camera, renderer.domElement );
+  controls.enableZoom = true;
+  controls.target.set(0.0, 0.1, 0.0);
+  controls.maxPolarAngle = Math.PI * 0.5;
+}
+
+function GP_initWorld(){
+    //numParticles = nparticles ? nparticles : 64;
+    //copy_number = ncopy ? ncopy : 10;
+    //atomData_do = doatom ? doatom : false;
+    var gridResolution = new THREE.Vector3();
+    gridResolution.set(numParticles/2, numParticles/2, numParticles/2);
+    var numBodies = numParticles / 2;
+    radius = (1/numParticles * 0.5)*2.0;
+    ascale = radius/20;
+    boxSize = new THREE.Vector3(0.5, 2, 0.5);
+    // Physics
+    world = window.world = new gp.World({
+        maxSubSteps: 1, // TODO: fix
+        gravity: new THREE.Vector3(0,0,0),
+        renderer: renderer,
+        maxBodies: numBodies * numBodies,
+        maxParticles: numParticles * numParticles,
+        radius: radius,
+        stiffness: 1700,
+        damping: 6,
+        fixedTimeStep: 0.001,//1/120,
+        friction: 2,
+        drag: 0.3,
+        boxSize: boxSize,
+        gridPosition: new THREE.Vector3(-boxSize.x,0,-boxSize.z),
+        gridResolution: gridResolution
+    });
+
+    // Interaction sphere
+    world.setSphereRadius(0, 0.05);
+    world.setSpherePosition(0, 0,0,0);
+}
+
 function init(){
+
     var query = parseParams();
     numParticles = query.n ? parseInt(query.n,10) : 64;
     copy_number = query.c ? parseInt(query.c,10) : 10;
+    atomData_do = query.atom ? query.atom === 'true' : false;
+    /*numParticles = query.n ? parseInt(query.n,10) : 64;
+    copy_number = query.c ? parseInt(query.c,10) : 10;
+    atomData_do = query.atom ? query.atom === 'true' : false;
     var gridResolution = new THREE.Vector3();
     switch(numParticles){
         default:
@@ -521,92 +693,12 @@ function init(){
     var numBodies = numParticles / 2;
     radius = (1/numParticles * 0.5)*2.0;
     ascale = radius/20;
-    boxSize = new THREE.Vector3(0.25, 1, 0.25);
-
-    renderer = new THREE.WebGLRenderer();
-    renderer.setPixelRatio( 1 );
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    renderer.shadowMap.enabled = true;
-    var container = document.getElementById( 'container' );
-    container.appendChild( renderer.domElement );
-    window.addEventListener( 'resize', onWindowResize, false );
-
-    stage = new NGL.Stage("container");
-
-    stats = new Stats();
-    stats.domElement.style.position = 'absolute';
-    stats.domElement.style.top = '0px';
-    container.appendChild( stats.domElement );
-
-    scene = window.mainScene = new THREE.Scene();
-
-    light = new THREE.DirectionalLight();
-    light.castShadow = true;
-    light.shadow.mapSize.width = light.shadow.mapSize.height = 1024;
-    var d = 0.5;
-    light.shadow.camera.left = - d;
-    light.shadow.camera.right = d;
-    light.shadow.camera.top = d;
-    light.shadow.camera.bottom = - d;
-    light.shadow.camera.far = 100;
-    light.position.set(1,1,1);
-    scene.add(light);
-
-    ambientLight = new THREE.AmbientLight( 0x222222 );
-    scene.add( ambientLight );
-    renderer.setClearColor(ambientLight.color, 1.0);
-
-    camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 0.01, 100 );
-    camera.position.set(0,0.6,1.4);
-
-    /*
-    var groundMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x000000 } );
-    groundMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2000, 2000 ), groundMaterial );
-    groundMesh.rotation.x = - Math.PI / 2;
-    groundMesh.receiveShadow = true;
-    scene.add( groundMesh );
+    boxSize = new THREE.Vector3(0.5, 2, 0.5);
     */
+    GP_initRenderer();
+    GP_initWorld();
 
-    // Add controls
-    controls = new THREE.OrbitControls( camera, renderer.domElement );
-    controls.enableZoom = true;
-    controls.target.set(0.0, 0.1, 0.0);
-    controls.maxPolarAngle = Math.PI * 0.5;
 
-    // Physics
-    world = window.world = new gp.World({
-        maxSubSteps: 2, // TODO: fix
-        gravity: new THREE.Vector3(0,0,0),
-        renderer: renderer,
-        maxBodies: numBodies * numBodies,
-        maxParticles: numParticles * numParticles,
-        radius: radius,
-        stiffness: 1700,
-        damping: 6,
-        fixedTimeStep: 0.001,//1/120,
-        friction: 2,
-        drag: 0.3,
-        boxSize: boxSize,
-        gridPosition: new THREE.Vector3(-boxSize.x,0,-boxSize.z),
-        gridResolution: gridResolution
-    });
-
-    // Interaction sphere
-    world.setSphereRadius(0, 0.05);
-    world.setSpherePosition(0, 0,0,0);
-    var txtSize = 1024;//max size ?
-    atomData = new THREE.DataTexture(
-                    new Float32Array(4*txtSize*txtSize),
-                    txtSize,
-                    txtSize,
-                    THREE.RGBAFormat,
-                    THREE.FloatType );
-    instance_infosData = new THREE.DataTexture(
-                    new Float32Array(4*txtSize*txtSize),
-                    txtSize,
-                    txtSize,
-                    THREE.RGBAFormat,
-                    THREE.FloatType );
     // Add bodies
     console.log("ingredients nodes type",nodes.length);
     //gather all atoms data
@@ -767,7 +859,26 @@ function init(){
     initGUI();
     //controller.paused  = true;
 
-    LoadAllProteins(null);
+    if (atomData_do) {
+      var txtSize = 1024;//max size ?
+      atomData = new THREE.DataTexture(
+                      new Float32Array(4*txtSize*txtSize),
+                      txtSize,
+                      txtSize,
+                      THREE.RGBAFormat,
+                      THREE.FloatType );
+      instance_infosData = new THREE.DataTexture(
+                      new Float32Array(4*txtSize*txtSize),
+                      txtSize,
+                      txtSize,
+                      THREE.RGBAFormat,
+                      THREE.FloatType );
+      LoadAllProteins(null);
+    }
+    else {
+      distributesMesh();
+      animate();
+    }
 }
 
 function onWindowResize() {
@@ -777,12 +888,22 @@ function onWindowResize() {
 }
 
 function animate( time ) {
+   if (!(loading_bar)) {
+     loading_bar = document.getElementById('loading_bar').ldBar;
+     if (loading_bar) loading_bar.set(0);
+   }
     requestAnimationFrame( animate );
     updatePhysics( time );
     render();
     stats.update();
 }
-
+/*
+        // Dynamic spawning
+        var x = 0.1*Math.sin(9 * world.fixedTime) + Math.random()*0.05;
+        var z = 0.1*Math.cos(10 * world.fixedTime) + Math.random()*0.05;
+        var y = 0.3 + 0.05*Math.cos(11 * world.fixedTime);
+        world.setBodyPositions([(prevSpawnedBody++) % world.maxBodies], [new THREE.Vector3(x,y,z)]);
+*/
 var prevTime, prevSpawnedBody=0;
 function updatePhysics(time){
     var deltaTime = prevTime === undefined ? 0 : (time - prevTime) / 1000;
@@ -796,13 +917,7 @@ function updatePhysics(time){
             interactionSphereMesh.position.set( x, y, z );
             world.setSpherePosition( 0, x, y, z );
         }
-/*
-        // Dynamic spawning
-        var x = 0.1*Math.sin(9 * world.fixedTime) + Math.random()*0.05;
-        var z = 0.1*Math.cos(10 * world.fixedTime) + Math.random()*0.05;
-        var y = 0.3 + 0.05*Math.cos(11 * world.fixedTime);
-        world.setBodyPositions([(prevSpawnedBody++) % world.maxBodies], [new THREE.Vector3(x,y,z)]);
-*/
+
         world.step( deltaTime );
     }
     prevTime = time;
@@ -837,7 +952,7 @@ function render() {
 
     customDepthMaterial.uniforms.bodyPosTex.value = world.bodyPositionTexture;
     customDepthMaterial.uniforms.bodyQuatTex.value = world.bodyQuaternionTexture;
-    if (cv_Material) {
+    if (cv_Material && atomData_do) {
       cv_Material.uniforms.bodyPosTex.value = world.bodyPositionTexture;
       cv_Material.uniforms.bodyQuatTex.value = world.bodyQuaternionTexture;
       //cv_Material.uniforms.atomPositionsTex.value = atomData;
@@ -889,10 +1004,12 @@ function initGUI(){
   };
   function guiChanged() {
     world.gravity.y = controller.gravity;
-    if (controller.renderAtoms) {
-      scene.add(cv_Mesh);
-    }else {
-      scene.remove(cv_Mesh);
+    if (atomData_do) {
+      if (controller.renderAtoms) {
+        scene.add(cv_Mesh);
+      }else {
+        scene.remove(cv_Mesh);
+      }
     }
     if(controller.renderParticles){
       scene.add(debugMesh);
@@ -949,7 +1066,7 @@ function initGUI(){
   gh.add( controller, "lessObjects" );
   gh.add( controller, "renderParticles" ).onChange( guiChanged );
   gh.add( controller, "renderMeshs" ).onChange( guiChanged );
-  gh.add( controller, "renderAtoms" ).onChange( guiChanged );
+  if (atomData_do) gh.add( controller, "renderAtoms" ).onChange( guiChanged );
   gh.add( controller, "renderShadows" ).onChange( guiChanged );
   gh.add( controller, 'interaction', [ 'none', 'sphere', 'broadphase' ] ).onChange( guiChanged );
   gh.add( controller, 'sphereRadius', boxSize.x/10, boxSize.x/2 ).onChange( guiChanged );
@@ -995,7 +1112,11 @@ function parseParams(){
     });
 }
 
+(function() {
+   // your page initialization code here
+   // the DOM will be available here
+   loadExampleHIV();
+})();
 
-setupRecipe();
 //init();
 //animate();

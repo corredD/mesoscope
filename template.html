@@ -40,7 +40,10 @@
 <body>
 
 <div id="container"></div>
+
+
 <div id="info">
+  <div data-preset="bubble" id="loading_bar" class="ldBar label-center" data-value="35" ></div>
     <b>gpu physics adapted to cellPACK</b> by <a href="http://twitter.com/schteppe">@schteppe</a> and @ludo
 </div>
 
@@ -347,10 +350,12 @@ void main() {
 			gl_FragColor = vec4(0.78,0.78,0.78,1.0);//packDepthToRGBA(gdepth);//vec4(d,0.0,0.0,1.0);
 		}
 	</script>
+<link rel="stylesheet" type="text/css" href="extras/loading-bar/loading-bar.css"/>
+<script type="text/javascript" src="extras/loading-bar/loading-bar.js"></script>
 <!-- NGL  -->
 <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js"></script>
 <script src="js/util.js"></script>
-
+<script src="extras/MarchingCubes.js"></script>
 <script src="js/query_helper.js"></script>
 <script src="js/cp_serialized.js"></script>
 <script src="js/ngl.js"></script>
