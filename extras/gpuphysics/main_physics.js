@@ -865,7 +865,7 @@ function initGUI(){
   controller  = {
     moreObjects: function(){ location.href = "?n=" + (numParticles*2); },
     lessObjects: function(){ location.href = "?n=" + Math.max(2,numParticles/2); },
-    paused: true,
+    paused: false,
     renderAtoms: false,
     renderParticles: false,
     renderMeshs: true,
