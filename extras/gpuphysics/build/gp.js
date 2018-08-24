@@ -8,11 +8,33 @@
 
 	var passThroughFrag = "uniform sampler2D texture;\nuniform vec2 res;\nvoid main() {\n\tvec2 uv = gl_FragCoord.xy / res;\n\tgl_FragColor = texture2D( texture, uv );\n}";
 
-	var setBodyDataVert = "uniform vec2 res;\nattribute float bodyIndex;\nattribute vec4 data;\nvarying vec4 vData;\nvoid main() {\n\tvec2 uv = indexToUV(bodyIndex, res);\n\tuv += 0.5 / res;\n\tgl_PointSize = 1.0;\n\tvData = data;\n\tgl_Position = vec4(2.0*uv-1.0, 0, 1);\n}";
+	var setBodyDataVert = "uniform vec2 res;\n\
+attribute float bodyIndex;\n\
+attribute vec4 data;\n\
+varying vec4 vData;\n\
+void main() {\n\
+        vec2 uv = indexToUV(bodyIndex, res);\n\
+        uv += 0.5 / res;\n\
+        gl_PointSize = 1.0;\n\
+        vData = data;\n\
+        gl_Position = vec4(2.0*uv-1.0, 0, 1);\n\
+}";
 
 	var setBodyDataFrag = "varying vec4 vData;\nvoid main() {\n\tgl_FragColor = vData;\n}";
 
-	var mapParticleToCellVert = "uniform sampler2D posTex;\nuniform vec3 cellSize;\nuniform vec3 gridPos;\nattribute float particleIndex;\nvarying float vParticleIndex;\nvoid main() {\n    vParticleIndex = particleIndex;\n    vec2 particleUV = indexToUV(particleIndex, resolution);\n    vec3 particlePos = texture2D( posTex, particleUV ).xyz;\n    vec3 cellPos = worldPosToGridPos(particlePos, gridPos, cellSize);\n    vec2 gridUV = gridPosToGridUV(cellPos, 0, gridResolution, gridTextureResolution, gridZTiling);\n    gridUV += vec2(1) / gridTextureResolution;    gl_PointSize = 2.0;    gl_Position = vec4(2.0*(gridUV-0.5), 0, 1);\n}";
+	var mapParticleToCellVert = "uniform sampler2D posTex;\n\
+uniform vec3 cellSize;\n\
+uniform vec3 gridPos;\n\
+attribute float particleIndex;\n\
+varying float vParticleIndex;\n\
+void main() {\n\
+    vParticleIndex = particleIndex;\n\
+    vec2 particleUV = indexToUV(particleIndex, resolution);\n\
+    vec3 particlePos = texture2D( posTex, particleUV ).xyz;\n\
+    vec3 cellPos = worldPosToGridPos(particlePos, gridPos, cellSize);\n\
+    vec2 gridUV = gridPosToGridUV(cellPos, 0, gridResolution, gridTextureResolution, gridZTiling);\n\
+    gridUV += vec2(1) / gridTextureResolution;    gl_PointSize = 2.0;    gl_Position = vec4(2.0*(gridUV-0.5), 0, 1);\n\
+}\n";
 
 	var mapParticleToCellFrag = "varying float vParticleIndex;\nvoid main() {\n    gl_FragColor = vec4( vParticleIndex+1.0, 0, 0, 1 );}";
 
@@ -89,31 +111,380 @@
 	    }\n\
 	    vec3 boxMin = vec3(-boxSize.x, 0.0, -boxSize.z);\n\
 	    vec3 boxMax = vec3(boxSize.x, boxSize.y*0.5, boxSize.z);\n\
+			vec3 dirs[3];\n\
+			dirs[0] = vec3(1,0,0);\n\
+			dirs[1] = vec3(0,1,0);\n\
+			dirs[2] = vec3(0,0,1);\n\
+			for(int i=0; i<3; i++){\n\
+					vec3 dir = dirs[i];\n\
+					vec3 v = velocity - cross(relativePosition + radius * dir, bodyAngularVelocity);\n\
+					vec3 tangentVel = v - dot(v,dir) * dir;\n\
+					float x = dot(dir,position) - radius;\n\
+					if(x < boxMin[i]){\n\
+							force += -( stiffness * (x - boxMin[i]) * dir + damping * dot(v,dir) * dir);\n\
+							force -= friction * tangentVel;\n\
+					}\n\
+					x = dot(dir,position) + radius;\n\
+					if(x > boxMax[i]){\n\
+							dir = -dir;\n\
+							force -= -( stiffness * (x - boxMax[i]) * dir - damping * dot(v,dir) * dir);\n\
+							force -= friction * tangentVel;\n\
+					}\n\
+			}\n\
+			vec3 r = position - interactionSpherePos;\n\
+			float len = length(r);\n\
+			if(len > 0.0 && len < interactionSphereRadius+radius){\n\
+					force += particleForce(stiffness, damping, friction, radius + interactionSphereRadius, interactionSphereRadius, position, interactionSpherePos, velocity, vec3(0));\n\
+			}\n\
+			gl_FragColor = vec4(force, 1.0);\n\
 	}\n"
 
-	var updateTorqueFrag = "uniform vec4 params1;\n#define stiffness params1.x\n#define damping params1.y\n#define radius params1.z\nuniform vec4 params2;\n#define friction params2.y\nuniform vec3 cellSize;\nuniform vec3 gridPos;\nuniform sampler2D posTex;\nuniform sampler2D particlePosRelative;\nuniform sampler2D velTex;\nuniform sampler2D bodyAngularVelTex;\nuniform sampler2D gridTex;\nvoid main() {\n    vec2 uv = gl_FragCoord.xy / resolution;\n    int particleIndex = uvToIndex(uv, resolution);\n    vec4 positionAndBodyId = texture2D(posTex, uv);\n    vec3 position = positionAndBodyId.xyz;\n    float bodyId = positionAndBodyId.w;\n    vec4 relativePositionAndBodyId = texture2D(particlePosRelative, uv);\n    vec3 relativePosition = relativePositionAndBodyId.xyz;\n    vec3 velocity = texture2D(velTex, uv).xyz;\n    vec3 angularVelocity = texture2D(bodyAngularVelTex, indexToUV(bodyId, bodyTextureResolution)).xyz;\n    vec3 particleGridPos = worldPosToGridPos(position, gridPos, cellSize);\n    ivec3 iGridRes = ivec3(gridResolution);\n    vec3 torque = vec3(0);\n    for(int i=-1; i<2; i++){\n        for(int j=-1; j<2; j++){\n            for(int k=-1; k<2; k++){\n                vec3 neighborCellGridPos = particleGridPos + vec3(i,j,k);\n                ivec3 iNeighborCellGridPos = ivec3(particleGridPos) + ivec3(i,j,k);\n                for(int l=0; l<4; l++){\n                    vec2 neighborCellTexUV = gridPosToGridUV(neighborCellGridPos, l, gridResolution, gridTextureResolution, gridZTiling);\n                    neighborCellTexUV += vec2(0.5) / (2.0 * gridTextureResolution);\n                    int neighborIndex = int(floor(texture2D(gridTex, neighborCellTexUV).x-1.0 + 0.5));\n                    vec2 neighborUV = indexToUV(float(neighborIndex), resolution);\n                    vec4 neighborPositionAndBodyId = texture2D(posTex, neighborUV);\n                    vec3 neighborPosition = neighborPositionAndBodyId.xyz;\n                    float neighborBodyId = neighborPositionAndBodyId.w;\n                    vec3 neighborVelocity = texture2D(velTex, neighborUV).xyz;\n                    vec3 neighborAngularVelocity = texture2D(bodyAngularVelTex, neighborUV).xyz;\n                    vec3 neighborRelativePosition = texture2D(particlePosRelative, neighborUV).xyz;\n                    if(neighborIndex >= 0 && neighborIndex != particleIndex && neighborBodyId != bodyId && iNeighborCellGridPos.x>=0 && iNeighborCellGridPos.y>=0 && iNeighborCellGridPos.z>=0 && iNeighborCellGridPos.x<iGridRes.x && iNeighborCellGridPos.y<iGridRes.y && iNeighborCellGridPos.z<iGridRes.z){\n                        vec3 r = position - neighborPosition;\n                        float len = length(r);\n                        if(len > 0.0 && len < radius * 2.0){\n                            vec3 dir = normalize(r);\n                            vec3 relVel = (velocity - cross(relativePosition + radius * dir, angularVelocity)) - (neighborVelocity - cross(neighborRelativePosition + radius * (-dir), neighborAngularVelocity));\n                            vec3 relTangentVel = relVel - dot(relVel, dir) * dir;\n                            torque += friction * cross(relativePosition + radius * dir, relTangentVel);\n                        }\n                    }\n                }\n            }\n        }\n    }\n    vec3 boxMin = vec3(-boxSize.x, 0.0, -boxSize.z);\n    vec3 boxMax = vec3(boxSize.x, boxSize.y*0.5, boxSize.z);\n    vec3 dirs[3];\n    dirs[0] = vec3(1,0,0);\n    dirs[1] = vec3(0,1,0);\n    dirs[2] = vec3(0,0,1);\n    for(int i=0; i<3; i++){\n        vec3 dir = dirs[i];\n        vec3 v = velocity - cross(relativePosition + radius * dir, angularVelocity);\n        if(dot(dir,position) - radius < boxMin[i]){\n            vec3 relTangentVel = (v - dot(v, dir) * dir);\n            torque += friction * cross(relativePosition + radius * dir, relTangentVel);\n        }\n        if(dot(dir,position) + radius > boxMax[i]){\n            dir = -dir;\n            vec3 relTangentVel = v - dot(v, dir) * dir;\n            torque += friction * cross(relativePosition + radius * dir, relTangentVel);\n        }\n    }\n    gl_FragColor = vec4(torque, 0.0);\n}";
+	var updateTorqueFrag = "uniform vec4 params1;\n\
+	#define stiffness params1.x\n\
+	#define damping params1.y\n\
+	#define radius params1.z\n\
+	uniform vec4 params2;\n\
+	#define friction params2.y\n\
+	uniform vec3 cellSize;\n\
+	uniform vec3 gridPos;\n\
+	uniform sampler2D posTex;\n\
+	uniform sampler2D particlePosRelative;\n\
+	uniform sampler2D velTex;\n\
+	uniform sampler2D bodyAngularVelTex;\n\
+	uniform sampler2D gridTex;\n\
+	void main() {\n\
+	    vec2 uv = gl_FragCoord.xy / resolution;\n\
+	    int particleIndex = uvToIndex(uv, resolution);\n\
+	    vec4 positionAndBodyId = texture2D(posTex, uv);\n\
+	    vec3 position = positionAndBodyId.xyz;\n\
+	    float bodyId = positionAndBodyId.w;\n\
+	    vec4 relativePositionAndBodyId = texture2D(particlePosRelative, uv);\n\
+	    vec3 relativePosition = relativePositionAndBodyId.xyz;\n\
+	    vec3 velocity = texture2D(velTex, uv).xyz;\n\
+	    vec3 angularVelocity = texture2D(bodyAngularVelTex, indexToUV(bodyId, bodyTextureResolution)).xyz;\n\
+	    vec3 particleGridPos = worldPosToGridPos(position, gridPos, cellSize);\n\
+	    ivec3 iGridRes = ivec3(gridResolution);\n\
+	    vec3 torque = vec3(0);\n\
+	    for(int i=-1; i<2; i++){\n\
+	        for(int j=-1; j<2; j++){\n\
+	            for(int k=-1; k<2; k++){\n\
+	                vec3 neighborCellGridPos = particleGridPos + vec3(i,j,k);\n\
+	                ivec3 iNeighborCellGridPos = ivec3(particleGridPos) + ivec3(i,j,k);\n\
+	                for(int l=0; l<4; l++){\n\
+	                    vec2 neighborCellTexUV = gridPosToGridUV(neighborCellGridPos, l, gridResolution, gridTextureResolution, gridZTiling);\n\
+	                    neighborCellTexUV += vec2(0.5) / (2.0 * gridTextureResolution);\n\
+	                    int neighborIndex = int(floor(texture2D(gridTex, neighborCellTexUV).x-1.0 + 0.5));\n\
+	                    vec2 neighborUV = indexToUV(float(neighborIndex), resolution);\n\
+	                    vec4 neighborPositionAndBodyId = texture2D(posTex, neighborUV);\n\
+	                    vec3 neighborPosition = neighborPositionAndBodyId.xyz;\n\
+	                    float neighborBodyId = neighborPositionAndBodyId.w;\n\
+	                    vec3 neighborVelocity = texture2D(velTex, neighborUV).xyz;\n\
+	                    vec3 neighborAngularVelocity = texture2D(bodyAngularVelTex, neighborUV).xyz;\n\
+	                    vec3 neighborRelativePosition = texture2D(particlePosRelative, neighborUV).xyz;\n\
+	                    if(neighborIndex >= 0 && neighborIndex != particleIndex && neighborBodyId != bodyId && \n\
+	                        iNeighborCellGridPos.x>=0 && iNeighborCellGridPos.y>=0 && iNeighborCellGridPos.z>=0 && \n\
+	                        iNeighborCellGridPos.x<iGridRes.x && iNeighborCellGridPos.y<iGridRes.y && iNeighborCellGridPos.z<iGridRes.z){\n\
+	                        vec3 r = position - neighborPosition;\n\
+	                        float len = length(r);\n\
+	                        if(len > 0.0 && len < radius * 2.0){\n\
+	                            vec3 dir = normalize(r);\n\
+	                            vec3 relVel = (velocity - cross(relativePosition + radius * dir, angularVelocity)) - (neighborVelocity - cross(neighborRelativePosition + radius * (-dir), neighborAngularVelocity));\n\
+	                            vec3 relTangentVel = relVel - dot(relVel, dir) * dir;\n\
+	                            torque += friction * cross(relativePosition + radius * dir, relTangentVel);\n\
+	                        }\n\
+	                    }\n\
+	                }\n\
+	            }\n\
+	        }\n\
+	    }\n\
+	    vec3 boxMin = vec3(-boxSize.x, 0.0, -boxSize.z);\n\
+	    vec3 boxMax = vec3(boxSize.x, boxSize.y*0.5, boxSize.z);\n\
+	    vec3 dirs[3];\n\
+	    dirs[0] = vec3(1,0,0);\n\
+	    dirs[1] = vec3(0,1,0);\n\
+	    dirs[2] = vec3(0,0,1);\n\
+	    for(int i=0; i<3; i++){\n\
+	        vec3 dir = dirs[i];\n\
+	        vec3 v = velocity - cross(relativePosition + radius * dir, angularVelocity);\n\
+	        if(dot(dir,position) - radius < boxMin[i]){\n\
+	            vec3 relTangentVel = (v - dot(v, dir) * dir);\n\
+	            torque += friction * cross(relativePosition + radius * dir, relTangentVel);\n\
+	        }\n\
+	        if(dot(dir,position) + radius > boxMax[i]){\n\
+	            dir = -dir;\n\
+	            vec3 relTangentVel = v - dot(v, dir) * dir;\n\
+	            torque += friction * cross(relativePosition + radius * dir, relTangentVel);\n\
+	        }\n\
+	    }\n\
+	    gl_FragColor = vec4(torque, 0.0);\n\
+	}\n";
 
-	var updateBodyVelocityFrag = "uniform sampler2D bodyQuatTex;\nuniform sampler2D bodyVelTex;\nuniform sampler2D bodyForceTex;\nuniform sampler2D bodyMassTex;\nuniform float linearAngular;\nuniform vec3 gravity;\nuniform vec3 maxVelocity;\nuniform vec4 params2;\n#define deltaTime params2.x\n#define drag params2.z\nvoid main() {\n    vec2 uv = gl_FragCoord.xy / bodyTextureResolution;\n    vec4 velocity = texture2D(bodyVelTex, uv);\n    vec4 force = texture2D(bodyForceTex, uv);\n    vec4 quat = texture2D(bodyQuatTex, uv);\n    vec4 massProps = texture2D(bodyMassTex, uv);\n    vec3 newVelocity = velocity.xyz;\n    if( linearAngular < 0.5 ){\n        float invMass = massProps.w;\n        newVelocity += (force.xyz + gravity) * deltaTime * invMass;\n    } else {\n        vec3 invInertia = massProps.xyz;\n        newVelocity += force.xyz * deltaTime * invInertiaWorld(quat, invInertia);\n    }\n    newVelocity = clamp(newVelocity, -maxVelocity, maxVelocity);\n    newVelocity *= pow(1.0 - drag, deltaTime);\n    gl_FragColor = vec4(newVelocity, 1.0);\n}";
+	var updateBodyVelocityFrag = "uniform sampler2D bodyQuatTex;\n\
+	uniform sampler2D bodyPosTex;\n\
+	uniform sampler2D bodyVelTex;\n\
+	uniform sampler2D bodyForceTex;\n\
+	uniform sampler2D bodyMassTex;\n\
+	uniform sampler2D bodyInfosTex;\n\
+	uniform float linearAngular;\n\
+	uniform vec3 gravity;\n\
+	uniform vec3 maxVelocity;\n\
+	uniform vec4 params2;\n\
+	#define deltaTime params2.x\n\
+	#define drag params2.z\n\
+	void main() {\n\
+	    vec2 uv = gl_FragCoord.xy / bodyTextureResolution;\n\
+	    vec4 velocity = texture2D(bodyVelTex, uv);\n\
+	    vec4 force = texture2D(bodyForceTex, uv);\n\
+	    vec4 quat = texture2D(bodyQuatTex, uv);\n\
+	    vec4 massProps = texture2D(bodyMassTex, uv);\n\
+	    vec3 newVelocity = velocity.xyz;\n\
+			vec4 posTexData = texture2D(bodyPosTex, uv);\n\
+			vec3 position = posTexData.xyz;\n\
+			float bodyTypeIndex = posTexData.w;// * bodyInfosTextureResolution.x * bodyInfosTextureResolution.y;\n\
+			vec2 bodyType_uv = indexToUV( bodyTypeIndex*2.0, bodyInfosTextureResolution );\n\
+			vec4 bodyType_infos1 = texture2D(bodyInfosTex, bodyType_uv);\n\
+			bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
+			vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);\n\
+			if (bodyType_infos1.w == 1.0) {\n\
+					//update quat\n\
+					vec3 sph_center = vec3(0.0,0.5,0.0);\n\
+					float rads = 0.09;//(0.08798828125000001)*(0.08798828125000001);\n\
+					vec3 up = bodyType_infos1.xyz;\n\
+					vec3 off = bodyType_infos2.xyz;\n\
+					vec3 toward_surface = sph_center - position;\n\
+					float pos_radius = length(toward_surface);\n\
+					float distance = (pos_radius-rads);\n\
+					if (pos_radius < rads ) force = vec4(-normalize(toward_surface),1)*200.0;\n\
+					else {force = vec4(0.0,0.0,0.0,0.0); newVelocity = vec3(0.0,0.0,0.0);}\n\
+			}\n\
+			if( linearAngular < 0.5 ){\n\
+	        float invMass = massProps.w;\n\
+	        newVelocity += (force.xyz + gravity) * deltaTime * invMass;\n\
+	    } else {\n\
+	        vec3 invInertia = massProps.xyz;\n\
+	        newVelocity += force.xyz * deltaTime * invInertiaWorld(quat, invInertia);\n\
+	    }\n\
+	    newVelocity = clamp(newVelocity, -maxVelocity, maxVelocity);\n\
+	    newVelocity *= pow(1.0 - drag, deltaTime);\n\
+	    gl_FragColor = vec4(newVelocity, 1.0);\n\
+	}\n";
 
-	var updateBodyPositionFrag = "uniform sampler2D bodyPosTex;\nuniform sampler2D bodyVelTex;\nuniform vec4 params2;\n#define deltaTime params2.x\nvoid main() {\n\tvec2 uv = gl_FragCoord.xy / bodyTextureResolution;\n\tvec4 posTexData = texture2D(bodyPosTex, uv);\n\tvec3 position = posTexData.xyz;\n\tvec3 velocity = texture2D(bodyVelTex, uv).xyz;\n\tgl_FragColor = vec4(position + velocity * deltaTime, 1.0);\n}";
 
-	var updateBodyQuaternionFrag = "uniform sampler2D bodyQuatTex;\nuniform sampler2D bodyAngularVelTex;\nuniform vec4 params2;\n#define deltaTime params2.x\nvoid main() {\n\tvec2 uv = gl_FragCoord.xy / bodyTextureResolution;\n\tvec4 quat = texture2D(bodyQuatTex, uv);\n\tvec3 angularVel = texture2D(bodyAngularVelTex, uv).xyz;\n\tgl_FragColor = quat_integrate(quat, angularVel, deltaTime);\n}";
+//whould we update here when surface body?
+	var updateBodyPositionFrag = "uniform sampler2D bodyPosTex;\n\
+uniform sampler2D bodyVelTex;\n\
+uniform sampler2D bodyInfosTex;\n\
+uniform vec4 params2;\n\
+#define deltaTime params2.x\n\
+void main() {\n\
+        vec2 uv = gl_FragCoord.xy / bodyTextureResolution;\n\
+        vec4 posTexData = texture2D(bodyPosTex, uv);\n\
+        vec3 position = posTexData.xyz;\n\
+        vec3 velocity = texture2D(bodyVelTex, uv).xyz;\n\
+        gl_FragColor = vec4(position + velocity * deltaTime, posTexData.w);\n\
+}\n";
 
-	var addParticleForceToBodyVert = "uniform sampler2D relativeParticlePosTex;\nuniform sampler2D particleForceTex;\nattribute float particleIndex;\nattribute float bodyIndex;varying vec3 vBodyForce;\nvoid main() {\n    vec2 particleUV = indexToUV( particleIndex, resolution );\n    vec3 particleForce = texture2D( particleForceTex, particleUV ).xyz;\n    vBodyForce = particleForce;\n    vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n    bodyUV += vec2(0.5) / bodyTextureResolution;    gl_PointSize = 1.0;\n    gl_Position = vec4(2.0 * (bodyUV - 0.5), -particleIndex / (resolution.x*resolution.y), 1);\n}";
+	var updateBodyQuaternionFrag = "uniform sampler2D bodyQuatTex;\n\
+uniform sampler2D bodyAngularVelTex;\n\
+uniform sampler2D bodyPosTex;\n\
+uniform sampler2D bodyInfosTex;\n\
+uniform vec4 params2;\n\
+#define deltaTime params2.x\n\
+void main() {\n\
+        vec2 uv = gl_FragCoord.xy / bodyTextureResolution;\n\
+				vec4 posTexData = texture2D(bodyPosTex, uv);\n\
+				vec3 position = posTexData.xyz;\n\
+				vec4 quat = texture2D(bodyQuatTex, uv);\n\
+				vec3 angularVel = texture2D(bodyAngularVelTex, uv).xyz;\n\
+        gl_FragColor = quat;//quat_integrate(quat, angbodyPosReadularVel, deltaTime);\n\
+}\n"
 
-	var addParticleTorqueToBodyVert = "uniform sampler2D relativeParticlePosTex;\nuniform sampler2D particleForceTex;\nuniform sampler2D particleTorqueTex;\nattribute float particleIndex;\nattribute float bodyIndex;\nvarying vec3 vBodyForce;\nvoid main() {\n    vec2 particleUV = indexToUV( particleIndex, resolution );\n    vec3 particleForce = texture2D( particleForceTex, particleUV ).xyz;\n    vec3 particleTorque = texture2D( particleTorqueTex, particleUV ).xyz;\n    vec3 relativeParticlePos = texture2D( relativeParticlePosTex, particleUV ).xyz;\n    vBodyForce = particleTorque + cross(relativeParticlePos, particleForce);\n    vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n    bodyUV += vec2(0.5) / bodyTextureResolution;    gl_PointSize = 1.0;\n    gl_Position = vec4(2.0 * (bodyUV - 0.5), -particleIndex / (resolution.x*resolution.y), 1);\n}";
+	var addParticleForceToBodyVert = "uniform sampler2D relativeParticlePosTex;\n\
+uniform sampler2D particleForceTex;\n\
+attribute float particleIndex;\n\
+attribute float bodyIndex;\n\
+varying vec3 vBodyForce;\n\
+void main() {\n\
+    vec2 particleUV = indexToUV( particleIndex, resolution );\n\
+    vec3 particleForce = texture2D( particleForceTex, particleUV ).xyz;\n\
+    vBodyForce = particleForce;\n\
+    vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
+    bodyUV += vec2(0.5) / bodyTextureResolution;\n\
+		gl_PointSize = 1.0;\n\
+    gl_Position = vec4(2.0 * (bodyUV - 0.5), -particleIndex / (resolution.x*resolution.y), 1);\n\
+}\n";
 
-	var addParticleForceToBodyFrag = "varying vec3 vBodyForce;\nvoid main() {\n\tgl_FragColor = vec4(vBodyForce, 1.0);\n}";
+	var addParticleTorqueToBodyVert = "uniform sampler2D relativeParticlePosTex;\n\
+uniform sampler2D particleForceTex;\n\
+uniform sampler2D particleTorqueTex;\n\
+attribute float particleIndex;\n\
+attribute float bodyIndex;\n\
+varying vec3 vBodyForce;\n\
+void main() {\n\
+    vec2 particleUV = indexToUV( particleIndex, resolution );\n\
+    vec3 particleForce = texture2D( particleForceTex, particleUV ).xyz;\n\
+    vec3 particleTorque = texture2D( particleTorqueTex, particleUV ).xyz;\n\
+    vec3 relativeParticlePos = texture2D( relativeParticlePosTex, particleUV ).xyz;\n\
+    vBodyForce = particleTorque + cross(relativeParticlePos, particleForce);\n\
+    vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
+    bodyUV += vec2(0.5) / bodyTextureResolution;    gl_PointSize = 1.0;\n\
+    gl_Position = vec4(2.0 * (bodyUV - 0.5), -particleIndex / (resolution.x*resolution.y), 1);\n\
+}\n";
 
-	var localParticlePositionToRelativeFrag = "uniform sampler2D localParticlePosTex;\nuniform sampler2D bodyQuatTex;\nvoid main() {\n\tvec2 uv = gl_FragCoord.xy / resolution;\n\tfloat particleIndex = float(uvToIndex(uv, resolution));\n\tvec4 particlePosAndBodyId = texture2D( localParticlePosTex, uv );\n\tvec3 particlePos = particlePosAndBodyId.xyz;\n\tfloat bodyIndex = particlePosAndBodyId.w;\n\tvec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\tbodyUV += vec2(0.5) / bodyTextureResolution;\tvec4 bodyQuat = texture2D( bodyQuatTex, bodyUV );\n\tvec3 relativeParticlePos = vec3_applyQuat(particlePos, bodyQuat);\n\tgl_FragColor = vec4(relativeParticlePos, bodyIndex);\n}";
+	var addParticleForceToBodyFrag = "varying vec3 vBodyForce;\n\
+void main() {\n\
+\tgl_FragColor = vec4(vBodyForce, 1.0);\n}";
 
-	var localParticlePositionToWorldFrag = "uniform sampler2D localParticlePosTex;\nuniform sampler2D bodyPosTex;\nuniform sampler2D bodyQuatTex;\nvoid main() {\n\tvec2 uv = gl_FragCoord.xy / resolution;\n\tfloat particleIndex = float(uvToIndex(uv, resolution));\n\tvec4 particlePosAndBodyId = texture2D( localParticlePosTex, uv );\n\tvec3 particlePos = particlePosAndBodyId.xyz;\n\tfloat bodyIndex = particlePosAndBodyId.w;\n\tvec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\tbodyUV += vec2(0.5) / bodyTextureResolution;\tvec3 bodyPos = texture2D( bodyPosTex, bodyUV ).xyz;\n\tvec4 bodyQuat = texture2D( bodyQuatTex, bodyUV );\n\tvec3 worldParticlePos = vec3_applyQuat(particlePos, bodyQuat) + bodyPos;\n\tgl_FragColor = vec4(worldParticlePos, bodyIndex);\n}";
+	var localParticlePositionToRelativeFrag = "uniform sampler2D localParticlePosTex;\n\
+uniform sampler2D bodyQuatTex;\n\
+void main() {\n\
+        vec2 uv = gl_FragCoord.xy / resolution;\n\
+        float particleIndex = float(uvToIndex(uv, resolution));\n\
+        vec4 particlePosAndBodyId = texture2D( localParticlePosTex, uv );\n\
+        vec3 particlePos = particlePosAndBodyId.xyz;\n\
+        float bodyIndex = particlePosAndBodyId.w;\n\
+        vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
+        bodyUV += vec2(0.5) / bodyTextureResolution;    vec4 bodyQuat = texture2D( bodyQuatTex, bodyUV );\n\
+        vec3 relativeParticlePos = vec3_applyQuat(particlePos, bodyQuat);\n\
+        gl_FragColor = vec4(relativeParticlePos, bodyIndex);\n\
+}\n";
 
-	var bodyVelocityToParticleVelocityFrag = "uniform sampler2D relativeParticlePosTex;\nuniform sampler2D bodyVelTex;\nuniform sampler2D bodyAngularVelTex;\nvoid main() {\n\tvec2 particleUV = gl_FragCoord.xy / resolution;\n\tvec4 particlePosAndBodyId = texture2D( relativeParticlePosTex, particleUV );\n\tvec3 relativeParticlePosition = particlePosAndBodyId.xyz;\n\tfloat bodyIndex = particlePosAndBodyId.w;\n\tvec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\tbodyUV += vec2(0.5) / bodyTextureResolution;\n\tvec3 bodyVelocity = texture2D( bodyVelTex, bodyUV ).xyz;\n\tvec3 bodyAngularVelocity = texture2D( bodyAngularVelTex, bodyUV ).xyz;\n\tvec3 particleVelocity = bodyVelocity - cross(relativeParticlePosition, bodyAngularVelocity);\n\tgl_FragColor = vec4(particleVelocity, 1);\n}";
+	var localParticlePositionToWorldFrag = "uniform sampler2D localParticlePosTex;\n\
+uniform sampler2D bodyPosTex;\n\
+uniform sampler2D bodyQuatTex;\n\
+void main() {\n\
+        vec2 uv = gl_FragCoord.xy / resolution;\n\
+        float particleIndex = float(uvToIndex(uv, resolution));\n\
+        vec4 particlePosAndBodyId = texture2D( localParticlePosTex, uv );\n\
+        vec3 particlePos = particlePosAndBodyId.xyz;\n\
+        float bodyIndex = particlePosAndBodyId.w;\n\
+        vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
+        bodyUV += vec2(0.5) / bodyTextureResolution;    \n\
+				vec3 bodyPos = texture2D( bodyPosTex, bodyUV ).xyz;\n\
+        vec4 bodyQuat = texture2D( bodyQuatTex, bodyUV );\n\
+        vec3 worldParticlePos = vec3_applyQuat(particlePos, bodyQuat) + bodyPos;\n\
+        gl_FragColor = vec4(worldParticlePos, bodyIndex);\n\
+}\n";
 
-	var setStencilFrag = "uniform vec2 res;\nuniform float quadrant;\nvoid main() {\n\tvec2 coord = floor(gl_FragCoord.xy);\n\tif(mod(coord.x,2.0) + 2.0 * mod(coord.y,2.0) == quadrant){\n\t\tgl_FragColor = vec4(1,1,1,1);\n\t} else {\n\t\tdiscard;\n\t}\n}";
+	var bodyVelocityToParticleVelocityFrag = "uniform sampler2D relativeParticlePosTex;\n\
+uniform sampler2D bodyVelTex;\n\
+uniform sampler2D bodyAngularVelTex;\n\
+void main() {\n\
+        vec2 particleUV = gl_FragCoord.xy / resolution;\n\
+        vec4 particlePosAndBodyId = texture2D( relativeParticlePosTex, particleUV );\n\
+        vec3 relativeParticlePosition = particlePosAndBodyId.xyz;\n\
+        float bodyIndex = particlePosAndBodyId.w;\n\
+        vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
+        bodyUV += vec2(0.5) / bodyTextureResolution;\n\
+        vec3 bodyVelocity = texture2D( bodyVelTex, bodyUV ).xyz;\n\
+        vec3 bodyAngularVelocity = texture2D( bodyAngularVelTex, bodyUV ).xyz;\n\
+        vec3 particleVelocity = bodyVelocity - cross(relativeParticlePosition, bodyAngularVelocity);\n\
+        gl_FragColor = vec4(particleVelocity, 1);\n\
+}\n";
 
-	var shared = "int uvToIndex(vec2 uv, vec2 size) {\n\tivec2 coord = ivec2(floor(uv*size+0.5));\n\treturn coord.x + int(size.x) * coord.y;\n}\nvec2 indexToUV(float index, vec2 res){\n\tvec2 uv = vec2(mod(index/res.x,1.0), floor( index/res.y ) / res.x);\n\treturn uv;\n}\nvec3 worldPosToGridPos(vec3 particlePos, vec3 gridPos, vec3 cellSize){\n\treturn floor((particlePos - gridPos)/cellSize);\n}\nvec2 gridPosToGridUV(vec3 gridPos, int subIndex, vec3 gridRes, vec2 gridTextureRes, vec2 gridZTile){\n\tgridPos = clamp(gridPos, vec3(0), gridRes-vec3(1));\n\tvec2 gridUV = 2.0 * gridPos.xz / gridTextureRes;\n\tvec2 zPos = vec2( mod(gridPos.y, gridZTile.x), floor(gridPos.y / gridZTile.y) );\n\tzPos /= gridZTile;\n\tgridUV += zPos;\n\tfloat fSubIndex = float(subIndex);\n\tgridUV += vec2( mod(fSubIndex,2.0), floor(fSubIndex/2.0) ) / gridTextureRes;\n\treturn gridUV;\n}\nvec4 quat_integrate(vec4 q, vec3 w, float dt){\n\tfloat half_dt = dt * 0.5;\n\tq.x += half_dt * (w.x * q.w + w.y * q.z - w.z * q.y);\tq.y += half_dt * (w.y * q.w + w.z * q.x - w.x * q.z);\n\tq.z += half_dt * (w.z * q.w + w.x * q.y - w.y * q.x);\n\tq.w += half_dt * (- w.x * q.x - w.y * q.y - w.z * q.z);\n\treturn normalize(q);\n}\nvec3 vec3_applyQuat(vec3 v, vec4 q){\n\tfloat ix =  q.w * v.x + q.y * v.z - q.z * v.y;\tfloat iy =  q.w * v.y + q.z * v.x - q.x * v.z;\n\tfloat iz =  q.w * v.z + q.x * v.y - q.y * v.x;\n\tfloat iw = -q.x * v.x - q.y * v.y - q.z * v.z;\n\treturn vec3(\n\t\tix * q.w + iw * -q.x + iy * -q.z - iz * -q.y,\n\t\tiy * q.w + iw * -q.y + iz * -q.x - ix * -q.z,\n\t\tiz * q.w + iw * -q.z + ix * -q.y - iy * -q.x\n\t);\n}\nmat3 transpose2( const in mat3 v ) {\n\tmat3 tmp;\n\ttmp[0] = vec3(v[0].x, v[1].x, v[2].x);\n\ttmp[1] = vec3(v[0].y, v[1].y, v[2].y);\n\ttmp[2] = vec3(v[0].z, v[1].z, v[2].z);\n\treturn tmp;\n}\nmat3 quat2mat(vec4 q){\n\tfloat x = q.x;\n\tfloat y = q.y;\n\tfloat z = q.z;\n\tfloat w = q.w;\n\tfloat x2 = x + x;\n\tfloat y2 = y + y;\n\tfloat z2 = z + z;\n\tfloat xx = x * x2;\n\tfloat xy = x * y2;\n\tfloat xz = x * z2;\n\tfloat yy = y * y2;\n\tfloat yz = y * z2;\n\tfloat zz = z * z2;\n\tfloat wx = w * x2;\n\tfloat wy = w * y2;\n\tfloat wz = w * z2;\n\treturn mat3(\n\t\t1.0 - ( yy + zz ),  xy - wz,            xz + wy,\n\t\txy + wz,            1.0 - ( xx + zz ),  yz - wx,\n\t\txz - wy,            yz + wx,            1.0 - ( xx + yy )\n\t);\n}\nmat3 invInertiaWorld(vec4 q, vec3 invInertia){\n\tmat3 R = quat2mat(q);\n\tmat3 I = mat3(\n\t\tinvInertia.x, 0, 0,\n\t\t0, invInertia.y, 0,\n\t\t0, 0, invInertia.z\n\t);\n\treturn transpose2(R) * I * R;\n}\nvec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\tfloat d = dot(v0, v1);\n\tif (abs(d) > 0.9995) {\n\t\treturn normalize(mix(v0,v1,t));\n\t}\n\tif (d < 0.0) {\n\t\tv1 = -v1;\n\t\td = -d;\n\t}\n\td = clamp(d, -1.0, 1.0);\n\tfloat theta0 = acos(d);\n\tfloat theta = theta0*t;\n\tvec4 v2 = normalize(v1 - v0*d);\n\treturn v0*cos(theta) + v2*sin(theta);\n}\n";
+	var setStencilFrag = "uniform vec2 res;\n\
+uniform float quadrant;\n\
+void main() {\n\
+        vec2 coord = floor(gl_FragCoord.xy);\n\
+        if(mod(coord.x,2.0) + 2.0 * mod(coord.y,2.0) == quadrant){\n\
+                gl_FragColor = vec4(1,1,1,1);\n\
+        } else {\n\
+                discard;\n\
+        }\n\
+}\n";
+
+	var shared = "int uvToIndex(vec2 uv, vec2 size) {\n\
+        ivec2 coord = ivec2(floor(uv*size+0.5));\n\
+        return coord.x + int(size.x) * coord.y;\n\
+}\n\
+vec2 indexToUV(float index, vec2 res){\n\
+        vec2 uv = vec2(mod(index/res.x,1.0), floor( index/res.y ) / res.x);\n\
+        return uv;\n\
+}\n\
+vec3 worldPosToGridPos(vec3 particlePos, vec3 gridPos, vec3 cellSize){\n\
+        return floor((particlePos - gridPos)/cellSize);\n\
+}\n\
+vec2 gridPosToGridUV(vec3 gridPos, int subIndex, vec3 gridRes, vec2 gridTextureRes, vec2 gridZTile){\n\
+        gridPos = clamp(gridPos, vec3(0), gridRes-vec3(1));\n\
+        vec2 gridUV = 2.0 * gridPos.xz / gridTextureRes;\n\
+        vec2 zPos = vec2( mod(gridPos.y, gridZTile.x), floor(gridPos.y / gridZTile.y) );\n\
+        zPos /= gridZTile;\n\
+        gridUV += zPos;\n\
+        float fSubIndex = float(subIndex);\n\
+        gridUV += vec2( mod(fSubIndex,2.0), floor(fSubIndex/2.0) ) / gridTextureRes;\n\
+        return gridUV;\n\
+}\n\
+vec4 quat_integrate(vec4 q, vec3 w, float dt){\n\
+        float half_dt = dt * 0.5;\n\
+        q.x += half_dt * (w.x * q.w + w.y * q.z - w.z * q.y);   q.y += half_dt * (w.y * q.w + w.z * q.x - w.x * q.z);\n\
+        q.z += half_dt * (w.z * q.w + w.x * q.y - w.y * q.x);\n\
+        q.w += half_dt * (- w.x * q.x - w.y * q.y - w.z * q.z);\n\
+        return normalize(q);\n\
+}\n\
+vec3 vec3_applyQuat(vec3 v, vec4 q){\n\
+        float ix =  q.w * v.x + q.y * v.z - q.z * v.y;  float iy =  q.w * v.y + q.z * v.x - q.x * v.z;\n\
+        float iz =  q.w * v.z + q.x * v.y - q.y * v.x;\n\
+        float iw = -q.x * v.x - q.y * v.y - q.z * v.z;\n\
+        return vec3(\n\
+                ix * q.w + iw * -q.x + iy * -q.z - iz * -q.y,\n\
+                iy * q.w + iw * -q.y + iz * -q.x - ix * -q.z,\n\
+                iz * q.w + iw * -q.z + ix * -q.y - iy * -q.x\n\
+        );\n\
+}\n\
+mat3 transpose2( const in mat3 v ) {\n\
+        mat3 tmp;\n\
+        tmp[0] = vec3(v[0].x, v[1].x, v[2].x);\n\
+        tmp[1] = vec3(v[0].y, v[1].y, v[2].y);\n\
+        tmp[2] = vec3(v[0].z, v[1].z, v[2].z);\n\
+        return tmp;\n\
+}\n\
+mat3 quat2mat(vec4 q){\n\
+        float x = q.x;\n\
+        float y = q.y;\n\
+        float z = q.z;\n\
+        float w = q.w;\n\
+        float x2 = x + x;\n\
+        float y2 = y + y;\n\
+        float z2 = z + z;\n\
+        float xx = x * x2;\n\
+        float xy = x * y2;\n\
+        float xz = x * z2;\n\
+        float yy = y * y2;\n\
+        float yz = y * z2;\n\
+        float zz = z * z2;\n\
+        float wx = w * x2;\n\
+        float wy = w * y2;\n\
+        float wz = w * z2;\n\
+        return mat3(\n\
+                1.0 - ( yy + zz ),  xy - wz,            xz + wy,\n\
+                xy + wz,            1.0 - ( xx + zz ),  yz - wx,\n\
+                xz - wy,            yz + wx,            1.0 - ( xx + yy )\n\
+        );\n\
+}\n\
+mat3 invInertiaWorld(vec4 q, vec3 invInertia){\n\
+        mat3 R = quat2mat(q);\n\
+        mat3 I = mat3(\n\
+                invInertia.x, 0, 0,\n\
+                0, invInertia.y, 0,\n\
+                0, 0, invInertia.z\n\
+        );\n\
+        return transpose2(R) * I * R;\n\
+}\n\
+vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
+        float d = dot(v0, v1);\n\
+        if (abs(d) > 0.9995) {\n\
+                return normalize(mix(v0,v1,t));\n\
+        }\n\
+        if (d < 0.0) {\n\
+                v1 = -v1;\n\
+                d = -d;\n\
+        }\n\
+        d = clamp(d, -1.0, 1.0);\n\
+        float theta0 = acos(d);\n\
+        float theta = theta0*t;\n\
+        vec4 v2 = normalize(v1 - v0*d);\n\
+        return v0*cos(theta) + v2*sin(theta);\n\
+}\n";
 
 	var shaders = {
 	    passThroughVert,
@@ -185,6 +556,7 @@
 	    this.dataTextures = {};
 	    this.scenes = {};
 	    this.renderer = parameters.renderer;
+			this.bodyTypeCount = 0;
 	    this.bodyCount = 0;
 	    this.particleCount = 0;
 	    this.massDirty = true;
@@ -242,6 +614,11 @@
 	                return this.textures.bodyPosRead.width * this.textures.bodyPosRead.height;
 	            }
 	        },
+					maxBodyTypes: {
+							get: function(){
+									return this.textures.bodyInfos.width * this.textures.bodyInfos.height;
+							}
+					},
 	        bodyPositionTexture: {      get: function(){ return this.textures.bodyPosRead.texture; } },
 	        bodyPositionPrevTexture: {  get: function(){ return this.textures.bodyPosWrite.texture; } },
 	        bodyQuaternionTexture: {    get: function(){ return this.textures.bodyQuatRead.texture; } },
@@ -259,6 +636,7 @@
 	    updateMaxVelocity();
 
 	    this.initTextures(
+				  parameters.maxBodyTypes || 8,
 	        parameters.maxBodies || 8,
 	        parameters.maxParticles || 8
 	    );
@@ -303,6 +681,12 @@
 	    var p = 4 * (py * w + px);
 	    return p;
 	}
+	function idToDataIndexSlice(id, w, h, slice){
+	    var px = idToX(id, w, h);
+	    var py = idToY(id, w, h);
+	    var p = slice * (py * w + px);
+	    return p;
+	}
 
 	Object.assign( World.prototype, {
 	    getDefines: function(overrides){
@@ -312,6 +696,7 @@
 	        var gridZTiling = this.broadphase.gridZTiling;
 	        var gridTexture = this.textures.grid;
 	        var numBodies = this.textures.bodyPosRead.width;
+					var numBodyType = this.textures.bodyInfos.width;
 	        var defines = Object.assign({}, overrides||{}, {
 	            boxSize: 'vec3(' + boxSize.x + ', ' + boxSize.y + ', ' + boxSize.z + ')',
 	            resolution: 'vec2( ' + particleTextureSize.toFixed( 1 ) + ', ' + particleTextureSize.toFixed( 1 ) + " )",
@@ -319,6 +704,7 @@
 	            gridZTiling: 'vec2(' + gridZTiling.x + ', ' + gridZTiling.y + ')',
 	            gridTextureResolution: 'vec2(' + gridTexture.width + ', ' + gridTexture.height + ')',
 	            bodyTextureResolution: 'vec2( ' + numBodies.toFixed( 1 ) + ', ' + numBodies.toFixed( 1 ) + " )",
+							bodyInfosTextureResolution: 'vec2( ' + numBodyType.toFixed( 1 ) + ', ' + numBodyType.toFixed( 1 ) + " )"
 	        });
 	        return defines;
 	    },
@@ -359,10 +745,41 @@
 	        this.restoreRendererState();
 	        this.fixedTime += this.fixedTimeStep;
 	    },
-	    addBody: function(x, y, z, qx, qy, qz, qw, mass, inertiaX, inertiaY, inertiaZ){
+			addBodyType: function(surface,
+														radius,
+														pcpX, pcpY, pcpZ,
+														offX, offY, offZ){
+
+	        if(this.bodyTypeCount >= this.maxBodyTypes){
+	            console.warn("Too many bodies: " + this.bodyTypeCount+" max "+this.maxBodyTypes);
+	            return;
+	        }
+
+	        // Position
+	        var tex = this.dataTextures.bodyInfos;
+	        tex.needsUpdate = true;
+	        var data = tex.image.data;
+	        var w = tex.image.width;
+	        var h = tex.image.height;
+	        var p = idToDataIndex(this.bodyTypeCount*2.0, w, h);
+	        data[p + 0] = pcpX;
+	        data[p + 1] = pcpY;
+					data[p + 2] = pcpZ;
+					data[p + 3] = surface;
+					p = idToDataIndex(this.bodyTypeCount*2.0+1.0, w, h);
+					data[p + 0] = offX;
+					data[p + 1] = offY;
+					data[p + 2] = offZ;
+					data[p + 3] = 0.0;
+	        return this.bodyTypeCount++;
+	    },
+
+	    addBody: function(x, y, z, qx, qy, qz, qw, mass,
+												inertiaX, inertiaY, inertiaZ,
+												bodyType){
 
 	        if(this.bodyCount >= this.maxBodies){
-	            console.warn("Too many bodies: " + this.bodyCount);
+	            console.warn("Too many bodies: " + this.bodyCount+" max "+this.maxBodies);
 	            return;
 	        }
 
@@ -376,7 +793,7 @@
 	        data[p + 0] = x;
 	        data[p + 1] = y;
 	        data[p + 2] = z;
-	        data[p + 3] = 1;
+	        data[p + 3] = bodyType;// this is normalize to this.maxBodyTypes which is the texture.width / 2
 
 	        // Quaternion
 	        data = this.dataTextures.bodyQuaternions.image.data;
@@ -398,7 +815,7 @@
 	    },
 	    addParticle: function(bodyId, x, y, z){
 	        if(this.particleCount >= this.maxParticles){
-	            console.warn("Too many particles: " + this.particleCount);
+	            console.warn("Too many particles: " + this.particleCount+" max "+this.maxParticles);
 	            return;
 	        }
 	        // Position
@@ -443,13 +860,14 @@
 	        tex.needsUpdate = true;
 	        this.massDirty = true;
 	    },
-	    initTextures: function(maxBodies, maxParticles){
+	    initTextures: function(maxBodyTypes, maxBodies, maxParticles){
 	        var type = ( /(iPad|iPhone|iPod)/g.test( navigator.userAgent ) ) ? THREE.HalfFloatType : THREE.FloatType;
 	        var bodyTextureSize = powerOfTwoCeil(maxBodies);
 	        var particleTextureSize = powerOfTwoCeil(maxParticles);
-
+					var bodyInfosTextureSize = powerOfTwoCeil(maxBodyTypes)*2;
 	        Object.assign(this.textures, {
 	            // Body textures
+							bodyInfos: createRenderTarget(bodyInfosTextureSize, bodyInfosTextureSize, type),        // (x,y,z,1)
 	            bodyPosRead: createRenderTarget(bodyTextureSize, bodyTextureSize, type),        // (x,y,z,1)
 	            bodyPosWrite: createRenderTarget(bodyTextureSize, bodyTextureSize, type),
 	            bodyQuatRead: createRenderTarget(bodyTextureSize, bodyTextureSize, type),       // (x,y,z,w)
@@ -475,7 +893,8 @@
 	        });
 
 	        Object.assign(this.dataTextures, {
-	            bodyPositions: new THREE.DataTexture( new Float32Array(4*bodyTextureSize*bodyTextureSize), bodyTextureSize, bodyTextureSize, THREE.RGBAFormat, type ),
+							bodyInfos: new THREE.DataTexture( new Float32Array(4*bodyInfosTextureSize*bodyInfosTextureSize), bodyInfosTextureSize, bodyInfosTextureSize, THREE.RGBAFormat, type ),
+							bodyPositions: new THREE.DataTexture( new Float32Array(4*bodyTextureSize*bodyTextureSize), bodyTextureSize, bodyTextureSize, THREE.RGBAFormat, type ),
 	            bodyQuaternions: new THREE.DataTexture( new Float32Array(4*bodyTextureSize*bodyTextureSize), bodyTextureSize, bodyTextureSize, THREE.RGBAFormat, type ),
 	            particleLocalPositions: new THREE.DataTexture( new Float32Array(4*particleTextureSize*particleTextureSize), particleTextureSize, particleTextureSize, THREE.RGBAFormat, type ),
 	            bodyMass: new THREE.DataTexture( new Float32Array(4*bodyTextureSize*bodyTextureSize), bodyTextureSize, bodyTextureSize, THREE.RGBAFormat, type ),
@@ -494,6 +913,7 @@
 	        this.flushDataToRenderTarget(this.textures.bodyQuatWrite, this.dataTextures.bodyQuaternions);
 	        this.flushDataToRenderTarget(this.textures.bodyQuatRead, this.dataTextures.bodyQuaternions);
 	        this.flushDataToRenderTarget(this.textures.particlePosLocal, this.dataTextures.particleLocalPositions);
+					this.flushDataToRenderTarget(this.textures.bodyInfos, this.dataTextures.bodyInfos);
 	    },
 	    flushDataToRenderTarget: function(renderTarget, dataTexture){
 	        var texturedMaterial = this.materials.textured;
@@ -1054,10 +1474,12 @@
 	            updateBodyVelocityMaterial = this.materials.updateBodyVelocity = new THREE.ShaderMaterial({
 	                uniforms: {
 	                    linearAngular:  { type: 'f', value: 0.0 },
+											bodyPosTex:  { value: null },
 	                    bodyQuatTex:  { value: null },
 	                    bodyForceTex:  { value: null },
 	                    bodyVelTex:  { value: null },
 	                    bodyMassTex:  { value: null },
+											bodyInfosTex:  { value: null },
 	                    params2: { value: this.params2 },
 	                    gravity:  { value: this.gravity },
 	                    maxVelocity: { value: this.maxVelocity }
@@ -1081,11 +1503,16 @@
 	        updateBodyVelocityMaterial.uniforms.linearAngular.value = 0;
 	        updateBodyVelocityMaterial.uniforms.bodyVelTex.value = this.textures.bodyVelRead.texture;
 	        updateBodyVelocityMaterial.uniforms.bodyForceTex.value = this.textures.bodyForce.texture;
+					updateBodyVelocityMaterial.uniforms.bodyInfosTex.value = this.textures.bodyAngularVelRead.texture;
+					updateBodyVelocityMaterial.uniforms.bodyPosTex.value = this.textures.bodyPosRead.texture;
 	        renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.bodyVelWrite, false );
 	        this.fullscreenQuad.material = null;
+					updateBodyVelocityMaterial.uniforms.bodyPosTex.value = null;
 	        updateBodyVelocityMaterial.uniforms.bodyMassTex.value = null;
 	        updateBodyVelocityMaterial.uniforms.bodyVelTex.value = null;
 	        updateBodyVelocityMaterial.uniforms.bodyForceTex.value = null;
+					updateBodyVelocityMaterial.uniforms.bodyInfosTex.value = null;
+
 	        this.swapTextures('bodyVelWrite', 'bodyVelRead');
 	    },
 
@@ -1118,6 +1545,7 @@
 	                uniforms: {
 	                    bodyPosTex:  { value: null },
 	                    bodyVelTex:  { value: null },
+											bodyInfosTex:  { value: null },
 	                    params2: { value: this.params2 }
 	                },
 	                vertexShader: passThroughVert,
@@ -1130,9 +1558,11 @@
 	        this.fullscreenQuad.material = updateBodyPositionMaterial;
 	        updateBodyPositionMaterial.uniforms.bodyPosTex.value = this.textures.bodyPosRead.texture;
 	        updateBodyPositionMaterial.uniforms.bodyVelTex.value = this.textures.bodyVelRead.texture;
+					updateBodyPositionMaterial.uniforms.bodyInfosTex.value = this.textures.bodyAngularVelRead.texture;
 	        renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.bodyPosWrite, false );
 	        updateBodyPositionMaterial.uniforms.bodyPosTex.value = null;
 	        updateBodyPositionMaterial.uniforms.bodyVelTex.value = null;
+					updateBodyPositionMaterial.uniforms.bodyInfosTex.value = null;
 	        this.fullscreenQuad.material = null;
 	        this.swapTextures('bodyPosWrite', 'bodyPosRead');
 	    },
@@ -1147,6 +1577,8 @@
 	                uniforms: {
 	                    bodyQuatTex: { value: null },
 	                    bodyAngularVelTex: { value: null },
+											bodyPosTex:  { value: null },
+											bodyInfosTex:  { value: null },
 	                    params2: { value: this.params2 }
 	                },
 	                vertexShader: passThroughVert,
@@ -1159,9 +1591,13 @@
 	        this.fullscreenQuad.material = updateBodyQuaternionMaterial;
 	        updateBodyQuaternionMaterial.uniforms.bodyQuatTex.value = this.textures.bodyQuatRead.texture;
 	        updateBodyQuaternionMaterial.uniforms.bodyAngularVelTex.value = this.textures.bodyAngularVelRead.texture;
+					updateBodyQuaternionMaterial.uniforms.bodyPosTex.value = this.textures.bodyAngularVelRead.texture;
+					updateBodyQuaternionMaterial.uniforms.bodyInfosTex.value = this.textures.bodyAngularVelRead.texture;
 	        renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.bodyQuatWrite, false );
 	        updateBodyQuaternionMaterial.uniforms.bodyQuatTex.value = null;
 	        updateBodyQuaternionMaterial.uniforms.bodyAngularVelTex.value = null;
+					updateBodyQuaternionMaterial.uniforms.bodyPosTex.value = null;
+					updateBodyQuaternionMaterial.uniforms.bodyInfosTex.value = null;
 	        this.fullscreenQuad.material = null;
 
 	        this.swapTextures('bodyQuatWrite', 'bodyQuatRead');

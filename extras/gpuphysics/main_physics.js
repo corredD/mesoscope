@@ -5,6 +5,7 @@
 // fiber
 // fiber-forces
 //var loading_bar;
+//http://iquilezles.org/www/articles/distfunctions/distfunctions.htm
 var ySpread = 0.1;
 var nodes;
 var root;
@@ -126,7 +127,7 @@ function GP_createOneCompartmentMesh(anode) {
   //                    ngl_marching_cube.data_bound.maxsize,
   //                    ngl_marching_cube.data_bound.maxsize);//this is the scale,
   //shapeComp.setPosition(ngl_marching_cube.data_bound.center);//this is the position,
-  var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true });
+  var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: false });
   var compMesh = new THREE.Mesh(bufferGeometry, wireframeMaterial);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
   compMesh.position.x = world.broadphase.position.x+ngl_marching_cube.data_bound.center.x+w/2.0;//center of the box
   compMesh.position.y = world.broadphase.position.y+ngl_marching_cube.data_bound.center.y+h/2.0;
@@ -160,6 +161,7 @@ function distributesMesh(){
     }
     if (nodes[i].data.count !== 0) count = nodes[i].data.count;
     else count = Util_getRandomInt( copy_number )+1;//remove root
+    //count = Util_getRandomInt( copy_number )+1;//remove root
     createInstancesMesh(i,nodes[i],start,count);
     start = start + count;
     total = total + count;
@@ -318,7 +320,7 @@ function createOneMesh(anode,start,count) {
   var color = [1,0,0];
   if (("color" in anode.data)&&(anode.data.color!==null)) color = anode.data.color;
   else {
-    color = [Math.random(), Math.random(), Math.random()];
+    color = (anode.data.surface) ? [1,0,0]:[0,1,0];//Math.random(), Math.random(), Math.random()];
     anode.data.color = [color[0],color[1],color[2]];
   }
   var bufferGeometry = new THREE.BufferGeometry();
@@ -429,6 +431,17 @@ function createInstancesMesh(pid,anode,start,count) {
     offset.set(anode.data.offset[0]*ascale,anode.data.offset[1]*ascale,anode.data.offset[2]*ascale);
     up.set(anode.data.pcpalAxis[0],anode.data.pcpalAxis[1],anode.data.pcpalAxis[2]);
   }
+
+  if (!(pid in type_meshs) ){
+    type_meshs[pid] = createOneMesh(anode,start,count);
+    //add bodyType firstaddBodyType
+    anode.data.bodyid = world.bodyTypeCount;
+    var s = (!anode.data.surface)? 0.0:1.0;
+    console.log(s,anode);
+    world.addBodyType(s, anode.data.size,
+                      up.x, up.y, up.z,
+                      offset.x, offset.y, offset.z);
+  }
   //position should use the halton sequence and the grid size
   for (var bodyId=start;bodyId<start+count;bodyId++) {
     //if (loading_bar) loading_bar.set(bodyId/start+count);
@@ -477,7 +490,9 @@ function createInstancesMesh(pid,anode,start,count) {
     //var pid = Util_getRandomInt(nodes.length-1)+1;//remove root
     //if (nodes[pid].children) {bodyId=bodyId-1;continue;}
 
-    world.addBody(x,y,z, q.x, q.y, q.z, q.w, mass, inertia.x, inertia.y, inertia.z);
+    world.addBody(x,y,z, q.x, q.y, q.z, q.w,
+                  mass, inertia.x, inertia.y, inertia.z,
+                  anode.data.bodyid);
     for (var i=0;i<anode.data.radii[0].radii.length;i++){
         //transform beads
         var x=anode.data.pos[0].coords[i*3]*ascale,
@@ -495,9 +510,6 @@ function createInstancesMesh(pid,anode,start,count) {
       }
       num_beads_total = num_beads_total + atomData_mapping[pid].count;
     }
-  }
-  if (!(pid in type_meshs) ){
-    type_meshs[pid] = createOneMesh(anode,start,count);
   }
 }
 
@@ -667,6 +679,7 @@ function GP_initWorld(){
         maxSubSteps: 1, // TODO: fix
         gravity: new THREE.Vector3(0,0,0),
         renderer: renderer,
+        maxBodyTypes:32*32,
         maxBodies: numBodies * numBodies,
         maxParticles: numParticles * numParticles,
         radius: radius,
