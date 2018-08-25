@@ -75,6 +75,7 @@ vec3 vec3_applyQuat(vec3 v, vec4 q){
     //debug the bodyType there !
 -->
 <script id="renderBodiesVertex" type="x-shader/x-vertex">
+uniform sampler2D bodyInfosTex;
 uniform sampler2D bodyPosTex;
 uniform sampler2D bodyQuatTex;
 attribute float bodyIndex;
@@ -110,7 +111,19 @@ void main() {
     #include <morphnormal_vertex>
     #include <skinbase_vertex>
     #include <skinnormal_vertex>
-    vec3 bodyPos = texture2D(bodyPosTex,bodyUV).xyz;
+    vec4 posTexData = texture2D(bodyPosTex, bodyUV);
+    float bodyTypeIndex = posTexData.w;
+    vec2 bodyType_uv = indexToUV( bodyTypeIndex*2.0, bodyInfosTextureResolution );
+    vec4 bodyType_infos1 = texture2D(bodyInfosTex, bodyType_uv);
+    bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );
+    vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);
+    if (bodyType_infos1.w == 1.0) {
+        vColor = vec3(1,0,0);
+    }
+    else {
+        vColor = vec3(0,0,1);
+    }
+    vec3 bodyPos = posTexData.xyz;
     vec4 bodyQuat = texture2D(bodyQuatTex,bodyUV).xyzw;
     objectNormal.xyz = vec3_applyQuat(objectNormal.xyz, bodyQuat);
     #include <defaultnormal_vertex>

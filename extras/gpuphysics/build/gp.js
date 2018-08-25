@@ -232,6 +232,7 @@ void main() {\n\
 	#define deltaTime params2.x\n\
 	#define drag params2.z\n\
 	void main() {\n\
+			vec3 g = vec3(gravity);\n\
 	    vec2 uv = gl_FragCoord.xy / bodyTextureResolution;\n\
 	    vec4 velocity = texture2D(bodyVelTex, uv);\n\
 	    vec4 force = texture2D(bodyForceTex, uv);\n\
@@ -240,7 +241,7 @@ void main() {\n\
 	    vec3 newVelocity = velocity.xyz;\n\
 			vec4 posTexData = texture2D(bodyPosTex, uv);\n\
 			vec3 position = posTexData.xyz;\n\
-			float bodyTypeIndex = posTexData.w;// * bodyInfosTextureResolution.x * bodyInfosTextureResolution.y;\n\
+			float bodyTypeIndex = posTexData.w;\n\
 			vec2 bodyType_uv = indexToUV( bodyTypeIndex*2.0, bodyInfosTextureResolution );\n\
 			vec4 bodyType_infos1 = texture2D(bodyInfosTex, bodyType_uv);\n\
 			bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
@@ -255,11 +256,15 @@ void main() {\n\
 					float pos_radius = length(toward_surface);\n\
 					float distance = (pos_radius-rads);\n\
 					if (pos_radius < rads ) force = vec4(-normalize(toward_surface),1)*200.0;\n\
-					else {force = vec4(0.0,0.0,0.0,0.0); newVelocity = vec3(0.0,0.0,0.0);}\n\
+					else {\n\
+						force = vec4(0.0,0.0,0.0,0.0); \n\
+						newVelocity = vec3(0.0,0.0,0.0);\n\
+						g=vec3(0.0,0.0,0.0);\n\
+					}\n\
 			}\n\
 			if( linearAngular < 0.5 ){\n\
 	        float invMass = massProps.w;\n\
-	        newVelocity += (force.xyz + gravity) * deltaTime * invMass;\n\
+	        newVelocity += (force.xyz + g) * deltaTime * invMass;\n\
 	    } else {\n\
 	        vec3 invInertia = massProps.xyz;\n\
 	        newVelocity += force.xyz * deltaTime * invInertiaWorld(quat, invInertia);\n\
@@ -296,7 +301,7 @@ void main() {\n\
 				vec3 position = posTexData.xyz;\n\
 				vec4 quat = texture2D(bodyQuatTex, uv);\n\
 				vec3 angularVel = texture2D(bodyAngularVelTex, uv).xyz;\n\
-        gl_FragColor = quat;//quat_integrate(quat, angbodyPosReadularVel, deltaTime);\n\
+        gl_FragColor = quat;//quat_integrate(quat, angularVel, deltaTime);\n\
 }\n"
 
 	var addParticleForceToBodyVert = "uniform sampler2D relativeParticlePosTex;\n\
@@ -1503,8 +1508,9 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        updateBodyVelocityMaterial.uniforms.linearAngular.value = 0;
 	        updateBodyVelocityMaterial.uniforms.bodyVelTex.value = this.textures.bodyVelRead.texture;
 	        updateBodyVelocityMaterial.uniforms.bodyForceTex.value = this.textures.bodyForce.texture;
-					updateBodyVelocityMaterial.uniforms.bodyInfosTex.value = this.textures.bodyAngularVelRead.texture;
+					updateBodyVelocityMaterial.uniforms.bodyInfosTex.value = this.textures.bodyInfos.texture;
 					updateBodyVelocityMaterial.uniforms.bodyPosTex.value = this.textures.bodyPosRead.texture;
+					updateBodyVelocityMaterial.uniforms.bodyQuatTex.value = this.textures.bodyQuatRead.texture;
 	        renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.bodyVelWrite, false );
 	        this.fullscreenQuad.material = null;
 					updateBodyVelocityMaterial.uniforms.bodyPosTex.value = null;
@@ -1512,6 +1518,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        updateBodyVelocityMaterial.uniforms.bodyVelTex.value = null;
 	        updateBodyVelocityMaterial.uniforms.bodyForceTex.value = null;
 					updateBodyVelocityMaterial.uniforms.bodyInfosTex.value = null;
+					updateBodyVelocityMaterial.uniforms.bodyQuatTex.value = null;
 
 	        this.swapTextures('bodyVelWrite', 'bodyVelRead');
 	    },
@@ -1558,7 +1565,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        this.fullscreenQuad.material = updateBodyPositionMaterial;
 	        updateBodyPositionMaterial.uniforms.bodyPosTex.value = this.textures.bodyPosRead.texture;
 	        updateBodyPositionMaterial.uniforms.bodyVelTex.value = this.textures.bodyVelRead.texture;
-					updateBodyPositionMaterial.uniforms.bodyInfosTex.value = this.textures.bodyAngularVelRead.texture;
+					updateBodyPositionMaterial.uniforms.bodyInfosTex.value = this.textures.bodyInfos.texture;
 	        renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.bodyPosWrite, false );
 	        updateBodyPositionMaterial.uniforms.bodyPosTex.value = null;
 	        updateBodyPositionMaterial.uniforms.bodyVelTex.value = null;
@@ -1592,7 +1599,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        updateBodyQuaternionMaterial.uniforms.bodyQuatTex.value = this.textures.bodyQuatRead.texture;
 	        updateBodyQuaternionMaterial.uniforms.bodyAngularVelTex.value = this.textures.bodyAngularVelRead.texture;
 					updateBodyQuaternionMaterial.uniforms.bodyPosTex.value = this.textures.bodyAngularVelRead.texture;
-					updateBodyQuaternionMaterial.uniforms.bodyInfosTex.value = this.textures.bodyAngularVelRead.texture;
+					updateBodyQuaternionMaterial.uniforms.bodyInfosTex.value = this.textures.bodyInfos.texture;
 	        renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.bodyQuatWrite, false );
 	        updateBodyQuaternionMaterial.uniforms.bodyQuatTex.value = null;
 	        updateBodyQuaternionMaterial.uniforms.bodyAngularVelTex.value = null;

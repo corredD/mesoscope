@@ -320,7 +320,7 @@ function createOneMesh(anode,start,count) {
   var color = [1,0,0];
   if (("color" in anode.data)&&(anode.data.color!==null)) color = anode.data.color;
   else {
-    color = (anode.data.surface) ? [1,0,0]:[0,1,0];//Math.random(), Math.random(), Math.random()];
+    color = [0,1,0];//(anode.data.surface) ? [1,0,0]:[0,1,0];//Math.random(), Math.random(), Math.random()];
     anode.data.color = [color[0],color[1],color[2]];
   }
   var bufferGeometry = new THREE.BufferGeometry();
@@ -521,6 +521,7 @@ function createShaderMaterial( id, light, ambientLight ) {
   var unif = THREE.UniformsUtils.merge([u,u2]);
   unif.bodyQuatTex = { value: world.dataTextures.bodyQuaternions };
   unif.bodyPosTex = { value: world.dataTextures.bodyPositions };
+  unif.bodyInfosTex = { value: world.dataTextures.bodyInfos };
   var vs = sharedShaderCode.innerText + renderBodiesVertex.innerText;//shader.vertexShader;
   var fs = shader.fragmentShader;
   var material = new THREE.ShaderMaterial( {
@@ -530,6 +531,7 @@ function createShaderMaterial( id, light, ambientLight ) {
     lights: true,
     vertexColors: true,
     defines: {
+          bodyInfosTextureResolution: 'vec2( ' + world.textures.bodyInfos.width.toFixed( 1 ) + ', ' + world.textures.bodyInfos.width.toFixed( 1 ) + " )",
           bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
           resolution: 'vec2(' + world.particleTextureSize.toFixed(1) + ',' + world.particleTextureSize.toFixed(1) + ')'
       }} );
@@ -836,7 +838,7 @@ function init(){
     var meshUniforms = THREE.UniformsUtils.clone(phongShader.uniforms);//phongShader.uniforms);
     meshUniforms.bodyQuatTex = { value: world.dataTextures.bodyQuaternions };
     meshUniforms.bodyPosTex = { value: world.dataTextures.bodyPositions };
-
+    meshUniforms.bodyInfosTex = { value: world.dataTextures.bodyInfos };
     meshMaterial = new THREE.ShaderMaterial({
         uniforms: meshUniforms,
         vertexShader: sharedShaderCode.innerText + renderBodiesVertex.innerText,
@@ -996,6 +998,7 @@ function render() {
 
     all_materials[ current_material ].m.uniforms.bodyPosTex.value = world.bodyPositionTexture;
     all_materials[ current_material ].m.uniforms.bodyQuatTex.value = world.bodyQuaternionTexture;
+    all_materials[ current_material ].m.uniforms.bodyInfosTex.value = world.textures.bodyInfos.texture;
 
     customDepthMaterial.uniforms.bodyPosTex.value = world.bodyPositionTexture;
     customDepthMaterial.uniforms.bodyQuatTex.value = world.bodyQuaternionTexture;
