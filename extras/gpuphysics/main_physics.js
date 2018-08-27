@@ -154,7 +154,7 @@ function GP_createOneCompartmentMesh(anode) {
   //                    ngl_marching_cube.data_bound.maxsize,
   //                    ngl_marching_cube.data_bound.maxsize);//this is the scale,
   //shapeComp.setPosition(ngl_marching_cube.data_bound.center);//this is the position,
-  var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: false });
+  var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true });
   var compMesh = new THREE.Mesh(bufferGeometry, wireframeMaterial);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
   compMesh.position.x = world.broadphase.position.x+ngl_marching_cube.data_bound.center.x+w/2.0;//center of the box
   compMesh.position.y = world.broadphase.position.y+ngl_marching_cube.data_bound.center.y+h/2.0;
@@ -216,7 +216,7 @@ function distributesMesh(){
   var keys = Object.keys(type_meshs);
   var nMeshs = keys.length;
   for (var i=0;i<nMeshs;i++) {
-      var amesh = new THREE.Mesh( type_meshs[keys[i]], all_materials["toon2"].m );
+      var amesh = new THREE.Mesh( type_meshs[keys[i]], all_materials[current_material].m );
       amesh.frustumCulled = false; // Instances can't be culled like normal meshes
       // Create a depth material for rendering instances to shadow map
       amesh.customDepthMaterial = customDepthMaterial;
@@ -728,7 +728,7 @@ function GP_initWorld(){
         radius: radius,
         stiffness: 1700,
         damping: 6,
-        fixedTimeStep: 0.001,//1/120,
+        fixedTimeStep: 0.003,//1/120,
         friction: 2,
         drag: 0.3,
         boxSize: boxSize,
@@ -737,7 +737,7 @@ function GP_initWorld(){
     });
 
     // Interaction sphere
-    world.setSphereRadius(0, 0.05);
+    world.setSphereRadius(0, 0.25);
     world.setSpherePosition(0, 0,0,0);
 }
 
@@ -887,12 +887,13 @@ function init(){
         lights: true,
         vertexColors: true,
         defines: {
+            bodyInfosTextureResolution: 'vec2( ' + world.textures.bodyInfos.width.toFixed( 1 ) + ', ' + world.textures.bodyInfos.width.toFixed( 1 ) + " )",
             bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
             resolution: 'vec2(' + world.particleTextureSize.toFixed(1) + ',' + world.particleTextureSize.toFixed(1) + ')'
         }
     });
     all_materials["default"] = {m:meshMaterial,h: 0.1, s: 1, l: 0.5};
-    current_material = "toon2";
+    current_material = "default";//"toon2";
 
     customDepthMaterial = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge([
