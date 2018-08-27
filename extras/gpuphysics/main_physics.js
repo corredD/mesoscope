@@ -320,7 +320,7 @@ function createOneMesh(anode,start,count) {
   var color = [1,0,0];
   if (("color" in anode.data)&&(anode.data.color!==null)) color = anode.data.color;
   else {
-    color = [0,1,0];//(anode.data.surface) ? [1,0,0]:[0,1,0];//Math.random(), Math.random(), Math.random()];
+    color = [Math.random(), Math.random(), Math.random()];;//(anode.data.surface) ? [1,0,0]:[0,1,0];//Math.random(), Math.random(), Math.random()];
     anode.data.color = [color[0],color[1],color[2]];
   }
   var bufferGeometry = new THREE.BufferGeometry();
@@ -438,7 +438,7 @@ function createInstancesMesh(pid,anode,start,count) {
     anode.data.bodyid = world.bodyTypeCount;
     var s = (!anode.data.surface)? 0.0:1.0;
     console.log(s,anode);
-    world.addBodyType(s, anode.data.size,
+    world.addBodyType(s, anode.data.size*ascale,
                       up.x, up.y, up.z,
                       offset.x, offset.y, offset.z);
   }

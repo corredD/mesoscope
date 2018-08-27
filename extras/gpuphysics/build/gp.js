@@ -9,36 +9,102 @@
 	var passThroughFrag = "uniform sampler2D texture;\nuniform vec2 res;\nvoid main() {\n\tvec2 uv = gl_FragCoord.xy / res;\n\tgl_FragColor = texture2D( texture, uv );\n}";
 
 	var setBodyDataVert = "uniform vec2 res;\n\
-attribute float bodyIndex;\n\
-attribute vec4 data;\n\
-varying vec4 vData;\n\
-void main() {\n\
-        vec2 uv = indexToUV(bodyIndex, res);\n\
-        uv += 0.5 / res;\n\
-        gl_PointSize = 1.0;\n\
-        vData = data;\n\
-        gl_Position = vec4(2.0*uv-1.0, 0, 1);\n\
-}";
+	attribute float bodyIndex;\n\
+	attribute vec4 data;\n\
+	varying vec4 vData;\n\
+	void main() {\n\
+	        vec2 uv = indexToUV(bodyIndex, res);\n\
+	        uv += 0.5 / res;\n\
+	        gl_PointSize = 1.0;\n\
+	        vData = data;\n\
+	        gl_Position = vec4(2.0*uv-1.0, 0, 1);\n\
+	}";
 
 	var setBodyDataFrag = "varying vec4 vData;\nvoid main() {\n\tgl_FragColor = vData;\n}";
 
+	//step 1 - updateWorldParticlePositions() ->this.textures.particlePosWorld
+	var localParticlePositionToWorldFrag = "uniform sampler2D localParticlePosTex;\n\
+	uniform sampler2D bodyPosTex;\n\
+	uniform sampler2D bodyQuatTex;\n\
+	void main() {\n\
+				vec2 uv = gl_FragCoord.xy / resolution;\n\
+				float particleIndex = float(uvToIndex(uv, resolution));\n\
+				vec4 particlePosAndBodyId = texture2D( localParticlePosTex, uv );\n\
+				vec3 particlePos = particlePosAndBodyId.xyz;\n\
+				float bodyIndex = particlePosAndBodyId.w;\n\
+				vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
+				bodyUV += vec2(0.5) / bodyTextureResolution;    \n\
+				vec3 bodyPos = texture2D( bodyPosTex, bodyUV ).xyz;\n\
+				vec4 bodyQuat = texture2D( bodyQuatTex, bodyUV );\n\
+				vec3 worldParticlePos = vec3_applyQuat(particlePos, bodyQuat) + bodyPos;\n\
+				gl_FragColor = vec4(worldParticlePos, bodyIndex);\n\
+	}\n";
+
+	//step 2 - updateRelativeParticlePositions() ->this.textures.particlePosRelative
+		var localParticlePositionToRelativeFrag = "uniform sampler2D localParticlePosTex;\n\
+	uniform sampler2D bodyQuatTex;\n\
+	void main() {\n\
+	        vec2 uv = gl_FragCoord.xy / resolution;\n\
+	        float particleIndex = float(uvToIndex(uv, resolution));\n\
+	        vec4 particlePosAndBodyId = texture2D( localParticlePosTex, uv );\n\
+	        vec3 particlePos = particlePosAndBodyId.xyz;\n\
+	        float bodyIndex = particlePosAndBodyId.w;\n\
+	        vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
+	        bodyUV += vec2(0.5) / bodyTextureResolution;\n\
+					vec4 bodyQuat = texture2D( bodyQuatTex, bodyUV );\n\
+	        vec3 relativeParticlePos = vec3_applyQuat(particlePos, bodyQuat);\n\
+	        gl_FragColor = vec4(relativeParticlePos, bodyIndex);\n\
+	}\n";
+
+	//step 3 - updateParticleVelocity() ->this.textures.particleVel
+		var bodyVelocityToParticleVelocityFrag = "uniform sampler2D relativeParticlePosTex;\n\
+	uniform sampler2D bodyVelTex;\n\
+	uniform sampler2D bodyAngularVelTex;\n\
+	void main() {\n\
+	        vec2 particleUV = gl_FragCoord.xy / resolution;\n\
+	        vec4 particlePosAndBodyId = texture2D( relativeParticlePosTex, particleUV );\n\
+	        vec3 relativeParticlePosition = particlePosAndBodyId.xyz;\n\
+	        float bodyIndex = particlePosAndBodyId.w;\n\
+	        vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
+	        bodyUV += vec2(0.5) / bodyTextureResolution;\n\
+	        vec3 bodyVelocity = texture2D( bodyVelTex, bodyUV ).xyz;\n\
+	        vec3 bodyAngularVelocity = texture2D( bodyAngularVelTex, bodyUV ).xyz;\n\
+	        vec3 particleVelocity = bodyVelocity - cross(relativeParticlePosition, bodyAngularVelocity);\n\
+	        gl_FragColor = vec4(particleVelocity, 1);\n\
+	}\n";
+
+	//step 4 - updateGrid()->this.textures.grid
+		var setStencilFrag = "uniform vec2 res;\n\
+	uniform float quadrant;\n\
+	void main() {\n\
+	        vec2 coord = floor(gl_FragCoord.xy);\n\
+	        if(mod(coord.x,2.0) + 2.0 * mod(coord.y,2.0) == quadrant){\n\
+	                gl_FragColor = vec4(1,1,1,1);\n\
+	        } else {\n\
+	                discard;\n\
+	        }\n\
+	}\n";
+
 	var mapParticleToCellVert = "uniform sampler2D posTex;\n\
-uniform vec3 cellSize;\n\
-uniform vec3 gridPos;\n\
-attribute float particleIndex;\n\
-varying float vParticleIndex;\n\
-void main() {\n\
-    vParticleIndex = particleIndex;\n\
-    vec2 particleUV = indexToUV(particleIndex, resolution);\n\
-    vec3 particlePos = texture2D( posTex, particleUV ).xyz;\n\
-    vec3 cellPos = worldPosToGridPos(particlePos, gridPos, cellSize);\n\
-    vec2 gridUV = gridPosToGridUV(cellPos, 0, gridResolution, gridTextureResolution, gridZTiling);\n\
-    gridUV += vec2(1) / gridTextureResolution;    gl_PointSize = 2.0;    gl_Position = vec4(2.0*(gridUV-0.5), 0, 1);\n\
-}\n";
+	uniform vec3 cellSize;\n\
+	uniform vec3 gridPos;\n\
+	attribute float particleIndex;\n\
+	varying float vParticleIndex;\n\
+	void main() {\n\
+		vParticleIndex = particleIndex;\n\
+		vec2 particleUV = indexToUV(particleIndex, resolution);\n\
+		vec3 particlePos = texture2D( posTex, particleUV ).xyz;\n\
+		vec3 cellPos = worldPosToGridPos(particlePos, gridPos, cellSize);\n\
+		vec2 gridUV = gridPosToGridUV(cellPos, 0, gridResolution, gridTextureResolution, gridZTiling);\n\
+		gridUV += vec2(1) / gridTextureResolution;    gl_PointSize = 2.0;    gl_Position = vec4(2.0*(gridUV-0.5), 0, 1);\n\
+	}\n";
 
-	var mapParticleToCellFrag = "varying float vParticleIndex;\nvoid main() {\n    gl_FragColor = vec4( vParticleIndex+1.0, 0, 0, 1 );}";
+	var mapParticleToCellFrag = "varying float vParticleIndex;\n\
+	void main() {\n\
+				gl_FragColor = vec4( vParticleIndex+1.0, 0, 0, 1 );}";
 
-	var updateForceFrag = "uniform vec4 params1;\n\
+//step 5 - updateParticleForce()->this.textures.particleForce
+var updateForceFrag = "uniform vec4 params1;\n\
 	#define stiffness params1.x\n\
 	#define damping params1.y\n\
 	#define radius params1.z\n\
@@ -134,12 +200,14 @@ void main() {\n\
 			vec3 r = position - interactionSpherePos;\n\
 			float len = length(r);\n\
 			if(len > 0.0 && len < interactionSphereRadius+radius){\n\
-					force += particleForce(stiffness, damping, friction, radius + interactionSphereRadius, interactionSphereRadius, position, interactionSpherePos, velocity, vec3(0));\n\
+					force += particleForce(stiffness, damping, friction, radius + interactionSphereRadius, interactionSphereRadius, position, interactionSpherePos, velocity, vec3(0))*10.0;\n\
 			}\n\
+			//could add the surface force here as well?\n\
 			gl_FragColor = vec4(force, 1.0);\n\
 	}\n"
 
-	var updateTorqueFrag = "uniform vec4 params1;\n\
+//step 6 - updateParticleTorque()->this.textures.particleTorque
+var updateTorqueFrag = "uniform vec4 params1;\n\
 	#define stiffness params1.x\n\
 	#define damping params1.y\n\
 	#define radius params1.z\n\
@@ -219,6 +287,45 @@ void main() {\n\
 	    gl_FragColor = vec4(torque, 0.0);\n\
 	}\n";
 
+//step 7 - updateBodyForce()
+		var addParticleForceToBodyVert = "uniform sampler2D relativeParticlePosTex;\n\
+	uniform sampler2D particleForceTex;\n\
+	attribute float particleIndex;\n\
+	attribute float bodyIndex;\n\
+	varying vec3 vBodyForce;\n\
+	void main() {\n\
+	    vec2 particleUV = indexToUV( particleIndex, resolution );\n\
+	    vec3 particleForce = texture2D( particleForceTex, particleUV ).xyz;\n\
+	    vBodyForce = particleForce;\n\
+	    vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
+	    bodyUV += vec2(0.5) / bodyTextureResolution;\n\
+			gl_PointSize = 1.0;\n\
+	    gl_Position = vec4(2.0 * (bodyUV - 0.5), -particleIndex / (resolution.x*resolution.y), 1);\n\
+	}\n";
+
+//step 8 - updateBodyTorque
+		var addParticleTorqueToBodyVert = "uniform sampler2D relativeParticlePosTex;\n\
+	uniform sampler2D particleForceTex;\n\
+	uniform sampler2D particleTorqueTex;\n\
+	attribute float particleIndex;\n\
+	attribute float bodyIndex;\n\
+	varying vec3 vBodyForce;\n\
+	void main() {\n\
+	    vec2 particleUV = indexToUV( particleIndex, resolution );\n\
+	    vec3 particleForce = texture2D( particleForceTex, particleUV ).xyz;\n\
+	    vec3 particleTorque = texture2D( particleTorqueTex, particleUV ).xyz;\n\
+	    vec3 relativeParticlePos = texture2D( relativeParticlePosTex, particleUV ).xyz;\n\
+	    vBodyForce = particleTorque + cross(relativeParticlePos, particleForce);\n\
+	    vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
+	    bodyUV += vec2(0.5) / bodyTextureResolution;    gl_PointSize = 1.0;\n\
+	    gl_Position = vec4(2.0 * (bodyUV - 0.5), -particleIndex / (resolution.x*resolution.y), 1);\n\
+	}\n";
+
+		var addParticleForceToBodyFrag = "varying vec3 vBodyForce;\n\
+	void main() {\n\
+	\tgl_FragColor = vec4(vBodyForce, 1.0);\n}";
+
+//step 9&10 - updateBodyVelocity
 	var updateBodyVelocityFrag = "uniform sampler2D bodyQuatTex;\n\
 	uniform sampler2D bodyPosTex;\n\
 	uniform sampler2D bodyVelTex;\n\
@@ -246,15 +353,15 @@ void main() {\n\
 			vec4 bodyType_infos1 = texture2D(bodyInfosTex, bodyType_uv);\n\
 			bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
 			vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);\n\
+			vec3 sph_center = vec3(0.0,0.5,0.0);\n\
+			float rads = 0.09;//(0.08798828125000001)*(0.08798828125000001);\n\
+			vec3 toward_surface = sph_center - position;\n\
+			float pos_radius = length(toward_surface);\n\
+			float distance = (pos_radius-rads);\n\
 			if (bodyType_infos1.w == 1.0) {\n\
 					//update quat\n\
-					vec3 sph_center = vec3(0.0,0.5,0.0);\n\
-					float rads = 0.09;//(0.08798828125000001)*(0.08798828125000001);\n\
 					vec3 up = bodyType_infos1.xyz;\n\
 					vec3 off = bodyType_infos2.xyz;\n\
-					vec3 toward_surface = sph_center - position;\n\
-					float pos_radius = length(toward_surface);\n\
-					float distance = (pos_radius-rads);\n\
 					if (pos_radius < rads ) force = vec4(-normalize(toward_surface),1)*200.0;\n\
 					else {\n\
 						force = vec4(0.0,0.0,0.0,0.0); \n\
@@ -262,10 +369,17 @@ void main() {\n\
 						g=vec3(0.0,0.0,0.0);\n\
 					}\n\
 			}\n\
+			else {\n\
+				if (abs(distance) < 0.02){\n\
+						force = vec4(-normalize(toward_surface*distance),1)*100.0;\n\
+				}\n\
+			}\n\
+			//updateBodyVelocity\n\
 			if( linearAngular < 0.5 ){\n\
 	        float invMass = massProps.w;\n\
 	        newVelocity += (force.xyz + g) * deltaTime * invMass;\n\
-	    } else {\n\
+	    } //updateBodyAngularVelocity\n\
+			else {\n\
 	        vec3 invInertia = massProps.xyz;\n\
 	        newVelocity += force.xyz * deltaTime * invInertiaWorld(quat, invInertia);\n\
 	    }\n\
@@ -274,8 +388,7 @@ void main() {\n\
 	    gl_FragColor = vec4(newVelocity, 1.0);\n\
 	}\n";
 
-
-//whould we update here when surface body?
+//step 11 updateBodyPosition()
 	var updateBodyPositionFrag = "uniform sampler2D bodyPosTex;\n\
 uniform sampler2D bodyVelTex;\n\
 uniform sampler2D bodyInfosTex;\n\
@@ -289,6 +402,7 @@ void main() {\n\
         gl_FragColor = vec4(position + velocity * deltaTime, posTexData.w);\n\
 }\n";
 
+//step 12 updateBodyQuaternion()
 	var updateBodyQuaternionFrag = "uniform sampler2D bodyQuatTex;\n\
 uniform sampler2D bodyAngularVelTex;\n\
 uniform sampler2D bodyPosTex;\n\
@@ -304,101 +418,37 @@ void main() {\n\
         gl_FragColor = quat;//quat_integrate(quat, angularVel, deltaTime);\n\
 }\n"
 
-	var addParticleForceToBodyVert = "uniform sampler2D relativeParticlePosTex;\n\
-uniform sampler2D particleForceTex;\n\
-attribute float particleIndex;\n\
-attribute float bodyIndex;\n\
-varying vec3 vBodyForce;\n\
-void main() {\n\
-    vec2 particleUV = indexToUV( particleIndex, resolution );\n\
-    vec3 particleForce = texture2D( particleForceTex, particleUV ).xyz;\n\
-    vBodyForce = particleForce;\n\
-    vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
-    bodyUV += vec2(0.5) / bodyTextureResolution;\n\
-		gl_PointSize = 1.0;\n\
-    gl_Position = vec4(2.0 * (bodyUV - 0.5), -particleIndex / (resolution.x*resolution.y), 1);\n\
-}\n";
 
-	var addParticleTorqueToBodyVert = "uniform sampler2D relativeParticlePosTex;\n\
-uniform sampler2D particleForceTex;\n\
-uniform sampler2D particleTorqueTex;\n\
-attribute float particleIndex;\n\
-attribute float bodyIndex;\n\
-varying vec3 vBodyForce;\n\
-void main() {\n\
-    vec2 particleUV = indexToUV( particleIndex, resolution );\n\
-    vec3 particleForce = texture2D( particleForceTex, particleUV ).xyz;\n\
-    vec3 particleTorque = texture2D( particleTorqueTex, particleUV ).xyz;\n\
-    vec3 relativeParticlePos = texture2D( relativeParticlePosTex, particleUV ).xyz;\n\
-    vBodyForce = particleTorque + cross(relativeParticlePos, particleForce);\n\
-    vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
-    bodyUV += vec2(0.5) / bodyTextureResolution;    gl_PointSize = 1.0;\n\
-    gl_Position = vec4(2.0 * (bodyUV - 0.5), -particleIndex / (resolution.x*resolution.y), 1);\n\
-}\n";
-
-	var addParticleForceToBodyFrag = "varying vec3 vBodyForce;\n\
-void main() {\n\
-\tgl_FragColor = vec4(vBodyForce, 1.0);\n}";
-
-	var localParticlePositionToRelativeFrag = "uniform sampler2D localParticlePosTex;\n\
-uniform sampler2D bodyQuatTex;\n\
-void main() {\n\
-        vec2 uv = gl_FragCoord.xy / resolution;\n\
-        float particleIndex = float(uvToIndex(uv, resolution));\n\
-        vec4 particlePosAndBodyId = texture2D( localParticlePosTex, uv );\n\
-        vec3 particlePos = particlePosAndBodyId.xyz;\n\
-        float bodyIndex = particlePosAndBodyId.w;\n\
-        vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
-        bodyUV += vec2(0.5) / bodyTextureResolution;    vec4 bodyQuat = texture2D( bodyQuatTex, bodyUV );\n\
-        vec3 relativeParticlePos = vec3_applyQuat(particlePos, bodyQuat);\n\
-        gl_FragColor = vec4(relativeParticlePos, bodyIndex);\n\
-}\n";
-
-	var localParticlePositionToWorldFrag = "uniform sampler2D localParticlePosTex;\n\
-uniform sampler2D bodyPosTex;\n\
-uniform sampler2D bodyQuatTex;\n\
-void main() {\n\
-        vec2 uv = gl_FragCoord.xy / resolution;\n\
-        float particleIndex = float(uvToIndex(uv, resolution));\n\
-        vec4 particlePosAndBodyId = texture2D( localParticlePosTex, uv );\n\
-        vec3 particlePos = particlePosAndBodyId.xyz;\n\
-        float bodyIndex = particlePosAndBodyId.w;\n\
-        vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
-        bodyUV += vec2(0.5) / bodyTextureResolution;    \n\
-				vec3 bodyPos = texture2D( bodyPosTex, bodyUV ).xyz;\n\
-        vec4 bodyQuat = texture2D( bodyQuatTex, bodyUV );\n\
-        vec3 worldParticlePos = vec3_applyQuat(particlePos, bodyQuat) + bodyPos;\n\
-        gl_FragColor = vec4(worldParticlePos, bodyIndex);\n\
-}\n";
-
-	var bodyVelocityToParticleVelocityFrag = "uniform sampler2D relativeParticlePosTex;\n\
+	var setBodyPositionFrag = "uniform sampler2D bodyPosTex;\n\
 uniform sampler2D bodyVelTex;\n\
+uniform sampler2D bodyInfosTex;\n\
+uniform vec4 params2;\n\
+#define deltaTime params2.x\n\
+void main() {\n\
+        vec2 uv = gl_FragCoord.xy / bodyTextureResolution;\n\
+        vec4 posTexData = texture2D(bodyPosTex, uv);\n\
+        vec3 position = posTexData.xyz;\n\
+        vec3 velocity = texture2D(bodyVelTex, uv).xyz;\n\
+        gl_FragColor = vec4(position + velocity * deltaTime, posTexData.w);\n\
+}\n";
+
+	var setBodyQuaternionFrag = "uniform sampler2D bodyQuatTex;\n\
 uniform sampler2D bodyAngularVelTex;\n\
+uniform sampler2D bodyPosTex;\n\
+uniform sampler2D bodyInfosTex;\n\
+uniform vec4 params2;\n\
+#define deltaTime params2.x\n\
 void main() {\n\
-        vec2 particleUV = gl_FragCoord.xy / resolution;\n\
-        vec4 particlePosAndBodyId = texture2D( relativeParticlePosTex, particleUV );\n\
-        vec3 relativeParticlePosition = particlePosAndBodyId.xyz;\n\
-        float bodyIndex = particlePosAndBodyId.w;\n\
-        vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
-        bodyUV += vec2(0.5) / bodyTextureResolution;\n\
-        vec3 bodyVelocity = texture2D( bodyVelTex, bodyUV ).xyz;\n\
-        vec3 bodyAngularVelocity = texture2D( bodyAngularVelTex, bodyUV ).xyz;\n\
-        vec3 particleVelocity = bodyVelocity - cross(relativeParticlePosition, bodyAngularVelocity);\n\
-        gl_FragColor = vec4(particleVelocity, 1);\n\
-}\n";
+        vec2 uv = gl_FragCoord.xy / bodyTextureResolution;\n\
+				vec4 posTexData = texture2D(bodyPosTex, uv);\n\
+				vec3 position = posTexData.xyz;\n\
+				vec4 quat = texture2D(bodyQuatTex, uv);\n\
+				vec3 angularVel = texture2D(bodyAngularVelTex, uv).xyz;\n\
+        gl_FragColor = quat;//quat_integrate(quat, angularVel, deltaTime);\n\
+}\n"
 
-	var setStencilFrag = "uniform vec2 res;\n\
-uniform float quadrant;\n\
-void main() {\n\
-        vec2 coord = floor(gl_FragCoord.xy);\n\
-        if(mod(coord.x,2.0) + 2.0 * mod(coord.y,2.0) == quadrant){\n\
-                gl_FragColor = vec4(1,1,1,1);\n\
-        } else {\n\
-                discard;\n\
-        }\n\
-}\n";
 
-	var shared = "int uvToIndex(vec2 uv, vec2 size) {\n\
+var shared = "int uvToIndex(vec2 uv, vec2 size) {\n\
         ivec2 coord = ivec2(floor(uv*size+0.5));\n\
         return coord.x + int(size.x) * coord.y;\n\
 }\n\
@@ -735,17 +785,17 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	    singleStep: function(){
 	        this.saveRendererState();
 	        this.flushData();
-	        this.updateWorldParticlePositions();
-	        this.updateRelativeParticlePositions();
-	        this.updateParticleVelocity();
-	        this.updateGrid();
-	        this.updateParticleForce();
-	        this.updateParticleTorque();
-	        this.updateBodyForce();
-	        this.updateBodyTorque();
-	        this.updateBodyVelocity();
-	        this.updateBodyAngularVelocity();
-	        this.updateBodyPosition();
+	        this.updateWorldParticlePositions(); 		//step 1
+	        this.updateRelativeParticlePositions();	//step 2
+	        this.updateParticleVelocity();					//step 3
+	        this.updateGrid();											//step 4
+	        this.updateParticleForce();							//step 5
+	        this.updateParticleTorque();						//step 6
+	        this.updateBodyForce();									//step 7
+	        this.updateBodyTorque();								//step 8
+	        this.updateBodyVelocity();							//step 9
+	        this.updateBodyAngularVelocity();				//step 10
+	        this.updateBodyPosition();							//step 11
 	        this.updateBodyQuaternion();
 	        this.restoreRendererState();
 	        this.fixedTime += this.fixedTimeStep;
@@ -775,7 +825,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 					data[p + 0] = offX;
 					data[p + 1] = offY;
 					data[p + 2] = offZ;
-					data[p + 3] = 0.0;
+					data[p + 3] = radius;//copynumber for this one ?
 	        return this.bodyTypeCount++;
 	    },
 
@@ -1541,6 +1591,74 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        updateBodyVelocityMaterial.uniforms.bodyForceTex.value = null;
 	        this.swapTextures('bodyAngularVelWrite', 'bodyAngularVelRead');
 	    },
+
+			setBodyPosition: function(){
+					var renderer = this.renderer;
+
+					// Body position update
+					var setBodyPositionMaterial = this.materials.setBodyPosition;
+					if(!setBodyPositionMaterial){
+							setBodyPositionMaterial = this.materials.setBodyPosition = new THREE.ShaderMaterial({
+									uniforms: {
+											bodyPosTex:  { value: null },
+											bodyVelTex:  { value: null },
+											bodyInfosTex:  { value: null },
+											params2: { value: this.params2 }
+									},
+									vertexShader: passThroughVert,
+									fragmentShader: getShader( 'setBodyPositionFrag' ),
+									defines: this.getDefines()
+							});
+					}
+
+					// Update body positions
+					this.fullscreenQuad.material = setBodyPositionMaterial;
+					setBodyPositionMaterial.uniforms.bodyPosTex.value = this.textures.bodyPosRead.texture;
+					setBodyPositionMaterial.uniforms.bodyVelTex.value = this.textures.bodyVelRead.texture;
+					setBodyPositionMaterial.uniforms.bodyInfosTex.value = this.textures.bodyInfos.texture;
+					renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.bodyPosWrite, false );
+					setBodyPositionMaterial.uniforms.bodyPosTex.value = null;
+					setBodyPositionMaterial.uniforms.bodyVelTex.value = null;
+					setBodyPositionMaterial.uniforms.bodyInfosTex.value = null;
+					this.fullscreenQuad.material = null;
+					this.swapTextures('bodyPosWrite', 'bodyPosRead');
+			},
+
+			setBodyQuaternion: function(){
+					var renderer = this.renderer;
+
+					// Update body quaternions
+					var setBodyQuaternionMaterial = this.materials.setBodyQuaternion;
+					if(!setBodyQuaternionMaterial){
+							setBodyQuaternionMaterial = this.materials.setBodyQuaternion = new THREE.ShaderMaterial({
+									uniforms: {
+											bodyQuatTex: { value: null },
+											bodyAngularVelTex: { value: null },
+											bodyPosTex:  { value: null },
+											bodyInfosTex:  { value: null },
+											params2: { value: this.params2 }
+									},
+									vertexShader: passThroughVert,
+									fragmentShader: getShader( 'setBodyQuaternionFrag' ),
+									defines: this.getDefines()
+							});
+					}
+
+					// Update body quaternions
+					this.fullscreenQuad.material = setBodyQuaternionMaterial;
+					setBodyQuaternionMaterial.uniforms.bodyQuatTex.value = this.textures.bodyQuatRead.texture;
+					setBodyQuaternionMaterial.uniforms.bodyAngularVelTex.value = this.textures.bodyAngularVelRead.texture;
+					setBodyQuaternionMaterial.uniforms.bodyPosTex.value = this.textures.bodyAngularVelRead.texture;
+					setBodyQuaternionMaterial.uniforms.bodyInfosTex.value = this.textures.bodyInfos.texture;
+					renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.bodyQuatWrite, false );
+					setBodyQuaternionMaterial.uniforms.bodyQuatTex.value = null;
+					setBodyQuaternionMaterial.uniforms.bodyAngularVelTex.value = null;
+					setBodyQuaternionMaterial.uniforms.bodyPosTex.value = null;
+					setBodyQuaternionMaterial.uniforms.bodyInfosTex.value = null;
+					this.fullscreenQuad.material = null;
+
+					this.swapTextures('bodyQuatWrite', 'bodyQuatRead');
+			},
 
 	    updateBodyPosition: function(){
 	        var renderer = this.renderer;
