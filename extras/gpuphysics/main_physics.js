@@ -728,7 +728,7 @@ function GP_initWorld(){
         radius: radius,
         stiffness: 1700,
         damping: 6,
-        fixedTimeStep: 0.003,//1/120,
+        fixedTimeStep: 0.001,//1/120,
         friction: 2,
         drag: 0.3,
         boxSize: boxSize,
