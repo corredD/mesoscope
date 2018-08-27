@@ -64,6 +64,32 @@ var depthMaterial, saoMaterial, saoModulateMaterial, normalMaterial, vBlurMateri
 var depthRenderTarget, normalRenderTarget, saoRenderTarget, beautyRenderTarget, blurIntermediateRenderTarget;
 var composer, renderPass, saoPass1,saoPass2, copyPass;
 
+function ComputeVolume(compId) {
+    //Debug.Log("ComputeVolume " + compId.ToString());
+    var gridStepSize = world.radius;//*2;
+    var N = world.broadphase.resolution.x*world.broadphase.resolution.y*world.broadphase.resolution.z;//nbVoxelPerCompartmentsCPU[(int)Mathf.Abs(compId)];
+    var unit = gridStepSize * (1.0 / ascale);
+    var volume_one_voxel = unit * unit * unit;
+    return N * volume_one_voxel;
+}
+
+function ComputeArea(m)
+{
+    var inv_scale = ngl_marching_cube.data_bound.maxsize;//1.0/ascale;
+    var result = new THREE.Vector3(0,0,0);
+    for (var p = m.vertices.length/3 - 1, q = 0; q < m.vertices.length/3; p = q++)
+    {
+      var cr = new THREE.Vector3();
+      cr.crossVectors(new THREE.Vector3(m.vertices[q*3]*inv_scale,m.vertices[q*3+1]*inv_scale,m.vertices[q*3+2]*inv_scale),
+                      new THREE.Vector3(m.vertices[p*3]*inv_scale,m.vertices[p*3+1]*inv_scale,m.vertices[p*3+2]*inv_scale));
+      result.add(cr );
+      //result += Vector3.Cross(m.vertices[q], m.vertices[p]);
+    }
+    result.multiplyScalar(0.5);// *= 0.5f;
+    //100 square angstrom = 1 square nanometer
+    return result.length()*0.01;//.length();//this is in angstrom**
+}
+
 function BuildMeshTriangle(radius){
     var triMesh={};
     //Vector4 offset = new Vector4(radius,radius,0,0);
@@ -115,6 +141,7 @@ function GP_createOneCompartmentMesh(anode) {
 
   NGL_updateMetaBallsGeom(anode);
   var geo = ngl_marching_cube.generateGeometry();
+  anode.data.geo = geo;
   var bufferGeometry = new THREE.BufferGeometry();
   var positions = new Float32Array(geo.vertices);
   var normals = new Float32Array(geo.normals);
@@ -143,9 +170,10 @@ function distributesMesh(){
   var n = nodes.length;
   var start = 0;
   var total = 0;
-  var count = 500;//total ?
+  var count = 0;//total ?
   for (var i=0;i<n;i++){//nodes.length
     console.log(i,nodes[i].data.name);
+    if (nodes[i].data.ingtype == "fiber") continue;
     if (nodes[i].children!== null && nodes[i].parent === null) continue;
     if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
         //use NGL to load the object?
@@ -159,9 +187,22 @@ function distributesMesh(){
     || pdbname.slice(-4, pdbname.length) === ".map") {
       continue;
     }
-    if (nodes[i].data.count !== 0) count = nodes[i].data.count;
+    if (nodes[i].data.molarity && nodes[i].data.molarity !== 0) {
+      //compute volume..?
+      if (nodes[i].data.surface && nodes[i].parent.data.mesh) {
+        //%surface ?
+        var A = ComputeArea(nodes[i].parent.data.geo);
+        count = Math.round(nodes[i].data.molarity*A);
+      }
+      else {
+        var V = ComputeVolume(0);
+        count = Util_getCountFromMolarity(nodes[i].data.molarity, V);
+      }
+    }
+    else if (nodes[i].data.count !== 0) count = nodes[i].data.count;
     else count = Util_getRandomInt( copy_number )+1;//remove root
     //count = Util_getRandomInt( copy_number )+1;//remove root
+    console.log(nodes[i].data.name,count);
     createInstancesMesh(i,nodes[i],start,count);
     start = start + count;
     total = total + count;
@@ -672,7 +713,7 @@ function GP_initWorld(){
     //atomData_do = doatom ? doatom : false;
     var gridResolution = new THREE.Vector3();
     gridResolution.set(numParticles/2, numParticles/2, numParticles/2);
-    var numBodies = numParticles / 2;
+    var numBodies = 512;//numParticles / 2;
     radius = (1/numParticles * 0.5)*2.0;
     ascale = radius/20;
     boxSize = new THREE.Vector3(0.5, 2, 0.5);
@@ -683,7 +724,7 @@ function GP_initWorld(){
         renderer: renderer,
         maxBodyTypes:32*32,
         maxBodies: numBodies * numBodies,
-        maxParticles: numParticles * numParticles,
+        maxParticles: 1024 * 1024,
         radius: radius,
         stiffness: 1700,
         damping: 6,

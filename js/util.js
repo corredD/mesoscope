@@ -455,3 +455,27 @@ function Util_computeOrientation(norm, up)
   rot.normalize();
 	return rot;//float4(0,0,0,1);
 }
+
+function Util_getCountFromMolarity(molarity, volume) {
+    /*
+    M = moles/L
+    6.022e23 ingredients / mole
+    Work in Å by default(not ideal for mesoscale, but works with all molecular viewers that way), so given a volume in Å ^ 3
+    1L = (10cm)^ 3
+    1cm = 10 ^ (-2)m
+    1Å = 10 ^ (-10)m
+    1cm = 10 ^ (8)Å
+    10cm = 10 ^ (9)Å
+    1L = (10cm)^ 3 = (10 ^ (9)Å)^ 3 = 10 ^ (27)Å ^ 3
+    M = 6.022x10^23/L = [6.022x10^23] / [10^(27)Å^3] = 6.022x10(-4)ing/Å^3
+    numberIngredientsToPack = [0.0006022 ing / Å ^ 3] * [volume Å ^ 3]
+    volume / ingredient in 1M = 1ing / 0.0006022 ing/Å^3 = 1660Å^3 * 1nm^3/1000Å^3 = 1.6nm^3
+    Average distance between molecules is cubic root 3√(1.6nm ^ 3) = 11.8Å = 1.18nm
+      Thus the nbr should simply be
+      nbr = densityInMolarity *[0.0006022 ing / Å ^ 3] * [volume Å ^ 3]
+    see http://molbiol.edu.ru/eng/scripts/01_04.html
+    http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3910158/
+    http://book.bionumbers.org/
+    */
+    return Math.round(molarity * 0.0006022 * volume);
+}
