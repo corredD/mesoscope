@@ -140,9 +140,16 @@ function GP_createOneCompartmentMesh(anode) {
   var w = world.broadphase.resolution.x * world.radius * 2;
   var h = world.broadphase.resolution.y * world.radius * 2;
   var d = world.broadphase.resolution.z * world.radius * 2;
-
-  NGL_updateMetaBallsGeom(anode);
-  var geo = ngl_marching_cube.generateGeometry();
+  //    if (!ngl_marching_cube) ngl_marching_cube = new NGL.MarchingCubes(30, null, true, false);
+  //    NGL_updateMetaBalls(anode);
+  if (!anode.data.mc) anode.data.mc = new NGL.MarchingCubes(30, null, true, false);
+  if (!("pos" in anode.data)||(anode.data.pos === null)||(anode.data.pos.length===0)) {
+    anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
+    anode.data.radii=[{"radii":[500.0]}];
+  }
+  anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii);
+  //NGL_updateMetaBallsGeom(anode);
+  var geo = anode.data.mc.generateGeometry();
   anode.data.geo = geo;
   var bufferGeometry = new THREE.BufferGeometry();
   var positions = new Float32Array(geo.vertices);
@@ -158,12 +165,12 @@ function GP_createOneCompartmentMesh(anode) {
   //shapeComp.setPosition(ngl_marching_cube.data_bound.center);//this is the position,
   var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true });
   var compMesh = new THREE.Mesh(bufferGeometry, wireframeMaterial);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
-  compMesh.position.x = world.broadphase.position.x+ngl_marching_cube.data_bound.center.x+w/2.0;//center of the box
-  compMesh.position.y = world.broadphase.position.y+ngl_marching_cube.data_bound.center.y+h/2.0;
-  compMesh.position.z = world.broadphase.position.z+ngl_marching_cube.data_bound.center.z+d/2.0;
-  compMesh.scale.x = ngl_marching_cube.data_bound.maxsize*ascale;
-  compMesh.scale.y = ngl_marching_cube.data_bound.maxsize*ascale;
-  compMesh.scale.z = ngl_marching_cube.data_bound.maxsize*ascale;
+  compMesh.position.x = world.broadphase.position.x+anode.data.mc.data_bound.center.x+w/2.0;//center of the box
+  compMesh.position.y = world.broadphase.position.y+anode.data.mc.data_bound.center.y+h/2.0;
+  compMesh.position.z = world.broadphase.position.z+anode.data.mc.data_bound.center.z+d/2.0;
+  compMesh.scale.x = anode.data.mc.data_bound.maxsize*ascale;
+  compMesh.scale.y = anode.data.mc.data_bound.maxsize*ascale;
+  compMesh.scale.z = anode.data.mc.data_bound.maxsize*ascale;
   scene.add(compMesh);
   return compMesh;
 }
@@ -500,6 +507,7 @@ function addAtoms(anode,pid,start,o){
   }, new NGL.Selection(asele));
   return count;
 }
+
 
 function createInstancesMesh(pid,anode,start,count) {
   var w = world.broadphase.resolution.x * world.radius * 2;

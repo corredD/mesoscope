@@ -819,6 +819,28 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
 
     this.init(resolution);
 
+    this.update = function (pos,rad){
+      this.reset();
+      var numblobs = rad.length;
+      //var subtract = 12;
+      //var strength = 1.2 / ((Math.sqrt(numblobs) - 1) / 4 + 1);
+      var p=0;
+      var bounds = Util_ComputeBounds(pos,rad);//center,size,min,max
+      //console.log(bounds);
+      this.grid_scale = bounds.maxsize;
+      this.data_bound = bounds;
+      for (var i=0;i<numblobs;i++){
+          var ap = new NGL.Vector3( pos[p],
+                                    pos[p+1],
+                                    pos[p+2]);
+          var apos = ap.sub(bounds.min).divideScalar(bounds.maxsize);//.divide(bounds.size);//.divideScalar(bounds.maxsize);
+          var arad = rad[i]/bounds.maxsize;
+          var subtract = 12;
+          var strength =  subtract * arad  ;
+          this.addBall(apos.x,apos.y,apos.z, strength, subtract);//strength, subtract
+          p+=3;
+      }
+    };
 };
 
 //NGL.MarchingCubes.prototype = Object.create(null);
