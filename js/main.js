@@ -3850,6 +3850,7 @@ $(document).bind("contextmenu", function (event) {
     node_over_to_use = node_over || line_over;
     console.log("use over ",node_over_to_use)
 		var rgb = ("color" in node_over_to_use.data && node_over_to_use.data.color !== null)? node_over_to_use.data.color: [1,0,0];
+		node_over_to_use.data.color = rgb;
 		var hx = Util_rgbToHex(rgb[0]*255,rgb[1]*255,rgb[2]*255);
 		document.getElementById("node_color").value = hx;
 		//var x = document.getElementById("node_color").value;
