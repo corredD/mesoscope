@@ -1,4 +1,5 @@
 //http://mgldev.scripps.edu/projects/mesoscopebeta/template.html?n=256&c=10&atom=false
+//http://mgldev.scripps.edu/projects/mesoscopebeta/template.html?scene=0&n=128&atom=true&c=10
 // TODO:
 // compartments
 // compartments-forces
@@ -6,6 +7,7 @@
 // fiber-forces
 //var loading_bar;
 //http://iquilezles.org/www/articles/distfunctions/distfunctions.htm
+var query;
 var ySpread = 0.1;
 var nodes;
 var root;
@@ -180,6 +182,7 @@ function distributesMesh(){
         nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
         continue;
     };
+    if (!nodes[i].data.radii) continue;
     //if (!nodes[i].data.surface) continue;
     var pdbname = nodes[i].data.source.pdb;
     if (pdbname.startsWith("EMD")
@@ -200,7 +203,11 @@ function distributesMesh(){
       }
     }
     else if (nodes[i].data.count !== 0) count = nodes[i].data.count;
-    else count = Util_getRandomInt( copy_number )+1;//remove root
+    else {
+      if (nodes[i].data.surface && nodes[i].parent.data.mesh)
+           count = (Util_getRandomInt( nodes[i].parent.data.geo.faces.length/3 )+1)/10;
+      else count = Util_getRandomInt( copy_number )+1;//remove root
+    }
     //count = Util_getRandomInt( copy_number )+1;//remove root
     console.log(nodes[i].data.name,count);
     createInstancesMesh(i,nodes[i],start,count);
@@ -230,6 +237,30 @@ function distributesMesh(){
 
 }
 
+function initialLoad(){
+   query = parseParams();
+   var scene = query.scene ? parseInt(query.scene,10) : 0;
+   switch(scene){
+       default:
+          loadSimpleExample();
+          break;
+       case 0:
+          loadSimpleExample();
+          break;
+       //case 1:
+          //loadExampleHIVimmature();
+      //    break;
+       case 1:
+          loadExampleBlood();
+          break;
+       case 2:
+          loadExampleHIV();
+          break;
+       //case 3:
+        //  LoadExampleMpn()
+        //  break;
+        }
+}
 //when all atoms are loaded
 function createCellVIEW(){
   //split in multiple calls ?
@@ -310,25 +341,8 @@ function createCellVIEW(){
   scene.remove(cv_Mesh);
 }
 
-
-//(function(){
-function LoadExampleMpn(){
-	  if (stage)stage.removeAllComponents();
-	  var url = "data/Mpn_1.0_2.json";
-	  d3v4.json(url, function (json) {
-    	      var adata = parseCellPackRecipe(json)
-            console.log(adata);
-            root = d3v4.hierarchy(adata.nodes)
-              .sum(function(d) { return d.size; })
-              .sort(function(a, b) { return b.value - a.value; });
-            nodes = pack(root).descendants();//flatten--error ?
-            console.log(nodes);
-            init();
-            })
-	}
-
-function loadExampleBlood(){
-  var url = "data/BloodPlasmaHIV_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
+function loadSerialized(url){
+  if (stage)stage.removeAllComponents();
   console.log(url);
   d3v4.json(url, function (error,json) {
           var adata = parseCellPackRecipeSerialized(json)
@@ -342,11 +356,11 @@ function loadExampleBlood(){
           })
 }
 
-function loadExampleHIV(){
-  var url = "data/hivfull_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
+function loadLegacy(url){
+  if (stage)stage.removeAllComponents();
   console.log(url);
-  d3v4.json(url, function (error,json) {
-          var adata = parseCellPackRecipeSerialized(json)
+  d3v4.json(url, function (json) {
+          var adata = parseCellPackRecipe(json)
           console.log(adata);
           root = d3v4.hierarchy(adata.nodes)
             .sum(function(d) { return d.size; })
@@ -355,6 +369,32 @@ function loadExampleHIV(){
           console.log(nodes);
           init();
           })
+}
+
+//(function(){
+function LoadExampleMpn(){
+    var url = "data/Mpn_1.0_2.json";
+    loadLegacy(url);
+	}
+
+function loadExampleBlood(){
+  var url = "data/BloodPlasmaHIV_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
+  loadSerialized(url);
+}
+
+function loadExampleHIV(){
+  var url = "data/hivfull_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
+  loadSerialized(url);
+}
+
+function loadExampleHIVimmature(){
+  var url = "data/HIVimmature.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
+  loadLegacy(url);
+}
+
+function loadSimpleExample(){
+  var url = "data/myrecipe_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
+  loadSerialized(url);
 }
 
 function createOneMesh(anode,start,count) {
@@ -437,7 +477,6 @@ function LoadProteinAtoms(anode,pid,callback){
   return stage.loadFile( nameurl, params ).then(callback);
 }
 
-//
 function addAtoms(anode,pid,start,o){
   var center = NGL_GetGeometricCenter(o, new NGL.Selection("polymer and /0")).center;
   atomData.needsUpdate = true;
@@ -484,6 +523,7 @@ function createInstancesMesh(pid,anode,start,count) {
                       offset.x, offset.y, offset.z);
   }
   //position should use the halton sequence and the grid size
+  //should do it constrained inside the given compartments
   for (var bodyId=start;bodyId<start+count;bodyId++) {
     //if (loading_bar) loading_bar.set(bodyId/start+count);
     var x = -boxSize.x + 2*boxSize.x*Math.random();
@@ -502,6 +542,7 @@ function createInstancesMesh(pid,anode,start,count) {
     q.setFromAxisAngle(axis, Math.random() * Math.PI * 2);
     //per compartments?
     if (anode.data.surface && anode.parent.data.mesh){
+      //should random in random triangle ?
       //q should align the object to the surface, and pos should put on a vertices/faces
       var v = anode.parent.data.mesh.geometry.attributes.position.array;
       var n = anode.parent.data.mesh.geometry.attributes.normal.array;
@@ -534,12 +575,23 @@ function createInstancesMesh(pid,anode,start,count) {
     world.addBody(x,y,z, q.x, q.y, q.z, q.w,
                   mass, inertia.x, inertia.y, inertia.z,
                   anode.data.bodyid);
-    for (var i=0;i<anode.data.radii[0].radii.length;i++){
-        //transform beads
-        var x=anode.data.pos[0].coords[i*3]*ascale,
-            y=anode.data.pos[0].coords[i*3+1]*ascale,
-            z=anode.data.pos[0].coords[i*3+2]*ascale;
-        world.addParticle(bodyId, x,y,z);
+    if (anode.data.radii) {
+      if (anode.data.radii && "radii" in anode.data.radii[0]) {
+        for (var i=0;i<anode.data.radii[0].radii.length;i++){
+            //transform beads
+            var x=anode.data.pos[0].coords[i*3]*ascale,
+                y=anode.data.pos[0].coords[i*3+1]*ascale,
+                z=anode.data.pos[0].coords[i*3+2]*ascale;
+            world.addParticle(bodyId, x,y,z);
+        }
+      }
+      else
+      {
+        for (var i=0;i< anode.data.pos[0].length;i++){
+          var p = anode.data.pos[0][i];
+          world.addParticle(bodyId, p[0],p[1],p[2]);
+        }
+      }
     }
     //add the atomic information
     instance_infos.push(pid);
@@ -742,8 +794,6 @@ function GP_initWorld(){
 }
 
 function init(){
-
-    var query = parseParams();
     numParticles = query.n ? parseInt(query.n,10) : 64;
     copy_number = query.c ? parseInt(query.c,10) : 10;
     atomData_do = query.atom ? query.atom === 'true' : false;
@@ -1207,7 +1257,7 @@ function parseParams(){
 (function() {
    // your page initialization code here
    // the DOM will be available here
-   loadExampleHIV();
+   initialLoad();
 })();
 
 //init();
