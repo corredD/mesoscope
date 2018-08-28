@@ -75,9 +75,9 @@ function ComputeVolume(compId) {
     return N * volume_one_voxel;
 }
 
-function ComputeArea(m)
-{
-    var inv_scale = ngl_marching_cube.data_bound.maxsize;//1.0/ascale;
+function ComputeArea(anode){
+    var m = anode.parent.data.geo;
+    var inv_scale = anode.parent.data.mc.data_bound.maxsize;//1.0/ascale;
     var result = new THREE.Vector3(0,0,0);
     for (var p = m.vertices.length/3 - 1, q = 0; q < m.vertices.length/3; p = q++)
     {
@@ -165,9 +165,9 @@ function GP_createOneCompartmentMesh(anode) {
   //shapeComp.setPosition(ngl_marching_cube.data_bound.center);//this is the position,
   var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true });
   var compMesh = new THREE.Mesh(bufferGeometry, wireframeMaterial);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
-  compMesh.position.x = world.broadphase.position.x+anode.data.mc.data_bound.center.x+w/2.0;//center of the box
-  compMesh.position.y = world.broadphase.position.y+anode.data.mc.data_bound.center.y+h/2.0;
-  compMesh.position.z = world.broadphase.position.z+anode.data.mc.data_bound.center.z+d/2.0;
+  compMesh.position.x = world.broadphase.position.x+anode.data.mc.data_bound.center.x*ascale+w/2.0;//center of the box
+  compMesh.position.y = world.broadphase.position.y+anode.data.mc.data_bound.center.y*ascale+h/2.0;
+  compMesh.position.z = world.broadphase.position.z+anode.data.mc.data_bound.center.z*ascale+d/2.0;
   compMesh.scale.x = anode.data.mc.data_bound.maxsize*ascale;
   compMesh.scale.y = anode.data.mc.data_bound.maxsize*ascale;
   compMesh.scale.z = anode.data.mc.data_bound.maxsize*ascale;
@@ -201,7 +201,7 @@ function distributesMesh(){
       //compute volume..?
       if (nodes[i].data.surface && nodes[i].parent.data.mesh) {
         //%surface ?
-        var A = ComputeArea(nodes[i].parent.data.geo);
+        var A = ComputeArea(nodes[i].parent);
         count = Math.round(nodes[i].data.molarity*A);
       }
       else {
