@@ -148,6 +148,28 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
 
     };
 
+    this.getIJK = function(u){
+      var i = u % this.size;
+      var j = ( u / this.size ) % this.size;
+      var k = u / ( this.size * this.size );
+      return [i,Math.round(j),Math.round(k)];
+    }
+
+    this.getXYZ = function(u){
+      var ijk = this.getIJK(u);
+      var x = (ijk[0]/this.size)*this.data_bound.maxsize + this.data_bound.center.x;
+      var y = (ijk[1]/this.size)*this.data_bound.maxsize + this.data_bound.center.y;
+      var z = (ijk[2]/this.size)*this.data_bound.maxsize + this.data_bound.center.z;
+      return [x,y,z];
+    }
+
+    this.fiterInside = function(){
+      var isInside = function(element, index, array) {
+        return element < this.isolation;
+      }
+      var indices = this.field.reduce((a, e, i) => (e  > this.isolation-1 && e < this.isolation+1) ? a.concat(i) : a, [])
+      return indices;
+    }
     // Returns total number of triangles. Fills triangles.
     // (this is where most of time is spent - it's inner work of O(n3) loop )
 
