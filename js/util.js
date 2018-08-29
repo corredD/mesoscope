@@ -489,11 +489,10 @@ function Util_getIJK(index,size){
   var temp = index % (sliceNum);
   var y = temp / size;
   var x = temp % size;
-  //var xi = Math.min(Math.max(0,(index % size)),size);
-  //var yi = Math.min(Math.max(0,( (index / size) % size) ),size);
-  //var zi = Math.min(Math.max(0, (index / size * size ) )),size);
-
-  return [Math.round(x),Math.round(y),Math.round(z)];
+  //var x = Math.min(Math.max(0,(index % size)),size);
+  //var y = Math.min(Math.max(0,( (index / size) % size) ),size);
+  //var z = Math.min(Math.max(0, (index / size * size ) ),size);
+  return [Math.round(x),Math.floor(y),Math.floor(z)];
 }
 
 function Util_getXYZ(u,size,grid_unit){
@@ -509,4 +508,8 @@ function Util_getXYZfromIJK(ijk,size){
   var y = (ijk[1]/size);
   var z = (ijk[2]/size);
   return [x,y,z];
+}
+
+function Util_getUfromIJK(i,j,k,size){
+   return (k * size * size) + (j * size) + i;
 }

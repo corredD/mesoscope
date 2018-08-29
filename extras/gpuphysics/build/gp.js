@@ -177,8 +177,8 @@ var updateForceFrag = "uniform vec4 params1;\n\
 	            }\n\
 	        }\n\
 	    }\n\
-	    vec3 boxMin = vec3(-boxSize.x, -boxSize.y, -boxSize.z);//vec3(-boxSize.x, 0.0, -boxSize.z);\n\
-	    vec3 boxMax = vec3(boxSize.x, boxSize.y, boxSize.z);\n\
+	    vec3 boxMin = vec3(-boxSize.x, 0.0, -boxSize.z);//vec3(-boxSize.x, 0.0, -boxSize.z);\n\
+	    vec3 boxMax = vec3(boxSize.x, boxSize.y*0.5, boxSize.z);\n\
 			vec3 dirs[3];\n\
 			dirs[0] = vec3(1,0,0);\n\
 			dirs[1] = vec3(0,1,0);\n\
@@ -366,14 +366,14 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 					vec3 off = bodyType_infos2.xyz;\n\
 					if (pos_radius < rads ) force = vec4(-normalize(toward_surface),1)*200.0;\n\
 					else {\n\
-						force = vec4(0.0,0.0,0.0,0.0); \n\
-						newVelocity = vec3(0.0,0.0,0.0);\n\
-						g=vec3(0.0,0.0,0.0);\n\
+						//force = vec4(0.0,0.0,0.0,0.0); \n\
+						//newVelocity = vec3(0.0,0.0,0.0);\n\
+						//g=vec3(0.0,0.0,0.0);\n\
 					}\n\
 			}\n\
 			else {\n\
 				if (abs(distance) < 0.02){\n\
-						force = vec4(-normalize(toward_surface*distance),1)*100.0;\n\
+						//force = vec4(-normalize(toward_surface*distance),1)*100.0;\n\
 				}\n\
 			}\n\
 			//updateBodyVelocity\n\

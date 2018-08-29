@@ -156,17 +156,17 @@ public int[] to3D( int idx ) {
 }*/
 function GP_getMinMax(xs,ys,zs,radius,n){
   var min_z = Math.floor(zs - radius);
-  if (min_z < 1) min_z = 1;
+  if (min_z < 0) min_z = 0;
   var max_z = Math.floor(zs + radius);
-  if (max_z > n - 1) max_z = n - 1;
+  if (max_z > n) max_z = n;
   var min_y = Math.floor(ys - radius);
-  if (min_y < 1) min_y = 1;
+  if (min_y < 0) min_y = 0;
   var max_y = Math.floor(ys + radius);
-  if (max_y > n - 1) max_y = n - 1;
+  if (max_y > n) max_y = n;
   var min_x = Math.floor(xs - radius);
-  if (min_x < 1) min_x = 1;
+  if (min_x < 0) min_x = 0;
   var max_x = Math.floor(xs + radius);
-  if (max_x > n - 1) max_x = n - 1;
+  if (max_x > n) max_x = n;
   return {"min_x":min_x,"max_x":max_x,
           "min_y":min_y,"max_y":max_y,
           "min_z":min_z,"max_z":max_z}
@@ -180,6 +180,7 @@ function GP_CombineGrid(){
   var counter = 0;
   var extend = 1.0/ascale;
   var n = world.broadphase.resolution.x;
+  //master grid is aligned to the broadphase grid
   master_grid_field = new Float32Array(n*n*n*4);//intialized to 0
   master_grid_id = new Float32Array(n*n*n);//intialized to 0
   for (var i=0;i<nodes.length;i++){//nodes.length
@@ -191,36 +192,43 @@ function GP_CombineGrid(){
     }
     else if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
         //normalize the box
-        var bsize = nodes[i].data.mc.data_bound.maxsize*ascale/2.0;
+        var bsize = nodes[i].data.mc.data_bound.maxsize*ascale;
         var center = nodes[i].data.mc.data_bound.center;//*ascale;
         var zPlaneLength = n * n;
         //where it this in the box
         //-boxSize.x
         //x = -boxSize.x + Util_halton(bodyId,2)*w;
         //scaling issue
-        var bb = GP_getMinMax((center.x*ascale-world.broadphase.position.x+boxSize.x)*n,
-                              (center.y*ascale-world.broadphase.position.y+boxSize.y)*n,
-                              (center.z*ascale-world.broadphase.position.z+boxSize.z)*n,bsize*n,n);
+        //var bb = GP_getMinMax((center.x*ascale-world.broadphase.position.x+boxSize.x)*n,
+        //                      (center.y*ascale-world.broadphase.position.y+boxSize.y)*n,
+        //                      (center.z*ascale-world.broadphase.position.z+boxSize.z)*n,bsize*n,n);
+        var bb = GP_getMinMax((center.x*ascale-world.broadphase.position.x)*n,
+                              (center.y*ascale-world.broadphase.position.y+0.5)*n,
+                              (center.z*ascale-world.broadphase.position.z)*n,bsize*n,n);
+
+        nodes[i].data.mc.bb= bb;
         var x, y, z, y_offset, z_offset, fx, fy, fz, fz2, fy2, val;
-        for (z = bb.min_z; z < bb.max_z; z++) {
-            z_offset = zPlaneLength * z;
+        for (x = bb.min_x; x < bb.max_x; x++) {
             for (y = bb.min_y; y < bb.max_y; y++) {
-                y_offset = z_offset + n * y;
-                var off = y * n + z_offset;
-                for (x = bb.min_x; x < bb.max_x; x++) {
-                    var u = x + off;//y_offset + x;//this.field[y_offset + x] += val;
-                    var q = nodes[i].data.mc.getUfromXYZ( ((x/n-boxSize.x)/ascale),
-                                                          ((y/n-boxSize.y)/ascale),
-                                                          ((z/n-boxSize.z)/ascale) );
+                for (z = bb.min_z; z < bb.max_z; z++) {
+                    var u = Util_getUfromIJK(x,y,z,n);
+                    //var u = x + off;//y_offset + x;//this.field[y_offset + x] += val;
+                    //var q = nodes[i].data.mc.getUfromXYZ( ((x/n-boxSize.x)/ascale),
+                    //                                      ((y/n-boxSize.y)/ascale),
+                    //                                      ((z/n-boxSize.z)/ascale) );
+                    var q = nodes[i].data.mc.getUfromXYZ( ((x*world.radius+world.broadphase.position.x)/ascale),
+                                                          ((y*world.radius+world.broadphase.position.y)/ascale),
+                                                          ((z*world.radius+world.broadphase.position.z)/ascale) );
                     var e = nodes[i].data.mc.field[q];
-                    if ( e >= nodes[i].data.mc.isolation) {//-1 && e < nodes[i].data.mc.isolation+1){
-                      master_grid_field[u*4+3] = e;
-                      master_grid_field[u*4] = nodes[i].data.mc.normal_cache[i * 3];
-                      master_grid_field[u*4+1] = nodes[i].data.mc.normal_cache[i * 3+1];
-                      master_grid_field[u*4+2] = nodes[i].data.mc.normal_cache[i * 3+2];
+                    //if ( e  >= nodes[i].data.mc.isolation) {//-1 && e < nodes[i].data.mc.isolation+1){
+                    if ( e  >= 0) {//-1 && e < nodes[i].data.mc.isolation+1){
+                      //master_grid_field[u*4+3] = e;
+                      //master_grid_field[u*4] = nodes[i].data.mc.normal_cache[q * 3];
+                      //master_grid_field[u*4+1] = nodes[i].data.mc.normal_cache[q * 3+1];
+                      //master_grid_field[u*4+2] = nodes[i].data.mc.normal_cache[q * 3+2];
                       master_grid_id[u] = counter;
                       nodes[i].data.compId=counter;
-                      console.log("inside");
+                      //console.log("inside");
                     }
                 }
             }
@@ -308,13 +316,13 @@ function GP_createOneCompartmentMesh(anode) {
   //shapeComp.setPosition(ngl_marching_cube.data_bound.center);//this is the position,
   var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true });
   var compMesh = new THREE.Mesh(bufferGeometry, wireframeMaterial);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
-  compMesh.position.x = world.broadphase.position.x-anode.data.mc.data_bound.min.x*ascale;//+w/2.0;//center of the box
-  compMesh.position.y = world.broadphase.position.y-anode.data.mc.data_bound.min.y*ascale;//+h/2.0;
-  compMesh.position.z = world.broadphase.position.z-anode.data.mc.data_bound.min.z*ascale;//+d/2.0;
   compMesh.scale.x = anode.data.mc.data_bound.maxsize*ascale;
   compMesh.scale.y = anode.data.mc.data_bound.maxsize*ascale;
   compMesh.scale.z = anode.data.mc.data_bound.maxsize*ascale;
-  //scene.add(compMesh);
+  compMesh.position.x = world.broadphase.position.x-anode.data.mc.data_bound.min.x*ascale+w/2.0;//+w/2.0;//center of the box
+  compMesh.position.y = world.broadphase.position.y-anode.data.mc.data_bound.min.y*ascale+h/2.0;//+h/2.0;
+  compMesh.position.z = world.broadphase.position.z-anode.data.mc.data_bound.min.z*ascale+d/2.0;//+d/2.0;
+  scene.add(compMesh);
   return compMesh;
 }
 
@@ -351,6 +359,8 @@ function distributesMesh(){
         //nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
         continue;
     };
+    continue;
+    if (nodes[i].data.surface) continue;
     if (!nodes[i].parent.parent) continue;
     if (!nodes[i].data.radii) continue;
     //if (!nodes[i].data.surface) continue;
@@ -592,7 +602,6 @@ function addAtoms(anode,pid,start,o){
   return count;
 }
 
-
 function createInstancesMesh(pid,anode,start,count) {
   var w = world.broadphase.resolution.x * world.radius * 2;
   var h = world.broadphase.resolution.y * world.radius * 2;
@@ -627,7 +636,7 @@ function createInstancesMesh(pid,anode,start,count) {
     var y = ySpread*Math.random();
     var z = -boxSize.z + 2*boxSize.z*Math.random();
     x = -boxSize.x + Util_halton(bodyId,2)*w;
-    y = -boxSize.y + Util_halton(bodyId,3)*h;
+    y =  Util_halton(bodyId,3)*h;
     z = -boxSize.z + Util_halton(bodyId,5)*d;
     var q = new THREE.Quaternion();
     var axis = new THREE.Vector3(
@@ -664,13 +673,13 @@ function createInstancesMesh(pid,anode,start,count) {
     }
     else if (anode.parent.data.insides && anode.parent.data.insides.length !==0 )
     {
-      var h = Util_halton(bodyId,2)*anode.parent.data.insides.length;
+      var h = Util_halton(bodyId-start,3)*anode.parent.data.insides.length;
       var qi = anode.parent.data.insides[Math.round(h)];//master_grid_id[
       //qi to XYZ
       var ijk = Util_getIJK(qi,world.broadphase.resolution.x);
       //var r = Util_getXYZ(qi,world.broadphase.resolution.x,ascale);
       x = -boxSize.x +ijk[0]/world.broadphase.resolution.x;//r[0];//-boxSize.x +-boxSize.x +
-      y = -boxSize.y +ijk[1]/world.broadphase.resolution.x;//;//-boxSize.y +-boxSize.y +
+      y = ijk[1]/world.broadphase.resolution.x;//;//-boxSize.y +-boxSize.y +-boxSize.y +
       z = -boxSize.z +ijk[2]/world.broadphase.resolution.x;//;//-boxSize.z +-boxSize.z +
       //console.log(qi,ijk,x,y,z,anode.parent.data.insides.length,h,count);//nan
     }
@@ -875,10 +884,10 @@ function GP_initWorld(){
     //atomData_do = doatom ? doatom : false;
     var gridResolution = new THREE.Vector3();
     gridResolution.set(numParticles/2, numParticles/2, numParticles/2);
-    var numBodies = 512;//numParticles / 2;
+    var numBodies = 1024;//numParticles / 2;
     radius = (1/numParticles * 0.5)*2.0;
     ascale = radius/20;
-    boxSize = new THREE.Vector3(0.5, 0.5, 0.5);
+    boxSize = new THREE.Vector3(0.5, 2, 0.5);//0.5,2,0.5
     // Physics
     world = window.world = new gp.World({
         maxSubSteps: 1, // TODO: fix
@@ -886,7 +895,7 @@ function GP_initWorld(){
         renderer: renderer,
         maxBodyTypes:32*32,
         maxBodies: numBodies * numBodies,
-        maxParticles: 1024 * 1024,
+        maxParticles: 1024 *  1024,
         radius: radius,
         stiffness: 1700,
         damping: 6,
@@ -894,7 +903,7 @@ function GP_initWorld(){
         friction: 2,
         drag: 0.3,
         boxSize: boxSize,
-        gridPosition: new THREE.Vector3(0,0,0),//-boxSize.x,-boxSize.y,-boxSize.z),
+        gridPosition: new THREE.Vector3(-boxSize.x,0,-boxSize.z),//-boxSize.x,-boxSize.y,-boxSize.z),(-0.5,0.0,-0.5)
         gridResolution: gridResolution
     });
 
@@ -1184,8 +1193,33 @@ function initDebugGrid(){
   var mesh = new THREE.Mesh(boxGeom,wireframeMaterial);
   debugGridMesh.add(mesh);
   debugGridMesh.position.copy(world.broadphase.position);
-  //mesh.position.set(w/2, h/2, d/2);
+  mesh.position.set(w/2, h/2, d/2);
   scene.add(debugGridMesh);
+
+  var n = world.broadphase.resolution.x;
+
+  var phongShader = THREE.ShaderLib.phong;
+  var uniforms = THREE.UniformsUtils.clone(phongShader.uniforms);
+  uniforms.size = {value:n};
+	var aMaterial = new THREE.ShaderMaterial( {
+		uniforms: uniforms,
+		vertexShader: document.getElementById( 'gvs' ).textContent,
+		fragmentShader: document.getElementById( 'gfs' ).textContent,
+    depthWrite: true,
+
+	} );
+
+  var geometry = new THREE.BufferGeometry();
+  var indices = [];
+
+  for ( var i = 0; i < n*n*n; i ++ ) {
+    indices.push(i);
+  }
+  geometry.addAttribute( 'uindex', new THREE.Float32BufferAttribute( indices, 1 ) );
+  var grid = new THREE.Points( geometry, aMaterial );
+	//grid.position.copy(world.broadphase.position);
+  //geometry.position.set(w/2, h/2, d/2);
+  scene.add(grid);
 }
 
 function updateDebugGrid(){

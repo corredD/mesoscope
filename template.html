@@ -46,6 +46,39 @@
   <div data-preset="bubble" id="loading_bar" class="ldBar label-center" data-value="35" ></div>
     <b>gpu physics adapted to cellPACK</b> by <a href="http://twitter.com/schteppe">@schteppe</a> and @ludo
 </div>
+<script type="x-shader/x-vertex" id="gvs">
+  uniform mat4 viewMatrix;
+  uniform mat4 modelViewMatrix;
+  uniform mat4 projectionMatrix;
+	attribute float uindex;
+	varying vec3 vColor;
+  uniform float size;
+	void main() {
+    //index to ijk
+    float sliceNum = size*size;
+    float k = index / (sliceNum);
+    float temp = index % (sliceNum);
+    float j = temp / size;
+    float i = temp % size;
+    vec3 ijk = vec3(round(i),floor(j),floor(k));
+    float x =  ijk[0]/size-0.5;//r[0];//-boxSize.x +-boxSize.x +
+    float y = ijk[1]/size;//;//-boxSize.y +-boxSize.y +-boxSize.y +
+    float z = ijk[2]/size-0.5;//;//-boxSize.z +-boxSize.z +
+    vec3 position = vec3(x,y,z);
+    //ijk to xyz
+		vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+		gl_PointSize = size * ( 300.0 / -mvPosition.z );
+		gl_Position = projectionMatrix * mvPosition;
+	}
+</script>
+
+<script type="x-shader/x-fragment" id="gfs">
+	varying vec3 vColor;
+	void main() {
+		gl_FragColor = vec4( 1.0,0.0,0.0, 1.0 );
+		//gl_FragColor = gl_FragColor * texture2D( texture, gl_PointCoord );
+	}
+</script>
 
 <script id="sharedShaderCode" type="x-shader/x-fragment">
 // Convert an index to an UV-coordinate
