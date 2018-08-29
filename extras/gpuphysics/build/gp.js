@@ -96,7 +96,9 @@
 		vec3 particlePos = texture2D( posTex, particleUV ).xyz;\n\
 		vec3 cellPos = worldPosToGridPos(particlePos, gridPos, cellSize);\n\
 		vec2 gridUV = gridPosToGridUV(cellPos, 0, gridResolution, gridTextureResolution, gridZTiling);\n\
-		gridUV += vec2(1) / gridTextureResolution;    gl_PointSize = 2.0;    gl_Position = vec4(2.0*(gridUV-0.5), 0, 1);\n\
+		gridUV += vec2(1) / gridTextureResolution;\n\
+		gl_PointSize = 2.0;\n\
+		gl_Position = vec4(2.0*(gridUV-0.5), 0, 1);\n\
 	}\n";
 
 	var mapParticleToCellFrag = "varying float vParticleIndex;\n\
@@ -175,8 +177,8 @@ var updateForceFrag = "uniform vec4 params1;\n\
 	            }\n\
 	        }\n\
 	    }\n\
-	    vec3 boxMin = vec3(-boxSize.x, 0.0, -boxSize.z);\n\
-	    vec3 boxMax = vec3(boxSize.x, boxSize.y*0.5, boxSize.z);\n\
+	    vec3 boxMin = vec3(-boxSize.x, -boxSize.y, -boxSize.z);//vec3(-boxSize.x, 0.0, -boxSize.z);\n\
+	    vec3 boxMax = vec3(boxSize.x, boxSize.y, boxSize.z);\n\
 			vec3 dirs[3];\n\
 			dirs[0] = vec3(1,0,0);\n\
 			dirs[1] = vec3(0,1,0);\n\

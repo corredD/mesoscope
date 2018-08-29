@@ -10,7 +10,7 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
     //NGL.ImmediateRenderObject.call(this);
 
     this.material = material;
-
+    this.insides=[];
     this.enableUvs = enableUvs !== undefined ? enableUvs : false;
     this.enableColors = enableColors !== undefined ? enableColors : false;
 
@@ -157,19 +157,44 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
 
     this.getXYZ = function(u){
       var ijk = this.getIJK(u);
-      var x = (ijk[0]/this.size)*this.data_bound.maxsize + this.data_bound.center.x;
-      var y = (ijk[1]/this.size)*this.data_bound.maxsize + this.data_bound.center.y;
-      var z = (ijk[2]/this.size)*this.data_bound.maxsize + this.data_bound.center.z;
+      var x = (ijk[0]/this.size)*this.data_bound.maxsize + this.data_bound.min.x;
+      var y = (ijk[1]/this.size)*this.data_bound.maxsize + this.data_bound.min.y;
+      var z = (ijk[2]/this.size)*this.data_bound.maxsize + this.data_bound.min.z;
       return [x,y,z];
+    }
+
+    this.getUfromIJK = function(i,j,k){
+       return (k * this.size * this.size) + (j * this.size) + i;
+    }
+
+    this.getUfromXYZ = function(x,y,z){
+        var apos = new NGL.Vector3(x,y,z);
+        apos.sub(this.data_bound.min);
+        apos.divideScalar(this.data_bound.maxsize);//.divide(bounds.size);//.divideScalar(bounds.maxsize);
+        var i = Math.round(this.size * apos.x);
+        var j = Math.round(this.size * apos.y);
+        var k = Math.round(this.size * apos.z);
+        return this.getUfromIJK(i,j,k);
     }
 
     this.fiterInside = function(){
       var isInside = function(element, index, array) {
         return element < this.isolation;
       }
-      var indices = this.field.reduce((a, e, i) => (e  > this.isolation-1 && e < this.isolation+1) ? a.concat(i) : a, [])
-      return indices;
+      if (this.insides.length === 0 ) this.insides = this.field.reduce((a, e, i) => (e  > this.isolation-1 && e < this.isolation+1) ? a.concat(i) : a, [])
+      return this.insides;
     }
+
+    this.computeVolumeInside = function() {
+        //Debug.Log("ComputeVolume " + compId.ToString());
+        this.fiterInside();
+        var gridStepSize = this.data_bound.maxsize/30;//*2;
+        var N = this.insides.length;//nbVoxelPerCompartmentsCPU[(int)Mathf.Abs(compId)];
+        var unit = gridStepSize;
+        var volume_one_voxel = unit * unit * unit;
+        return N * volume_one_voxel;
+    }
+
     // Returns total number of triangles. Fills triangles.
     // (this is where most of time is spent - it's inner work of O(n3) loop )
 
@@ -855,11 +880,12 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
           var ap = new NGL.Vector3( pos[p],
                                     pos[p+1],
                                     pos[p+2]);
-          var apos = ap.sub(bounds.min).divideScalar(bounds.maxsize);//.divide(bounds.size);//.divideScalar(bounds.maxsize);
+          ap.sub(bounds.min);
+          ap.divideScalar(bounds.maxsize);//.divide(bounds.size);//.divideScalar(bounds.maxsize);
           var arad = rad[i]/bounds.maxsize;
           var subtract = 12;
           var strength =  subtract * arad  ;
-          this.addBall(apos.x,apos.y,apos.z, strength, subtract);//strength, subtract
+          this.addBall(ap.x,ap.y,ap.z, strength, subtract);//strength, subtract
           p+=3;
       }
     };

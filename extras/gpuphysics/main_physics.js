@@ -48,6 +48,9 @@ var atomData_build = false;
 var atomData_mapping = {};
 var atomData_mapping_instance = [];//for every beads what is the atomid?
 var rb_init = false;
+var master_grid_field;
+var master_grid_id;
+
 /*SSAO PARAMATER AND VARIABLE*/
 var ssao_params= {
 				output: 0,
@@ -66,8 +69,11 @@ var depthMaterial, saoMaterial, saoModulateMaterial, normalMaterial, vBlurMateri
 var depthRenderTarget, normalRenderTarget, saoRenderTarget, beautyRenderTarget, blurIntermediateRenderTarget;
 var composer, renderPass, saoPass1,saoPass2, copyPass;
 
-function ComputeVolume(compId) {
+function ComputeVolume(anode) {
     //Debug.Log("ComputeVolume " + compId.ToString());
+    if (anode.data.mc) {
+      return anode.data.vol;
+    }
     var gridStepSize = world.radius;//*2;
     var N = world.broadphase.resolution.x*world.broadphase.resolution.y*world.broadphase.resolution.z;//nbVoxelPerCompartmentsCPU[(int)Mathf.Abs(compId)];
     var unit = gridStepSize * (1.0 / ascale);
@@ -135,6 +141,128 @@ function BuildMeshTriangle(radius){
     triMesh.triangles = indices;
     return triMesh;
 }
+/*
+public int to1D( int x, int y, int z ) {
+    return (z * xMax * yMax) + (y * xMax) + x;
+}
+
+public int[] to3D( int idx ) {
+    final int z = idx / (xMax * yMax);
+    idx -= (z * xMax * yMax);
+    final int y = idx / xMax;
+    final int x = idx % xMax;
+    return new int[]{ x, y, z };
+}*/
+function GP_getMinMax(xs,ys,zs,radius,n){
+  var min_z = Math.floor(zs - radius);
+  if (min_z < 1) min_z = 1;
+  var max_z = Math.floor(zs + radius);
+  if (max_z > n - 1) max_z = n - 1;
+  var min_y = Math.floor(ys - radius);
+  if (min_y < 1) min_y = 1;
+  var max_y = Math.floor(ys + radius);
+  if (max_y > n - 1) max_y = n - 1;
+  var min_x = Math.floor(xs - radius);
+  if (min_x < 1) min_x = 1;
+  var max_x = Math.floor(xs + radius);
+  if (max_x > n - 1) max_x = n - 1;
+  return {"min_x":min_x,"max_x":max_x,
+          "min_y":min_y,"max_y":max_y,
+          "min_z":min_z,"max_z":max_z}
+}
+
+function GP_CombineGrid(){
+  //do it starting from the compartments...
+  var w = world.broadphase.resolution.x * world.radius * 2;//1
+  var h = world.broadphase.resolution.y * world.radius * 2;//1
+  var d = world.broadphase.resolution.z * world.radius * 2;//1
+  var counter = 0;
+  var extend = 1.0/ascale;
+  var n = world.broadphase.resolution.x;
+  master_grid_field = new Float32Array(n*n*n*4);//intialized to 0
+  master_grid_id = new Float32Array(n*n*n);//intialized to 0
+  for (var i=0;i<nodes.length;i++){//nodes.length
+    if (!nodes[i].parent)
+    {
+      //  nodes[i].data.compId=counter;
+        counter+=1;
+        continue;
+    }
+    else if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+        //normalize the box
+        var bsize = nodes[i].data.mc.data_bound.maxsize*ascale;
+        var center = nodes[i].data.mc.data_bound.center;//*ascale;
+        //where it this in the box
+        //-boxSize.x
+        //x = -boxSize.x + Util_halton(bodyId,2)*w;
+        var bb = GP_getMinMax((center.x*ascale-world.broadphase.position.x+boxSize.x)*n,
+                              (center.y*ascale-world.broadphase.position.y+boxSize.y)*n,
+                              (center.z*ascale-world.broadphase.position.z+boxSize.z)*n,bsize*n,n);
+        var x, y, z, y_offset, z_offset, fx, fy, fz, fz2, fy2, val;
+        for (z = bb.min_z; z < bb.max_z; z++) {
+            z_offset = n * z;
+            for (y = bb.min_y; y < bb.max_y; y++) {
+                y_offset = z_offset + n * y;
+                for (x = bb.min_x; x < bb.max_x; x++) {
+                    var u = y_offset + x;//this.field[y_offset + x] += val;
+                    var q = nodes[i].data.mc.getUfromXYZ( ((x/n-boxSize.x)/ascale),
+                                                          ((y/n-boxSize.y)/ascale),
+                                                          ((z/n-boxSize.z)/ascale) );
+                    var e = nodes[i].data.mc.field[q];
+                    if ( e >= nodes[i].data.mc.isolation) {//-1 && e < nodes[i].data.mc.isolation+1){
+                      master_grid_field[u*4+3] = e;
+                      master_grid_field[u*4] = nodes[i].data.mc.normal_cache[i * 3];
+                      master_grid_field[u*4+1] = nodes[i].data.mc.normal_cache[i * 3+1];
+                      master_grid_field[u*4+2] = nodes[i].data.mc.normal_cache[i * 3+2];
+                      master_grid_id[u] = counter;
+                      nodes[i].data.compId=counter;
+                      console.log("inside");
+                    }
+                }
+            }
+        }
+        //
+    }
+    else continue;
+  }
+
+}
+/*
+function GP_CombineGrid(root){
+  //need to use the world grid size
+  //create a texture with value,compId ?
+  //onscreen it is 1,1,1
+  var extend = 1.0/ascale;
+  var n = world.broadphase.resolution;
+  var grid_field = new Float32Array(n*n*n);
+  var grid_normal_cache = new Float32Array(n*n*n * 3);
+  for (var z=0;z<n;z++){
+    for (var y=0;y<n;y++){
+      for (var x=0;x<n;x++){
+        var u = (z * n * n) + (y * n) + x;
+        var aXYZ = [(x/64.0)/ascale,(y/64.0)/ascale,(z/64.0)/ascale];
+        //where is this points ?
+        //or do it  per compartement?
+        for (var i=0;i<n;i++){//nodes.length
+          if (!nodes[i].parent)
+            {
+
+            }
+          if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+              //check int the field
+              var q = nodes[i].parent.data.mc.getUfromXYZ(aXYZ);
+              var e = nodes[i].parent.data.mc.field[q];
+              if (e  > nodes[i].parent.data.mc.isolation-1 && e < nodes[i].parent.data.mc.isolation+1){
+                grid_field[u] =
+              }
+              continue;
+          };
+        }
+      }
+    }
+  }
+
+}*/
 
 function GP_createOneCompartmentMesh(anode) {
   var w = world.broadphase.resolution.x * world.radius * 2;
@@ -147,10 +275,21 @@ function GP_createOneCompartmentMesh(anode) {
     anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
     anode.data.radii=[{"radii":[500.0]}];
   }
+  /*for (var s=0;s<anode.data.radii[0].radii.length;s++){
+    //create one sphere per metaballs as well
+    var aSphereMesh = new THREE.Mesh(new THREE.SphereBufferGeometry(1,16,16),
+                                   new THREE.MeshPhongMaterial({ color: 0xffffff }));
+    aSphereMesh.position.set(anode.data.pos[0].coords[s*3]*ascale+world.broadphase.position.x,
+                            anode.data.pos[0].coords[s*3+1]*ascale+world.broadphase.position.y,
+                            anode.data.pos[0].coords[s*3+2]*ascale+world.broadphase.position.z);
+    aSphereMesh.scale.set(anode.data.radii[0].radii[s]*ascale,anode.data.radii[0].radii[s]*ascale,anode.data.radii[0].radii[s]*ascale);
+    scene.add(aSphereMesh);
+  }*/
   anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii);
   //NGL_updateMetaBallsGeom(anode);
   var geo = anode.data.mc.generateGeometry();
   anode.data.geo = geo;
+  anode.data.vol = anode.data.mc.computeVolumeInside();
   var bufferGeometry = new THREE.BufferGeometry();
   var positions = new Float32Array(geo.vertices);
   var normals = new Float32Array(geo.normals);
@@ -165,9 +304,9 @@ function GP_createOneCompartmentMesh(anode) {
   //shapeComp.setPosition(ngl_marching_cube.data_bound.center);//this is the position,
   var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true });
   var compMesh = new THREE.Mesh(bufferGeometry, wireframeMaterial);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
-  compMesh.position.x = world.broadphase.position.x+anode.data.mc.data_bound.center.x*ascale+w/2.0;//center of the box
-  compMesh.position.y = world.broadphase.position.y+anode.data.mc.data_bound.center.y*ascale+h/2.0;
-  compMesh.position.z = world.broadphase.position.z+anode.data.mc.data_bound.center.z*ascale+d/2.0;
+  compMesh.position.x = world.broadphase.position.x-anode.data.mc.data_bound.min.x*ascale;//+w/2.0;//center of the box
+  compMesh.position.y = world.broadphase.position.y-anode.data.mc.data_bound.min.y*ascale;//+h/2.0;
+  compMesh.position.z = world.broadphase.position.z-anode.data.mc.data_bound.min.z*ascale;//+d/2.0;
   compMesh.scale.x = anode.data.mc.data_bound.maxsize*ascale;
   compMesh.scale.y = anode.data.mc.data_bound.maxsize*ascale;
   compMesh.scale.z = anode.data.mc.data_bound.maxsize*ascale;
@@ -180,13 +319,32 @@ function distributesMesh(){
   var start = 0;
   var total = 0;
   var count = 0;//total ?
+  //build the compartments
+  for (var i=0;i<n;i++){//nodes.length
+    if (!nodes[i].parent)
+      {
+        nodes[i].data.vol = ComputeVolume(nodes[i]);
+        continue;
+      }
+    if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+        //use NGL to load the object?
+        nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
+        //remove volume from parent volume
+        nodes[i].parent.data.vol = nodes[i].parent.data.vol - nodes[i].data.vol;
+        continue;
+    };
+  }
+
+  //build master grid with everything? should align with gpu_grid
+  GP_CombineGrid();
+
   for (var i=0;i<n;i++){//nodes.length
     console.log(i,nodes[i].data.name);
     if (nodes[i].data.ingtype == "fiber") continue;
     if (nodes[i].children!== null && nodes[i].parent === null) continue;
     if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
         //use NGL to load the object?
-        nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
+        //nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
         continue;
     };
     if (!nodes[i].data.radii) continue;
@@ -205,7 +363,7 @@ function distributesMesh(){
         count = Math.round(nodes[i].data.molarity*A);
       }
       else {
-        var V = ComputeVolume(0);
+        var V = nodes[i].parent.data.vol;// ComputeVolume(nodes[i].parent);
         count = Util_getCountFromMolarity(nodes[i].data.molarity, V);
       }
     }
@@ -530,16 +688,31 @@ function createInstancesMesh(pid,anode,start,count) {
                       up.x, up.y, up.z,
                       offset.x, offset.y, offset.z);
   }
+  if (!anode.parent.data.insides)
+      anode.parent.data.insides = master_grid_id.reduce((a, e, i) => (e === anode.parent.data.compId) ? a.concat(i) : a, [])
+
   //position should use the halton sequence and the grid size
   //should do it constrained inside the given compartments
+  //var comp = anode.parent;
   for (var bodyId=start;bodyId<start+count;bodyId++) {
     //if (loading_bar) loading_bar.set(bodyId/start+count);
     var x = -boxSize.x + 2*boxSize.x*Math.random();
     var y = ySpread*Math.random();
     var z = -boxSize.z + 2*boxSize.z*Math.random();
     x = -boxSize.x + Util_halton(bodyId,2)*w;
-    y = Util_halton(bodyId,3)*h;
+    y = -boxSize.y + Util_halton(bodyId,3)*h;
     z = -boxSize.z + Util_halton(bodyId,5)*d;
+    if (anode.parent.data.insides && anode.parent.data.insides.length !==0 )
+    {
+      var h = Util_halton(bodyId,2)*anode.parent.data.insides.length;
+      var qi = anode.parent.data.insides[Math.round(h)];//master_grid_id[
+      //qi to XYZ
+      var r = Util_getXYZ(qi,world.broadphase.resolution.x);
+      x= r[0];//-boxSize.x +
+      y= r[1];//-boxSize.y +
+      z= r[2];//-boxSize.z +
+      //console.log(qi,x,y,z,anode.parent.data.insides.length,h);//nan
+    }
     var q = new THREE.Quaternion();
     var axis = new THREE.Vector3(
         Math.random()-0.5,
@@ -776,7 +949,7 @@ function GP_initWorld(){
     var numBodies = 512;//numParticles / 2;
     radius = (1/numParticles * 0.5)*2.0;
     ascale = radius/20;
-    boxSize = new THREE.Vector3(0.5, 2, 0.5);
+    boxSize = new THREE.Vector3(0.5, 0.5, 0.5);
     // Physics
     world = window.world = new gp.World({
         maxSubSteps: 1, // TODO: fix
@@ -792,7 +965,7 @@ function GP_initWorld(){
         friction: 2,
         drag: 0.3,
         boxSize: boxSize,
-        gridPosition: new THREE.Vector3(-boxSize.x,0,-boxSize.z),
+        gridPosition: new THREE.Vector3(0,0,0),//-boxSize.x,-boxSize.y,-boxSize.z),
         gridResolution: gridResolution
     });
 
@@ -1082,7 +1255,7 @@ function initDebugGrid(){
   var mesh = new THREE.Mesh(boxGeom,wireframeMaterial);
   debugGridMesh.add(mesh);
   debugGridMesh.position.copy(world.broadphase.position);
-  mesh.position.set(w/2, h/2, d/2);
+  //mesh.position.set(w/2, h/2, d/2);
   scene.add(debugGridMesh);
 }
 

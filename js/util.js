@@ -479,3 +479,25 @@ function Util_getCountFromMolarity(molarity, volume) {
     */
     return Math.round(molarity * 0.0006022 * volume);
 }
+
+function Util_getIJK(u,size){
+  var i = u % size;
+  var j = ( u / size ) % size;
+  var k = u / ( size * size );
+  return [i,Math.round(j),Math.round(k)];
+}
+
+function Util_getXYZ(u,size){
+  var ijk = Util_getIJK(u,size);
+  var x = (ijk[0]/size);
+  var y = (ijk[1]/size);
+  var z = (ijk[2]/size);
+  return [x,y,z];
+}
+
+function Util_getXYZfromIJK(ijk,size){
+  var x = (ijk[0]/size);
+  var y = (ijk[1]/size);
+  var z = (ijk[2]/size);
+  return [x,y,z];
+}
