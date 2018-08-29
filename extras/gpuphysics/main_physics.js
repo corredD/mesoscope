@@ -69,6 +69,7 @@ var depthMaterial, saoMaterial, saoModulateMaterial, normalMaterial, vBlurMateri
 var depthRenderTarget, normalRenderTarget, saoRenderTarget, beautyRenderTarget, blurIntermediateRenderTarget;
 var composer, renderPass, saoPass1,saoPass2, copyPass;
 
+
 function ComputeVolume(anode) {
     //Debug.Log("ComputeVolume " + compId.ToString());
     if (anode.data.mc) {
@@ -184,27 +185,30 @@ function GP_CombineGrid(){
   for (var i=0;i<nodes.length;i++){//nodes.length
     if (!nodes[i].parent)
     {
-      //  nodes[i].data.compId=counter;
+        nodes[i].data.compId=counter;
         counter+=1;
         continue;
     }
     else if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
         //normalize the box
-        var bsize = nodes[i].data.mc.data_bound.maxsize*ascale;
+        var bsize = nodes[i].data.mc.data_bound.maxsize*ascale/2.0;
         var center = nodes[i].data.mc.data_bound.center;//*ascale;
+        var zPlaneLength = n * n;
         //where it this in the box
         //-boxSize.x
         //x = -boxSize.x + Util_halton(bodyId,2)*w;
+        //scaling issue
         var bb = GP_getMinMax((center.x*ascale-world.broadphase.position.x+boxSize.x)*n,
                               (center.y*ascale-world.broadphase.position.y+boxSize.y)*n,
                               (center.z*ascale-world.broadphase.position.z+boxSize.z)*n,bsize*n,n);
         var x, y, z, y_offset, z_offset, fx, fy, fz, fz2, fy2, val;
         for (z = bb.min_z; z < bb.max_z; z++) {
-            z_offset = n * z;
+            z_offset = zPlaneLength * z;
             for (y = bb.min_y; y < bb.max_y; y++) {
                 y_offset = z_offset + n * y;
+                var off = y * n + z_offset;
                 for (x = bb.min_x; x < bb.max_x; x++) {
-                    var u = y_offset + x;//this.field[y_offset + x] += val;
+                    var u = x + off;//y_offset + x;//this.field[y_offset + x] += val;
                     var q = nodes[i].data.mc.getUfromXYZ( ((x/n-boxSize.x)/ascale),
                                                           ((y/n-boxSize.y)/ascale),
                                                           ((z/n-boxSize.z)/ascale) );
@@ -310,7 +314,7 @@ function GP_createOneCompartmentMesh(anode) {
   compMesh.scale.x = anode.data.mc.data_bound.maxsize*ascale;
   compMesh.scale.y = anode.data.mc.data_bound.maxsize*ascale;
   compMesh.scale.z = anode.data.mc.data_bound.maxsize*ascale;
-  scene.add(compMesh);
+  //scene.add(compMesh);
   return compMesh;
 }
 
@@ -347,6 +351,7 @@ function distributesMesh(){
         //nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
         continue;
     };
+    if (!nodes[i].parent.parent) continue;
     if (!nodes[i].data.radii) continue;
     //if (!nodes[i].data.surface) continue;
     var pdbname = nodes[i].data.source.pdb;
@@ -402,30 +407,6 @@ function distributesMesh(){
 
 }
 
-function initialLoad(){
-   query = parseParams();
-   var scene = query.scene ? parseInt(query.scene,10) : 0;
-   switch(scene){
-       default:
-          loadSimpleExample();
-          break;
-       case 0:
-          loadSimpleExample();
-          break;
-       //case 1:
-          //loadExampleHIVimmature();
-      //    break;
-       case 1:
-          loadExampleBlood();
-          break;
-       case 2:
-          loadExampleHIV();
-          break;
-       //case 3:
-        //  LoadExampleMpn()
-        //  break;
-        }
-}
 //when all atoms are loaded
 function createCellVIEW(){
   //split in multiple calls ?
@@ -506,61 +487,6 @@ function createCellVIEW(){
   scene.remove(cv_Mesh);
 }
 
-function loadSerialized(url){
-  if (stage)stage.removeAllComponents();
-  console.log(url);
-  d3v4.json(url, function (error,json) {
-          var adata = parseCellPackRecipeSerialized(json)
-          console.log(adata);
-          root = d3v4.hierarchy(adata.nodes)
-            .sum(function(d) { return d.size; })
-            .sort(function(a, b) { return b.value - a.value; });
-          nodes = pack(root).descendants();//flatten--error ?
-          console.log(nodes);
-          init();
-          })
-}
-
-function loadLegacy(url){
-  if (stage)stage.removeAllComponents();
-  console.log(url);
-  d3v4.json(url, function (json) {
-          var adata = parseCellPackRecipe(json)
-          console.log(adata);
-          root = d3v4.hierarchy(adata.nodes)
-            .sum(function(d) { return d.size; })
-            .sort(function(a, b) { return b.value - a.value; });
-          nodes = pack(root).descendants();//flatten--error ?
-          console.log(nodes);
-          init();
-          })
-}
-
-//(function(){
-function LoadExampleMpn(){
-    var url = "data/Mpn_1.0_2.json";
-    loadLegacy(url);
-	}
-
-function loadExampleBlood(){
-  var url = "data/BloodPlasmaHIV_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
-  loadSerialized(url);
-}
-
-function loadExampleHIV(){
-  var url = "data/hivfull_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
-  loadSerialized(url);
-}
-
-function loadExampleHIVimmature(){
-  var url = "data/HIVimmature.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
-  loadLegacy(url);
-}
-
-function loadSimpleExample(){
-  var url = "data/myrecipe_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
-  loadSerialized(url);
-}
 
 function createOneMesh(anode,start,count) {
   var color = [1,0,0];
@@ -688,9 +614,10 @@ function createInstancesMesh(pid,anode,start,count) {
                       up.x, up.y, up.z,
                       offset.x, offset.y, offset.z);
   }
-  if (!anode.parent.data.insides)
-      anode.parent.data.insides = master_grid_id.reduce((a, e, i) => (e === anode.parent.data.compId) ? a.concat(i) : a, [])
-
+  if (!anode.parent.data.insides && anode.parent.parent)
+  {
+     anode.parent.data.insides = master_grid_id.reduce((a, e, i) => (e === anode.parent.data.compId) ? a.concat(i) : a, [])
+  }
   //position should use the halton sequence and the grid size
   //should do it constrained inside the given compartments
   //var comp = anode.parent;
@@ -702,17 +629,6 @@ function createInstancesMesh(pid,anode,start,count) {
     x = -boxSize.x + Util_halton(bodyId,2)*w;
     y = -boxSize.y + Util_halton(bodyId,3)*h;
     z = -boxSize.z + Util_halton(bodyId,5)*d;
-    if (anode.parent.data.insides && anode.parent.data.insides.length !==0 )
-    {
-      var h = Util_halton(bodyId,2)*anode.parent.data.insides.length;
-      var qi = anode.parent.data.insides[Math.round(h)];//master_grid_id[
-      //qi to XYZ
-      var r = Util_getXYZ(qi,world.broadphase.resolution.x);
-      x= r[0];//-boxSize.x +
-      y= r[1];//-boxSize.y +
-      z= r[2];//-boxSize.z +
-      //console.log(qi,x,y,z,anode.parent.data.insides.length,h);//nan
-    }
     var q = new THREE.Quaternion();
     var axis = new THREE.Vector3(
         Math.random()-0.5,
@@ -722,6 +638,7 @@ function createInstancesMesh(pid,anode,start,count) {
     axis.normalize();
     q.setFromAxisAngle(axis, Math.random() * Math.PI * 2);
     //per compartments?
+
     if (anode.data.surface && anode.parent.data.mesh){
       //should random in random triangle ?
       //q should align the object to the surface, and pos should put on a vertices/faces
@@ -732,7 +649,7 @@ function createInstancesMesh(pid,anode,start,count) {
       var vi = Math.round(Util_halton(bodyId,2)*v.length/3);
       var ni = new THREE.Vector3( n[vi*3],n[vi*3+1],n[vi*3+2]);
       var rotation = Util_computeOrientation(ni,up);
-    	var rand_rot = new THREE.Quaternion();
+      var rand_rot = new THREE.Quaternion();
       rand_rot.setFromAxisAngle(up, Math.random() * Math.PI * 2);
       var pos = new THREE.Vector3(v[vi*3]*mscale.x,
                                   v[vi*3+1]*mscale.y,
@@ -744,6 +661,18 @@ function createInstancesMesh(pid,anode,start,count) {
       rotation.multiply(rand_rot); // or premultiply
       x=pos.x;y=pos.y;z=pos.z;
       q.copy(rotation);
+    }
+    else if (anode.parent.data.insides && anode.parent.data.insides.length !==0 )
+    {
+      var h = Util_halton(bodyId,2)*anode.parent.data.insides.length;
+      var qi = anode.parent.data.insides[Math.round(h)];//master_grid_id[
+      //qi to XYZ
+      var ijk = Util_getIJK(qi,world.broadphase.resolution.x);
+      //var r = Util_getXYZ(qi,world.broadphase.resolution.x,ascale);
+      x = -boxSize.x +ijk[0]/world.broadphase.resolution.x;//r[0];//-boxSize.x +-boxSize.x +
+      y = -boxSize.y +ijk[1]/world.broadphase.resolution.x;//;//-boxSize.y +-boxSize.y +
+      z = -boxSize.z +ijk[2]/world.broadphase.resolution.x;//;//-boxSize.z +-boxSize.z +
+      //console.log(qi,ijk,x,y,z,anode.parent.data.insides.length,h,count);//nan
     }
 
     var inertia = new THREE.Vector3();
@@ -1433,6 +1362,87 @@ function parseParams(){
       for(var key in b) a[key] = b[key];
       return a;
     });
+}
+
+function initialLoad(){
+   query = parseParams();
+   var scene = query.scene ? parseInt(query.scene,10) : 0;
+   switch(scene){
+       default:
+          loadSimpleExample();
+          break;
+       case 0:
+          loadSimpleExample();
+          break;
+       //case 1:
+          //loadExampleHIVimmature();
+      //    break;
+       case 1:
+          loadExampleBlood();
+          break;
+       case 2:
+          loadExampleHIV();
+          break;
+       //case 3:
+        //  LoadExampleMpn()
+        //  break;
+        }
+}
+
+function loadSerialized(url){
+  if (stage)stage.removeAllComponents();
+  console.log(url);
+  d3v4.json(url, function (error,json) {
+          var adata = parseCellPackRecipeSerialized(json)
+          console.log(adata);
+          root = d3v4.hierarchy(adata.nodes)
+            .sum(function(d) { return d.size; })
+            .sort(function(a, b) { return b.value - a.value; });
+          nodes = pack(root).descendants();//flatten--error ?
+          console.log(nodes);
+          init();
+          })
+}
+
+function loadLegacy(url){
+  if (stage)stage.removeAllComponents();
+  console.log(url);
+  d3v4.json(url, function (json) {
+          var adata = parseCellPackRecipe(json)
+          console.log(adata);
+          root = d3v4.hierarchy(adata.nodes)
+            .sum(function(d) { return d.size; })
+            .sort(function(a, b) { return b.value - a.value; });
+          nodes = pack(root).descendants();//flatten--error ?
+          console.log(nodes);
+          init();
+          })
+}
+
+//(function(){
+function LoadExampleMpn(){
+    var url = "data/Mpn_1.0_2.json";
+    loadLegacy(url);
+	}
+
+function loadExampleBlood(){
+  var url = "data/BloodPlasmaHIV_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
+  loadSerialized(url);
+}
+
+function loadExampleHIV(){
+  var url = "data/hivfull_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
+  loadSerialized(url);
+}
+
+function loadExampleHIVimmature(){
+  var url = "data/HIVimmature.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
+  loadLegacy(url);
+}
+
+function loadSimpleExample(){
+  var url = "data/myrecipe_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
+  loadSerialized(url);
 }
 
 (function() {

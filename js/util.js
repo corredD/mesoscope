@@ -480,18 +480,27 @@ function Util_getCountFromMolarity(molarity, volume) {
     return Math.round(molarity * 0.0006022 * volume);
 }
 
-function Util_getIJK(u,size){
-  var i = u % size;
+function Util_getIJK(index,size){
+  /*var i = u % size;
   var j = ( u / size ) % size;
-  var k = u / ( size * size );
-  return [i,Math.round(j),Math.round(k)];
+  var k = u / ( size * size );*/
+  var sliceNum = size*size;
+  var z = index / (sliceNum);
+  var temp = index % (sliceNum);
+  var y = temp / size;
+  var x = temp % size;
+  //var xi = Math.min(Math.max(0,(index % size)),size);
+  //var yi = Math.min(Math.max(0,( (index / size) % size) ),size);
+  //var zi = Math.min(Math.max(0, (index / size * size ) )),size);
+
+  return [Math.round(x),Math.round(y),Math.round(z)];
 }
 
-function Util_getXYZ(u,size){
+function Util_getXYZ(u,size,grid_unit){
   var ijk = Util_getIJK(u,size);
-  var x = (ijk[0]/size);
-  var y = (ijk[1]/size);
-  var z = (ijk[2]/size);
+  var x = (ijk[0]*grid_unit);
+  var y = (ijk[1]*grid_unit);
+  var z = (ijk[2]*grid_unit);
   return [x,y,z];
 }
 
