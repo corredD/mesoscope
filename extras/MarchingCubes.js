@@ -164,9 +164,10 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
     }
 
     this.getUfromIJK = function(i,j,k){
-       return (k * this.size * this.size) + (j * this.size) + i;
+       return (k * this.size2) + (j * this.size) + i;
     }
 
+    //var u = this.size2 * k + this.size * j + i;
     this.getUfromXYZ = function(x,y,z){
         var apos = new NGL.Vector3(x,y,z);
         apos.sub(this.data_bound.min);
@@ -175,6 +176,7 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
         var j = Math.round(this.size * apos.y);
         var k = Math.round(this.size * apos.z);
         return this.getUfromIJK(i,j,k);
+
     }
 
     this.fiterInside = function(){
@@ -555,7 +557,6 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
                 fy2 = fy * fy;
 
                 for (x = min_x; x < max_x; x++) {
-
                     fx = x / this.size - ballx;
                     val = strength / (0.000001 + fx * fx + fy2 + fz2) - subtract;
                     if (val > 0.0) this.field[y_offset + x] += val;

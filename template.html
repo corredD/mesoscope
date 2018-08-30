@@ -61,13 +61,13 @@
     float j = temp / size;
     float i = temp % size;
     vec3 ijk = vec3(round(i),floor(j),floor(k));
-    float x =  ijk[0]/size-0.5;//r[0];//-boxSize.x +-boxSize.x +
+    float x = ijk[0]/size;//r[0];//-boxSize.x +-boxSize.x +
     float y = ijk[1]/size;//;//-boxSize.y +-boxSize.y +-boxSize.y +
-    float z = ijk[2]/size-0.5;//;//-boxSize.z +-boxSize.z +
-    vec3 position = vec3(x,y,z);
+    float z = ijk[2]/size;//;//-boxSize.z +-boxSize.z +
+    vec3 p = vec3(x,y,z);
     //ijk to xyz
-		vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-		gl_PointSize = size * ( 300.0 / -mvPosition.z );
+		vec4 mvPosition = modelViewMatrix * vec4( p, 1.0 );
+		gl_PointSize = 2.0;//(1.0 / 64.0) / 2.0 ;
 		gl_Position = projectionMatrix * mvPosition;
 	}
 </script>

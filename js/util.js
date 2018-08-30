@@ -55,14 +55,17 @@ function Util_ComputeBounds(points,radius)
   var bbMax = new NGL.Vector3(Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY);
   var rMax = Number.NEGATIVE_INFINITY;
   var p=0;
+  var sumv = new NGL.Vector3(0,0,0);
   for (var i=0;i<radius.length;i++)// (var point in points)
   {
       var ap = new NGL.Vector3(points[p],points[p+1],points[p+2]);
       bbMin.min(ap);
       bbMax.max(ap);
+      sumv.add(ap);
       rMax = Math.max(rMax,radius[i]);
       p+=3;
   }
+  sumv.divideScalar(radius.length);
   //rMax*=2;
   if (points.length === 1) {
     p=0;
@@ -74,8 +77,12 @@ function Util_ComputeBounds(points,radius)
   var bbSize = new NGL.Vector3();
   bbSize.subVectors(bbMax,bbMin);
   var bbCenter = new NGL.Vector3();
+  bbCenter.copy(sumv);
   var bbSizeHalf = new NGL.Vector3(0,0,0);
   bbSizeHalf.addScaledVector(bbSize,0.5);
+  sumv.sub(bbSizeHalf);
+  bbMin.copy(sumv);
+  //bbMin.sub(new NGL.Vector3(rMax, rMax, rMax));
   bbCenter.addVectors(bbMin, bbSizeHalf);
   var maxsize = Math.max(Math.max(bbSize.x,bbSize.y),bbSize.z);
   return {"center":bbCenter,"size":bbSize,"min":bbMin,"max":bbMax,"maxsize":maxsize};
