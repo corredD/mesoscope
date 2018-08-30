@@ -51,6 +51,8 @@ var Util_makeARandomNumber = function() {
 
 function Util_ComputeBounds(points,radius)
 {
+  //padding ?
+
   var bbMin = new NGL.Vector3(Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY);
   var bbMax = new NGL.Vector3(Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY);
   var rMax = Number.NEGATIVE_INFINITY;
@@ -65,6 +67,7 @@ function Util_ComputeBounds(points,radius)
       rMax = Math.max(rMax,radius[i]);
       p+=3;
   }
+  rMax = rMax + rMax/4;
   sumv.divideScalar(radius.length);
   //rMax*=2;
   if (points.length === 1) {
@@ -80,8 +83,10 @@ function Util_ComputeBounds(points,radius)
   bbCenter.copy(sumv);
   var bbSizeHalf = new NGL.Vector3(0,0,0);
   bbSizeHalf.addScaledVector(bbSize,0.5);
-  sumv.sub(bbSizeHalf);
   bbMin.copy(sumv);
+  bbMin.sub(bbSizeHalf);
+  bbMax.copy(sumv);
+  bbMax.add(bbSizeHalf);
   //bbMin.sub(new NGL.Vector3(rMax, rMax, rMax));
   bbCenter.addVectors(bbMin, bbSizeHalf);
   var maxsize = Math.max(Math.max(bbSize.x,bbSize.y),bbSize.z);
@@ -519,4 +524,48 @@ function Util_getXYZfromIJK(ijk,size){
 
 function Util_getUfromIJK(i,j,k,size){
    return (k * size * size) + (j * size) + i;
+}
+
+function Util_forceSelect(e) {
+	e.value = '';
+}
+
+
+//http://www.technicaladvices.com/2015/04/25/javascript-quiz-finding-longest-common-substrings-of-strings/
+function Util_findLongestCommonSubstring (string1, string2) {
+	var comparsions = []; //2D array for the char comparsions ...
+	var maxSubStrLength = 0;
+	var lastMaxSubStrIndex = -1, i, j, char1, char2, startIndex;
+
+	for (i = 0; i < string1.length; ++i) {
+		comparsions[i] = new Array();
+
+		for (j = 0; j < string2.length; ++j) {
+			char1 = string1.charAt(i);
+			char2 = string2.charAt(j);
+
+			if (char1 === char2) {
+				if (i > 0 && j > 0) {
+					comparsions[i][j] = comparsions[i - 1][j - 1] + 1;
+				} else {
+					comparsions[i][j] = 1;
+				}
+			} else {
+				comparsions[i][j] = 0;
+			}
+
+			if (comparsions[i][j] > maxSubStrLength) {
+				maxSubStrLength = comparsions[i][j];
+				lastMaxSubStrIndex = i;
+			}
+		}
+	}
+
+	if (maxSubStrLength > 0) {
+		startIndex = lastMaxSubStrIndex - maxSubStrLength + 1;
+
+		return string1.substr(startIndex, maxSubStrLength);
+	}
+
+	return null;
 }

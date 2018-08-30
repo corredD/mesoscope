@@ -366,14 +366,14 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 					vec3 off = bodyType_infos2.xyz;\n\
 					if (pos_radius < rads ) force = vec4(-normalize(toward_surface),1)*200.0;\n\
 					else {\n\
-						//force = vec4(0.0,0.0,0.0,0.0); \n\
-						//newVelocity = vec3(0.0,0.0,0.0);\n\
-						//g=vec3(0.0,0.0,0.0);\n\
+						force = vec4(0.0,0.0,0.0,0.0); \n\
+						newVelocity = vec3(0.0,0.0,0.0);\n\
+						g=vec3(0.0,0.0,0.0);\n\
 					}\n\
 			}\n\
 			else {\n\
 				if (abs(distance) < 0.02){\n\
-						//force = vec4(-normalize(toward_surface*distance),1)*100.0;\n\
+						force = vec4(-normalize(toward_surface*distance),1)*100.0;\n\
 				}\n\
 			}\n\
 			//updateBodyVelocity\n\
@@ -744,6 +744,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	    var p = slice * (py * w + px);
 	    return p;
 	}
+
 
 	Object.assign( World.prototype, {
 	    getDefines: function(overrides){

@@ -149,6 +149,7 @@ public int to1D( int x, int y, int z ) {
     return (z * xMax * yMax) + (y * xMax) + x;
 }
 
+
 public int[] to3D( int idx ) {
     final int z = idx / (xMax * yMax);
     idx -= (z * xMax * yMax);
@@ -156,6 +157,17 @@ public int[] to3D( int idx ) {
     final int x = idx % xMax;
     return new int[]{ x, y, z };
 }*/
+
+function GP_uToWorldCoordinate(u){
+	var ijk = Util_getIJK(u,world.broadphase.resolution.x);
+	//var r = Util_getXYZ(qi,world.broadphase.resolution.x,ascale);
+	x = - world.boxSize.x +ijk[0]/world.broadphase.resolution.x;//r[0];//-boxSize.x +-boxSize.x +
+	y = ijk[1]/world.broadphase.resolution.x;//;//-boxSize.y +-boxSize.y +-boxSize.y +
+	z = - world.boxSize.z +ijk[2]/world.broadphase.resolution.x;//;//-boxSize.z +-boxSize.z +
+	//console.log(qi,ijk,x,y,z,anode.parent.data.insides.length,h,count);//nan
+	return [x/ascale,y/ascale,z/ascale];
+}
+
 function GP_getMinMax(xs,ys,zs,radius,n){
   var min_z = Math.floor(zs - radius);
   if (min_z < 0) min_z = 0;
@@ -185,6 +197,11 @@ function GP_CombineGrid(){
   //master grid is aligned to the broadphase grid
   master_grid_field = new Float32Array(n*n*n*4);//intialized to 0
   master_grid_id = new Float32Array(n*n*n);//intialized to 0
+  //initialize root inside indices
+  var indices = [];
+  for ( var i = 0; i < n*n*n; i ++ ) {
+    indices.push(i);
+  }
   for (var i=0;i<nodes.length;i++){//nodes.length
     if (!nodes[i].parent)
     {
@@ -214,16 +231,16 @@ function GP_CombineGrid(){
             for (y = bb.min_y; y < bb.max_y; y++) {
                 for (x = bb.min_x; x < bb.max_x; x++) {
                     var u = Util_getUfromIJK(x,y,z,n);
+                    var wxyz = GP_uToWorldCoordinate(u);
                     //var u = x + off;//y_offset + x;//this.field[y_offset + x] += val;
                     //var q = nodes[i].data.mc.getUfromXYZ( ((x/n-boxSize.x)/ascale),
                     //                                      ((y/n-boxSize.y)/ascale),
                     //                                      ((z/n-boxSize.z)/ascale) );
-                    var q = nodes[i].data.mc.getUfromXYZ( ((x/n-boxSize.x)/ascale),
-                                                          ((y/n)/ascale),
-                                                          ((z/n-boxSize.z)/ascale) );
+                    var q = nodes[i].data.mc.getUfromXYZ( wxyz[0],wxyz[1],wxyz[2] );
+                    if (q<0) continue;
                     var e = nodes[i].data.mc.field[q];
                     //if ( e  >= nodes[i].data.mc.isolation) {//-1 && e < nodes[i].data.mc.isolation+1){
-                    if ( e > 80   ) {//-1 && e < nodes[i].data.mc.isolation+1){
+                    if ( e > 80 ) {//-1 && e < nodes[i].data.mc.isolation+1){
                       //master_grid_field[u*4+3] = e;
                       //master_grid_field[u*4] = nodes[i].data.mc.normal_cache[q * 3];
                       //master_grid_field[u*4+1] = nodes[i].data.mc.normal_cache[q * 3+1];
@@ -231,6 +248,7 @@ function GP_CombineGrid(){
                       master_grid_id[u] = counter;
                       nodes[i].data.compId=counter;
                       //console.log("inside");
+                      indices.splice(u,1);
                     }
                 }
             }
@@ -239,7 +257,7 @@ function GP_CombineGrid(){
     }
     else continue;
   }
-
+  nodes[0].data.insides = indices;
 }
 /*
 function GP_CombineGrid(root){
@@ -298,8 +316,17 @@ function GP_createOneCompartmentMesh(anode) {
     aSphereMesh.position.set(anode.data.pos[0].coords[s*3]*ascale,
                             anode.data.pos[0].coords[s*3+1]*ascale,
                             anode.data.pos[0].coords[s*3+2]*ascale);
-    aSphereMesh.scale.set(anode.data.radii[0].radii[s]*ascale,anode.data.radii[0].radii[s]*ascale,anode.data.radii[0].radii[s]*ascale);
+    aSphereMesh.scale.set(anode.data.radii[0].radii[s]*ascale/2.0,
+                          anode.data.radii[0].radii[s]*ascale/2.0,
+                          anode.data.radii[0].radii[s]*ascale/2.0);
     comp_geom.add(aSphereMesh);
+  }
+  //offset the metaballs ?
+  var coords=[];
+  for (var i=0;i<anode.data.radii[0].radii.length;i++){
+    coords.push(anode.data.pos[0].coords[i*3]);
+    coords.push(anode.data.pos[0].coords[i*3+1]-1/ascale);
+    coords.push(anode.data.pos[0].coords[i*3+2]);
   }
   anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii);
   //NGL_updateMetaBallsGeom(anode);
@@ -318,14 +345,17 @@ function GP_createOneCompartmentMesh(anode) {
   //                    ngl_marching_cube.data_bound.maxsize,
   //                    ngl_marching_cube.data_bound.maxsize);//this is the scale,
   //shapeComp.setPosition(ngl_marching_cube.data_bound.center);//this is the position,
+  //mesh are in the -1 +1 range ?? or -0.5,0.5
+  //actually vertices come from ijk, and then (ijk-halfsize)/halfsize, so it goes from -1 to +1
+  //
   var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true });
   var compMesh = new THREE.Mesh(bufferGeometry, wireframeMaterial);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
-  compMesh.scale.x = anode.data.mc.data_bound.maxsize*ascale;
-  compMesh.scale.y = anode.data.mc.data_bound.maxsize*ascale;
-  compMesh.scale.z = anode.data.mc.data_bound.maxsize*ascale;
-  compMesh.position.x =-anode.data.mc.data_bound.min.x*ascale;//+w/2.0;//+w/2.0;//center of the box
-  compMesh.position.y =-anode.data.mc.data_bound.min.y*ascale;//+h/2.0;//+h/2.0;
-  compMesh.position.z =-anode.data.mc.data_bound.min.z*ascale;//+d/2.0;//+d/2.0;
+  compMesh.scale.x = anode.data.mc.data_bound.maxsize/2.0*ascale;//halfsize?
+  compMesh.scale.y = anode.data.mc.data_bound.maxsize/2.0*ascale;
+  compMesh.scale.z = anode.data.mc.data_bound.maxsize/2.0*ascale;
+  compMesh.position.x = (anode.data.mc.data_bound.min.x + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+w/2.0;//+w/2.0;//center of the box
+  compMesh.position.y = (anode.data.mc.data_bound.min.y + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+h/2.0;//+h/2.0;
+  compMesh.position.z = (anode.data.mc.data_bound.min.z + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+d/2.0;//+d/2.0;
   comp_geom.add(compMesh);
   scene.add(comp_geom);
   return compMesh;
@@ -364,8 +394,8 @@ function distributesMesh(){
         //nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
         continue;
     };
-    if (nodes[i].data.surface) continue;
-    if (!nodes[i].parent.parent) continue;
+    //if (nodes[i].data.surface) continue;
+    //if (!nodes[i].parent.parent) continue;
     if (!nodes[i].data.radii) continue;
     //if (!nodes[i].data.surface) continue;
     var pdbname = nodes[i].data.source.pdb;
@@ -397,8 +427,11 @@ function distributesMesh(){
     if (!nodes[i].data.surface && nodes[i].parent !== null && !nodes[i].parent.data.insides )
     {
        var anode = nodes[i];
+       //this line is really slow with the outside compartments.
+       //should just remove id from it ?
        anode.parent.data.insides = master_grid_id.reduce((a, e, i) => (e === anode.parent.data.compId) ? a.concat(i) : a, [])
-       count = nodes[i].parent.data.insides.length;
+       //anode.parent.data.insides = anode.parent.data.mc.field.reduce((a, e, i) => (e > 85 ) ? a.concat(i) : a, [])
+       //count = nodes[i].parent.data.insides.length;
     }
     createInstancesMesh(i,nodes[i],start,count);
     start = start + count;
@@ -522,7 +555,7 @@ function createOneMesh(anode,start,count) {
   bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
   //bufferGeometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
   bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(anode.data.geom.faces), 1));
-  bufferGeometry.scale(ascale/10,ascale/10,ascale/10);
+  bufferGeometry.scale(ascale,ascale,ascale);
   var numBodies = numParticles ;
   var bodyInstances = count ;
   var meshGeometry = new THREE.InstancedBufferGeometry();
@@ -535,7 +568,8 @@ function createOneMesh(anode,start,count) {
   var bodyColors = new THREE.InstancedBufferAttribute( new Float32Array( bodyInstances * 3 ), 3, 1  );
   for ( var i = 0, ul = bodyIndices.count; i < ul; i++ ) {
       bodyIndices.setX( i, start + i ); // one index per instance
-      bodyColors.setXYZ(i, i/bodyIndices.count,0,0);// color[0],color[1],color[2]);//rgb of the current anode
+      //bodyColors.setXYZ(i, i/bodyIndices.count,0,0);// color[0],color[1],color[2]);//rgb of the current anode
+      bodyColors.setXYZ(i, color[0],color[1],color[2]);// color[0],color[1],color[2]);//rgb of the current anode
   }
   meshGeometry.addAttribute( 'bodyColor', bodyColors );
   meshGeometry.addAttribute( 'bodyIndex', bodyIndices );
@@ -679,15 +713,16 @@ function createInstancesMesh(pid,anode,start,count) {
     }
     else if (anode.parent.data.insides && anode.parent.data.insides.length !==0 )
     {
-      var h = Util_halton(bodyId-start,3)*anode.parent.data.insides.length;
-      var qi = anode.parent.data.insides[bodyId-start];//Math.round(h)];//master_grid_id[
+      //morton?fully random?
+      var h = Math.random() * anode.parent.data.insides.length;//Util_halton(bodyId,2)*anode.parent.data.insides.length+1;
+      var qi = anode.parent.data.insides[Math.round(h)];//bodyId-start];//Math.round(h)];//master_grid_id[
       //qi to XYZ
-      var ijk = Util_getIJK(qi,world.broadphase.resolution.x);
+      var xyz = GP_uToWorldCoordinate(qi);
+      //jitter
+      var jitter = [Math.random()*ascale,Math.random()*ascale,Math.random()*ascale]
+      //var xyz = anode.parent.data.mc.getXYZ(qi);
       //var r = Util_getXYZ(qi,world.broadphase.resolution.x,ascale);
-      x = -boxSize.x +ijk[0]/world.broadphase.resolution.x;//r[0];//-boxSize.x +-boxSize.x +
-      y = ijk[1]/world.broadphase.resolution.x;//;//-boxSize.y +-boxSize.y +-boxSize.y +
-      z = -boxSize.z +ijk[2]/world.broadphase.resolution.x;//;//-boxSize.z +-boxSize.z +
-      //console.log(qi,ijk,x,y,z,anode.parent.data.insides.length,h,count);//nan
+      x = xyz[0]*ascale+jitter[0]; y = xyz[1]*ascale+jitter[1]; z = xyz[2]*ascale+jitter[2];
     }
 
     var inertia = new THREE.Vector3();
@@ -881,7 +916,7 @@ function GP_initRenderer(){
   controls = new THREE.OrbitControls( camera, renderer.domElement );
   controls.enableZoom = true;
   controls.target.set(0.0, 0.1, 0.0);
-  controls.maxPolarAngle = Math.PI * 0.5;
+  //controls.maxPolarAngle = Math.PI * 0.5;
 }
 
 function GP_initWorld(){
@@ -1232,7 +1267,7 @@ function initDebugGrid(){
   debugGridMesh.position.copy(world.broadphase.position);
   mesh.position.set(w/2, h/2, d/2);
   scene.add(debugGridMesh);
-
+  /*
   var n = world.broadphase.resolution.x;
 
   var phongShader = THREE.ShaderLib.phong;
@@ -1260,6 +1295,7 @@ function initDebugGrid(){
 	//grid.position.copy(world.broadphase.position);
   //geometry.position.set(w/2, h/2, d/2);
   scene.add(gridPoints);
+  */
 }
 
 function updateDebugGrid(){
@@ -1468,13 +1504,7 @@ function loadSerialized(url){
   console.log(url);
   d3v4.json(url, function (error,json) {
           var adata = parseCellPackRecipeSerialized(json)
-          console.log(adata);
-          root = d3v4.hierarchy(adata.nodes)
-            .sum(function(d) { return d.size; })
-            .sort(function(a, b) { return b.value - a.value; });
-          nodes = pack(root).descendants();//flatten--error ?
-          console.log(nodes);
-          init();
+          GP_initFromData(adata);
           })
 }
 
@@ -1484,13 +1514,18 @@ function loadLegacy(url){
   d3v4.json(url, function (json) {
           var adata = parseCellPackRecipe(json)
           console.log(adata);
-          root = d3v4.hierarchy(adata.nodes)
-            .sum(function(d) { return d.size; })
-            .sort(function(a, b) { return b.value - a.value; });
-          nodes = pack(root).descendants();//flatten--error ?
-          console.log(nodes);
-          init();
+          GP_initFromData(adata);
           })
+}
+
+function GP_initFromData(data){
+  console.log(data);
+  root = d3v4.hierarchy(data.nodes)
+    .sum(function(d) { return d.size; })
+    .sort(function(a, b) { return b.value - a.value; });
+  nodes = pack(root).descendants();//flatten--error ?
+  console.log(nodes);
+  init();
 }
 
 //(function(){
@@ -1519,11 +1554,59 @@ function loadSimpleExample(){
   loadSerialized(url);
 }
 
-(function() {
+function GP_selectFile(e){
+    query = parseParams();
+    var e = document.getElementById("gjsfile_input");
+		var theFiles = e.files;
+    var thefile = theFiles[0];
+    if (window.FileReader) {
+      // FileReader is supported.
+    } else {
+      alert('FileReader is not supported in this browser.');
+    }
+    //check extension
+    var ext = thefile.name.split('.').pop();
+    //alert(thefile.name+" "+ext);
+    var reader = new FileReader();
+    if (ext === "json"){
+    	  //alert("json");
+    	  //console.log("json file");
+    	  var comon = Util_findLongestCommonSubstring(thefile.name,"serialized");
+    	  //console.log("serialzized ?",comon);
+    	  if (comon.length >= 9) {//full string found
+    	  	//console.log("serialized recipe type",thefile.name,comon);
+    	  	//read and pasrse
+    	  	reader.onload = function(event) {
+  	        var data = reader.result;
+  	        data = data.replace(/\\n\\r/gm,'newChar');
+  	        	//alert(data);
+  	        var ad = JSON.parse(data);
+  	        //console.log(ad);
+  	        //alert(JSON.stringify(ad));
+  	        var adata = parseCellPackRecipeSerialized(ad);
+            GP_initFromData(data);
+     	      }
+    	  }
+    	  else {
+	    	  reader.onload = function(event) {
+  	        var data = reader.result;
+  	        data = data.replace(/\\n\\r/gm,'newChar');
+  	        //alert(data);
+  	        var ad = JSON.parse(data);
+  	        //alert(JSON.stringify(ad));
+  	        var adata = parseCellPackRecipe(ad)
+  	        GP_initFromData(adata);
+     	    }
+  	    }
+     }
+     reader.readAsText(thefile, 'UTF-8');
+	}
+
+/*(function() {
    // your page initialization code here
    // the DOM will be available here
    initialLoad();
 })();
-
+*/
 //init();
 //animate();

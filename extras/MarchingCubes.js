@@ -152,14 +152,14 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
       var i = u % this.size;
       var j = ( u / this.size ) % this.size;
       var k = u / ( this.size * this.size );
-      return [i,Math.round(j),Math.round(k)];
+      return [Math.floor(i),Math.floor(j),Math.floor(k)];
     }
 
     this.getXYZ = function(u){
       var ijk = this.getIJK(u);
-      var x = (ijk[0]/this.size)*this.data_bound.maxsize + this.data_bound.min.x;
-      var y = (ijk[1]/this.size)*this.data_bound.maxsize + this.data_bound.min.y;
-      var z = (ijk[2]/this.size)*this.data_bound.maxsize + this.data_bound.min.z;
+      var x = ((ijk[0])/this.size)*this.data_bound.maxsize + this.data_bound.min.x;
+      var y = ((ijk[1])/this.size)*this.data_bound.maxsize + this.data_bound.min.y;
+      var z = ((ijk[2])/this.size)*this.data_bound.maxsize + this.data_bound.min.z;
       return [x,y,z];
     }
 
@@ -170,13 +170,13 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
     //var u = this.size2 * k + this.size * j + i;
     this.getUfromXYZ = function(x,y,z){
         var apos = new NGL.Vector3(x,y,z);
+        if (!this.bounding_box.containsPoint(apos)) return -1;
         apos.sub(this.data_bound.min);
         apos.divideScalar(this.data_bound.maxsize);//.divide(bounds.size);//.divideScalar(bounds.maxsize);
-        var i = Math.round(this.size * apos.x);
-        var j = Math.round(this.size * apos.y);
-        var k = Math.round(this.size * apos.z);
+        var i = Math.round(this.size * apos.x );
+        var j = Math.round(this.size * apos.y );
+        var k = Math.round(this.size * apos.z );
         return this.getUfromIJK(i,j,k);
-
     }
 
     this.fiterInside = function(){
@@ -877,6 +877,7 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
       //console.log(bounds);
       this.grid_scale = bounds.maxsize;
       this.data_bound = bounds;
+      this.bounding_box = new NGL.Box3(  this.data_bound.min,  this.data_bound.max );
       for (var i=0;i<numblobs;i++){
           var ap = new NGL.Vector3( pos[p],
                                     pos[p+1],
