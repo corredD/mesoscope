@@ -373,14 +373,43 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 					//update quat\n\
 					vec3 up = bodyType_infos1.xyz;\n\
 					vec3 off = bodyType_infos2.xyz;\n\
+					//position claculation\n\
+					//torque calculation\n\
+					vec3 sfnormal = -normalize(g_values.xyz);\n\
+					vec4 arotation = computeOrientation(sfnormal, up);\n\
+					vec3 rup = vec3_applyQuat(up,quat);\n\
+					vec3 newup = vec3_applyQuat(up,arotation);//use current ?\n\
+					vec3 axis = cross(normalize(rup), normalize(newup));\n\
+					float theta = asin(length(axis));\n\
+					float fAngle = theta;//seems more stable than the Cos\n\
+					//inspired by https://answers.unity.com/questions/48836/determining-the-torque-needed-to-rotate-an-object.html\n\
+					vec4 q = QuaternionFromAxisAngle(axis, fAngle);\n\
+					q = normalize(q);\n\
+					vec4 R = QuaternionMul(q, new_rotation);\n\
+					vec4 rot = Slerp2(_ProteinInstanceRotationsIn[indice_instance], R, 0.1);\n\
 					//if (compid == 0.0 ) force = vec4(normalize(g_values.xyz)*2000.0,1.0);//vec4(normalize(g_values.xyz),1)*200.0;\n\
-					if (g_values.w > 50.0) force = vec4(normalize(g_values.xyz),1.0);\n\
+					//if (g_values.w > 0.0) force = vec4(normalize(g_values.xyz),1.0);\n\
+					//if (g_values.w < 0.0) force = vec4(normalize(-g_values.xyz),1.0);\n\
 					//force = vec4(0.0,0.0,0.0,0.0); \n\
 					//newVelocity = vec3(0.0,0.0,0.0);\n\
 					g=vec3(0.0,0.0,0.0);\n\
 			}\n\
+			if (bodyType_infos1.w == 0.0) {\n\
+				if (g_values.w < 0.0){//inside\n\
+					//force = vec4(normalize(g_values.xyz),1.0);\n\
+				}\n\
+			}\n\
+			if (bodyType_infos1.w < 0.0){\n\
+				//inside\n\
+				//if 0.0 we out of boundary...\n\
+				//if (g_values.w > 0.0){force = vec4(normalize(g_values.xyz)*0.1,1.0);}\n\
+				//else {\n\
+			  //		force = vec4(0.0,0.0,0.0,0.0);\n\
+				//	newVelocity = vec3(0.0,0.0,0.0);\n\
+				//}\n\
+			}\n\
 			if (bodyType_infos1.w != compid) {\n\
-					if (g_values.w > 50.0) force = vec4(-normalize(g_values.xyz),1.0);\n\
+					//if (g_values.w > 50.0) force = vec4(-normalize(g_values.xyz),1.0);\n\
 			}\n\
 			//updateBodyVelocity\n\
 			if( linearAngular < 0.5 ){\n\
@@ -397,6 +426,7 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 	}\n";
 
 //step 11 updateBodyPosition()
+//force surface here.
 	var updateBodyPositionFrag = "uniform sampler2D bodyPosTex;\n\
 uniform sampler2D bodyVelTex;\n\
 uniform sampler2D bodyInfosTex;\n\
@@ -411,6 +441,7 @@ void main() {\n\
 }\n";
 
 //step 12 updateBodyQuaternion()
+//force surface here.
 	var updateBodyQuaternionFrag = "uniform sampler2D bodyQuatTex;\n\
 uniform sampler2D bodyAngularVelTex;\n\
 uniform sampler2D bodyPosTex;\n\
@@ -423,7 +454,7 @@ void main() {\n\
 				vec3 position = posTexData.xyz;\n\
 				vec4 quat = texture2D(bodyQuatTex, uv);\n\
 				vec3 angularVel = texture2D(bodyAngularVelTex, uv).xyz;\n\
-        gl_FragColor = quat;//quat_integrate(quat, angularVel, deltaTime);//quat;//\n\
+        gl_FragColor = quat_integrate(quat, angularVel, deltaTime);//quat;//\n\
 }\n"
 
 
@@ -456,7 +487,11 @@ void main() {\n\
 }\n"
 
 
-var shared = "int uvToIndex(vec2 uv, vec2 size) {\n\
+var shared = "float Epsilon = 1e-10;\n\
+vec3  X_AXIS = vec3(1, 0, 0);\n\
+vec3  Y_AXIS = vec3(0, 1, 0);\n\
+vec3  Z_AXIS = vec3(0, 0, 1);\n\
+int uvToIndex(vec2 uv, vec2 size) {\n\
         ivec2 coord = ivec2(floor(uv*size+0.5));\n\
         return coord.x + int(size.x) * coord.y;\n\
 }\n\
@@ -532,6 +567,39 @@ mat3 invInertiaWorld(vec4 q, vec3 invInertia){\n\
                 0, 0, invInertia.z\n\
         );\n\
         return transpose2(R) * I * R;\n\
+}\n\
+//from http://stackoverflow.com/questions/1171849/finding-quaternion-representing-the-rotation-from-one-vector-to-another\n\
+vec3 orthogonal(vec3 v)\n\
+{\n\
+	float x = abs(v.x);\n\
+	float y = abs(v.y);\n\
+	float z = abs(v.z);\n\
+	vec3 other = x < y ? (x < z ? X_AXIS : Z_AXIS) : (y < z ? Y_AXIS : Z_AXIS);\n\
+	return cross(v, other);\n\
+}\n\
+vec4 get_rotation_between(vec3 u, vec3 v)\n\
+{\n\
+	// It is important that the inputs are of equal length when\n\
+	// calculating the half-way vector.\n\
+	u = normalize(u);\n\
+	v = normalize(v);\n\
+	// Unfortunately, we have to check for when u == -v, as u + v\n\
+	// in this case will be (0, 0, 0), which cannot be normalized.\n\
+	if (length(u + v)==0.0)\n\
+	{\n\
+		// 180 degree rotation around any orthogonal vector\n\
+		vec3 no = normalize(orthogonal(u));\n\
+		return vec4(no.x,no.y,no.z,0.0);\n\
+	}\n\
+	vec3 halfv = normalize(u + v);\n\
+	float w = dot(u, halfv);\n\
+	vec3 a = cross(u, halfv);\n\
+	return vec4(a.x, a.y, a.z, w);\n\
+}\n\
+vec4 computeOrientation(vec3 norm, vec3 up)\n\
+{\n\
+	vec4 rot = get_rotation_between(normalize(up), normalize(norm));\n\
+	return normalize(rot);//float4(0,0,0,1);\n\
 }\n\
 vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
         float d = dot(v0, v1);\n\

@@ -914,6 +914,8 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
       }
       if (iso) {
         //https://www.scratchapixel.com/lessons/advanced-rendering/rendering-distance-fields/blobbies
+        var maxi_value = 0;
+        var mini_value = 999999999;
         var x, y, z, y_offset, z_offset, fx, fy, fz, fz2, fy2, val;
         for (z = 0; z < this.size; z++) {
             z_offset = this.size2 * z;
@@ -921,10 +923,14 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
                 y_offset = z_offset + this.size * y;
                 for (x = 0; x < this.size; x++) {
                     val = this.getDistance(this.isolation,x/this.size,y/this.size,z/this.size);
+                    maxi_value = Math.max(maxi_value,val);
+                    mini_value = Math.min(mini_value,val);
                     this.field[y_offset + x] = val;
                 }
             }
         }
+        this.field_maxi_value=maxi_value;
+        this.field_mini_value=mini_value;
       }
     };
 };

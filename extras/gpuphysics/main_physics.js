@@ -240,7 +240,8 @@ function GP_CombineGrid(){
                     if (q<0) continue;
                     var e = nodes[i].data.mc.field[q];
                     //if ( e  >= nodes[i].data.mc.isolation) {//-1 && e < nodes[i].data.mc.isolation+1){
-                    if ( e > 80 ) {//-1 && e < nodes[i].data.mc.isolation+1){
+                    //inside is negative
+                    if ( e < nodes[i].data.mc.isolation ) {//-1 && e < nodes[i].data.mc.isolation+1){
                       master_grid_field[u*4+3] = e;
                       master_grid_field[u*4] = nodes[i].data.mc.normal_cache[q * 3];
                       master_grid_field[u*4+1] = nodes[i].data.mc.normal_cache[q * 3+1];
@@ -307,7 +308,7 @@ function GP_createOneCompartmentMesh(anode) {
   var d = world.broadphase.resolution.z * world.radius * 2;
   //    if (!ngl_marching_cube) ngl_marching_cube = new NGL.MarchingCubes(30, null, true, false);
   //    NGL_updateMetaBalls(anode);
-  if (!anode.data.mc) anode.data.mc = new NGL.MarchingCubes(30, null, true, false);
+  if (!anode.data.mc) anode.data.mc = new NGL.MarchingCubes(24, null, true, false);
   if (!("pos" in anode.data)||(anode.data.pos === null)||(anode.data.pos.length===0)) {
     anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
     anode.data.radii=[{"radii":[500.0]}];
@@ -324,19 +325,12 @@ function GP_createOneCompartmentMesh(anode) {
                           anode.data.radii[0].radii[s]*ascale/2.0);
     comp_geom.add(aSphereMesh);
   }
-  //offset the metaballs ?
-  var coords=[];
-  for (var i=0;i<anode.data.radii[0].radii.length;i++){
-    coords.push(anode.data.pos[0].coords[i*3]);
-    coords.push(anode.data.pos[0].coords[i*3+1]-1/ascale);
-    coords.push(anode.data.pos[0].coords[i*3+2]);
-  }
   anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2);
   anode.data.mc.isolation = 0.0;
   //NGL_updateMetaBallsGeom(anode);
   var geo = anode.data.mc.generateGeometry();
   anode.data.geo = geo;
-  anode.data.vol = anode.data.mc.computeVolumeInside();
+  //anode.data.vol = anode.data.mc.computeVolumeInside();
   var bufferGeometry = new THREE.BufferGeometry();
   var positions = new Float32Array(geo.vertices);
   var normals = new Float32Array(geo.normals);
@@ -360,7 +354,7 @@ function GP_createOneCompartmentMesh(anode) {
   compMesh.position.x = (anode.data.mc.data_bound.min.x + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+w/2.0;//+w/2.0;//center of the box
   compMesh.position.y = (anode.data.mc.data_bound.min.y + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+h/2.0;//+h/2.0;
   compMesh.position.z = (anode.data.mc.data_bound.min.z + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+d/2.0;//+d/2.0;
-  comp_geom.add(compMesh);
+  scene.add(compMesh);
   scene.add(comp_geom);
   return compMesh;
 }
@@ -398,8 +392,8 @@ function distributesMesh(){
         //nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
         continue;
     };
-    //if (nodes[i].data.surface) continue;
-    //if (!nodes[i].parent.parent) continue;
+    if (!nodes[i].data.surface) continue;
+    if (!nodes[i].parent.parent) continue;
     if (!nodes[i].data.radii) continue;
     //if (!nodes[i].data.surface) continue;
     var pdbname = nodes[i].data.source.pdb;
@@ -1352,6 +1346,7 @@ function initGUI(){
     renderParticles: false,
     renderMeshs: true,
     renderShadows: true,
+    renderMB: true,
     gravity: world.gravity.y,
     interaction: 'none',
     sphereRadius: world.getSphereRadius(0),
@@ -1395,7 +1390,17 @@ function initGUI(){
         scene.remove(meshMeshs[i]);
       }
     }
-
+    for (var i=0;i<nodes.length;i++){//nodes.length
+      if (!nodes[i].parent)
+        {
+          continue;
+        }
+      if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+          //use NGL to load the object?
+          if (controller.renderMB) scene.add(nodes[i].data.comp_geom);
+          else scene.remove(nodes[i].data.comp_geom);
+      };
+    }
     // Shadow rendering
     renderer.shadowMap.autoUpdate = controller.renderShadows;
     if(!controller.renderShadows){
@@ -1435,6 +1440,7 @@ function initGUI(){
   gh.add( controller, "renderMeshs" ).onChange( guiChanged );
   if (atomData_do) gh.add( controller, "renderAtoms" ).onChange( guiChanged );
   gh.add( controller, "renderShadows" ).onChange( guiChanged );
+  gh.add( controller, "renderMB" ).onChange( guiChanged );
   gh.add( controller, 'interaction', [ 'none', 'sphere', 'broadphase' ] ).onChange( guiChanged );
   gh.add( controller, 'sphereRadius', boxSize.x/10, boxSize.x/2 ).onChange( guiChanged );
 
