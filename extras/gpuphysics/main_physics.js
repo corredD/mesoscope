@@ -241,10 +241,10 @@ function GP_CombineGrid(){
                     var e = nodes[i].data.mc.field[q];
                     //if ( e  >= nodes[i].data.mc.isolation) {//-1 && e < nodes[i].data.mc.isolation+1){
                     if ( e > 80 ) {//-1 && e < nodes[i].data.mc.isolation+1){
-                      //master_grid_field[u*4+3] = e;
-                      //master_grid_field[u*4] = nodes[i].data.mc.normal_cache[q * 3];
-                      //master_grid_field[u*4+1] = nodes[i].data.mc.normal_cache[q * 3+1];
-                      //master_grid_field[u*4+2] = nodes[i].data.mc.normal_cache[q * 3+2];
+                      master_grid_field[u*4+3] = e;
+                      master_grid_field[u*4] = nodes[i].data.mc.normal_cache[q * 3];
+                      master_grid_field[u*4+1] = nodes[i].data.mc.normal_cache[q * 3+1];
+                      master_grid_field[u*4+2] = nodes[i].data.mc.normal_cache[q * 3+2];
                       master_grid_id[u] = counter;
                       nodes[i].data.compId=counter;
                       //console.log("inside");
@@ -258,6 +258,9 @@ function GP_CombineGrid(){
     else continue;
   }
   nodes[0].data.insides = indices;
+  //make a texture out of it, do we include normal_cache, or should we recompute it ?
+  //lets try both
+  world.addCompGrid(master_grid_id,master_grid_field);
 }
 /*
 function GP_CombineGrid(root){
@@ -328,7 +331,8 @@ function GP_createOneCompartmentMesh(anode) {
     coords.push(anode.data.pos[0].coords[i*3+1]-1/ascale);
     coords.push(anode.data.pos[0].coords[i*3+2]);
   }
-  anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii);
+  anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2);
+  anode.data.mc.isolation = 0.0;
   //NGL_updateMetaBallsGeom(anode);
   var geo = anode.data.mc.generateGeometry();
   anode.data.geo = geo;
@@ -418,9 +422,10 @@ function distributesMesh(){
     }
     else if (nodes[i].data.count !== 0) count = nodes[i].data.count;
     else {
-      if (nodes[i].data.surface && nodes[i].parent.data.mesh)
-           count = (Util_getRandomInt( nodes[i].parent.data.geo.faces.length/3 )+1)/10;
-      else count = Util_getRandomInt( copy_number )+1;//remove root
+      //if (nodes[i].data.surface && nodes[i].parent.data.mesh)
+      //     count = (Util_getRandomInt( nodes[i].parent.data.geo.faces.length/3 )+1)/10;
+      //else
+      count = Util_getRandomInt( copy_number )+1;//remove root
     }
     //count = Util_getRandomInt( copy_number )+1;//remove root
     console.log(i,nodes[i].data.name,nodes[i].parent.data.name,count);
@@ -661,7 +666,7 @@ function createInstancesMesh(pid,anode,start,count) {
     type_meshs[pid] = createOneMesh(anode,start,count);
     //add bodyType firstaddBodyType
     anode.data.bodyid = world.bodyTypeCount;
-    var s = (!anode.data.surface)? 0.0:1.0;
+    var s = (!anode.data.surface)? -anode.data.bodyid:anode.data.bodyid;//this should be the compartment compId /numcomp
     console.log(s,anode);
     world.addBodyType(s, anode.data.size*ascale,
                       up.x, up.y, up.z,

@@ -560,15 +560,33 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
                     fx = x / this.size - ballx;
                     val = strength / (0.000001 + fx * fx + fy2 + fz2) - subtract;
                     if (val > 0.0) this.field[y_offset + x] += val;
-
                 }
-
             }
-
         }
-
         return radius;
+    };
 
+    this.getDistance = function(magic,x,y,z)
+    {
+      var from = new NGL.Vector3(x,y,z);
+      var sumDensity = 0;
+      var sumRi = 0;
+      var minDistance = 9999999;
+      for (var i=0;i<this.balls.length;i++){
+            var r = this.balls[i].pos.distanceTo(from);
+            var R = this.balls[i].rad;
+            //this.balls[i].pos.sub(from);
+            //var r = this.balls[i].pos.length ()
+            //var r = (blob.c - from).length();
+            if (r <= this.balls[i].rad) {
+            // this can be factored for speed if you want
+              sumDensity += 2 * (r * r * r) / (R * R * R) -
+                3 * (r * r) / (R * R) + 1;
+            }
+        minDistance = Math.min(minDistance, r - R);
+        sumRi += R;
+      }
+      return Math.max(minDistance, (magic - sumDensity) / ( 3 / 2.0 * sumRi));
     };
 
     this.addPlaneX = function(strength, subtract) {
@@ -867,8 +885,11 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
 
     this.init(resolution);
 
-    this.update = function (pos,rad){
+
+    this.update = function (pos,rad,iso){
       this.reset();
+      this.balls = [];
+      if (iso) this.isolation = iso;
       var numblobs = rad.length;
       //var subtract = 12;
       //var strength = 1.2 / ((Math.sqrt(numblobs) - 1) / 4 + 1);
@@ -887,8 +908,23 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
           var arad = rad[i]/bounds.maxsize;
           var subtract = 12;
           var strength =  subtract * arad  ;
-          this.addBall(ap.x,ap.y,ap.z, strength, subtract);//strength, subtract
+          if (!iso) this.addBall(ap.x,ap.y,ap.z, strength, subtract);//strength, subtract
+          this.balls.push({pos:ap,rad:arad});
           p+=3;
+      }
+      if (iso) {
+        //https://www.scratchapixel.com/lessons/advanced-rendering/rendering-distance-fields/blobbies
+        var x, y, z, y_offset, z_offset, fx, fy, fz, fz2, fy2, val;
+        for (z = 0; z < this.size; z++) {
+            z_offset = this.size2 * z;
+            for (y = 0; y < this.size; y++) {
+                y_offset = z_offset + this.size * y;
+                for (x = 0; x < this.size; x++) {
+                    val = this.getDistance(this.isolation,x/this.size,y/this.size,z/this.size);
+                    this.field[y_offset + x] = val;
+                }
+            }
+        }
       }
     };
 };

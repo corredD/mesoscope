@@ -137,7 +137,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 	    int particleIndex = uvToIndex(uv, resolution);\n\
 	    vec4 positionAndBodyId = texture2D(posTex, uv);\n\
 	    vec3 position = positionAndBodyId.xyz;\n\
-	    float bodyId = positionAndBodyId.w;\n\
+			float bodyId = positionAndBodyId.w;\n\
 	    vec3 velocity = texture2D(velTex, uv).xyz;\n\
 	    vec3 particleGridPos = worldPosToGridPos(position, gridPos, cellSize);\n\
 	    vec3 bodyAngularVelocity = texture2D(bodyAngularVelTex, indexToUV(bodyId,bodyTextureResolution)).xyz;\n\
@@ -145,6 +145,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 	    vec3 relativePosition = relativePositionAndBodyId.xyz;\n\
 	    vec3 force = vec3(0);\n\
 	    ivec3 iGridRes = ivec3(gridResolution);\n\
+			//collision loop\n\
 	    for(int i=-1; i<2; i++){\n\
 	        for(int j=-1; j<2; j++){\n\
 	            for(int k=-1; k<2; k++){\n\
@@ -222,6 +223,9 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 	uniform sampler2D velTex;\n\
 	uniform sampler2D bodyAngularVelTex;\n\
 	uniform sampler2D gridTex;\n\
+	uniform sampler2D bodyInfosTex;\n\
+	uniform sampler2D gridIdTex;\n\
+	uniform sampler2D gridValueTex;\n\
 	void main() {\n\
 	    vec2 uv = gl_FragCoord.xy / resolution;\n\
 	    int particleIndex = uvToIndex(uv, resolution);\n\
@@ -334,10 +338,14 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 	uniform sampler2D bodyForceTex;\n\
 	uniform sampler2D bodyMassTex;\n\
 	uniform sampler2D bodyInfosTex;\n\
+	uniform sampler2D gridIdTex;\n\
+	uniform sampler2D gridValueTex;\n\
 	uniform float linearAngular;\n\
 	uniform vec3 gravity;\n\
 	uniform vec3 maxVelocity;\n\
 	uniform vec4 params2;\n\
+	uniform vec3 cellSize;\n\
+	uniform vec3 gridPos;\n\
 	#define deltaTime params2.x\n\
 	#define drag params2.z\n\
 	void main() {\n\
@@ -355,26 +363,24 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 			vec4 bodyType_infos1 = texture2D(bodyInfosTex, bodyType_uv);\n\
 			bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
 			vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);\n\
-			vec3 sph_center = vec3(0.0,0.5,0.0);\n\
-			float rads = 0.09;//(0.08798828125000001)*(0.08798828125000001);\n\
-			vec3 toward_surface = sph_center - position;\n\
-			float pos_radius = length(toward_surface);\n\
-			float distance = (pos_radius-rads);\n\
-			if (bodyType_infos1.w == 1.0) {\n\
+			float size  = gridResolution.x;\n\
+			vec3 cellPosijk = worldPosToGridPos(position, gridPos, cellSize);\n\
+			float u = (cellPosijk.z * size * size) + (cellPosijk.y * size) + cellPosijk.x;\n\
+			vec2 grid_uv = indexToUV( u, gridIdTextureSize );\n\
+			float compid = texture2D(gridIdTex, grid_uv).x;\n\
+			vec4 g_values = texture2D(gridValueTex, grid_uv);//normal,value\n\
+			if (bodyType_infos1.w > 0.0) {\n\
 					//update quat\n\
 					vec3 up = bodyType_infos1.xyz;\n\
 					vec3 off = bodyType_infos2.xyz;\n\
-					if (pos_radius < rads ) force = vec4(-normalize(toward_surface),1)*200.0;\n\
-					else {\n\
-						force = vec4(0.0,0.0,0.0,0.0); \n\
-						newVelocity = vec3(0.0,0.0,0.0);\n\
-						g=vec3(0.0,0.0,0.0);\n\
-					}\n\
+					//if (compid == 0.0 ) force = vec4(normalize(g_values.xyz)*2000.0,1.0);//vec4(normalize(g_values.xyz),1)*200.0;\n\
+					if (g_values.w > 50.0) force = vec4(normalize(g_values.xyz),1.0);\n\
+					//force = vec4(0.0,0.0,0.0,0.0); \n\
+					//newVelocity = vec3(0.0,0.0,0.0);\n\
+					g=vec3(0.0,0.0,0.0);\n\
 			}\n\
-			else {\n\
-				if (abs(distance) < 0.02){\n\
-						force = vec4(-normalize(toward_surface*distance),1)*100.0;\n\
-				}\n\
+			if (bodyType_infos1.w != compid) {\n\
+					if (g_values.w > 50.0) force = vec4(-normalize(g_values.xyz),1.0);\n\
 			}\n\
 			//updateBodyVelocity\n\
 			if( linearAngular < 0.5 ){\n\
@@ -417,7 +423,7 @@ void main() {\n\
 				vec3 position = posTexData.xyz;\n\
 				vec4 quat = texture2D(bodyQuatTex, uv);\n\
 				vec3 angularVel = texture2D(bodyAngularVelTex, uv).xyz;\n\
-        gl_FragColor = quat;//quat_integrate(quat, angularVel, deltaTime);\n\
+        gl_FragColor = quat;//quat_integrate(quat, angularVel, deltaTime);//quat;//\n\
 }\n"
 
 
@@ -596,6 +602,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        parameters.drag !== undefined ? parameters.drag : 0.1,
 	        0 // unused
 	    );
+			//params3 is the interacting sphere
 	    var params3 = this.params3 = new THREE.Vector4(10,10,10, 1);
 	    this.time = 0;
 	    this.fixedTime = 0;
@@ -761,9 +768,10 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	            gridResolution: 'vec3( ' + gridResolution.x.toFixed( 1 ) + ', ' + gridResolution.y.toFixed( 1 ) + ', ' + gridResolution.z.toFixed( 1 ) + " )",
 	            gridZTiling: 'vec2(' + gridZTiling.x + ', ' + gridZTiling.y + ')',
 	            gridTextureResolution: 'vec2(' + gridTexture.width + ', ' + gridTexture.height + ')',
-	            bodyTextureResolution: 'vec2( ' + numBodies.toFixed( 1 ) + ', ' + numBodies.toFixed( 1 ) + " )",
+							gridIdTextureSize: 'vec2(' + this.dataTextures.gridIds.image.width + ', ' + this.dataTextures.gridIds.image.height + ')',
+							bodyTextureResolution: 'vec2( ' + numBodies.toFixed( 1 ) + ', ' + numBodies.toFixed( 1 ) + " )",
 							bodyInfosTextureResolution: 'vec2( ' + numBodyType.toFixed( 1 ) + ', ' + numBodyType.toFixed( 1 ) + " )"
-	        });
+					});
 	        return defines;
 	    },
 	    step: function(deltaTime){
@@ -803,6 +811,30 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        this.restoreRendererState();
 	        this.fixedTime += this.fixedTimeStep;
 	    },
+
+			addCompGrid: function(masterGridId,masterGridField){
+					//need two textures
+					//gridIdTextureSize,gridIds,gridValues
+					var compids = this.dataTextures.gridIds;compids.needsUpdate = true;
+					var gridvalues = this.dataTextures.gridValues;gridvalues.needsUpdate = true;
+					var compids_data = compids.image.data;
+					var gridvalues_data = gridvalues.image.data;
+	        var w = compids.image.width;
+	        var h = compids.image.height;
+					var n = this.broadphase.resolution.x;
+					for (var i=0;i<n*n*n;i++) {
+							var p = idToDataIndex(i, w, h);
+							compids_data[p + 0] = masterGridId[i];
+							//compids_data[p + 1] = y;
+							//compids_data[p + 2] = z;
+							//compids_data[p + 3] = bodyType;
+							gridvalues_data[p + 0] = masterGridField[i*4];
+							gridvalues_data[p + 1] = masterGridField[i*4+1];
+							gridvalues_data[p + 2] = masterGridField[i*4+2];
+							gridvalues_data[p + 3] = masterGridField[i*4+3];
+					}
+			},
+
 			addBodyType: function(surface,
 														radius,
 														pcpX, pcpY, pcpZ,
@@ -823,7 +855,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        data[p + 0] = pcpX;
 	        data[p + 1] = pcpY;
 					data[p + 2] = pcpZ;
-					data[p + 3] = surface;
+					data[p + 3] = surface;//compparentId ?
 					p = idToDataIndex(this.bodyTypeCount*2.0+1.0, w, h);
 					data[p + 0] = offX;
 					data[p + 1] = offY;
@@ -923,7 +955,8 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        var bodyTextureSize = powerOfTwoCeil(maxBodies);
 	        var particleTextureSize = powerOfTwoCeil(maxParticles);
 					var bodyInfosTextureSize = powerOfTwoCeil(maxBodyTypes)*2;
-	        Object.assign(this.textures, {
+					var gridIdTextureSize = powerOfTwoCeil(this.broadphase.resolution.x*this.broadphase.resolution.x*this.broadphase.resolution.x);
+					Object.assign(this.textures, {
 	            // Body textures
 							bodyInfos: createRenderTarget(bodyInfosTextureSize, bodyInfosTextureSize, type),        // (x,y,z,1)
 	            bodyPosRead: createRenderTarget(bodyTextureSize, bodyTextureSize, type),        // (x,y,z,1)
@@ -951,6 +984,9 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        });
 
 	        Object.assign(this.dataTextures, {
+							gridIdTextureSize : gridIdTextureSize,
+							gridIds: new THREE.DataTexture( new Float32Array(4*gridIdTextureSize*gridIdTextureSize), gridIdTextureSize, gridIdTextureSize, THREE.RGBAFormat, type ),
+							gridValues: new THREE.DataTexture( new Float32Array(4*gridIdTextureSize*gridIdTextureSize), gridIdTextureSize, gridIdTextureSize, THREE.RGBAFormat, type ),
 							bodyInfos: new THREE.DataTexture( new Float32Array(4*bodyInfosTextureSize*bodyInfosTextureSize), bodyInfosTextureSize, bodyInfosTextureSize, THREE.RGBAFormat, type ),
 							bodyPositions: new THREE.DataTexture( new Float32Array(4*bodyTextureSize*bodyTextureSize), bodyTextureSize, bodyTextureSize, THREE.RGBAFormat, type ),
 	            bodyQuaternions: new THREE.DataTexture( new Float32Array(4*bodyTextureSize*bodyTextureSize), bodyTextureSize, bodyTextureSize, THREE.RGBAFormat, type ),
@@ -1304,9 +1340,9 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        if(!mat){
 	            mat = this.materials.mapParticle = new THREE.ShaderMaterial({
 	                uniforms: {
+											cellSize: { value: new THREE.Vector3(this.radius*2,this.radius*2,this.radius*2) },
+											gridPos: { value: this.broadphase.position },
 	                    posTex: { value: null },
-	                    cellSize: { value: new THREE.Vector3(this.radius*2, this.radius*2, this.radius*2) },
-	                    gridPos: { value: this.broadphase.position },
 	                },
 	                vertexShader: getShader( 'mapParticleToCellVert' ),
 	                fragmentShader: getShader( 'mapParticleToCellFrag' ),
@@ -1355,6 +1391,10 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	                    velTex:  { value: null },
 	                    bodyAngularVelTex:  { value: null },
 	                    gridTex:  { value: this.textures.grid.texture },
+											bodyPosTex:  { value: null },
+											bodyInfosTex:  { value: this.textures.bodyInfos.texture },
+											gridIdTex:  { value: this.dataTextures.gridIds },
+											gridValueTex:  { value: this.dataTextures.gridValues },
 	                    params1: { value: this.params1 },
 	                    params2: { value: this.params2 },
 	                    params3: { value: this.params3 },
@@ -1373,6 +1413,8 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        forceMaterial.uniforms.particlePosRelative.value = this.textures.particlePosRelative.texture;
 	        forceMaterial.uniforms.velTex.value = this.textures.particleVel.texture;
 	        forceMaterial.uniforms.bodyAngularVelTex.value = this.textures.bodyAngularVelRead.texture;
+					forceMaterial.uniforms.bodyInfosTex.value = this.textures.bodyInfos.texture;
+					forceMaterial.uniforms.bodyPosTex.value = this.textures.bodyPosRead.texture;
 	        renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.particleForce, false );
 	        forceMaterial.uniforms.posTex.value = null;
 	        forceMaterial.uniforms.particlePosRelative.value = null;
@@ -1538,9 +1580,15 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	                    bodyVelTex:  { value: null },
 	                    bodyMassTex:  { value: null },
 											bodyInfosTex:  { value: null },
+											bodyInfosTex:  { value: null },
+											bodyInfosTex:  { value: null },
+											gridIdTex:  { value: this.dataTextures.gridIds },
+											gridValueTex:  { value: this.dataTextures.gridValues },
 	                    params2: { value: this.params2 },
 	                    gravity:  { value: this.gravity },
-	                    maxVelocity: { value: this.maxVelocity }
+	                    maxVelocity: { value: this.maxVelocity },
+											cellSize: { value: new THREE.Vector3(this.radius*2,this.radius*2,this.radius*2) },
+											gridPos: { value: this.broadphase.position }
 	                },
 	                vertexShader: passThroughVert,
 	                fragmentShader: getShader( 'updateBodyVelocityFrag' ),

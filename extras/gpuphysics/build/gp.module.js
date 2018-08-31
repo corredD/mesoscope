@@ -20,7 +20,34 @@ var updateForceFrag = "uniform vec4 params1;\n#define stiffness params1.x\n#defi
 
 var updateTorqueFrag = "uniform vec4 params1;\n#define stiffness params1.x\n#define damping params1.y\n#define radius params1.z\nuniform vec4 params2;\n#define friction params2.y\nuniform vec3 cellSize;\nuniform vec3 gridPos;\nuniform sampler2D posTex;\nuniform sampler2D particlePosRelative;\nuniform sampler2D velTex;\nuniform sampler2D bodyAngularVelTex;\nuniform sampler2D gridTex;\nvoid main() {\n    vec2 uv = gl_FragCoord.xy / resolution;\n    int particleIndex = uvToIndex(uv, resolution);\n    vec4 positionAndBodyId = texture2D(posTex, uv);\n    vec3 position = positionAndBodyId.xyz;\n    float bodyId = positionAndBodyId.w;\n    vec4 relativePositionAndBodyId = texture2D(particlePosRelative, uv);\n    vec3 relativePosition = relativePositionAndBodyId.xyz;\n    vec3 velocity = texture2D(velTex, uv).xyz;\n    vec3 angularVelocity = texture2D(bodyAngularVelTex, indexToUV(bodyId, bodyTextureResolution)).xyz;\n    vec3 particleGridPos = worldPosToGridPos(position, gridPos, cellSize);\n    ivec3 iGridRes = ivec3(gridResolution);\n    vec3 torque = vec3(0);\n    for(int i=-1; i<2; i++){\n        for(int j=-1; j<2; j++){\n            for(int k=-1; k<2; k++){\n                vec3 neighborCellGridPos = particleGridPos + vec3(i,j,k);\n                ivec3 iNeighborCellGridPos = ivec3(particleGridPos) + ivec3(i,j,k);\n                for(int l=0; l<4; l++){\n                    vec2 neighborCellTexUV = gridPosToGridUV(neighborCellGridPos, l, gridResolution, gridTextureResolution, gridZTiling);\n                    neighborCellTexUV += vec2(0.5) / (2.0 * gridTextureResolution);\n                    int neighborIndex = int(floor(texture2D(gridTex, neighborCellTexUV).x-1.0 + 0.5));\n                    vec2 neighborUV = indexToUV(float(neighborIndex), resolution);\n                    vec4 neighborPositionAndBodyId = texture2D(posTex, neighborUV);\n                    vec3 neighborPosition = neighborPositionAndBodyId.xyz;\n                    float neighborBodyId = neighborPositionAndBodyId.w;\n                    vec3 neighborVelocity = texture2D(velTex, neighborUV).xyz;\n                    vec3 neighborAngularVelocity = texture2D(bodyAngularVelTex, neighborUV).xyz;\n                    vec3 neighborRelativePosition = texture2D(particlePosRelative, neighborUV).xyz;\n                    if(neighborIndex >= 0 && neighborIndex != particleIndex && neighborBodyId != bodyId && iNeighborCellGridPos.x>=0 && iNeighborCellGridPos.y>=0 && iNeighborCellGridPos.z>=0 && iNeighborCellGridPos.x<iGridRes.x && iNeighborCellGridPos.y<iGridRes.y && iNeighborCellGridPos.z<iGridRes.z){\n                        vec3 r = position - neighborPosition;\n                        float len = length(r);\n                        if(len > 0.0 && len < radius * 2.0){\n                            vec3 dir = normalize(r);\n                            vec3 relVel = (velocity - cross(relativePosition + radius * dir, angularVelocity)) - (neighborVelocity - cross(neighborRelativePosition + radius * (-dir), neighborAngularVelocity));\n                            vec3 relTangentVel = relVel - dot(relVel, dir) * dir;\n                            torque += friction * cross(relativePosition + radius * dir, relTangentVel);\n                        }\n                    }\n                }\n            }\n        }\n    }\n    vec3 boxMin = vec3(-boxSize.x, 0.0, -boxSize.z);\n    vec3 boxMax = vec3(boxSize.x, boxSize.y*0.5, boxSize.z);\n    vec3 dirs[3];\n    dirs[0] = vec3(1,0,0);\n    dirs[1] = vec3(0,1,0);\n    dirs[2] = vec3(0,0,1);\n    for(int i=0; i<3; i++){\n        vec3 dir = dirs[i];\n        vec3 v = velocity - cross(relativePosition + radius * dir, angularVelocity);\n        if(dot(dir,position) - radius < boxMin[i]){\n            vec3 relTangentVel = (v - dot(v, dir) * dir);\n            torque += friction * cross(relativePosition + radius * dir, relTangentVel);\n        }\n        if(dot(dir,position) + radius > boxMax[i]){\n            dir = -dir;\n            vec3 relTangentVel = v - dot(v, dir) * dir;\n            torque += friction * cross(relativePosition + radius * dir, relTangentVel);\n        }\n    }\n    gl_FragColor = vec4(torque, 0.0);\n}";
 
-var updateBodyVelocityFrag = "uniform sampler2D bodyQuatTex;\nuniform sampler2D bodyVelTex;\nuniform sampler2D bodyForceTex;\nuniform sampler2D bodyMassTex;\nuniform float linearAngular;\nuniform vec3 gravity;\nuniform vec3 maxVelocity;\nuniform vec4 params2;\n#define deltaTime params2.x\n#define drag params2.z\nvoid main() {\n    vec2 uv = gl_FragCoord.xy / bodyTextureResolution;\n    vec4 velocity = texture2D(bodyVelTex, uv);\n    vec4 force = texture2D(bodyForceTex, uv);\n    vec4 quat = texture2D(bodyQuatTex, uv);\n    vec4 massProps = texture2D(bodyMassTex, uv);\n    vec3 newVelocity = velocity.xyz;\n    if( linearAngular < 0.5 ){\n        float invMass = massProps.w;\n        newVelocity += (force.xyz + gravity) * deltaTime * invMass;\n    } else {\n        vec3 invInertia = massProps.xyz;\n        newVelocity += force.xyz * deltaTime * invInertiaWorld(quat, invInertia);\n    }\n    newVelocity = clamp(newVelocity, -maxVelocity, maxVelocity);\n    newVelocity *= pow(1.0 - drag, deltaTime);\n    gl_FragColor = vec4(newVelocity, 1.0);\n}";
+var updateBodyVelocityFrag = "uniform sampler2D bodyQuatTex;\n\
+uniform sampler2D bodyVelTex;\n\
+uniform sampler2D bodyForceTex;\n\
+uniform sampler2D bodyMassTex;\n\
+uniform float linearAngular;\n\
+uniform vec3 gravity;\n\
+uniform vec3 maxVelocity;\n\
+uniform vec4 params2;\n\
+#define deltaTime params2.x\n\
+#define drag params2.z\n\
+void main() {\n\
+    vec2 uv = gl_FragCoord.xy / bodyTextureResolution;\n\
+    vec4 velocity = texture2D(bodyVelTex, uv);\n\
+    vec4 force = texture2D(bodyForceTex, uv);\n\
+    vec4 quat = texture2D(bodyQuatTex, uv);\n\
+    vec4 massProps = texture2D(bodyMassTex, uv);\n\
+    vec3 newVelocity = velocity.xyz;\n\
+    if( linearAngular < 0.5 ){\n\
+        float invMass = massProps.w;\n\
+        newVelocity += (force.xyz + gravity) * deltaTime * invMass;\n\
+    } else {\n\
+        vec3 invInertia = massProps.xyz;\n\
+        newVelocity += force.xyz * deltaTime * invInertiaWorld(quat, invInertia);\n\
+    }\n\
+    newVelocity = clamp(newVelocity, -maxVelocity, maxVelocity);\n\
+    newVelocity *= pow(1.0 - drag, deltaTime);\n\
+    gl_FragColor = vec4(newVelocity, 1.0);\n\
+}";
 
 var updateBodyPositionFrag = "uniform sampler2D bodyPosTex;\nuniform sampler2D bodyVelTex;\nuniform vec4 params2;\n#define deltaTime params2.x\nvoid main() {\n\tvec2 uv = gl_FragCoord.xy / bodyTextureResolution;\n\tvec4 posTexData = texture2D(bodyPosTex, uv);\n\tvec3 position = posTexData.xyz;\n\tvec3 velocity = texture2D(bodyVelTex, uv).xyz;\n\tgl_FragColor = vec4(position + velocity * deltaTime, 1.0);\n}";
 
