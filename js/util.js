@@ -49,7 +49,7 @@ var Util_makeARandomNumber = function() {
    return Math.floor(Math.random() * Math.floor(max));
  }
 
-function Util_ComputeBounds(points,radius)
+function Util_ComputeBounds(points,radius,padding=0.0)
 {
   //padding ?
 
@@ -67,7 +67,8 @@ function Util_ComputeBounds(points,radius)
       rMax = Math.max(rMax,radius[i]);
       p+=3;
   }
-  rMax = rMax + rMax/4;
+  if ( padding === 0 ) padding = rMax/4;
+  rMax = rMax + padding;
   sumv.divideScalar(radius.length);
   //rMax*=2;
   if (points.length === 1) {
@@ -568,4 +569,20 @@ function Util_findLongestCommonSubstring (string1, string2) {
 	}
 
 	return null;
+}
+function Util_idToX(id,sx,sy){
+    return id % sx;
+}
+function Util_idToY(id,sx,sy){
+    return Math.floor(id / sy);
+}
+function Util_idToDataIndex(id, w, h){
+    var px = Util_idToX(id, w, h);
+    var py = Util_idToY(id, w, h);
+    var p = 4 * (py * w + px);
+    return p;
+}
+function Util_indexToUV(index, resx,resy){
+    var uv = new THREE.Vector2((index/resx)%1.0, Math.floor( index/resy ) / resx);
+    return uv;
 }

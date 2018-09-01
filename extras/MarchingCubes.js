@@ -139,11 +139,9 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
         var q3 = q * 3;
 
         if (this.normal_cache[q3] === 0.0) {
-
             this.normal_cache[q3] = this.field[q - 1] - this.field[q + 1];
             this.normal_cache[q3 + 1] = this.field[q - this.yd] - this.field[q + this.yd];
             this.normal_cache[q3 + 2] = this.field[q - this.zd] - this.field[q + this.zd];
-
         }
 
     };
@@ -886,7 +884,7 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
     this.init(resolution);
 
 
-    this.update = function (pos,rad,iso){
+    this.update = function (pos,rad,iso=null,padding=0.0){
       this.reset();
       this.balls = [];
       if (iso) this.isolation = iso;
@@ -894,7 +892,8 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
       //var subtract = 12;
       //var strength = 1.2 / ((Math.sqrt(numblobs) - 1) / 4 + 1);
       var p=0;
-      var bounds = Util_ComputeBounds(pos,rad);//center,size,min,max
+      //var padding ?
+      var bounds = Util_ComputeBounds(pos,rad,padding);//center,size,min,max
       //console.log(bounds);
       this.grid_scale = bounds.maxsize;
       this.data_bound = bounds;

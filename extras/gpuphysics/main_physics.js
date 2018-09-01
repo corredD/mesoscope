@@ -162,7 +162,7 @@ function GP_uToWorldCoordinate(u){
 	var ijk = Util_getIJK(u,world.broadphase.resolution.x);
 	//var r = Util_getXYZ(qi,world.broadphase.resolution.x,ascale);
 	x = - world.boxSize.x +ijk[0]/world.broadphase.resolution.x;//r[0];//-boxSize.x +-boxSize.x +
-	y = ijk[1]/world.broadphase.resolution.x;//;//-boxSize.y +-boxSize.y +-boxSize.y +
+	y = - 0.5 + ijk[1]/world.broadphase.resolution.x;//;//-boxSize.y +-boxSize.y +-boxSize.y +
 	z = - world.boxSize.z +ijk[2]/world.broadphase.resolution.x;//;//-boxSize.z +-boxSize.z +
 	//console.log(qi,ijk,x,y,z,anode.parent.data.insides.length,h,count);//nan
 	return [x/ascale,y/ascale,z/ascale];
@@ -201,6 +201,7 @@ function GP_CombineGrid(){
   var indices = [];
   for ( var i = 0; i < n*n*n; i ++ ) {
     indices.push(i);
+    master_grid_field[i*4+3] = 2.0;
   }
   for (var i=0;i<nodes.length;i++){//nodes.length
     if (!nodes[i].parent)
@@ -241,11 +242,14 @@ function GP_CombineGrid(){
                     var e = nodes[i].data.mc.field[q];
                     //if ( e  >= nodes[i].data.mc.isolation) {//-1 && e < nodes[i].data.mc.isolation+1){
                     //inside is negative
-                    if ( e < nodes[i].data.mc.isolation ) {//-1 && e < nodes[i].data.mc.isolation+1){
+                    if ( e < master_grid_field[u*4+3])
+                    {
                       master_grid_field[u*4+3] = e;
                       master_grid_field[u*4] = nodes[i].data.mc.normal_cache[q * 3];
                       master_grid_field[u*4+1] = nodes[i].data.mc.normal_cache[q * 3+1];
                       master_grid_field[u*4+2] = nodes[i].data.mc.normal_cache[q * 3+2];
+                    }
+                    if ( e < nodes[i].data.mc.isolation ) {//-1 && e < nodes[i].data.mc.isolation+1){
                       master_grid_id[u] = counter;
                       nodes[i].data.compId=counter;
                       //console.log("inside");
@@ -313,6 +317,7 @@ function GP_createOneCompartmentMesh(anode) {
     anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
     anode.data.radii=[{"radii":[500.0]}];
   }
+  /* BUILD THE SPHERES */
   for (var s=0;s<anode.data.radii[0].radii.length;s++){
     //create one sphere per metaballs as well
     var aSphereMesh = new THREE.Mesh(new THREE.SphereBufferGeometry(1,16,16),
@@ -325,27 +330,31 @@ function GP_createOneCompartmentMesh(anode) {
                           anode.data.radii[0].radii[s]*ascale/2.0);
     comp_geom.add(aSphereMesh);
   }
-  anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2);
+  anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2,world.radius*10/ascale);
   anode.data.mc.isolation = 0.0;
   //NGL_updateMetaBallsGeom(anode);
   var geo = anode.data.mc.generateGeometry();
   anode.data.geo = geo;
+  /* BUILD THE BOX */
+  var w = anode.data.mc.data_bound.maxsize*ascale;
+  var boxGeom = new THREE.BoxGeometry( 1, 1, 1 );
+  var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true });
+  var mesh = new THREE.Mesh(boxGeom,wireframeMaterial);
+  mesh.scale.x = anode.data.mc.data_bound.maxsize *ascale;//halfsize?
+  mesh.scale.y = anode.data.mc.data_bound.maxsize *ascale;
+  mesh.scale.z = anode.data.mc.data_bound.maxsize *ascale;
+  mesh.position.x = (anode.data.mc.data_bound.min.x + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+w/2.0;//+w/2.0;//center of the box
+  mesh.position.y = (anode.data.mc.data_bound.min.y + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+h/2.0;//+h/2.0;
+  mesh.position.z = (anode.data.mc.data_bound.min.z + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+d/2.0;//+d/2.0;
+  comp_geom.add(mesh);
+  /* BUILD THE MESH */
   //anode.data.vol = anode.data.mc.computeVolumeInside();
   var bufferGeometry = new THREE.BufferGeometry();
   var positions = new Float32Array(geo.vertices);
   var normals = new Float32Array(geo.normals);
   bufferGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
   bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-  //bufferGeometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
   bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(geo.faces), 1));
-  //bufferGeometry.scale(ascale,ascale,ascale);
-  //bufferGeometry.scale(ngl_marching_cube.data_bound.maxsize,
-  //                    ngl_marching_cube.data_bound.maxsize,
-  //                    ngl_marching_cube.data_bound.maxsize);//this is the scale,
-  //shapeComp.setPosition(ngl_marching_cube.data_bound.center);//this is the position,
-  //mesh are in the -1 +1 range ?? or -0.5,0.5
-  //actually vertices come from ijk, and then (ijk-halfsize)/halfsize, so it goes from -1 to +1
-  //
   var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true });
   var compMesh = new THREE.Mesh(bufferGeometry, wireframeMaterial);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
   compMesh.scale.x = anode.data.mc.data_bound.maxsize/2.0*ascale;//halfsize?
@@ -392,8 +401,8 @@ function distributesMesh(){
         //nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
         continue;
     };
-    if (!nodes[i].data.surface) continue;
-    if (!nodes[i].parent.parent) continue;
+    if (nodes[i].data.surface) continue;
+    //if (!nodes[i].parent.parent) continue;
     if (!nodes[i].data.radii) continue;
     //if (!nodes[i].data.surface) continue;
     var pdbname = nodes[i].data.source.pdb;
@@ -482,8 +491,9 @@ function createCellVIEW(){
 	//geometry.addAttribute( 'orientationEnd', new THREE.InstancedBufferAttribute( new Float32Array( orientationsEnd ), 4 ) );
 	// material
   geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(tri_mesh.triangles), 1));
+  //InstancedBufferAttribute( array : TypedArray, itemSize : Integer, normalized : Boolean, meshPerAttribute : Number )
   var instanceInfos = new THREE.InstancedBufferAttribute(
-    new Float32Array( atomData_mapping_instance.slice(0,instances*2) ), 2, 1 );
+    new Float32Array( atomData_mapping_instance.slice(0,instances*2) ), 2, true, 1 );
   //aGeometry.addAttribute( 'bodyColor', bodyColors );
   geometry.addAttribute( 'instanceInfos', instanceInfos );
   /*
@@ -563,8 +573,8 @@ function createOneMesh(anode,start,count) {
       meshGeometry.addAttribute( attributeName, bufferGeometry.attributes[attributeName].clone() );
   }
   meshGeometry.setIndex( bufferGeometry.index.clone() );
-  var bodyIndices = new THREE.InstancedBufferAttribute( new Float32Array( bodyInstances * 1 ), 1, 1 );
-  var bodyColors = new THREE.InstancedBufferAttribute( new Float32Array( bodyInstances * 3 ), 3, 1  );
+  var bodyIndices = new THREE.InstancedBufferAttribute( new Float32Array( bodyInstances * 1 ), 1, true, 1 );
+  var bodyColors = new THREE.InstancedBufferAttribute( new Float32Array( bodyInstances * 3 ), 3, true, 1  );
   for ( var i = 0, ul = bodyIndices.count; i < ul; i++ ) {
       bodyIndices.setX( i, start + i ); // one index per instance
       //bodyColors.setXYZ(i, i/bodyIndices.count,0,0);// color[0],color[1],color[2]);//rgb of the current anode
@@ -660,7 +670,7 @@ function createInstancesMesh(pid,anode,start,count) {
     type_meshs[pid] = createOneMesh(anode,start,count);
     //add bodyType firstaddBodyType
     anode.data.bodyid = world.bodyTypeCount;
-    var s = (!anode.data.surface)? -anode.data.bodyid:anode.data.bodyid;//this should be the compartment compId /numcomp
+    var s = (!anode.data.surface)? -anode.parent.data.compId:anode.parent.data.compId;//this should be the compartment compId /numcomp
     console.log(s,anode);
     world.addBodyType(s, anode.data.size*ascale,
                       up.x, up.y, up.z,
@@ -943,7 +953,7 @@ function GP_initWorld(){
         friction: 2,
         drag: 0.3,
         boxSize: boxSize,
-        gridPosition: new THREE.Vector3(-boxSize.x,0,-boxSize.z),//-boxSize.x,-boxSize.y,-boxSize.z),(-0.5,0.0,-0.5)
+        gridPosition: new THREE.Vector3(-boxSize.x,-0.5,-boxSize.z),//-boxSize.x,-boxSize.y,-boxSize.z),(-0.5,0.0,-0.5)
         gridResolution: gridResolution
     });
 
@@ -1010,7 +1020,7 @@ function init(){
         debugGeometry.addAttribute( attributeName, sphereGeometry.attributes[attributeName].clone() );
     }
     debugGeometry.setIndex( sphereGeometry.index.clone() );
-    var particleIndices = new THREE.InstancedBufferAttribute( new Float32Array( instances * 1 ), 1, 1 );
+    var particleIndices = new THREE.InstancedBufferAttribute( new Float32Array( instances * 1 ), 1,true,  1 );
     for ( var i = 0, ul = particleIndices.count; i < ul; i++ ) {
         particleIndices.setX( i, i );
     }
