@@ -459,7 +459,7 @@ function distributesMesh(){
         continue;
     };
     //if (!nodes[i].data.surface) continue;
-    //if (!nodes[i].parent.parent) continue;
+    //if (nodes[i].parent.parent) continue;
     if (!nodes[i].data.radii) continue;
     //if (!nodes[i].data.surface) continue;
     var pdbname = nodes[i].data.source.pdb;
@@ -1416,7 +1416,7 @@ function initGUI(){
     renderParticles: false,
     renderMeshs: true,
     renderShadows: true,
-    renderMB: true,
+    renderMB: false,
     gravity: world.gravity.y,
     interaction: 'none',
     sphereRadius: world.getSphereRadius(0),

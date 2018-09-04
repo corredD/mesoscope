@@ -232,7 +232,8 @@ var updateForceFrag = "uniform vec4 params1;\n\
 	                            vec3 dir = normalize(r);\n\
 	                            vec3 v = velocity - cross(relativePosition + radius * dir, bodyAngularVelocity);\n\
 	                            vec3 nv = neighborVelocity - cross(neighborRelativePosition + radius * (-dir), neighborAngularVelocity);\n\
-	                            force += particleForce(stiffness, damping, friction, 2.0 * radius, radius, position, neighborPosition, v, nv)*10.0;\n\
+	                            force += particleForce(stiffness, damping, friction, 2.0 * radius, \n\
+																radius, position, neighborPosition, v, nv)*10.0;\n\
 	                        }\n\
 	                    }\n\
 	                }\n\
@@ -350,7 +351,8 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 	                        float len = length(r);\n\
 	                        if(len > 0.0 && len < radius * 2.0){\n\
 	                            vec3 dir = normalize(r);\n\
-	                            vec3 relVel = (velocity - cross(relativePosition + radius * dir, angularVelocity)) - (neighborVelocity - cross(neighborRelativePosition + radius * (-dir), neighborAngularVelocity));\n\
+	                            vec3 relVel = (velocity - cross(relativePosition + radius * dir, angularVelocity)) \n\
+																					- (neighborVelocity - cross(neighborRelativePosition + radius * (-dir), neighborAngularVelocity));\n\
 	                            vec3 relTangentVel = relVel - dot(relVel, dir) * dir;\n\
 	                            torque += friction * cross(relativePosition + radius * dir, relTangentVel);\n\
 	                        }\n\
@@ -388,11 +390,20 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 			    if (distance < 0.0 && bodyType_infos1.w == 0.0) sfnormal = -sfnormal;\n\
 			    vec3 relVel = (velocity - cross(relativePosition + (radius) * sfnormal, angularVelocity));\n\
 			    vec3 relTangentVel = relVel - dot(relVel, sfnormal) * sfnormal;\n\
-			    //torque += friction * cross(relativePosition + radius * sfnormal, relTangentVel);\n\
+			    torque += friction * cross(relativePosition + radius * sfnormal, relTangentVel);\n\
 			}\n\
 			if (bodyType_infos1.w > 0.0) {\n\
-				//torque = vec3(0.0,0.0,0.0);\n\
+				vec3 up = vec3(0,0,1);//bodyType_infos1.xyz;\n\
+				vec3 off = bodyType_infos2.xyz;\n\
+				if (distance < 0.0) sfnormal=-sfnormal;\n\
+				vec4 arotation = computeOrientation(sfnormal, up);\n\
+				vec3 r_relativePosition = vec3_applyQuat(relativePosition,arotation);\n\
+				vec3 dir = normalize(r_relativePosition - relativePosition);\n\
+				vec3 v = velocity - cross(relativePosition + radius * dir, angularVelocity);\n\
+				vec3 relTangentVel = (v - dot(v, dir) * dir);\n\
+			  torque += friction * cross(relativePosition + radius * dir, relTangentVel);\n\
 			}\n\
+			torque = vec3(0.0,0.0,0.0);\n\
 	    gl_FragColor = vec4(torque, 0.0);\n\
 	}\n";
 
@@ -426,7 +437,8 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 	    vec3 relativeParticlePos = texture2D( relativeParticlePosTex, particleUV ).xyz;\n\
 	    vBodyForce = particleTorque + cross(relativeParticlePos, particleForce);\n\
 	    vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
-	    bodyUV += vec2(0.5) / bodyTextureResolution;    gl_PointSize = 1.0;\n\
+	    bodyUV += vec2(0.5) / bodyTextureResolution;\n\
+			gl_PointSize = 1.0;\n\
 	    gl_Position = vec4(2.0 * (bodyUV - 0.5), -particleIndex / (resolution.x*resolution.y), 1);\n\
 	}\n";
 
@@ -537,16 +549,16 @@ densityShader+
 				vec3 position = posTexData.xyz;\n\
 				vec4 quat = texture2D(bodyQuatTex, uv);\n\
 				vec3 angularVel = texture2D(bodyAngularVelTex, uv).xyz;\n\
-				vec4 new_quat = quat_integrate(quat, angularVel, deltaTime);\n\
+				vec4 new_quat = quat_integrate(quat, angularVel*10.0, deltaTime);\n\
 				float bodyTypeIndex = posTexData.w;\n\
 				vec2 bodyType_uv = indexToUV( bodyTypeIndex*2.0, bodyInfosTextureResolution );\n\
 				vec4 bodyType_infos1 = texture2D(bodyInfosTex, bodyType_uv);\n\
 				bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
 				vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);\n\
 				if (bodyType_infos1.w > 0.0) {\n\
-					vec3 up = bodyType_infos1.xyz;\n\
+					vec3 up = vec3(0,0,1);//bodyType_infos1.xyz;\n\
 					vec3 off = bodyType_infos2.xyz;\n\
-					vec3 sfnormal = normalize(CalculateSurfaceNormal(position));\n\
+					/*vec3 sfnormal = normalize(CalculateSurfaceNormal(position));\n\
 					float distance = trilinearInterpolation(position);\n\
 					if (distance < 0.0) sfnormal=-sfnormal;\n\
 					vec4 arotation = computeOrientation(sfnormal, up);\n\
@@ -556,10 +568,10 @@ densityShader+
 					float theta = asin(length(torque));\n\
 					vec4 q = QuaternionFromAxisAngle(torque, theta);\n\
 					q = normalize(q);\n\
-					vec4 R = QuaternionMul(q, new_quat);\n\
-					//new_quat = quat_slerp(new_quat,R,deltaTime);\n\
+					vec4 R = QuaternionMul(q, arotation);\n\
+					if (abs(distance) < 2.0**1175.0*0.000390625) new_quat = R ;*/\n\
 				}\n\
-				gl_FragColor = new_quat;//quat;//\n\
+				gl_FragColor = new_quat;//quat;\n\
 }\n"
 
 
@@ -1040,6 +1052,8 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	            return;
 	        }
 					console.log(" addbodytype",surface,radius);
+					console.log("pcp",pcpX, pcpY, pcpZ);
+					console.log("off",offX, offY, offZ);
 	        // Position
 	        var tex = this.dataTextures.bodyInfos;
 	        tex.needsUpdate = true;
