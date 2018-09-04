@@ -105,6 +105,60 @@
 	void main() {\n\
 				gl_FragColor = vec4( vParticleIndex+1.0, 0, 0, 1 );}";
 
+var densityShader="uniform sampler2D bodyPosTex;\n\
+uniform sampler2D bodyInfosTex;\n\
+uniform sampler2D gridIdTex;\n\
+uniform sampler2D gridValueTex;\n\
+uniform vec3 cellSize;\n\
+uniform vec3 gridPos;\n\
+vec4 getValues(float i,float j,float k){\n\
+	float u = (k * gridResolution.x * gridResolution.x) + (j * gridResolution.x) + i;\n\
+	vec2 grid_uv = indexToUV( u, gridIdTextureSize );\n\
+	vec4 g_values = texture2D(gridValueTex, grid_uv);//normal,value\n\
+	return g_values;\n\
+}\n\
+float trilinearInterpolation(vec3 point){\n\
+	// Find the x, y and z values of the \n\
+	// 8 vertices of the cube that surrounds the point\n\
+	vec3 p = (point - gridPos)*gridResolution.x;\n\
+	float x0 = floor(p.x);\n\
+	float x1 = floor(p.x) + 1.0;\n\
+	float y0 = floor(p.y);\n\
+	float y1 = floor(p.y) + 1.0;\n\
+	float z0 = floor(p.z);\n\
+	float z1 = floor(p.z) + 1.0;\n\
+	// Look up the values of the 8 points surrounding the cube\n\
+	// Find the weights for each dimension\n\
+	float x = (p.x - x0);\n\
+	float y = (p.y - y0);\n\
+	float z = (p.z - z0);\n\
+	vec4 V000=getValues(x0,y0,z0);\n\
+	vec4 V100=getValues(x1,y0,z0);\n\
+	vec4 V010=getValues(x0,y1,z0);\n\
+	vec4 V001=getValues(x0,y0,z1);\n\
+	vec4 V101=getValues(x1,y0,z1);\n\
+	vec4 V011=getValues(x0,y1,z1);\n\
+	vec4 V110=getValues(x1,y1,z0);\n\
+	vec4 V111=getValues(x1,y1,z1);\n\
+	float Vxyz = 	V000.w*(1.0 - x)*(1.0 - y)*(1.0 - z) +\n\
+	V100.w*x*(1.0 - y)*(1.0 - z) +\n\
+	V010.w*(1.0 - x)*y*(1.0 - z) +\n\
+	V001.w*(1.0 - x)*(1.0 - y)*z +\n\
+	V101.w*x*(1.0 - y)*z +\n\
+	V011.w*(1.0 - x)*y*z +\n\
+	V110.w*x*y*(1.0 - z) +\n\
+	V111.w*x*y*z;\n\
+	return Vxyz*1175.0*0.000390625;\n\
+}\n\
+vec3 CalculateSurfaceNormal(vec3 p)\n\
+{\n\
+	float H = cellSize.x/8.0; //1.0f/grid_unit;\n\
+	float dx = trilinearInterpolation(p + vec3(H, 0.0, 0.0)) - trilinearInterpolation(p - vec3(H, 0.0, 0.0));\n\
+	float dy = trilinearInterpolation(p + vec3(0.0, H, 0.0)) - trilinearInterpolation(p - vec3(0.0, H, 0.0));\n\
+	float dz = trilinearInterpolation(p + vec3(0.0, 0.0, H)) - trilinearInterpolation(p - vec3(0.0, 0.0, H));\n\
+	return normalize(vec3(dx, dy, dz));\n\
+}\n"
+
 //step 5 - updateParticleForce()->this.textures.particleForce
 var updateForceFrag = "uniform vec4 params1;\n\
 	#define stiffness params1.x\n\
@@ -115,65 +169,13 @@ var updateForceFrag = "uniform vec4 params1;\n\
 	uniform vec4 params3;\n\
 	#define interactionSpherePos params3.xyz\n\
 	#define interactionSphereRadius params3.w\n\
-	uniform vec3 cellSize;\n\
-	uniform vec3 gridPos;\n\
 	uniform sampler2D posTex;\n\
 	uniform sampler2D velTex;\n\
 	uniform sampler2D bodyAngularVelTex;\n\
 	uniform sampler2D particlePosRelative;\n\
-	uniform sampler2D gridTex;\n\
-	uniform sampler2D bodyPosTex;\n\
-	uniform sampler2D bodyInfosTex;\n\
-	uniform sampler2D gridIdTex;\n\
-	uniform sampler2D gridValueTex;\n\
-	vec4 getValues(float i,float j,float k){\n\
-	  float u = (k * gridResolution.x * gridResolution.x) + (j * gridResolution.x) + i;\n\
-	  vec2 grid_uv = indexToUV( u, gridIdTextureSize );\n\
-	  vec4 g_values = texture2D(gridValueTex, grid_uv);//normal,value\n\
-	  return g_values;\n\
-	}\n\
-	float trilinearInterpolation(vec3 point){\n\
-	  // Find the x, y and z values of the \n\
-	  // 8 vertices of the cube that surrounds the point\n\
-	  vec3 p = (point - gridPos)*gridResolution.x;\n\
-	  float x0 = floor(p.x);\n\
-	  float x1 = floor(p.x) + 1.0;\n\
-	  float y0 = floor(p.y);\n\
-	  float y1 = floor(p.y) + 1.0;\n\
-	  float z0 = floor(p.z);\n\
-	  float z1 = floor(p.z) + 1.0;\n\
-	  // Look up the values of the 8 points surrounding the cube\n\
-	  // Find the weights for each dimension\n\
-	  float x = (p.x - x0);\n\
-	  float y = (p.y - y0);\n\
-	  float z = (p.z - z0);\n\
-	  vec4 V000=getValues(x0,y0,z0);\n\
-	  vec4 V100=getValues(x1,y0,z0);\n\
-	  vec4 V010=getValues(x0,y1,z0);\n\
-	  vec4 V001=getValues(x0,y0,z1);\n\
-	  vec4 V101=getValues(x1,y0,z1);\n\
-	  vec4 V011=getValues(x0,y1,z1);\n\
-	  vec4 V110=getValues(x1,y1,z0);\n\
-	  vec4 V111=getValues(x1,y1,z1);\n\
-	  float Vxyz = 	V000.w*(1.0 - x)*(1.0 - y)*(1.0 - z) +\n\
-	  V100.w*x*(1.0 - y)*(1.0 - z) +\n\
-	  V010.w*(1.0 - x)*y*(1.0 - z) +\n\
-	  V001.w*(1.0 - x)*(1.0 - y)*z +\n\
-	  V101.w*x*(1.0 - y)*z +\n\
-	  V011.w*(1.0 - x)*y*z +\n\
-	  V110.w*x*y*(1.0 - z) +\n\
-	  V111.w*x*y*z;\n\
-	  return Vxyz;\n\
-	}\n\
-	vec3 CalculateSurfaceNormal(vec3 p)\n\
-	{\n\
-	  float H = cellSize.x/8.0; //1.0f/grid_unit;\n\
-	  float dx = trilinearInterpolation(p + vec3(H, 0.0, 0.0)) - trilinearInterpolation(p - vec3(H, 0.0, 0.0));\n\
-	  float dy = trilinearInterpolation(p + vec3(0.0, H, 0.0)) - trilinearInterpolation(p - vec3(0.0, H, 0.0));\n\
-	  float dz = trilinearInterpolation(p + vec3(0.0, 0.0, H)) - trilinearInterpolation(p - vec3(0.0, 0.0, H));\n\
-	  return normalize(vec3(dx, dy, dz));\n\
-	}\n\
-	vec3 particleForce(float STIFFNESS, float DAMPING, float DAMPING_T, \n\
+	uniform sampler2D gridTex;\n"+
+	densityShader+
+	"vec3 particleForce(float STIFFNESS, float DAMPING, float DAMPING_T, \n\
 		float distance, float minDistance, vec3 xi, vec3 xj, vec3 vi, vec3 vj){\n\
 	    vec3 rij = xj - xi;\n\
 	    vec3 rij_unit = normalize(rij);\n\
@@ -277,8 +279,9 @@ var updateForceFrag = "uniform vec4 params1;\n\
 					vec3 dampingForce = damping * dot(velocity, sfnormal) * sfnormal;\n\
 					vec3 tangentForce = friction * vij_t;\n\
 					vec3 f = springForce + dampingForce + tangentForce;\n\
-					if (distance > 0.0 && bodyType_infos1.w < 0.0) f = -f*20.0;\n\
+					if (distance > 0.0 && bodyType_infos1.w < 0.0) f = -f*10.0;\n\
 					if (distance < 0.0 && bodyType_infos1.w == 0.0) f = -f;\n\
+					if (bodyType_infos1.w > 0.0) f=-f;\n\
 					force += f;\n\
 			}\n\
 			gl_FragColor = vec4(force, 1.0);\n\
@@ -291,65 +294,13 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 	#define radius params1.z\n\
 	uniform vec4 params2;\n\
 	#define friction params2.y\n\
-	uniform vec3 cellSize;\n\
-	uniform vec3 gridPos;\n\
 	uniform sampler2D posTex;\n\
 	uniform sampler2D particlePosRelative;\n\
 	uniform sampler2D velTex;\n\
 	uniform sampler2D bodyAngularVelTex;\n\
-	uniform sampler2D gridTex;\n\
-	uniform sampler2D bodyPosTex;\n\
-	uniform sampler2D bodyInfosTex;\n\
-	uniform sampler2D gridIdTex;\n\
-	uniform sampler2D gridValueTex;\n\
-	vec4 getValues(float i,float j,float k){\n\
-	  float u = (k * gridResolution.x * gridResolution.x) + (j * gridResolution.x) + i;\n\
-	  vec2 grid_uv = indexToUV( u, gridIdTextureSize );\n\
-	  vec4 g_values = texture2D(gridValueTex, grid_uv);//normal,value\n\
-	  return g_values;\n\
-	}\n\
-	float trilinearInterpolation(vec3 point){\n\
-	  // Find the x, y and z values of the \n\
-	  // 8 vertices of the cube that surrounds the point\n\
-	  vec3 p = (point - gridPos)*gridResolution.x;\n\
-	  float x0 = floor(p.x);\n\
-	  float x1 = floor(p.x) + 1.0;\n\
-	  float y0 = floor(p.y);\n\
-	  float y1 = floor(p.y) + 1.0;\n\
-	  float z0 = floor(p.z);\n\
-	  float z1 = floor(p.z) + 1.0;\n\
-	  // Look up the values of the 8 points surrounding the cube\n\
-	  // Find the weights for each dimension\n\
-	  float x = (p.x - x0);\n\
-	  float y = (p.y - y0);\n\
-	  float z = (p.z - z0);\n\
-	  vec4 V000=getValues(x0,y0,z0);\n\
-	  vec4 V100=getValues(x1,y0,z0);\n\
-	  vec4 V010=getValues(x0,y1,z0);\n\
-	  vec4 V001=getValues(x0,y0,z1);\n\
-	  vec4 V101=getValues(x1,y0,z1);\n\
-	  vec4 V011=getValues(x0,y1,z1);\n\
-	  vec4 V110=getValues(x1,y1,z0);\n\
-	  vec4 V111=getValues(x1,y1,z1);\n\
-	  float Vxyz = 	V000.w*(1.0 - x)*(1.0 - y)*(1.0 - z) +\n\
-	  V100.w*x*(1.0 - y)*(1.0 - z) +\n\
-	  V010.w*(1.0 - x)*y*(1.0 - z) +\n\
-	  V001.w*(1.0 - x)*(1.0 - y)*z +\n\
-	  V101.w*x*(1.0 - y)*z +\n\
-	  V011.w*(1.0 - x)*y*z +\n\
-	  V110.w*x*y*(1.0 - z) +\n\
-	  V111.w*x*y*z;\n\
-	  return Vxyz;\n\
-	}\n\
-	vec3 CalculateSurfaceNormal(vec3 p)\n\
-	{\n\
-	  float H = cellSize.x/8.0; //1.0f/grid_unit;\n\
-	  float dx = trilinearInterpolation(p + vec3(H, 0.0, 0.0)) - trilinearInterpolation(p - vec3(H, 0.0, 0.0));\n\
-	  float dy = trilinearInterpolation(p + vec3(0.0, H, 0.0)) - trilinearInterpolation(p - vec3(0.0, H, 0.0));\n\
-	  float dz = trilinearInterpolation(p + vec3(0.0, 0.0, H)) - trilinearInterpolation(p - vec3(0.0, 0.0, H));\n\
-	  return normalize(vec3(dx, dy, dz));\n\
-	}\n\
-	void main() {\n\
+	uniform sampler2D gridTex;\n"+
+	densityShader+
+	"void main() {\n\
 	    vec2 uv = gl_FragCoord.xy / resolution;\n\
 	    int particleIndex = uvToIndex(uv, resolution);\n\
 	    vec4 positionAndBodyId = texture2D(posTex, uv);\n\
@@ -425,12 +376,15 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 			//compute torque from surface collision\n\
 			vec3 sfnormal = normalize(CalculateSurfaceNormal(position));\n\
 			float distance = trilinearInterpolation(position);\n\
-			if (abs(distance) < 0.05){\n\
+			if (abs(distance) < 0.05 && bodyType_infos1.w <= 0.0){\n\
 			    if (distance > 0.0 && bodyType_infos1.w < 0.0) sfnormal = -sfnormal;\n\
 			    if (distance < 0.0 && bodyType_infos1.w == 0.0) sfnormal = -sfnormal;\n\
 			    vec3 relVel = (velocity - cross(relativePosition + (radius) * sfnormal, angularVelocity));\n\
 			    vec3 relTangentVel = relVel - dot(relVel, sfnormal) * sfnormal;\n\
 			    torque += friction * cross(relativePosition + radius * sfnormal, relTangentVel);\n\
+			}\n\
+			if (bodyType_infos1.w > 0.0) {\n\
+				//torque = vec3(0.0,0.0,0.0);\n\
 			}\n\
 	    gl_FragColor = vec4(torque, 0.0);\n\
 	}\n";
@@ -483,20 +437,53 @@ uniform vec3 gravity;\n\
 uniform vec3 maxVelocity;\n\
 uniform vec4 params2;\n\
 #define deltaTime params2.x\n\
-#define drag params2.z\n\
-void main() {\n\
+#define drag params2.z\n"+
+densityShader+
+"void main() {\n\
     vec2 uv = gl_FragCoord.xy / bodyTextureResolution;\n\
     vec4 velocity = texture2D(bodyVelTex, uv);\n\
     vec4 force = texture2D(bodyForceTex, uv);\n\
     vec4 quat = texture2D(bodyQuatTex, uv);\n\
     vec4 massProps = texture2D(bodyMassTex, uv);\n\
     vec3 newVelocity = velocity.xyz;\n\
+		vec4 posTexData = texture2D(bodyPosTex, uv);\n\
+		float bodyTypeIndex = posTexData.w;\n\
+		vec2 bodyType_uv = indexToUV( bodyTypeIndex*2.0, bodyInfosTextureResolution );\n\
+		vec4 bodyType_infos1 = texture2D(bodyInfosTex, bodyType_uv);\n\
+		bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
+		vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);\n\
+		vec3 up = bodyType_infos1.xyz;\n\
+		vec3 off = bodyType_infos2.xyz;\n\
     if( linearAngular < 0.5 ){\n\
         float invMass = massProps.w;\n\
         newVelocity += (force.xyz + gravity) * deltaTime * invMass;\n\
+				if (bodyType_infos1.w > 0.0) {\n\
+					vec3 position = posTexData.xyz + newVelocity* deltaTime;\n\
+					vec3 sfnormal = normalize(CalculateSurfaceNormal(position));\n\
+					float distance = trilinearInterpolation(position)*1175.0*0.000390625;\n\
+					vec3 toward_surface = -sfnormal*abs(distance);\n\
+					//need to add the offset.\n\
+					//newVelocity = vec3(0.0,0.0,0.0);\n\
+					//if (abs(distance)>0.1) newVelocity = (newVelocity * deltaTime)+toward_surface* deltaTime;\n\
+				}\n\
     } else {\n\
         vec3 invInertia = massProps.xyz;\n\
-        newVelocity += force.xyz * deltaTime * invInertiaWorld(quat, invInertia);\n\
+				if (bodyType_infos1.w > 0.0) {\n\
+					vec3 position = posTexData.xyz + force.xyz * deltaTime;\n\
+					vec3 sfnormal = normalize(CalculateSurfaceNormal(position));\n\
+					float distance = trilinearInterpolation(position);\n\
+					if (distance < 0.0) sfnormal=-sfnormal;\n\
+					vec4 arotation = computeOrientation(sfnormal, up);\n\
+					vec3 rup = vec3_applyQuat(up,quat);\n\
+					vec3 newup = vec3_applyQuat(up,arotation);//use current ?\n\
+					vec3 torque = cross(normalize(rup), normalize(newup));\n\
+					float theta = asin(length(torque));\n\
+					//float fAngle = theta;//seems more stable than the Cos\n\
+					//need the torque force to get back to align to surface\n\
+					vec3 w =  (normalize(torque.xyz) * theta);\n\
+					force = force + vec4(torque.xyz,1.0);\n\
+				}\n\
+				newVelocity += force.xyz * deltaTime * invInertiaWorld(quat, invInertia);\n\
     }\n\
     newVelocity = clamp(newVelocity, -maxVelocity, maxVelocity);\n\
     newVelocity *= pow(1.0 - drag, deltaTime);\n\
@@ -505,16 +492,11 @@ void main() {\n\
 
 //step 11 updateBodyPosition()
 //force surface here.
-	var updateBodyPositionFrag = "uniform sampler2D bodyPosTex;\n\
-uniform sampler2D bodyVelTex;\n\
-uniform sampler2D bodyInfosTex;\n\
-uniform sampler2D gridIdTex;\n\
-uniform sampler2D gridValueTex;\n\
-uniform vec3 cellSize;\n\
-uniform vec3 gridPos;\n\
+	var updateBodyPositionFrag = "uniform sampler2D bodyVelTex;\n\
 uniform vec4 params2;\n\
-#define deltaTime params2.x\n\
-void main() {\n\
+#define deltaTime params2.x\n"+
+densityShader+
+"void main() {\n\
         vec2 uv = gl_FragCoord.xy / bodyTextureResolution;\n\
         vec4 posTexData = texture2D(bodyPosTex, uv);\n\
         vec3 position = posTexData.xyz;\n\
@@ -525,6 +507,13 @@ void main() {\n\
 				vec4 bodyType_infos1 = texture2D(bodyInfosTex, bodyType_uv);\n\
 				bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
 				vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);\n\
+				if (bodyType_infos1.w > 0.0) {\n\
+					vec3 sfnormal = normalize(CalculateSurfaceNormal(new_pos));\n\
+					float distance = trilinearInterpolation(new_pos)*1175.0*0.000390625;\n\
+					vec3 toward_surface = -sfnormal*abs(distance);\n\
+					//need to add the offset.\n\
+					//if (abs(distance)>0.1) new_pos = new_pos+toward_surface;\n\
+				}\n\
         gl_FragColor = vec4(new_pos, bodyTypeIndex);\n\
 }\n";
 
@@ -532,11 +521,10 @@ void main() {\n\
 //force surface here.
 	var updateBodyQuaternionFrag = "uniform sampler2D bodyQuatTex;\n\
 uniform sampler2D bodyAngularVelTex;\n\
-uniform sampler2D bodyPosTex;\n\
-uniform sampler2D bodyInfosTex;\n\
 uniform vec4 params2;\n\
-#define deltaTime params2.x\n\
-void main() {\n\
+#define deltaTime params2.x\n"+
+densityShader+
+"void main() {\n\
         vec2 uv = gl_FragCoord.xy / bodyTextureResolution;\n\
 				vec4 posTexData = texture2D(bodyPosTex, uv);\n\
 				vec3 position = posTexData.xyz;\n\
@@ -548,6 +536,22 @@ void main() {\n\
 				vec4 bodyType_infos1 = texture2D(bodyInfosTex, bodyType_uv);\n\
 				bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
 				vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);\n\
+				if (bodyType_infos1.w > 0.0) {\n\
+					vec3 up = bodyType_infos1.xyz;\n\
+					vec3 off = bodyType_infos2.xyz;\n\
+					vec3 sfnormal = normalize(CalculateSurfaceNormal(position));\n\
+					float distance = trilinearInterpolation(position);\n\
+					if (distance < 0.0) sfnormal=-sfnormal;\n\
+					vec4 arotation = computeOrientation(sfnormal, up);\n\
+					vec3 rup = vec3_applyQuat(up,quat);\n\
+					vec3 newup = vec3_applyQuat(up,arotation);//use current ?\n\
+					vec3 torque = cross(normalize(rup), normalize(newup));\n\
+					float theta = asin(length(torque));\n\
+					vec4 q = QuaternionFromAxisAngle(torque, theta);\n\
+					q = normalize(q);\n\
+					vec4 R = QuaternionMul(q, new_quat);\n\
+					//new_quat = quat_slerp(new_quat,R,deltaTime);\n\
+				}\n\
 				gl_FragColor = new_quat;//quat;//\n\
 }\n"
 
@@ -577,7 +581,7 @@ void main() {\n\
 				vec3 position = posTexData.xyz;\n\
 				vec4 quat = texture2D(bodyQuatTex, uv);\n\
 				vec3 angularVel = texture2D(bodyAngularVelTex, uv).xyz;\n\
-        gl_FragColor = quat;//quat_integrate(quat, angularVel, deltaTime);\n\
+        gl_FragColor = quat_integrate(quat, angularVel, deltaTime);\n\
 }\n"
 
 var shared = "float Epsilon = 1e-10;\n\
@@ -607,7 +611,8 @@ vec2 gridPosToGridUV(vec3 gridPos, int subIndex, vec3 gridRes, vec2 gridTextureR
 }\n\
 vec4 quat_integrate(vec4 q, vec3 w, float dt){\n\
         float half_dt = dt * 0.5;\n\
-        q.x += half_dt * (w.x * q.w + w.y * q.z - w.z * q.y);   q.y += half_dt * (w.y * q.w + w.z * q.x - w.x * q.z);\n\
+        q.x += half_dt * (w.x * q.w + w.y * q.z - w.z * q.y);\n\
+				q.y += half_dt * (w.y * q.w + w.z * q.x - w.x * q.z);\n\
         q.z += half_dt * (w.z * q.w + w.x * q.y - w.y * q.x);\n\
         q.w += half_dt * (- w.x * q.x - w.y * q.y - w.z * q.z);\n\
         return normalize(q);\n\
@@ -693,6 +698,26 @@ vec4 computeOrientation(vec3 norm, vec3 up)\n\
 {\n\
 	vec4 rot = get_rotation_between(normalize(up), normalize(norm));\n\
 	return normalize(rot);//float4(0,0,0,1);\n\
+}\n\
+vec4 QuaternionFromAxisAngle(vec3 axis, float angle)\n\
+{\n\
+	vec4 q;\n\
+	q.x = axis.x * sin(angle/2.0);\n\
+	q.y = axis.y * sin(angle/2.0);\n\
+	q.z = axis.z * sin(angle/2.0);\n\
+	q.w = cos(angle/2.0);\n\
+	return q;\n\
+}\n\
+vec4 QuaternionMul(vec4 lhs, vec4 rhs)\n\
+{\n\
+	vec4 q =vec4\n\
+	(\n\
+		lhs.y * rhs.z - lhs.z * rhs.y + lhs.x * rhs.w + lhs.w * rhs.x,\n\
+		lhs.z * rhs.x - lhs.x * rhs.z + lhs.y * rhs.w + lhs.w * rhs.y,\n\
+		lhs.x * rhs.y - lhs.y * rhs.x + lhs.z * rhs.w + lhs.w * rhs.z,\n\
+		lhs.w * rhs.w - lhs.x * rhs.x - lhs.y * rhs.y - lhs.z * rhs.z\n\
+	);\n\
+	return q;\n\
 }\n\
 vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
         float d = dot(v0, v1);\n\

@@ -71,6 +71,63 @@ var depthMaterial, saoMaterial, saoModulateMaterial, normalMaterial, vBlurMateri
 var depthRenderTarget, normalRenderTarget, saoRenderTarget, beautyRenderTarget, blurIntermediateRenderTarget;
 var composer, renderPass, saoPass1,saoPass2, copyPass;
 
+function Debug_getValues( i, j, k){
+	var u = (k * world.broadphase.resolution.x * world.broadphase.resolution.x) + (j * world.broadphase.resolution.x) + i;
+  var g_value = master_grid_field[u*4+3];
+  return g_value;
+}
+
+function Debug_trilinearInterpolation(point){
+	// Find the x, y and z values of the \n\
+	// 8 vertices of the cube that surrounds the point\n\
+  var p = new NGL.Vector3( point.x,
+                           point.y,
+                           point.z);
+  p.sub(world.broadphase.position);
+  p.multiplyScalar(world.broadphase.resolution.x);//.divide(bounds.size);//.divideScalar(bounds.maxsize);
+	var x0 = Math.floor(p.x);
+	var x1 = Math.floor(p.x) + 1.0;
+	var y0 = Math.floor(p.y);
+	var y1 = Math.floor(p.y) + 1.0;
+	var z0 = Math.floor(p.z);
+	var z1 = Math.floor(p.z) + 1.0;
+	// Look up the values of the 8 points surrounding the cube\n\
+	// Find the weights for each dimension\n\
+	var x = (p.x - x0);
+	var y = (p.y - y0);
+	var z = (p.z - z0);
+	var V000=Debug_getValues(x0,y0,z0);
+	var V100=Debug_getValues(x1,y0,z0);
+	var V010=Debug_getValues(x0,y1,z0);
+	var V001=Debug_getValues(x0,y0,z1);
+	var V101=Debug_getValues(x1,y0,z1);
+	var V011=Debug_getValues(x0,y1,z1);
+	var V110=Debug_getValues(x1,y1,z0);
+	var V111=Debug_getValues(x1,y1,z1);
+	var Vxyz = 	V000*(1.0 - x)*(1.0 - y)*(1.0 - z) +
+	V100*x*(1.0 - y)*(1.0 - z) +
+	V010*(1.0 - x)*y*(1.0 - z) +
+	V001*(1.0 - x)*(1.0 - y)*z +
+	V101*x*(1.0 - y)*z +
+	V011*(1.0 - x)*y*z +
+	V110*x*y*(1.0 - z) +
+	V111*x*y*z;
+	return Vxyz;//*1175.0*0.000390625;
+}
+
+function Debug_CalculateSurfaceNormal(p,H)
+{
+	//var H = world.radius/8.0; //1.0f/grid_unit;\n\
+  var x = new THREE.Vector3( H, 0.0, 0.0 );
+  var y = new THREE.Vector3( 0.0, H, 0.0 );
+  var z = new THREE.Vector3( 0.0, 0.0, H );
+	var dx = Debug_trilinearInterpolation(new THREE.Vector3( ).copy(p).add(x)) - Debug_trilinearInterpolation(new THREE.Vector3( ).copy(p).sub(x));
+	var dy = Debug_trilinearInterpolation(new THREE.Vector3( ).copy(p).add(y)) - Debug_trilinearInterpolation(new THREE.Vector3( ).copy(p).sub(x));
+	var dz = Debug_trilinearInterpolation(new THREE.Vector3( ).copy(p).add(z)) - Debug_trilinearInterpolation(new THREE.Vector3( ).copy(p).sub(x));
+  var dxyz = new THREE.Vector3(dx, dy, dz);
+  dxyz.normalize();
+  return dxyz;
+}
 
 function ComputeVolume(anode) {
     //Debug.Log("ComputeVolume " + compId.ToString());
@@ -401,7 +458,7 @@ function distributesMesh(){
         //nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
         continue;
     };
-    if (nodes[i].data.surface) continue;
+    //if (!nodes[i].data.surface) continue;
     //if (!nodes[i].parent.parent) continue;
     if (!nodes[i].data.radii) continue;
     //if (!nodes[i].data.surface) continue;
@@ -959,7 +1016,7 @@ function GP_initWorld(){
 
     // Interaction sphere
     world.setSphereRadius(0, 0.25);
-    world.setSpherePosition(0, 0,0,0);
+    world.setSpherePosition(0,-boxSize.x,-0.5,-boxSize.z);
 }
 
 function init(){
@@ -1139,6 +1196,7 @@ function init(){
     */
     // interaction
     interactionSphereMesh = new THREE.Mesh(new THREE.SphereBufferGeometry(1,16,16), new THREE.MeshPhongMaterial({ color: 0xffffff }));
+    interactionSphereMesh.position.set(-boxSize.x,-0.5,-boxSize.z);
     scene.add(interactionSphereMesh);
     gizmo = new THREE.TransformControls( camera, renderer.domElement );
     gizmo.addEventListener( 'change', function(){
@@ -1149,6 +1207,8 @@ function init(){
                 interactionSphereMesh.position.y,
                 interactionSphereMesh.position.z
             );
+            var a = Debug_trilinearInterpolation(interactionSphereMesh.position);
+            console.log(a,a*1175.0*0.000390625);
         } else if(this.object === debugGridMesh){
             world.broadphase.position.copy(debugGridMesh.position);
             console.log(world.broadphase.position);
@@ -1452,7 +1512,7 @@ function initGUI(){
   gh.add( controller, "renderShadows" ).onChange( guiChanged );
   gh.add( controller, "renderMB" ).onChange( guiChanged );
   gh.add( controller, 'interaction', [ 'none', 'sphere', 'broadphase' ] ).onChange( guiChanged );
-  gh.add( controller, 'sphereRadius', boxSize.x/10, boxSize.x/2 ).onChange( guiChanged );
+  gh.add( controller, 'sphereRadius', boxSize.x/100, boxSize.x/10 ).onChange( guiChanged );
 
   var h = gui.addFolder( "Materials" );
 	for ( var m in all_materials ) {
@@ -1623,6 +1683,14 @@ function GP_selectFile(e){
      reader.readAsText(thefile, 'UTF-8');
 	}
 
+document.addEventListener("keydown", onDocumentKeyDown, false);
+function onDocumentKeyDown(event) {
+    var keyCode = event.which;
+    //p
+    if (keyCode == 80){
+      controller.paused=!controller.paused;
+    }
+};
 /*(function() {
    // your page initialization code here
    // the DOM will be available here
