@@ -388,7 +388,7 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 			    if (distance < 0.0 && bodyType_infos1.w == 0.0) sfnormal = -sfnormal;\n\
 			    vec3 relVel = (velocity - cross(relativePosition + (radius) * sfnormal, angularVelocity));\n\
 			    vec3 relTangentVel = relVel - dot(relVel, sfnormal) * sfnormal;\n\
-			    torque += friction * cross(relativePosition + radius * sfnormal, relTangentVel);\n\
+			    //torque += friction * cross(relativePosition + radius * sfnormal, relTangentVel);\n\
 			}\n\
 			if (bodyType_infos1.w > 0.0) {\n\
 				//torque = vec3(0.0,0.0,0.0);\n\
@@ -488,7 +488,7 @@ densityShader+
 					//float fAngle = theta;//seems more stable than the Cos\n\
 					//need the torque force to get back to align to surface\n\
 					vec3 w =  (normalize(torque.xyz) * theta);\n\
-					force = force + vec4(torque.xyz,1.0);\n\
+					//force = force + vec4(torque.xyz,1.0);\n\
 				}\n\
 				newVelocity += force.xyz * deltaTime * invInertiaWorld(quat, invInertia);\n\
     }\n\

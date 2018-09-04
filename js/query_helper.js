@@ -1430,6 +1430,13 @@ function getCurrentNodesAsCP_JSON(some_data, some_links) {
             "ingredients": {}
           }
         };
+        if (gtype === "mb") {
+            if (node.data.pos && node.data.radii) {
+              jsondic["compartments"][cname]["mb"]={"positions":{},"radii":{}};
+              jsondic["compartments"][cname]["mb"].positions = node.data.pos[0].coords;
+              jsondic["compartments"][cname]["mb"].radii = node.data.radii[0].radii;
+            }
+          }
       }
       continue;
     }

@@ -196,7 +196,22 @@ function updateCubes(object, time, numblobs) {
   return object;
 };
 
-function NGL_updateMetaBalls(anode) {
+function NGL_updateMetaBalls(anode){
+  if (!anode) anode = node_selected;
+  if (!anode.data.nodetype === "compartment") return;
+  if (!ngl_marching_cube) ngl_marching_cube = new NGL.MarchingCubes(30, null, true, false);
+  ngl_marching_cube.reset();
+  if (!("pos" in anode.data)||(anode.data.pos === null)||(anode.data.pos.length===0)) {
+    anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
+    anode.data.radii=[{"radii":[500.0]}];
+  }
+  //iso,padding
+  ngl_marching_cube.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2,1.0);
+  ngl_marching_cube.isolation = 0.0;
+  //NGL_updateMetaBallsGeom(anode);
+}
+
+function NGL_updateMetaBalls1(anode) {
   if (!anode) anode = node_selected;
   if (!anode.data.nodetype === "compartment") return;
   if (!ngl_marching_cube) ngl_marching_cube = new NGL.MarchingCubes(30, null, true, false);

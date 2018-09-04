@@ -1665,7 +1665,7 @@ function GP_selectFile(e){
   	        //console.log(ad);
   	        //alert(JSON.stringify(ad));
   	        var adata = parseCellPackRecipeSerialized(ad);
-            GP_initFromData(data);
+            GP_initFromData(adata);
      	      }
     	  }
     	  else {
