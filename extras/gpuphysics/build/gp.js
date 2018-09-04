@@ -265,6 +265,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 			}\n\
 			vec3 r = position - interactionSpherePos;\n\
 			float len = length(r);\n\
+			//vec3 sphereForce = vec3(0.0,0.0,0.0);\n\
 			if(len > 0.0 && len < interactionSphereRadius+radius){\n\
 					force += particleForce(stiffness, damping, friction, \n\
 						radius + interactionSphereRadius, interactionSphereRadius, \n\
@@ -273,16 +274,22 @@ var updateForceFrag = "uniform vec4 params1;\n\
 			//surface collision\n\
 			vec3 sfnormal = normalize(CalculateSurfaceNormal(position));\n\
 			float distance = trilinearInterpolation(position);\n\
+			vec3 vij_t = velocity - dot(velocity, sfnormal) * sfnormal;\n\
+			vec3 springForce = - stiffness * (radius - distance) * sfnormal;\n\
+			vec3 dampingForce = damping * dot(velocity, sfnormal) * sfnormal;\n\
+			vec3 tangentForce = friction * vij_t;\n\
+			vec3 f = springForce + dampingForce + tangentForce;\n\
 			if (abs(distance) < 0.05){\n\
-					vec3 vij_t = velocity - dot(velocity, sfnormal) * sfnormal;\n\
-					vec3 springForce = - stiffness * (radius - distance) * sfnormal;\n\
-					vec3 dampingForce = damping * dot(velocity, sfnormal) * sfnormal;\n\
-					vec3 tangentForce = friction * vij_t;\n\
-					vec3 f = springForce + dampingForce + tangentForce;\n\
 					if (distance > 0.0 && bodyType_infos1.w < 0.0) f = -f*10.0;\n\
 					if (distance < 0.0 && bodyType_infos1.w == 0.0) f = -f;\n\
 					if (bodyType_infos1.w > 0.0) f=-f;\n\
 					force += f;\n\
+			}\n\
+			else {\n\
+				if (bodyType_infos1.w > 0.0)\n\
+				{\n\
+					force +=-f*10.0;\n\
+				}\n\
 			}\n\
 			gl_FragColor = vec4(force, 1.0);\n\
 	}\n"

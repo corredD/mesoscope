@@ -1208,7 +1208,7 @@ function init(){
                 interactionSphereMesh.position.z
             );
             var a = Debug_trilinearInterpolation(interactionSphereMesh.position);
-            console.log(a,a*1175.0*0.000390625);
+            //console.log(a,a*1175.0*0.000390625);
         } else if(this.object === debugGridMesh){
             world.broadphase.position.copy(debugGridMesh.position);
             console.log(world.broadphase.position);
