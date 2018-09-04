@@ -206,7 +206,7 @@ function NGL_updateMetaBalls(anode){
     anode.data.radii=[{"radii":[500.0]}];
   }
   //iso,padding
-  ngl_marching_cube.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2,1.0);
+  ngl_marching_cube.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2,0.0);
   ngl_marching_cube.isolation = 0.0;
   //NGL_updateMetaBallsGeom(anode);
 }
@@ -299,11 +299,18 @@ function NGL_MetaBallsGeom(geo){
   );
 
   var shapeComp = stage.addComponentFromObject(shape);
-  shapeComp.setScale(ngl_marching_cube.data_bound.maxsize);//this is the scale,
+  //shapeComp.setScale(ngl_marching_cube.data_bound.maxsize/2.0);
+  //shapeComp.setPosition(ngl_marching_cube.data_bound.center);//this is the position,
+  shapeComp.setScale(ngl_marching_cube.data_bound.maxsize/2.0);//this is the scale,
+  var pos = new NGL.Vector3(0,0,0);
+  pos.x = (ngl_marching_cube.data_bound.min.x + ngl_marching_cube.data_bound.maxsize/2.0);//+w/2.0;//+w/2.0;//center of the box
+  pos.y = (ngl_marching_cube.data_bound.min.y + ngl_marching_cube.data_bound.maxsize/2.0);//+h/2.0;//+h/2.0;
+  pos.z = (ngl_marching_cube.data_bound.min.z + ngl_marching_cube.data_bound.maxsize/2.0);//+d/2.0;//+d/2.0;
+  //shapeComp.setPosition(pos);//this is the position,
   shapeComp.setPosition(ngl_marching_cube.data_bound.center);//this is the position,
   var r = shapeComp.addRepresentation(geo.name+"_metab_surface", {
     opacity: 0.5,
-    side: "double",
+    side: "back",//"double",
     //wireframe: true
   });
 }
@@ -2588,7 +2595,7 @@ function NGL_multiSpheresComp(name,pos, radii) {
       disableImpostor: true,
       radialSegments: 10
     });
-    shape.addSphere([pos[p],pos[p+1],pos[p+2]], [1, 0, 0], radii[i],name+"_"+i.toString());
+    shape.addSphere([pos[p],pos[p+1],pos[p+2]], [1, 0, 0], radii[i]/2.0,name+"_"+i.toString());
     p+=3;
     var shapeComp = stage.addComponentFromObject(shape);
     shapeComp.addRepresentation(name+"_"+i.toString()); //wireframe ?

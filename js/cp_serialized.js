@@ -686,7 +686,7 @@ function parseCellPackRecipe(jsondic) {
                 //if (comp_type === "raw") {comp["geom"] = acompdic.mesh;}
                 //  if (comp_type === "file") {acomp["geom"] = acompdic.filename;}
                 //if (comp_type === "sphere") {acomp["geom"] = {"name":acompdic.name,"radius":acompdic.radius};}
-                if (comp_type === "mb") {
+                if (comp_type === "mb" && "mb" in comp_dic) {
                     //acomp["geom"] = acompdic.mb;
                     comp["pos"] = [{"coords":comp_dic.mb.positions}];
                     comp["radii"] = [{"radii":comp_dic.mb.radii}];

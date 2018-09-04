@@ -369,7 +369,7 @@ function GP_createOneCompartmentMesh(anode) {
   var d = world.broadphase.resolution.z * world.radius * 2;
   //    if (!ngl_marching_cube) ngl_marching_cube = new NGL.MarchingCubes(30, null, true, false);
   //    NGL_updateMetaBalls(anode);
-  if (!anode.data.mc) anode.data.mc = new NGL.MarchingCubes(24, null, true, false);
+  if (!anode.data.mc) anode.data.mc = new NGL.MarchingCubes(30, null, true, false);
   if (!("pos" in anode.data)||(anode.data.pos === null)||(anode.data.pos.length===0)) {
     anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
     anode.data.radii=[{"radii":[500.0]}];
@@ -387,7 +387,7 @@ function GP_createOneCompartmentMesh(anode) {
                           anode.data.radii[0].radii[s]*ascale/2.0);
     comp_geom.add(aSphereMesh);
   }
-  anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2,world.radius*10/ascale);
+  anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2,0.0);
   anode.data.mc.isolation = 0.0;
   //NGL_updateMetaBallsGeom(anode);
   var geo = anode.data.mc.generateGeometry();
@@ -412,7 +412,7 @@ function GP_createOneCompartmentMesh(anode) {
   bufferGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
   bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
   bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(geo.faces), 1));
-  var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true });
+  var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: false });
   var compMesh = new THREE.Mesh(bufferGeometry, wireframeMaterial);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
   compMesh.scale.x = anode.data.mc.data_bound.maxsize/2.0*ascale;//halfsize?
   compMesh.scale.y = anode.data.mc.data_bound.maxsize/2.0*ascale;
@@ -421,7 +421,7 @@ function GP_createOneCompartmentMesh(anode) {
   compMesh.position.y = (anode.data.mc.data_bound.min.y + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+h/2.0;//+h/2.0;
   compMesh.position.z = (anode.data.mc.data_bound.min.z + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+d/2.0;//+d/2.0;
   scene.add(compMesh);
-  scene.add(comp_geom);
+  //scene.add(comp_geom);
   return compMesh;
 }
 
@@ -762,8 +762,10 @@ function createInstancesMesh(pid,anode,start,count) {
       //pick a random one.
       var mscale = nodes[1].data.mesh.scale;
       var vi = Math.round(Util_halton(bodyId,2)*v.length/3);
-      var ni = new THREE.Vector3( n[vi*3],n[vi*3+1],n[vi*3+2]);
-      var rotation = Util_computeOrientation(ni,up);
+      var ni = new THREE.Vector3( -n[vi*3],-n[vi*3+1],-n[vi*3+2]);
+      var rotation1 = Util_computeOrientation(ni,up);
+      //compare with .setFromUnitVectors ( vFrom : Vector3, vTo : Vector3 )
+      var rotation = new THREE.Quaternion().setFromUnitVectors (up,ni);
       var rand_rot = new THREE.Quaternion();
       rand_rot.setFromAxisAngle(up, Math.random() * Math.PI * 2);
       var pos = new THREE.Vector3(v[vi*3]*mscale.x,
@@ -773,7 +775,7 @@ function createInstancesMesh(pid,anode,start,count) {
       var roff = new THREE.Vector3(offset.x,offset.y,offset.z);
       roff.applyQuaternion( rotation );
       pos.add(roff);// = pos + QuaternionTransform(rotation,off) ;
-      rotation.multiply(rand_rot); // or premultiply
+      //rotation.multiply(rand_rot); // or premultiply
       x=pos.x;y=pos.y;z=pos.z;
       q.copy(rotation);
     }
@@ -1068,7 +1070,7 @@ function init(){
     //createInstancesMesh(11,nodes[11],2,10);
     //createInstancesMesh(11,nodes[11],2,10);
 
-    // Create an instanced mesh for debug spheres
+    // Create an instanced mesh for debug spheres, should use the imposter quad.
     var sphereGeometry = new THREE.SphereBufferGeometry(world.radius, 8, 8);
     var instances = world.maxParticles;
     var debugGeometry = new THREE.InstancedBufferGeometry();

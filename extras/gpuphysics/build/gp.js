@@ -401,7 +401,7 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 				vec3 dir = normalize(r_relativePosition - relativePosition);\n\
 				vec3 v = velocity - cross(relativePosition + radius * dir, angularVelocity);\n\
 				vec3 relTangentVel = (v - dot(v, dir) * dir);\n\
-			  torque += friction * cross(relativePosition + radius * dir, relTangentVel);\n\
+			  //torque = friction * cross(relativePosition + radius * dir, relTangentVel);\n\
 			}\n\
 			torque = vec3(0.0,0.0,0.0);\n\
 	    gl_FragColor = vec4(torque, 0.0);\n\
@@ -558,9 +558,9 @@ densityShader+
 				if (bodyType_infos1.w > 0.0) {\n\
 					vec3 up = vec3(0,0,1);//bodyType_infos1.xyz;\n\
 					vec3 off = bodyType_infos2.xyz;\n\
-					/*vec3 sfnormal = normalize(CalculateSurfaceNormal(position));\n\
+					vec3 sfnormal = normalize(CalculateSurfaceNormal(position));\n\
 					float distance = trilinearInterpolation(position);\n\
-					if (distance < 0.0) sfnormal=-sfnormal;\n\
+					//if (distance < 0.0) sfnormal=-sfnormal;\n\
 					vec4 arotation = computeOrientation(sfnormal, up);\n\
 					vec3 rup = vec3_applyQuat(up,quat);\n\
 					vec3 newup = vec3_applyQuat(up,arotation);//use current ?\n\
@@ -569,7 +569,9 @@ densityShader+
 					vec4 q = QuaternionFromAxisAngle(torque, theta);\n\
 					q = normalize(q);\n\
 					vec4 R = QuaternionMul(q, arotation);\n\
-					if (abs(distance) < 2.0**1175.0*0.000390625) new_quat = R ;*/\n\
+					R = quat_slerp(quat, arotation, deltaTime);\n\
+					//if (abs(distance) < 2.0**1175.0*0.000390625) \n\
+					if (abs(distance) < 2.0**1175.0*0.000390625) new_quat = R ;\n\
 				}\n\
 				gl_FragColor = new_quat;//quat;\n\
 }\n"
