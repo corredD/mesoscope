@@ -1741,12 +1741,12 @@ function UpdateCompartmentRep(anode,clear_ngl = true){
 
 function drawCompRec(anode) {
 	if (stage) stage.removeAllComponents();
-	if (DEBUGGPU){
+	//if (DEBUGGPU){
 		//document.getElementById( 'container' ).setAttribute("class", "show");
 		//document.getElementById( 'viewport' ).setAttribute("class", "hidden");
-		GP_initFromNodes(graph.nodes,128,10,false);
-	}
-	else {
+	//	GP_initFromNodes(graph.nodes,128,10,false);
+	//}
+	//else {
 		anode.each(function(cnode) {
 				if (cnode.children && cnode.data.nodetype === "compartment")
 						UpdateCompartmentRep(cnode,false);
@@ -1758,7 +1758,7 @@ function drawCompRec(anode) {
 		anode.data.boundingBox.expandByScalar(100);
 		//add the bounding box
 		//NGL_addBB();
-	}
+//	}
 }
 
 function SetObjectsOptionsDiv(anode) {

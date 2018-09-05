@@ -184,6 +184,7 @@ var ngl_viewport='' +
 
 var gpu_phy_viewport='' +
 '<div class="GPGPU" id="GPGPU">'+
+  '<button onclick="GP_initFromNodes(graph.nodes,128,10,false);" style="position:absolute;top:0px;right:50%">Preview</button>' +
   '<div id="gui-container"></div>'+
   '<div id="container" style="width:100%; height:100%;"></div>'+
 '</div>';
