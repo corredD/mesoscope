@@ -1355,7 +1355,9 @@ function updatePhysics(time){
     }
     else {
       if(!rb_init) {
-        world.step(0.001);
+        //warm up
+        for (var i=0;i<10;i++)
+            world.step(0.01);
         rb_init = true;
       }
     }
