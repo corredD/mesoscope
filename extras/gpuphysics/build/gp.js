@@ -152,7 +152,7 @@ float trilinearInterpolation(vec3 point){\n\
 }\n\
 vec3 CalculateSurfaceNormal(vec3 p)\n\
 {\n\
-	float H = cellSize.x/8.0; //1.0f/grid_unit;\n\
+	float H = cellSize.x; //1.0f/grid_unit;\n\
 	float dx = trilinearInterpolation(p + vec3(H, 0.0, 0.0)) - trilinearInterpolation(p - vec3(H, 0.0, 0.0));\n\
 	float dy = trilinearInterpolation(p + vec3(0.0, H, 0.0)) - trilinearInterpolation(p - vec3(0.0, H, 0.0));\n\
 	float dz = trilinearInterpolation(p + vec3(0.0, 0.0, H)) - trilinearInterpolation(p - vec3(0.0, 0.0, H));\n\
@@ -451,6 +451,7 @@ var updateBodyVelocityFrag = "uniform sampler2D bodyQuatTex;\n\
 uniform sampler2D bodyVelTex;\n\
 uniform sampler2D bodyForceTex;\n\
 uniform sampler2D bodyMassTex;\n\
+uniform sampler2D bodyInfos2Tex;\n\
 uniform float linearAngular;\n\
 uniform vec3 gravity;\n\
 uniform vec3 maxVelocity;\n\
@@ -463,7 +464,7 @@ densityShader+
     vec4 velocity = texture2D(bodyVelTex, uv);\n\
     vec4 force = texture2D(bodyForceTex, uv);\n\
     vec4 quat = texture2D(bodyQuatTex, uv);\n\
-    vec4 massProps = texture2D(bodyMassTex, uv);\n\
+    //vec4 massProps = texture2D(bodyMassTex, uv);\n\
     vec3 newVelocity = velocity.xyz;\n\
 		vec4 posTexData = texture2D(bodyPosTex, uv);\n\
 		float bodyTypeIndex = posTexData.w;\n\
@@ -473,8 +474,9 @@ densityShader+
 		vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);\n\
 		vec3 up = bodyType_infos1.xyz;\n\
 		vec3 off = bodyType_infos2.xyz;\n\
+		vec4 massProps = texture2D(bodyInfos2Tex, bodyType_uv);\n\
     if( linearAngular < 0.5 ){\n\
-        float invMass = massProps.w;\n\
+        float invMass = 1.0;//massProps.w;\n\
         newVelocity += (force.xyz + gravity) * deltaTime * invMass;\n\
 				if (bodyType_infos1.w > 0.0) {\n\
 					vec3 position = posTexData.xyz + newVelocity* deltaTime;\n\
@@ -556,22 +558,27 @@ densityShader+
 				bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
 				vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);\n\
 				if (bodyType_infos1.w > 0.0) {\n\
-					vec3 up = vec3(0,0,1);//bodyType_infos1.xyz;\n\
+					vec3 up = bodyType_infos1.xyz;\n\
 					vec3 off = bodyType_infos2.xyz;\n\
 					vec3 sfnormal = normalize(CalculateSurfaceNormal(position));\n\
 					float distance = trilinearInterpolation(position);\n\
+					//vec3 p = (position - gridPos)*gridResolution.x;\n\
+					//vec4 data=getValues(floor(p.x),floor(p.y),floor(p.z));\n\
+					//sfnormal = data.xyz;\n\
 					//if (distance < 0.0) sfnormal=-sfnormal;\n\
+					if (length(sfnormal) == 0.0) sfnormal = vec3(0,1,0);\n\
 					vec4 arotation = computeOrientation(sfnormal, up);\n\
-					vec3 rup = vec3_applyQuat(up,quat);\n\
+					vec3 rup = vec3_applyQuat(up,new_quat);\n\
 					vec3 newup = vec3_applyQuat(up,arotation);//use current ?\n\
 					vec3 torque = cross(normalize(rup), normalize(newup));\n\
 					float theta = asin(length(torque));\n\
 					vec4 q = QuaternionFromAxisAngle(torque, theta);\n\
 					q = normalize(q);\n\
 					vec4 R = QuaternionMul(q, arotation);\n\
-					R = quat_slerp(quat, arotation, deltaTime);\n\
+					//R = quat_slerp(new_quat, arotation, deltaTime);\n\
 					//if (abs(distance) < 2.0**1175.0*0.000390625) \n\
-					if (abs(distance) <= 2.0*1175.0*0.000390625) new_quat = R;\n\
+					//if (abs(distance) <= 2.0*1175.0*0.000390625) \n\
+					new_quat = arotation;\n\
 				}\n\
 				gl_FragColor = new_quat;//quat;\n\
 }\n"
@@ -639,7 +646,8 @@ vec4 quat_integrate(vec4 q, vec3 w, float dt){\n\
         return normalize(q);\n\
 }\n\
 vec3 vec3_applyQuat(vec3 v, vec4 q){\n\
-        float ix =  q.w * v.x + q.y * v.z - q.z * v.y;  float iy =  q.w * v.y + q.z * v.x - q.x * v.z;\n\
+        float ix =  q.w * v.x + q.y * v.z - q.z * v.y;\n\
+				float iy =  q.w * v.y + q.z * v.x - q.x * v.z;\n\
         float iz =  q.w * v.z + q.x * v.y - q.y * v.x;\n\
         float iw = -q.x * v.x - q.y * v.y - q.z * v.z;\n\
         return vec3(\n\
@@ -714,6 +722,20 @@ vec4 get_rotation_between(vec3 u, vec3 v)\n\
 	float w = dot(u, halfv);\n\
 	vec3 a = cross(u, halfv);\n\
 	return vec4(a.x, a.y, a.z, w);\n\
+}\n\
+vec4 get_rotation_between2(vec3 u, vec3 v)\n\
+{\n\
+  float k_cos_theta = dot(u, v);\n\
+  float k = sqrt(length(u) * length(v));\n\
+  if ( (k_cos_theta / k) == -1.0)\n\
+  {\n\
+    // 180 degree rotation around any orthogonal vector\n\
+		vec3 no = normalize(orthogonal(u));\n\
+    return vec4(no.x,no.y,no.z,0.0);\n\;\n\
+  }\n\
+	float w = k_cos_theta + k;\n\
+	vec3 a = cross(u, v);\n\
+	return  vec4(a.x, a.y, a.z, w);\n\
 }\n\
 vec4 computeOrientation(vec3 norm, vec3 up)\n\
 {\n\
@@ -970,7 +992,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        var gridZTiling = this.broadphase.gridZTiling;
 	        var gridTexture = this.textures.grid;
 	        var numBodies = this.textures.bodyPosRead.width;
-					var numBodyType = this.dataTextures.bodyInfos.image.width;
+					var numBodyType = this.dataTextures.bodyInfos.image.width;//two time the body type size
 	        var defines = Object.assign({}, overrides||{}, {
 	            boxSize: 'vec3(' + boxSize.x + ', ' + boxSize.y + ', ' + boxSize.z + ')',
 	            resolution: 'vec2( ' + particleTextureSize.toFixed( 1 ) + ', ' + particleTextureSize.toFixed( 1 ) + " )",
@@ -979,7 +1001,8 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	            gridTextureResolution: 'vec2(' + gridTexture.width + ', ' + gridTexture.height + ')',
 							gridIdTextureSize: 'vec2(' + this.dataTextures.gridIds.image.width + ', ' + this.dataTextures.gridIds.image.height + ')',
 							bodyTextureResolution: 'vec2( ' + numBodies.toFixed( 1 ) + ', ' + numBodies.toFixed( 1 ) + " )",
-							bodyInfosTextureResolution: 'vec2( ' + numBodyType.toFixed( 1 ) + ', ' + numBodyType.toFixed( 1 ) + " )"
+							bodyInfosTextureResolution: 'vec2( ' + numBodyType.toFixed( 1 ) + ', ' + numBodyType.toFixed( 1 ) + " )",
+							bodyTypeCount: ''+this.bodyTypeCount.toFixed( 1 )+''
 					});
 	        return defines;
 	    },
@@ -1044,10 +1067,14 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 					}
 			},
 
-			addBodyType: function(surface,
+			addBodyType: function(copynumber,
+														nbeads,
+														surface,
 														radius,
 														pcpX, pcpY, pcpZ,
-														offX, offY, offZ){
+														offX, offY, offZ,
+														mass,
+														inertiaX, inertiaY, inertiaZ){
 
 	        if(this.bodyTypeCount >= this.maxBodyTypes){
 	            console.warn("Too many bodies: " + this.bodyTypeCount+" max "+this.maxBodyTypes);
@@ -1056,6 +1083,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 					console.log(" addbodytype",surface,radius);
 					console.log("pcp",pcpX, pcpY, pcpZ);
 					console.log("off",offX, offY, offZ);
+					console.log("inertia",inertiaX, inertiaY, inertiaZ, mass);
 	        // Position
 	        var tex = this.dataTextures.bodyInfos;
 	        tex.needsUpdate = true;
@@ -1072,6 +1100,21 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 					data[p + 1] = offY;
 					data[p + 2] = offZ;
 					data[p + 3] = radius;//copynumber for this one ?
+					var tex2 = this.dataTextures.bodyInfos2;
+					tex2.needsUpdate = true;
+	        var data2 = tex2.image.data;
+	        var w2 = tex2.image.width;
+	        var h2 = tex2.image.height;
+	        var p2 = idToDataIndex(this.bodyTypeCount*2.0, w2, h2);
+					data2[p2 + 0] = copynumber;
+	        data2[p2 + 1] = nbeads;
+					data2[p2 + 2] = this.bodyTypeCount;
+					data2[p2 + 3] = 0;//compparentId ?
+					p2 = idToDataIndex(this.bodyTypeCount*2.0+1, w2, h2);
+					data[p2 + 0] = 1/inertiaX;
+	        data[p2 + 1] = 1/inertiaY;
+	        data[p2 + 2] = 1/inertiaZ;
+	        data[p2 + 3] = 1/mass;
 	        return this.bodyTypeCount++;
 	    },
 
@@ -1199,6 +1242,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 							gridIds: new THREE.DataTexture( new Float32Array(4*gridIdTextureSize*gridIdTextureSize), gridIdTextureSize, gridIdTextureSize, THREE.RGBAFormat, type ),
 							gridValues: new THREE.DataTexture( new Float32Array(4*gridIdTextureSize*gridIdTextureSize), gridIdTextureSize, gridIdTextureSize, THREE.RGBAFormat, type ),
 							bodyInfos: new THREE.DataTexture( new Float32Array(4*bodyInfosTextureSize*bodyInfosTextureSize), bodyInfosTextureSize, bodyInfosTextureSize, THREE.RGBAFormat, type ),
+							bodyInfos2: new THREE.DataTexture( new Float32Array(4*bodyInfosTextureSize*bodyInfosTextureSize), bodyInfosTextureSize, bodyInfosTextureSize, THREE.RGBAFormat, type ),
 							bodyPositions: new THREE.DataTexture( new Float32Array(4*bodyTextureSize*bodyTextureSize), bodyTextureSize, bodyTextureSize, THREE.RGBAFormat, type ),
 	            bodyQuaternions: new THREE.DataTexture( new Float32Array(4*bodyTextureSize*bodyTextureSize), bodyTextureSize, bodyTextureSize, THREE.RGBAFormat, type ),
 	            particleLocalPositions: new THREE.DataTexture( new Float32Array(4*particleTextureSize*particleTextureSize), particleTextureSize, particleTextureSize, THREE.RGBAFormat, type ),
@@ -1798,6 +1842,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	                    bodyVelTex:  { value: null },
 	                    bodyMassTex:  { value: null },
 											bodyInfosTex:  { value: this.dataTextures.bodyInfos },
+											bodyInfos2Tex:  { value: this.dataTextures.bodyInfos2 },
 											gridIdTex:  { value: this.dataTextures.gridIds },
 											gridValueTex:  { value: this.dataTextures.gridValues },
 											cellSize: { value: new THREE.Vector3(this.radius*2,this.radius*2,this.radius*2) },
@@ -1870,6 +1915,10 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 											bodyPosTex:  { value: null },
 											bodyVelTex:  { value: null },
 											bodyInfosTex:  { value: this.dataTextures.bodyInfos },
+											gridIdTex:  { value: this.dataTextures.gridIds },
+											gridValueTex:  { value: this.dataTextures.gridValues },
+											cellSize: { value: new THREE.Vector3(this.radius*2,this.radius*2,this.radius*2) },
+											gridPos: { value: this.broadphase.position },
 											params2: { value: this.params2 }
 									},
 									vertexShader: passThroughVert,
@@ -1903,6 +1952,10 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 											bodyAngularVelTex: { value: null },
 											bodyPosTex:  { value: null },
 											bodyInfosTex:  { value: this.dataTextures.bodyInfos },
+											gridIdTex:  { value: this.dataTextures.gridIds },
+											gridValueTex:  { value: this.dataTextures.gridValues },
+											cellSize: { value: new THREE.Vector3(this.radius*2,this.radius*2,this.radius*2) },
+											gridPos: { value: this.broadphase.position },
 											params2: { value: this.params2 }
 									},
 									vertexShader: passThroughVert,
@@ -1954,7 +2007,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        this.fullscreenQuad.material = updateBodyPositionMaterial;
 	        updateBodyPositionMaterial.uniforms.bodyPosTex.value = this.textures.bodyPosRead.texture;
 	        updateBodyPositionMaterial.uniforms.bodyVelTex.value = this.textures.bodyVelRead.texture;
-					//updateBodyPositionMaterial.uniforms.bodyInfosTex.value = this.textures.bodyInfos.texture;
+					//updateBodyPositionMaterial.uniforms.bodyInfosTex.value = this.dataTextures.bodyInfos.texture;
 	        renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.bodyPosWrite, false );
 	        updateBodyPositionMaterial.uniforms.bodyPosTex.value = null;
 	        updateBodyPositionMaterial.uniforms.bodyVelTex.value = null;
@@ -1975,6 +2028,10 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	                    bodyAngularVelTex: { value: null },
 											bodyPosTex:  { value: null },
 											bodyInfosTex:  { value: this.dataTextures.bodyInfos },
+											gridIdTex:  { value: this.dataTextures.gridIds },
+											gridValueTex:  { value: this.dataTextures.gridValues },
+											cellSize: { value: new THREE.Vector3(this.radius*2,this.radius*2,this.radius*2) },
+											gridPos: { value: this.broadphase.position },
 	                    params2: { value: this.params2 }
 	                },
 	                vertexShader: passThroughVert,

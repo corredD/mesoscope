@@ -75,6 +75,8 @@ var composer, renderPass, saoPass1,saoPass2, copyPass;
 var raycaster;
 var gp_mouse = THREE.Vector2(0,0);
 
+var general_inertia_mass;
+
 function Debug_getValues( i, j, k){
 	var u = (k * world.broadphase.resolution.x * world.broadphase.resolution.x) + (j * world.broadphase.resolution.x) + i;
   var g_value = master_grid_field[u*4+3];
@@ -458,6 +460,7 @@ function distributesMesh(){
   var total = 0;
   var count = 0;//total ?
   //build the compartments
+  //general_inertia_mass = GP_getInertiaOneSphere();
   for (var i=0;i<n;i++){//nodes.length
     if (!nodes[i].parent)
       {
@@ -739,6 +742,19 @@ function addAtoms(anode,pid,start,o){
   return count;
 }
 
+
+function GP_getInertiaOneSphere(x,y,z){
+  var r = radius;
+  var density = 500000;
+  var mass = density * 4 * Math.PI * r * r * r / 3;
+  var inertia = 2 * mass * r * r / 5;
+  var inertia_mass = new THREE.Vector4(( inertia + mass * x * x ) * 2,
+                                       ( inertia + mass * y * y ) * 2,
+                                       ( inertia + mass * z * z ) * 2,
+                                       mass);
+  return inertia_mass;
+}
+
 function createInstancesMesh(pid,anode,start,count) {
   var w = world.broadphase.resolution.x * world.radius * 2;
   var h = world.broadphase.resolution.y * world.radius * 2;
@@ -751,14 +767,43 @@ function createInstancesMesh(pid,anode,start,count) {
   }
 
   if (!(pid in type_meshs) ){
+    //number of beads
+    var nbeads = 0;
+    var inertia = new THREE.Vector3();
+    var mass = 0;
+
+    if (anode.data.radii) {
+      if (anode.data.radii && "radii" in anode.data.radii[0]) {
+        nbeads = anode.data.radii[0].radii.length;
+        for (var i=0;i<anode.data.radii[0].radii.length;i++){
+          var x=anode.data.pos[0].coords[i*3]*ascale,
+              y=anode.data.pos[0].coords[i*3+1]*ascale,
+              z=anode.data.pos[0].coords[i*3+2]*ascale;
+          var b_intertia = GP_getInertiaOneSphere(x,y,z);
+          inertia.add(new THREE.Vector3(b_intertia.x,b_intertia.y,b_intertia.z));
+          mass+=b_intertia.w;
+        }
+      }
+      else
+      {
+        nbeads = anode.data.pos[0].length;
+        for (var i=0;i< anode.data.pos[0].length;i++){
+          var p = anode.data.pos[0][i];
+          var b_intertia = GP_getInertiaOneSphere(p[0],p[1],p[2]);
+          inertia.add(new THREE.Vector3(b_intertia.x,b_intertia.y,b_intertia.z));
+          mass+=b_intertia.w;
+        }
+      }
+    }
     type_meshs[pid] = createOneMesh(anode,start,count);
     //add bodyType firstaddBodyType
     anode.data.bodyid = world.bodyTypeCount;
     var s = (!anode.data.surface)? -anode.parent.data.compId:anode.parent.data.compId;//this should be the compartment compId /numcomp
-    console.log(s,anode);
-    world.addBodyType(s, anode.data.size*ascale,
+    console.log("addbodytype",s,anode.data.name,count,nbeads,inertia,mass);
+    world.addBodyType(count,nbeads, s, anode.data.size*ascale,
                       up.x, up.y, up.z,
-                      offset.x, offset.y, offset.z);
+                      offset.x, offset.y, offset.z,
+                      mass, inertia.x, inertia.y, inertia.z);
   }
   //position should use the halton sequence and the grid size
   //should do it constrained inside the given compartments
@@ -820,16 +865,15 @@ function createInstancesMesh(pid,anode,start,count) {
       x = xyz[0]*ascale+jitter[0]; y = xyz[1]*ascale+jitter[1]; z = xyz[2]*ascale+jitter[2];
     }
 
-    var inertia = new THREE.Vector3();
-    var mass = 1;
+    //calculateBoxInertia(inertia, mass, new THREE.Vector3(radius*4,radius*4,radius*2));
+    //calculate inertia from the beads
 
-    calculateBoxInertia(inertia, mass, new THREE.Vector3(radius*4,radius*4,radius*2));
-    //var pid = Util_getRandomInt(nodes.length-1)+1;//remove root
-    //if (nodes[pid].children) {bodyId=bodyId-1;continue;}
-
+    mass = 1;
+    calculateBoxInertia(inertia, mass, new THREE.Vector3(radius*2,radius*2,radius*2));
     world.addBody(x,y,z, q.x, q.y, q.z, q.w,
                   mass, inertia.x, inertia.y, inertia.z,
                   anode.data.bodyid);
+    //add the atomic information
     if (anode.data.radii) {
       if (anode.data.radii && "radii" in anode.data.radii[0]) {
         for (var i=0;i<anode.data.radii[0].radii.length;i++){
@@ -848,7 +892,6 @@ function createInstancesMesh(pid,anode,start,count) {
         }
       }
     }
-    //add the atomic information
     instance_infos.push(pid);
     if (atomData_do) {
       atomData_mapping[pid]["instances_start"]=start;
@@ -903,8 +946,8 @@ function setupSSAOPass(){
   saoPass1.params.saoScale= 2.3;
   saoPass1.params.saoKernelRadius= 9;//first pass, second should be 40
   saoPass1.params.saoMinResolution= 0;
-  saoPass1.params.saoBlur= false;
-  saoPass1.params.saoBlurRadius= 0.5;
+  saoPass1.params.saoBlur= true;
+  saoPass1.params.saoBlurRadius= 15;
   saoPass1.params.saoBlurStdDev= 1;
   saoPass1.params.saoBlurDepthCutoff= 0.001;
   composer.addPass( saoPass1 );
@@ -1009,7 +1052,7 @@ function GP_initRenderer(){
   light.position.set(1,1,1);
   scene.add(light);
 
-  ambientLight = new THREE.AmbientLight( 0x222222 );
+  ambientLight = new THREE.AmbientLight( 0xa6a4a4 );
   scene.add( ambientLight );
   //white ?
   renderer.setClearColor(0xffffff, 1.0);//ambientLight.color,
@@ -1039,11 +1082,13 @@ function GP_initWorld(){
     //numParticles = nparticles ? nparticles : 64;
     //copy_number = ncopy ? ncopy : 10;
     //atomData_do = doatom ? doatom : false;
+    var r = 30.0 ;// (radius in angstrom)
     var gridResolution = new THREE.Vector3();
     gridResolution.set(numParticles/2, numParticles/2, numParticles/2);
     var numBodies = 1024;//numParticles / 2;
-    radius = (1/numParticles * 0.5)*2.0;
-    ascale = radius/20;
+    //radius = (1/numParticles * 0.5)*4.0;
+    radius = r/(numParticles*r);
+    ascale = radius/r;
     boxSize = new THREE.Vector3(0.5, 2, 0.5);//0.5,2,0.5
     // Physics
     world = window.world = new gp.World({
@@ -1055,9 +1100,9 @@ function GP_initWorld(){
         maxParticles: 1024 *  1024,
         radius: radius,
         stiffness: 1700,
-        damping: 6,
+        damping: 0,//6,
         fixedTimeStep: 0.001,//1/120,
-        friction: 2,
+        friction: 0,//2,
         drag: 0.3,
         boxSize: boxSize,
         gridPosition: new THREE.Vector3(-boxSize.x,-0.5,-boxSize.z),//-boxSize.x,-boxSize.y,-boxSize.z),(-0.5,0.0,-0.5)
