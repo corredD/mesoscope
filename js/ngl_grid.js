@@ -214,12 +214,12 @@ function loadArchive( count ){
   //viewport.style.width = width + "px";
   //viewport.style.height = height + "px";
   //document.body.appendChild( "viewport" );
-  if (!stage) {
-	   stage = new NGL.Stage( viewport, {
-      backgroundColor: "white",
-      tooltip: false
-  } );
-	}
+  //if (!stage) {
+	//   stage = new NGL.Stage( viewport, {
+//      backgroundColor: "white",
+//      tooltip: false
+//  } );
+//	}
 
 
 

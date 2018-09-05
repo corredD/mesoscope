@@ -1,5 +1,7 @@
 //main debug flag for console print
 var DEBUGLOG=false;
+var DEBUGGPU=true;
+
 var recipe_changed = false; //toggle when change occurs, and autosave/save occurs.
 //how to efficiently save work ?
 var current_mode=0;//0-view/curate mode, 1-create mode
@@ -1201,7 +1203,7 @@ function selectFile(e){
 		document.getElementById("addingr").setAttribute("class", "hidden");
 		document.getElementById("addcomp").setAttribute("class", "hidden");
 		document.getElementById("addlink").setAttribute("class", "hidden");
-		stage.removeAllComponents();
+		if (stage) stage.removeAllComponents();
 	  csv_mapping= false;
 	  comp_column = false;
     var theFiles = e.target.files;
@@ -1338,7 +1340,7 @@ function selectDB(){
 }
 
 function LoadSaveState(ajson){
-		stage.removeAllComponents();
+		if (stage)stage.removeAllComponents();
 	  csv_mapping= false;
 	  comp_column = false;
     //var adata = parseCellPackRecipe(ajson);
@@ -1738,18 +1740,25 @@ function UpdateCompartmentRep(anode,clear_ngl = true){
 }
 
 function drawCompRec(anode) {
-	stage.removeAllComponents();
-	anode.each(function(cnode) {
-			if (cnode.children && cnode.data.nodetype === "compartment")
-					UpdateCompartmentRep(cnode,false);
-	});
-	//anode is root
-	//stage.viewer.boundingBox.min
-	//stage.viewer.boundingBox.max
-	anode.data.boundingBox = stage.viewer.boundingBox.clone();
-	anode.data.boundingBox.expandByScalar(100);
-	//add the bounding box
-	//NGL_addBB();
+	if (stage) stage.removeAllComponents();
+	if (DEBUGGPU){
+		//document.getElementById( 'container' ).setAttribute("class", "show");
+		//document.getElementById( 'viewport' ).setAttribute("class", "hidden");
+		GP_initFromNodes(graph.nodes,128,10,false);
+	}
+	else {
+		anode.each(function(cnode) {
+				if (cnode.children && cnode.data.nodetype === "compartment")
+						UpdateCompartmentRep(cnode,false);
+		});
+		//anode is root
+		//stage.viewer.boundingBox.min
+		//stage.viewer.boundingBox.max
+		anode.data.boundingBox = stage.viewer.boundingBox.clone();
+		anode.data.boundingBox.expandByScalar(100);
+		//add the bounding box
+		//NGL_addBB();
+	}
 }
 
 function SetObjectsOptionsDiv(anode) {
@@ -1790,11 +1799,15 @@ function SetObjectsOptionsDiv(anode) {
 	}
 	else if (anode.data.nodetype === "compartment") {
 		//return div with upload for geometry or select0
+		//document.getElementById( 'container' ).setAttribute("class", "hidden");
+		//document.getElementById( 'viewport' ).setAttribute("class", "show");
 		htmlStr += getcomphtml(anode);
 		UpdateCompartmentRep(anode);
 		title = 'compartment';
 	}
 	else {
+		//	document.getElementById( 'container' ).setAttribute("class", "hidden");
+		//	document.getElementById( 'viewport' ).setAttribute("class", "show");
 		  //list all property ? use the grid editor ?
 			for (var e in anode.data)
 				htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>'

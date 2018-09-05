@@ -175,10 +175,17 @@ var ngl_options= ''+
   '</div>' +
 '</div>'
 
+
+
 var ngl_viewport='' +
 '<div class="NGL" id="NGL">'+
-  '<div id="viewport" style="width:100%; height:100%;">'+
-  '</div>'+
+  '<div id="viewport" style="width:100%; height:100%;">'+  '</div>'+
+'</div>';
+
+var gpu_phy_viewport='' +
+'<div class="GPGPU" id="GPGPU">'+
+  '<div id="gui-container"></div>'+
+  '<div id="container" style="width:100%; height:100%;"></div>'+
 '</div>';
 
 var ngloptions = '' +
@@ -331,6 +338,20 @@ function get_comp_defintion_pfv() {
   };
 }
 
+function get_comp_defintion_gpgpu() {
+  return {
+    id: 4,
+    type: 'component',
+    title: 'PreView',
+    tooltip: 'Preview Model',
+    isClosable: false,
+    componentName: 'gpgpu',
+    componentState: {
+      label: 'B'
+    }
+  };
+}
+
 var comp_titles = {
   'PDB search table': 3,
   'Uniprot search table': 2,
@@ -402,8 +423,8 @@ var config = {
     content: [{
         type: 'row',
         content: [get_comp_definition_d3(),
-          				get_comp_defintion_ngl(),
-									{
+                  {type:'stack', content:[get_comp_defintion_ngl(),get_comp_defintion_gpgpu()]},
+                  {
 										type:'stack',
 										content:[
 											//get_comp_defintion_pfv(),
@@ -442,7 +463,7 @@ var myLayout,
 var usesavedState = true;
 var usesavedSession = true;
 var savedRecipe = localStorage.getItem('savedRecipe');
-var current_version = {"version":1.006};
+var current_version = {"version":1.007};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()
@@ -569,6 +590,27 @@ d3canvasComponent.prototype._Resize = function() {
   //transform.k
 };
 
+var gpgpuComponent = function(container, state) {
+  this._container = container;
+  this._container.on('open', this._Setup, this);
+};
+//init also the component for gpu?
+gpgpuComponent.prototype._Setup = function() {
+  //this._container.getElement().html( '<div class="NGL" id="NGL"><div id="viewport" style="width:100%; height:100%;"></div></div>');
+  //var ngl = $('<div class="NGL" id="NGL"><div id="viewport" style="width:100%; height:100%;"></div></div>');
+  var optionsDropdown = $(gpu_phy_viewport); //$( 'NGLOptionTemplate' ).html() );
+  this._container.getElement().append(optionsDropdown);
+  //this._container.getElement().append(ngl);
+  GP_initRenderer();
+  this._container.on('resize', this._Resize, this);
+  this._Resize();
+  all_intialized[1] = true;
+}
+
+gpgpuComponent.prototype._Resize = function() {
+    GP_onWindowResize();
+};
+
 var nglComponent = function(container, state) {
   this._container = container;
   this._state = state;
@@ -581,6 +623,7 @@ var nglComponent = function(container, state) {
   this._container.on('open', this._Setup, this);
 };
 
+//init also the component for gpu?
 nglComponent.prototype._Setup = function() {
   //this._container.getElement().html( '<div class="NGL" id="NGL"><div id="viewport" style="width:100%; height:100%;"></div></div>');
   //var ngl = $('<div class="NGL" id="NGL"><div id="viewport" style="width:100%; height:100%;"></div></div>');
@@ -588,6 +631,7 @@ nglComponent.prototype._Setup = function() {
   this._container.getElement().append(optionsDropdown);
   //this._container.getElement().append(ngl);
   this._stage = NGL_Setup();
+  //GP_initRenderer();
   this._container.on('resize', this._Resize, this);
   this._Resize();
   all_intialized[1] = true;
@@ -599,9 +643,9 @@ nglComponent.prototype._Setup = function() {
 }
 
 nglComponent.prototype._Resize = function() {
-  this._stage.handleResize();
+    this._stage.handleResize();
+  //  GP_onWindowResize();
 };
-
 
 var pfvComponent = function(container, state) {
   this._container = container;
@@ -754,6 +798,7 @@ myLayout.registerComponent('d3canvas', d3canvasComponent);
 
 myLayout.registerComponent('ngl', nglComponent);
 
+myLayout.registerComponent('gpgpu', gpgpuComponent);
 myLayout.registerComponent('pfv', pfvComponent);
 
 myLayout.registerComponent('slickgrid', slickgridComponent);
@@ -977,6 +1022,7 @@ function pdbcomp_click_callback(e) {
 
 function pdbcomp_mouseover_callback(e) {
   //if (e.eventData.elementData.elementType === "molecule") return;
+  if (!node_selected) return;
   var entityId = e.eventData.entityId;
   var did = node_selected.data.mapping.unimap[entityId];//
   //compare with the one in the widget.

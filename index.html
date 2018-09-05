@@ -12,6 +12,14 @@
     border-radius: 4px;
   }
   </style>
+  <style>
+  #gui-container {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    z-index: 10;
+  }
+  </style>
   <link type="text/css" rel="stylesheet" href="style_dev.css">
   <link rel="stylesheet" href="menu_style.css">
 
@@ -112,6 +120,26 @@
   </style>
   <link type="text/css" rel="stylesheet" href="https://golden-layout.com/files/latest/css/goldenlayout-base.css" />
   <link type="text/css" rel="stylesheet" href="https://golden-layout.com/files/latest/css/goldenlayout-light-theme.css" />
+  <!-- GPU STUFF -->
+  <script src="https://cdn.rawgit.com/mrdoob/three.js/master/build/three.min.js"></script>
+  <!--script src="extras/gpuphysics/lib/three.min.js"></script-->
+  <script src="extras/gpuphysics/lib/stats.min.js"></script>
+  <script src="extras/gpuphysics/lib/dat.gui.min.js"></script>
+  <script src="extras/gpuphysics/lib/three.orbitcontrols.js"></script>
+  <script src="extras/gpuphysics/lib/three.transformcontrols.js"></script>
+  <script src="extras/shaderToon.js"></script>
+
+  <script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/postprocessing/EffectComposer.js"></script>
+  <script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/postprocessing/RenderPass.js"></script>
+  <script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/postprocessing/ShaderPass.js"></script>
+  <script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/postprocessing/SAOPass.js"></script>
+
+  <script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/shaders/CopyShader.js"></script>
+  <script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/shaders/SAOShader.js"></script>
+  <script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/shaders/DepthLimitedBlurShader.js"></script>
+  <script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/shaders/UnpackDepthRGBAShader.js"></script>
+
+
 
   <!--PDB component library-->
   <!-- Complied & minified library css -->
@@ -144,6 +172,7 @@
   <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js"></script>
   <!--three.js marching Cube-->
   <script src="extras/MarchingCubes.js"></script>
+
   <script src="extras/SlickGrid/lib/firebugx.js"></script>
   <!--script src="extras/SlickGrid/lib/jquery-1.11.2.min.js"></script-->
   <script src="extras/SlickGrid/lib/jquery-ui-1.11.3.js"></script>
@@ -514,28 +543,387 @@
   <div id="seqv" class="seqv"  height="100%" width="100%"></div>
   <div id="puv" class="puv"  height="100%" width="100%"></div>
   </div>
+
+<script type="x-shader/x-vertex" id="gvs">
+  uniform mat4 viewMatrix;
+  uniform mat4 modelViewMatrix;
+  uniform mat4 projectionMatrix;
+	attribute float uindex;
+	varying vec3 vColor;
+  uniform float size;
+	void main() {
+    //index to ijk
+    float sliceNum = size*size;
+    float k = index / (sliceNum);
+    float temp = index % (sliceNum);
+    float j = temp / size;
+    float i = temp % size;
+    vec3 ijk = vec3(round(i),floor(j),floor(k));
+    float x = ijk[0]/size;//r[0];//-boxSize.x +-boxSize.x +
+    float y = ijk[1]/size;//;//-boxSize.y +-boxSize.y +-boxSize.y +
+    float z = ijk[2]/size;//;//-boxSize.z +-boxSize.z +
+    vec3 p = vec3(x,y,z);
+    //ijk to xyz
+		vec4 mvPosition = modelViewMatrix * vec4( p, 1.0 );
+		gl_PointSize = 2.0;//(1.0 / 64.0) / 2.0 ;
+		gl_Position = projectionMatrix * mvPosition;
+	}
+</script>
+
+<script type="x-shader/x-fragment" id="gfs">
+	varying vec3 vColor;
+	void main() {
+		gl_FragColor = vec4( 1.0,0.0,0.0, 1.0 );
+		//gl_FragColor = gl_FragColor * texture2D( texture, gl_PointCoord );
+	}
+</script>
+
+<script id="sharedShaderCode" type="x-shader/x-fragment">
+// Convert an index to an UV-coordinate
+vec2 indexToUV(float index, vec2 res){
+    vec2 uv = vec2(mod(index/res.x,1.0), floor( index/res.y ) / res.x);
+    return uv;
+}
+
+// Rotate a vector by a quaternion
+vec3 vec3_applyQuat(vec3 v, vec4 q){
+    float ix =  q.w * v.x + q.y * v.z - q.z * v.y;
+    float iy =  q.w * v.y + q.z * v.x - q.x * v.z;
+    float iz =  q.w * v.z + q.x * v.y - q.y * v.x;
+    float iw = -q.x * v.x - q.y * v.y - q.z * v.z;
+
+    return vec3(
+        ix * q.w + iw * -q.x + iy * -q.z - iz * -q.y,
+        iy * q.w + iw * -q.y + iz * -q.x - ix * -q.z,
+        iz * q.w + iw * -q.z + ix * -q.y - iy * -q.x
+    );
+}
+</script>
+
+<!--
+    Render body instances vertex shader
+    Copy of THREE.ShaderLib.phong + modifications to render instances
+    //debug the bodyType there !
+-->
+<script id="renderBodiesVertex" type="x-shader/x-vertex">
+uniform sampler2D bodyInfosTex;
+uniform sampler2D bodyPosTex;
+uniform sampler2D bodyQuatTex;
+attribute float bodyIndex;
+attribute vec3 bodyColor;
+uniform sampler2D gridIdTex;
+uniform sampler2D gridValueTex;
+uniform vec3 cellSize;
+uniform vec3 gridPos;
+#define PHONG
+varying vec3 vViewPosition;
+//varying vec3 vColor;
+varying vec3 vNormal;
+#include <common>
+#include <uv_pars_vertex>
+#include <uv2_pars_vertex>
+#include <displacementmap_pars_vertex>
+#include <envmap_pars_vertex>
+#include <color_pars_vertex>
+#include <fog_pars_vertex>
+#include <morphtarget_pars_vertex>
+#include <skinning_pars_vertex>
+#include <shadowmap_pars_vertex>
+#include <logdepthbuf_pars_vertex>
+#include <clipping_planes_pars_vertex>
+void main() {
+    #include <uv_vertex>
+    #include <uv2_vertex>
+    #include <color_vertex>
+    vec2 bodyUV = indexToUV(bodyIndex,bodyTextureResolution);
+#ifdef USE_COLOR
+    //vColor = vec3((floor(bodyUV*3.0)+1.0)/3.0,0);
+    vColor = vec3(bodyColor);
+#endif
+
+    //vColor = vec3(1,0,0);
+    #include <beginnormal_vertex>
+    #include <morphnormal_vertex>
+    #include <skinbase_vertex>
+    #include <skinnormal_vertex>
+    vec4 posTexData = texture2D(bodyPosTex, bodyUV);
+    float bodyTypeIndex = posTexData.w;
+    vec2 bodyType_uv = indexToUV( bodyTypeIndex*2.0, bodyInfosTextureResolution );
+    vec4 bodyType_infos1 = texture2D(bodyInfosTex, bodyType_uv);
+    bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );
+    vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);
+    //if (bodyType_infos1.w == 1.0) {
+    //    vColor = vec3(1,0,0);
+    //}
+    //else {
+    //    vColor = vec3(0,0,1);
+    //}
+    vec3 bodyPos = posTexData.xyz;
+    vec4 bodyQuat = texture2D(bodyQuatTex,bodyUV).xyzw;
+    objectNormal.xyz = vec3_applyQuat(objectNormal.xyz, bodyQuat);
+    #include <defaultnormal_vertex>
+#ifndef FLAT_SHADED
+    vNormal = normalize( transformedNormal );
+#endif
+    #include <begin_vertex>
+    transformed.xyz = vec3_applyQuat(transformed.xyz, bodyQuat);
+    transformed.xyz += bodyPos;
+    #include <displacementmap_vertex>
+    #include <morphtarget_vertex>
+    #include <skinning_vertex>
+    #include <project_vertex>
+    #include <logdepthbuf_vertex>
+    #include <clipping_planes_vertex>
+    vViewPosition = - mvPosition.xyz;
+    #include <worldpos_vertex>
+    #include <envmap_vertex>
+    #include <shadowmap_vertex>
+    #include <fog_vertex>
+}
+</script>
+
+<!--
+    Render body instances vertex shader
+    Copy of THREE.ShaderLib.phong + modifications to render body instances with correct transform
+-->
+<script id="renderParticlesVertex" type="x-shader/x-vertex">
+uniform sampler2D particleWorldPosTex;
+uniform sampler2D quatTex;
+attribute float particleIndex;
+#define PHONG
+varying vec3 vViewPosition;
+#ifndef FLAT_SHADED
+    varying vec3 vNormal;
+#endif
+#include <common>
+#include <uv_pars_vertex>
+#include <uv2_pars_vertex>
+#include <displacementmap_pars_vertex>
+#include <envmap_pars_vertex>
+#include <color_pars_vertex>
+#include <fog_pars_vertex>
+#include <morphtarget_pars_vertex>
+#include <skinning_pars_vertex>
+#include <shadowmap_pars_vertex>
+#include <logdepthbuf_pars_vertex>
+#include <clipping_planes_pars_vertex>
+void main() {
+    #include <uv_vertex>
+    #include <uv2_vertex>
+    #include <color_vertex>
+    vec2 particleUV = indexToUV(particleIndex,resolution);
+#ifdef USE_COLOR
+    vColor = vec3((floor(particleUV*3.0)+1.0)/3.0,0);
+#endif
+    #include <beginnormal_vertex>
+    #include <morphnormal_vertex>
+    #include <skinbase_vertex>
+    #include <skinnormal_vertex>
+    vec4 particlePosAndBodyId = texture2D(particleWorldPosTex,particleUV);
+    vec2 bodyUV = indexToUV(particlePosAndBodyId.w,bodyTextureResolution);
+    vec4 bodyQuat = texture2D(quatTex,bodyUV).xyzw;
+    objectNormal.xyz = vec3_applyQuat(objectNormal.xyz, bodyQuat);
+#include <defaultnormal_vertex>
+#ifndef FLAT_SHADED
+    vNormal = normalize( transformedNormal );
+#endif
+    #include <begin_vertex>
+    vec3 particlePos = particlePosAndBodyId.xyz;
+    transformed.xyz = vec3_applyQuat(transformed.xyz, bodyQuat);
+    transformed.xyz += particlePos;
+    #include <displacementmap_vertex>
+    #include <morphtarget_vertex>
+    #include <skinning_vertex>
+    #include <project_vertex>
+    #include <logdepthbuf_vertex>
+    #include <clipping_planes_vertex>
+    vViewPosition = - mvPosition.xyz;
+    #include <worldpos_vertex>
+    #include <envmap_vertex>
+    #include <shadowmap_vertex>
+    #include <fog_vertex>
+}
+</script>
+
+<!--
+    Render depth. This is for rendering shadows.
+-->
+<script id="renderBodiesDepth" type="x-shader/x-vertex">
+uniform sampler2D bodyPosTex;
+uniform sampler2D bodyQuatTex;
+attribute float bodyIndex;
+#include <common>
+#include <uv_pars_vertex>
+#include <displacementmap_pars_vertex>
+#include <morphtarget_pars_vertex>
+#include <skinning_pars_vertex>
+#include <logdepthbuf_pars_vertex>
+#include <clipping_planes_pars_vertex>
+void main() {
+	#include <uv_vertex>
+	#include <skinbase_vertex>
+	#include <begin_vertex>
+
+    vec2 bodyUV = indexToUV(bodyIndex,bodyTextureResolution);
+    vec3 bodyPos = texture2D(bodyPosTex,bodyUV).xyz;
+    vec4 bodyQuat = texture2D(bodyQuatTex,bodyUV).xyzw;
+    transformed.xyz = vec3_applyQuat(transformed.xyz, bodyQuat);
+    transformed.xyz += bodyPos;
+
+	#include <displacementmap_vertex>
+	#include <morphtarget_vertex>
+	#include <skinning_vertex>
+	#include <project_vertex>
+	#include <logdepthbuf_vertex>
+	#include <clipping_planes_vertex>
+}
+</script>
+
+<script id="xvertexShader" type="x-shader/x-vertex">
+precision highp float;
+uniform float scale;
+
+uniform sampler2D bodyPosTex;
+uniform sampler2D bodyQuatTex;
+uniform sampler2D atomPositionsTex;//xyz,1
+
+//uniform mat4 viewMatrix;
+//uniform mat4 modelViewMatrix;
+//uniform mat4 projectionMatrix;
+
+//attribute vec3 position;
+//attribute vec3 offset;
+//attribute vec2 uv;
+attribute vec2 instanceInfos;//for every bead?
+attribute float bodyIndex;
+attribute float partIndex;
+
+//attribute vec4 color;
+//attribute vec4 orientationStart;
+//attribute vec4 orientationEnd;
+varying float vRadius;
+varying vec3 vPosition;
+varying vec4 vColor;
+varying vec2 vUv;
+varying mat4 modelView;
+void main(){
+  float particleId = instanceInfos.y;
+  float instanceId = instanceInfos.x;
+  vec2 bodyUV = indexToUV(instanceId,bodyTextureResolution);
+  vec4 bodyQuat = texture2D(bodyQuatTex,bodyUV).xyzw;
+  vec4 sphere = texture2D(bodyPosTex,bodyUV).xyzw;//body position
+  vec2 atomUV = indexToUV(particleId,atomTextureResolution);
+  //centered!!
+  vec4 spherePosition = texture2D(atomPositionsTex,atomUV).xyzw;//(lodLevel == 0) ? _ProteinAtomPositions[sphereBatchInfo.w + vertexId / 3] : _ProteinClusterPositions[sphereBatchInfo.w + vertexId / 3];
+  vec3 billboardWorldPos = sphere.xyz + vec3_applyQuat(spherePosition.xyz, bodyQuat);// _InstancePositions[instanceId].xyz;
+
+  vRadius = spherePosition.w;//could use w as the type and then access the texture with all the color?
+  vec3 vertexPos = position * spherePosition.w;
+
+  modelView = modelViewMatrix;
+  mat4 VP = projectionMatrix * modelViewMatrix;
+  vec3 CameraRight = vec3(modelViewMatrix[0][0], modelViewMatrix[1][0], modelViewMatrix[2][0]);
+  vec3 CameraUp = vec3(modelViewMatrix[0][1], modelViewMatrix[1][1], modelViewMatrix  [2][1]);
+  //vec3 billboardVertexWorldPos = vec4(billboardWorldPos, 0)
+  //          + CameraRight * vertexPos.x + CameraUp * vertexPos.y;
+  vec3 billboardVertexWorldPos = billboardWorldPos.xyz
+           + CameraRight * vertexPos.x + CameraUp * vertexPos.y;
+	vColor = vec4(bodyUV,0,1);
+  vUv = uv;
+	gl_Position = VP  * vec4( billboardVertexWorldPos.xyz , 1.0 );
+  //vPosition = VP  * vec4( billboardVertexWorldPos.xyz , 1.0 );
+  vPosition = billboardVertexWorldPos;//clamp((projectionMatrix * modelViewMatrix * vec4(billboardVertexWorldPos.xyz, 1.0)).z, 0.0, 1.0);//Use depth pos to set depth
+
+}
+	</script>
+
+	<script id="xfragmentShader" type="x-shader/x-fragment">
+precision highp float;
+//uniform float time;
+#include <logdepthbuf_pars_fragment>
+#include <packing>
+uniform mat4 projectionMatrix;
+uniform float cameraNear;
+uniform float cameraFar;
+varying float vRadius;
+varying vec3 vPosition;
+varying vec4 vColor;
+varying vec2 vUv;
+varying mat4 modelView;
+
+vec4 getZparams(){
+  // OpenGL would be this:
+  float zc0 = (1.0 - cameraFar / cameraNear) / 2.0;
+  float zc1 = (1.0 + cameraFar / cameraNear) / 2.0;
+  // D3D is this:
+  //zc0 = 1.0 - m_FarClip / m_NearClip;
+  //zc1 = m_FarClip / m_NearClip;
+  // now set _ZBufferParams with (zc0, zc1, zc0/m_FarClip, zc1/m_FarClip);
+  return vec4(zc0, zc1, zc0/cameraFar, zc1/cameraNear);
+}
+
+float LinearEyeDepth(vec4 _ZBufferParams,float z){
+  return 1.0 / (_ZBufferParams.x * z + _ZBufferParams.y);
+}
+
+float calcDepth( float z ){
+    vec2 clipZW = z * projectionMatrix[2].zw + projectionMatrix[3].zw;
+    return 0.5 + 0.5 * clipZW.x / clipZW.y;
+}
+
+void main() {
+  float lensqr = dot(vUv, vUv);
+  if (lensqr > 1.0) discard;
+  vec3 normal = normalize(vec3(vUv, sqrt(1.0 - lensqr)));
+  vec3 cameraPos = (normal * vRadius) + vPosition;
+  vec4 clipPos = projectionMatrix * modelView * vec4(cameraPos, 1.0);
+  float ndcDepth = clipPos.z / clipPos.w;
+  float gdepth = ( ( (cameraFar-cameraNear) * ndcDepth) +
+      cameraNear + cameraFar) / 2.0;
+  float gldepth = ((gl_DepthRange.diff * ndcDepth) +
+        gl_DepthRange.near + gl_DepthRange.far) / 2.0;
+	//vec4 color = vec4( vColor );
+	//color.r += sin( vPosition.x * 10.0 + time ) * 0.5;
+  // Find depth
+	//float eyeDepth = LinearEyeDepth(input.vertex.z) + input.radius * (1 - normal.z);
+	//depth = 1 / (eyeDepth * _ZBufferParams.z) - _ZBufferParams.w / _ZBufferParams.z;
+  #include <logdepthbuf_fragment>
+  vec4 _ZBufferParams = getZparams();
+  float yd = vPosition.z;//1.0 / (_ZBufferParams.x * vPosition.z + _ZBufferParams.y);
+  float eyeDepth = yd + vRadius * (1.0 - normal.z);
+  float depth = 1.0 / (ndcDepth * _ZBufferParams.z) - _ZBufferParams.w / _ZBufferParams.z;
+  float d = viewZToPerspectiveDepth(ndcDepth,cameraNear,cameraFar);
+  gl_FragDepthEXT = gldepth;
+  //viewZToPerspectiveDepth
+  //perspectiveDepthToViewZ
+	gl_FragColor = vec4(0.78,0.78,0.78,1.0);//packDepthToRGBA(gdepth);//vec4(d,0.0,0.0,1.0);
+}
+</script>
+    <!--script src="extras/jscolor.js"></script-->
+    <script src="extras/clustering.min.js"></script>
+    <script src="js/util.js"></script>
+    <script src="js/pycallback.js"></script>
+    <script src="js/query_helper.js"></script>
+    <script src="js/gridtable.js"></script>
+    <script src="js/ngl.js"></script>
+    <script src="js/ngl_grid.js"></script>
+    <script src="js/distance.js"></script>
+    <script src="js/cp_serialized.js"></script>
+    <script src="js/modal_canvas_comp.js"></script>
+    <script src="extras/gpuphysics/build/gp.js"></script>
+    <script src="extras/gpuphysics/main_physics.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/layout_mg.js"></script>
+
+    <!-- Protein Feature View from rcsb-->
+    <!--script src="extras/jquery.svg.js"></script>
+    <script src="extras/bootstrap-slider.min.js"></script>
+    <script src="extras/helper.js"></script>
+
+    <script src="extras/proteinfeatureview.ver.js"></script>
+    <script src="js/pfv_util.js"></script-->
+
+
 </body>
-<!--script src="extras/jscolor.js"></script-->
-<script src="extras/clustering.min.js"></script>
-<script src="js/util.js"></script>
-<script src="js/pycallback.js"></script>
-<script src="js/query_helper.js"></script>
-<script src="js/gridtable.js"></script>
-<script src="js/ngl.js"></script>
-<script src="js/ngl_grid.js"></script>
-<script src="js/distance.js"></script>
-<script src="js/cp_serialized.js"></script>
-<script src="js/modal_canvas_comp.js"></script>
-<script src="js/main.js"></script>
-<script src="js/layout_mg.js"></script>
-
-<!-- Protein Feature View from rcsb-->
-<!--script src="extras/jquery.svg.js"></script>
-<script src="extras/bootstrap-slider.min.js"></script>
-<script src="extras/helper.js"></script>
-
-<script src="extras/proteinfeatureview.ver.js"></script>
-<script src="js/pfv_util.js"></script-->
-
 
 </html>

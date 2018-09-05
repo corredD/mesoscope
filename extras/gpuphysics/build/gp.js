@@ -571,7 +571,7 @@ densityShader+
 					vec4 R = QuaternionMul(q, arotation);\n\
 					R = quat_slerp(quat, arotation, deltaTime);\n\
 					//if (abs(distance) < 2.0**1175.0*0.000390625) \n\
-					if (abs(distance) < 2.0**1175.0*0.000390625) new_quat = R ;\n\
+					if (abs(distance) < 2.0*1175.0*0.000390625) new_quat = R;\n\
 				}\n\
 				gl_FragColor = new_quat;//quat;\n\
 }\n"

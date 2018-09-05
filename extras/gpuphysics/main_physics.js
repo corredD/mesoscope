@@ -7,6 +7,7 @@
 // fiber-forces
 //var loading_bar;
 //http://iquilezles.org/www/articles/distfunctions/distfunctions.htm
+var DEBUGGPU = false;
 var query;
 var ySpread = 0.1;
 var nodes;
@@ -52,7 +53,7 @@ var atomData_mapping_instance = [];//for every beads what is the atomid?
 var rb_init = false;
 var master_grid_field;
 var master_grid_id;
-
+var inited = false;
 /*SSAO PARAMATER AND VARIABLE*/
 var ssao_params= {
 				output: 0,
@@ -70,6 +71,9 @@ var ssao_params= {
 var depthMaterial, saoMaterial, saoModulateMaterial, normalMaterial, vBlurMaterial, hBlurMaterial, copyMaterial;
 var depthRenderTarget, normalRenderTarget, saoRenderTarget, beautyRenderTarget, blurIntermediateRenderTarget;
 var composer, renderPass, saoPass1,saoPass2, copyPass;
+
+var raycaster;
+var gp_mouse = THREE.Vector2(0,0);
 
 function Debug_getValues( i, j, k){
 	var u = (k * world.broadphase.resolution.x * world.broadphase.resolution.x) + (j * world.broadphase.resolution.x) + i;
@@ -361,8 +365,29 @@ function GP_CombineGrid(root){
 
 }*/
 
+function GP_updateMBCompartment(anode){
+  anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2,0.0);
+  anode.data.mc.isolation = 0.0;
+  //NGL_updateMetaBallsGeom(anode);
+  if (controller.renderIsoMB){
+    var geo = anode.data.mc.generateGeometry();
+    anode.data.geo = geo;
+    var positions = new Float32Array(geo.vertices);
+    var normals = new Float32Array(geo.normals);
+    nodes[1].data.mesh.geometry.attributes.position = new THREE.BufferAttribute(positions, 3);
+    nodes[1].data.mesh.geometry.attributes.normal = new THREE.BufferAttribute(positions, 3);
+    nodes[1].data.mesh.geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(geo.faces), 1));
+    nodes[1].data.mesh.geometry.attributes.position.needsUpdate = true;
+    nodes[1].data.mesh.geometry.attributes.normal.needsUpdate = true;
+    nodes[1].data.mesh.geometry.index.needsUpdate = true;
+  }
+  GP_CombineGrid();
+}
+
 function GP_createOneCompartmentMesh(anode) {
   var comp_geom = new THREE.Object3D();
+  var comp_sphere = new THREE.Object3D();
+  comp_geom.add(comp_sphere);
   anode.data.comp_geom = comp_geom;
   var w = world.broadphase.resolution.x * world.radius * 2;
   var h = world.broadphase.resolution.y * world.radius * 2;
@@ -385,7 +410,8 @@ function GP_createOneCompartmentMesh(anode) {
     aSphereMesh.scale.set(anode.data.radii[0].radii[s]*ascale/2.0,
                           anode.data.radii[0].radii[s]*ascale/2.0,
                           anode.data.radii[0].radii[s]*ascale/2.0);
-    comp_geom.add(aSphereMesh);
+    aSphereMesh.name = anode.data.name+"_"+s;
+    comp_sphere.add(aSphereMesh);
   }
   anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2,0.0);
   anode.data.mc.isolation = 0.0;
@@ -403,15 +429,16 @@ function GP_createOneCompartmentMesh(anode) {
   mesh.position.x = (anode.data.mc.data_bound.min.x + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+w/2.0;//+w/2.0;//center of the box
   mesh.position.y = (anode.data.mc.data_bound.min.y + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+h/2.0;//+h/2.0;
   mesh.position.z = (anode.data.mc.data_bound.min.z + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+d/2.0;//+d/2.0;
-  comp_geom.add(mesh);
+  //comp_geom.add(mesh);
   /* BUILD THE MESH */
   //anode.data.vol = anode.data.mc.computeVolumeInside();
   var bufferGeometry = new THREE.BufferGeometry();
+  bufferGeometry.dynamic = true;
   var positions = new Float32Array(geo.vertices);
   var normals = new Float32Array(geo.normals);
-  bufferGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-  bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-  bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(geo.faces), 1));
+  bufferGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3).setDynamic( true ) );
+  bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3).setDynamic( true ) );
+  bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(geo.faces), 1).setDynamic( true ) );
   var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: false });
   var compMesh = new THREE.Mesh(bufferGeometry, wireframeMaterial);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
   compMesh.scale.x = anode.data.mc.data_bound.maxsize/2.0*ascale;//halfsize?
@@ -936,19 +963,36 @@ function setupSSAOGui(agui){
 }
 
 function GP_initRenderer(){
+  //if (!stage) {
+  //  stage = new NGL.Stage("container");
+  //}
+  if (renderer) return;
+  var container = document.getElementById( 'container' );
+  container.setAttribute("class", "show");
+  var dm = container.getBoundingClientRect();
+  if (!DEBUGGPU){
+    dm = {"width":window.innerWidth,"height":window.innerHeight};
+  }
+  else {
+    if (dm.width === 0){
+      var x = container.parentElement.parentElement.parentElement.style.width.split("px")[0];
+      var y = container.parentElement.parentElement.parentElement.style.height.split("px")[0];
+      dm.width = parseInt(x);
+      dm.height = parseInt(y);
+    }
+  }
+  console.log("renderer",dm);
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio( 1 );
-  renderer.setSize( window.innerWidth, window.innerHeight );
+  renderer.setSize( dm.width, dm.height );
   renderer.shadowMap.enabled = true;
-  var container = document.getElementById( 'container' );
+  //container.setAttribute("class", "show");
   container.appendChild( renderer.domElement );
-  window.addEventListener( 'resize', onWindowResize, false );
-
-  if (!stage) stage = new NGL.Stage("container");
+  window.addEventListener( 'resize', GP_onWindowResize, false );
 
   stats = new Stats();
   stats.domElement.style.position = 'absolute';
-  stats.domElement.style.top = '0px';
+  stats.domElement.style.top = '0%';
   container.appendChild( stats.domElement );
 
   scene = window.mainScene = new THREE.Scene();
@@ -967,9 +1011,9 @@ function GP_initRenderer(){
 
   ambientLight = new THREE.AmbientLight( 0x222222 );
   scene.add( ambientLight );
-  renderer.setClearColor(ambientLight.color, 1.0);
-
-  camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 0.01, 100 );
+  //white ?
+  renderer.setClearColor(0xffffff, 1.0);//ambientLight.color,
+  camera = new THREE.PerspectiveCamera( 30, dm.width / dm.height, 0.01, 100 );
   camera.position.set(0,0.6,1.4);
 
   /*
@@ -985,6 +1029,10 @@ function GP_initRenderer(){
   controls.enableZoom = true;
   controls.target.set(0.0, 0.1, 0.0);
   //controls.maxPolarAngle = Math.PI * 0.5;
+
+  //add raycaster and mouse
+  if (!raycaster) raycaster = new THREE.Raycaster();
+  if (!gp_mouse) gp_mouse = new THREE.Vector2();
 }
 
 function GP_initWorld(){
@@ -1022,9 +1070,6 @@ function GP_initWorld(){
 }
 
 function init(){
-    numParticles = query.n ? parseInt(query.n,10) : 64;
-    copy_number = query.c ? parseInt(query.c,10) : 10;
-    atomData_do = query.atom ? query.atom === 'true' : false;
     /*numParticles = query.n ? parseInt(query.n,10) : 64;
     copy_number = query.c ? parseInt(query.c,10) : 10;
     atomData_do = query.atom ? query.atom === 'true' : false;
@@ -1215,6 +1260,15 @@ function init(){
             world.broadphase.position.copy(debugGridMesh.position);
             console.log(world.broadphase.position);
         }
+        else if (this.object.ismb) {
+            //update the metaball and the grid
+            var mb_id = this.object.mb_id;
+            nodes[this.object.comp_id].data.pos[0].coords[mb_id*3]=this.object.position.x/ascale;
+            nodes[this.object.comp_id].data.pos[0].coords[mb_id*3+1]=this.object.position.y/ascale;
+            nodes[this.object.comp_id].data.pos[0].coords[mb_id*3+2]=this.object.position.z/ascale;
+            //need world position coordinate
+            GP_updateMBCompartment(nodes[this.object.comp_id]);
+        }
     });
     scene.add(gizmo);
     gizmo.attach(interactionSphereMesh);
@@ -1247,17 +1301,30 @@ function init(){
     }
 }
 
-function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
+function GP_onWindowResize() {
+  var container = document.getElementById( 'container' );
+  var dm = container.getBoundingClientRect();
+  if (!DEBUGGPU){
+    dm = {"width":window.innerWidth,"height":window.innerHeight};
+  }
+  else {
+    if (dm.width === 0){
+      var x = container.parentElement.parentElement.parentElement.style.width.split("px")[0];
+      var y = container.parentElement.parentElement.parentElement.style.height.split("px")[0];
+      dm.width = parseInt(x);
+      dm.height = parseInt(y);
+    }
+  }
+  camera.aspect = dm.width/dm.height;
   camera.updateProjectionMatrix();
-  renderer.setSize( window.innerWidth, window.innerHeight );
+  renderer.setSize( dm.width, dm.height );
 }
 
 function animate( time ) {
-    if (!(loading_bar)) {
+    /*if (!(loading_bar)) {
       loading_bar = document.getElementById('loading_bar').ldBar;
       if (loading_bar) loading_bar.set(0);
-    }
+    }*/
     requestAnimationFrame( animate );
     updatePhysics( time );
     render();
@@ -1280,8 +1347,8 @@ function updatePhysics(time){
             var x = 0.12*Math.sin(2 * 1.9 * world.fixedTime);
             var y = 0.05*(Math.cos(2 * 2 * world.fixedTime)+0.5) + introSweepPos;
             var z = 0.12*Math.cos(2 * 2.1 * world.fixedTime) + introSweepPos;
-            interactionSphereMesh.position.set( x, y, z );
-            world.setSpherePosition( 0, x, y, z );
+            //interactionSphereMesh.position.set( x, y, z );
+            //world.setSpherePosition( 0, x, y, z );
         }
 
         world.step( deltaTime );
@@ -1409,6 +1476,8 @@ function calculateBoxInertia(out, mass, extents){
   );
 }
 
+function GP_guiChanged_cb() {}
+
 function initGUI(){
   controller  = {
     moreObjects: function(){ location.href = "?n=" + (numParticles*2); },
@@ -1418,7 +1487,8 @@ function initGUI(){
     renderParticles: false,
     renderMeshs: true,
     renderShadows: true,
-    renderMB: false,
+    renderSMB: false,
+    renderIsoMB: true,
     gravity: world.gravity.y,
     interaction: 'none',
     sphereRadius: world.getSphereRadius(0),
@@ -1469,8 +1539,10 @@ function initGUI(){
         }
       if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
           //use NGL to load the object?
-          if (controller.renderMB) scene.add(nodes[i].data.comp_geom);
+          if (controller.renderSMB) scene.add(nodes[i].data.comp_geom);
           else scene.remove(nodes[i].data.comp_geom);
+          if (controller.renderIsoMB) scene.add(nodes[i].data.mesh);
+          else scene.remove(nodes[i].data.mesh);
       };
     }
     // Shadow rendering
@@ -1496,7 +1568,8 @@ function initGUI(){
     world.setSphereRadius(0,r);
   }
 
-  gui = new dat.GUI();
+  GP_guiChanged_cb = guiChanged;
+  gui = new dat.GUI({ autoPlace: false });
   var gh = gui.addFolder( "GPhysics" );
 
   gh.add( world, "stiffness", 0, 5000, 0.1 );
@@ -1512,7 +1585,8 @@ function initGUI(){
   gh.add( controller, "renderMeshs" ).onChange( guiChanged );
   if (atomData_do) gh.add( controller, "renderAtoms" ).onChange( guiChanged );
   gh.add( controller, "renderShadows" ).onChange( guiChanged );
-  gh.add( controller, "renderMB" ).onChange( guiChanged );
+  gh.add( controller, "renderSMB" ).onChange( guiChanged );
+  gh.add( controller, "renderIsoMB" ).onChange( guiChanged );
   gh.add( controller, 'interaction', [ 'none', 'sphere', 'broadphase' ] ).onChange( guiChanged );
   gh.add( controller, 'sphereRadius', boxSize.x/100, boxSize.x/10 ).onChange( guiChanged );
 
@@ -1524,11 +1598,14 @@ function initGUI(){
 
   setupSSAOGui(gui);
 
+  var customContainer = document.getElementById( 'gui-container' );
+  customContainer.appendChild(gui.domElement);
+//.main { position: absolute; top: 100px; left: 100px; }
   guiChanged();
 
-  var raycaster = new THREE.Raycaster();
-  var mouse = new THREE.Vector2();
-  document.addEventListener('click', function( event ) {
+  //var raycaster = new THREE.Raycaster();
+  //var mouse = new THREE.Vector2();
+  /*document.addEventListener('click', function( event ) {
       mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
       mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
       raycaster.setFromCamera( mouse, camera );
@@ -1538,7 +1615,7 @@ function initGUI(){
           gui.updateDisplay();
           guiChanged();
       }
-  });
+  });*/
 }
 
 function parseParams(){
@@ -1602,13 +1679,28 @@ function loadLegacy(url){
 }
 
 function GP_initFromData(data){
+  query = parseParams();
   console.log(data);
   root = d3v4.hierarchy(data.nodes)
     .sum(function(d) { return d.size; })
     .sort(function(a, b) { return b.value - a.value; });
   nodes = pack(root).descendants();//flatten--error ?
   console.log(nodes);
+  numParticles = query.n ? parseInt(query.n,10) : 64;
+  copy_number = query.c ? parseInt(query.c,10) : 10;
+  atomData_do = query.atom ? query.atom === 'true' : false;
   init();
+}
+
+function GP_initFromNodes(some_nodes,numpart,copy,doatom){
+  if (inited) return;
+  nodes = some_nodes;//flatten--error ?
+  console.log(nodes);
+  numParticles = numpart;
+  copy_number = copy;
+  atomData_do = doatom;
+  init();
+  inited = true;
 }
 
 //(function(){
@@ -1638,7 +1730,6 @@ function loadSimpleExample(){
 }
 
 function GP_selectFile(e){
-    query = parseParams();
     var e = document.getElementById("gjsfile_input");
 		var theFiles = e.files;
     var thefile = theFiles[0];
@@ -1685,14 +1776,79 @@ function GP_selectFile(e){
      reader.readAsText(thefile, 'UTF-8');
 	}
 
-document.addEventListener("keydown", onDocumentKeyDown, false);
-function onDocumentKeyDown(event) {
+function GP_onDocumentKeyDown(event) {
     var keyCode = event.which;
     //p
     if (keyCode == 80){
       controller.paused=!controller.paused;
     }
 };
+
+function GP_onDocumentMouseMove( event ) {
+    //mouse move
+    if (!gp_mouse) gp_mouse = new THREE.Vector2();
+    //event.preventDefault();
+    gp_mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    gp_mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+  }
+
+function GP_onDocumentMouseDown( event ) {
+    //event.preventDefault();
+    if (!nodes || nodes.length === 0 ) return;
+    gp_mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    gp_mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    if (!raycaster) raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera( gp_mouse, camera );
+    var intersects;// = ray.intersectObjects( objects );
+    var found=-1;
+    for (var i=0;i<nodes.length;i++){//nodes.length
+      if (!nodes[i].parent)
+        {
+          continue;
+        }
+      if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+          //use NGL to load the object?
+          if (controller && controller.renderSMB)
+          {
+            intersects = raycaster.intersectObjects( nodes[i].data.comp_geom.children[0].children );
+            if ( intersects.length > 0 ) {
+              found = i;
+              break;
+            }
+          }
+      }
+    }
+    console.log("found ",found,intersects);
+    if (found !==-1) {
+      var mb_id = parseInt(intersects[0].object.name.split("_")[1]);
+      //attach gizmo to it
+      intersects[0].object.ismb = true;//is metaball
+      intersects[0].object.mb_id = mb_id;//ball id
+      intersects[0].object.comp_id = found;//node id
+      gizmo.attach(intersects[0].object);
+    }
+    else
+    {
+      if (interactionSphereMesh) {
+        intersects = raycaster.intersectObjects( [interactionSphereMesh] );
+        if ( intersects.length > 0 ) {
+          controller.interaction = 'sphere';
+          gui.updateDisplay();
+          GP_guiChanged_cb();
+        }
+      }
+    }
+		//if ( intersects.length > 0 ) {
+	//		intersects[ 0 ].object.material.color.setHex( Math.random() * 0xffffff );
+	//		var particle = new THREE.Particle( particleMaterial );
+	//		particle.position = intersects[ 0 ].point;
+	//		particle.scale.x = particle.scale.y = 8;
+	//		scene.add( particle );
+	//	}
+}
+document.addEventListener( 'mousedown', GP_onDocumentMouseDown, false );
+document.addEventListener( 'mousemove', GP_onDocumentMouseMove, false );
+document.addEventListener( "keydown", GP_onDocumentKeyDown, false);
 /*(function() {
    // your page initialization code here
    // the DOM will be available here
