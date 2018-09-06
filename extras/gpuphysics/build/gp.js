@@ -1157,6 +1157,43 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 
 	        return this.bodyCount++;
 	    },
+			setBody: function(bodyId, x, y, z, qx, qy, qz, qw, mass,
+												inertiaX, inertiaY, inertiaZ,
+												bodyType)
+					{
+						if(bodyId >= this.maxBodies){
+		            console.warn("Too many bodies: " + bodyId+" max "+this.maxBodies);
+		            return;
+		        }
+
+		        // Position
+		        var tex = this.dataTextures.bodyPositions;
+		        tex.needsUpdate = true;
+		        var data = tex.image.data;
+		        var w = tex.image.width;
+		        var h = tex.image.height;
+		        var p = idToDataIndex(bodyId, w, h);
+		        data[p + 0] = x;
+		        data[p + 1] = y;
+		        data[p + 2] = z;
+		        data[p + 3] = bodyType;// this is normalize to this.maxBodyTypes which is the texture.width / 2
+
+		        // Quaternion
+		        data = this.dataTextures.bodyQuaternions.image.data;
+		        this.dataTextures.bodyQuaternions.needsUpdate = true;
+		        data[p + 0] = qx;
+		        data[p + 1] = qy;
+		        data[p + 2] = qz;
+		        data[p + 3] = qw;
+
+		        // Mass
+		        data = this.dataTextures.bodyMass.image.data;
+		        this.dataTextures.bodyMass.needsUpdate = true;
+		        data[p + 0] = 1/inertiaX;
+		        data[p + 1] = 1/inertiaY;
+		        data[p + 2] = 1/inertiaZ;
+		        data[p + 3] = 1/mass;
+			},
 	    addParticle: function(bodyId, x, y, z){
 	        if(this.particleCount >= this.maxParticles){
 	            console.warn("Too many particles: " + this.particleCount+" max "+this.maxParticles);
@@ -1169,6 +1206,25 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        var w = tex.image.width;
 	        var h = tex.image.height;
 	        var p = idToDataIndex(this.particleCount, w, h);
+	        data[p + 0] = x;
+	        data[p + 1] = y;
+	        data[p + 2] = z;
+	        data[p + 3] = bodyId;
+	        //TODO: update point cloud mapping particles -> bodies?
+	        return this.particleCount++;
+	    },
+			setParticle: function(particleId, bodyId, x, y, z){
+	        if(particleId >= this.maxParticles){
+	            console.warn("Too many particles: " + particleId+" max "+this.maxParticles);
+	            return;
+	        }
+	        // Position
+	        var tex = this.dataTextures.particleLocalPositions;
+	        tex.needsUpdate = true;
+	        var data = tex.image.data;
+	        var w = tex.image.width;
+	        var h = tex.image.height;
+	        var p = idToDataIndex(particleId, w, h);
 	        data[p + 0] = x;
 	        data[p + 1] = y;
 	        data[p + 2] = z;

@@ -54,6 +54,7 @@ var rb_init = false;
 var master_grid_field;
 var master_grid_id;
 var inited = false;
+var particle_id_Count=0;
 /*SSAO PARAMATER AND VARIABLE*/
 var ssao_params= {
 				output: 0,
@@ -383,7 +384,6 @@ function GP_updateMBCompartment(anode){
     nodes[1].data.mesh.geometry.attributes.normal.needsUpdate = true;
     nodes[1].data.mesh.geometry.index.needsUpdate = true;
   }
-  GP_CombineGrid();
 }
 
 function GP_createOneCompartmentMesh(anode) {
@@ -459,6 +459,7 @@ function distributesMesh(){
   var start = 0;
   var total = 0;
   var count = 0;//total ?
+  particle_id_Count = 0;
   //build the compartments
   //general_inertia_mass = GP_getInertiaOneSphere();
   for (var i=0;i<n;i++){//nodes.length
@@ -469,7 +470,8 @@ function distributesMesh(){
       }
     if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
         //use NGL to load the object?
-        nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
+        if (!("mc" in nodes[i].data)) nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
+        else GP_updateMBCompartment(nodes[i]);
         //remove volume from parent volume
         nodes[i].parent.data.vol = nodes[i].parent.data.vol - nodes[i].data.vol;
         continue;
@@ -540,15 +542,18 @@ function distributesMesh(){
 
   var keys = Object.keys(type_meshs);
   var nMeshs = keys.length;
+  var amesh;
   for (var i=0;i<nMeshs;i++) {
-      var amesh = new THREE.Mesh( type_meshs[keys[i]], all_materials[current_material].m );
-      amesh.frustumCulled = false; // Instances can't be culled like normal meshes
-      // Create a depth material for rendering instances to shadow map
-      amesh.customDepthMaterial = customDepthMaterial;
-      amesh.castShadow = true;
-      amesh.receiveShadow = true;
-      meshMeshs.push(amesh);
-      scene.add( amesh );
+      if (i >= meshMeshs.length) {
+        amesh = new THREE.Mesh( type_meshs[keys[i]], all_materials[current_material].m );
+        amesh.frustumCulled = false; // Instances can't be culled like normal meshes
+        // Create a depth material for rendering instances to shadow map
+        amesh.customDepthMaterial = customDepthMaterial;
+        amesh.castShadow = true;
+        amesh.receiveShadow = true;
+        meshMeshs.push(amesh);
+        scene.add( amesh );
+      }
       console.log("mesh builded",keys[i]);
   }
 
@@ -636,6 +641,28 @@ function createCellVIEW(){
   scene.remove(cv_Mesh);
 }
 
+function updateOneMesh(meshGeometry,anode,start,count) {
+    var color = [1,0,0];
+    if (("color" in anode.data)&&(anode.data.color!==null)) color = anode.data.color;
+    else {
+      color = [Math.random(), Math.random(), Math.random()];;//(anode.data.surface) ? [1,0,0]:[0,1,0];//Math.random(), Math.random(), Math.random()];
+      anode.data.color = [color[0],color[1],color[2]];
+    }
+    console.log(meshGeometry);
+    meshGeometry.maxInstancedCount =  count;
+    var bodyIndices = new THREE.InstancedBufferAttribute( new Float32Array( count * 1 ), 1, true, 1 );
+    var bodyColors = new THREE.InstancedBufferAttribute( new Float32Array( count * 3 ), 3, true, 1  );
+    for ( var i = 0, ul = bodyIndices.count; i < ul; i++ ) {
+        bodyIndices.setX( i, start + i ); // one index per instance
+        //bodyColors.setXYZ(i, i/bodyIndices.count,0,0);// color[0],color[1],color[2]);//rgb of the current anode
+        bodyColors.setXYZ(i, color[0],color[1],color[2]);// color[0],color[1],color[2]);//rgb of the current anode
+    }
+    meshGeometry.attributes.bodyIndex.copy(bodyIndices);
+    meshGeometry.attributes.bodyColor.copy(bodyColors);
+    meshGeometry.attributes.bodyIndex.needsUpdate = true;
+    meshGeometry.attributes.bodyColor.needsUpdate = true;
+    console.log("ok update mesh instances");
+}
 
 function createOneMesh(anode,start,count) {
   var color = [1,0,0];
@@ -660,8 +687,8 @@ function createOneMesh(anode,start,count) {
       meshGeometry.addAttribute( attributeName, bufferGeometry.attributes[attributeName].clone() );
   }
   meshGeometry.setIndex( bufferGeometry.index.clone() );
-  var bodyIndices = new THREE.InstancedBufferAttribute( new Float32Array( bodyInstances * 1 ), 1, true, 1 );
-  var bodyColors = new THREE.InstancedBufferAttribute( new Float32Array( bodyInstances * 3 ), 3, true, 1  );
+  var bodyIndices = new THREE.InstancedBufferAttribute( new Float32Array( bodyInstances * 1 ), 1, true, 1 ).setDynamic( true );
+  var bodyColors = new THREE.InstancedBufferAttribute( new Float32Array( bodyInstances * 3 ), 3, true, 1  ).setDynamic( true );
   for ( var i = 0, ul = bodyIndices.count; i < ul; i++ ) {
       bodyIndices.setX( i, start + i ); // one index per instance
       //bodyColors.setXYZ(i, i/bodyIndices.count,0,0);// color[0],color[1],color[2]);//rgb of the current anode
@@ -765,12 +792,12 @@ function createInstancesMesh(pid,anode,start,count) {
     offset.set(anode.data.offset[0]*ascale,anode.data.offset[1]*ascale,anode.data.offset[2]*ascale);
     up.set(anode.data.pcpalAxis[0],anode.data.pcpalAxis[1],anode.data.pcpalAxis[2]);
   }
+  var inertia = new THREE.Vector3();
+  var mass = 0;
 
   if (!(pid in type_meshs) ){
     //number of beads
     var nbeads = 0;
-    var inertia = new THREE.Vector3();
-    var mass = 0;
 
     if (anode.data.radii) {
       if (anode.data.radii && "radii" in anode.data.radii[0]) {
@@ -795,7 +822,7 @@ function createInstancesMesh(pid,anode,start,count) {
         }
       }
     }
-    type_meshs[pid] = createOneMesh(anode,start,count);
+    if (!(pid in type_meshs)) type_meshs[pid] = createOneMesh(anode,start,count);
     //add bodyType firstaddBodyType
     anode.data.bodyid = world.bodyTypeCount;
     var s = (!anode.data.surface)? -anode.parent.data.compId:anode.parent.data.compId;//this should be the compartment compId /numcomp
@@ -805,6 +832,7 @@ function createInstancesMesh(pid,anode,start,count) {
                       offset.x, offset.y, offset.z,
                       mass, inertia.x, inertia.y, inertia.z);
   }
+  else updateOneMesh(type_meshs[pid],anode,start,count);//should flag if mesh has changed
   //position should use the halton sequence and the grid size
   //should do it constrained inside the given compartments
   //var comp = anode.parent;
@@ -870,9 +898,16 @@ function createInstancesMesh(pid,anode,start,count) {
 
     mass = 1;
     calculateBoxInertia(inertia, mass, new THREE.Vector3(radius*2,radius*2,radius*2));
-    world.addBody(x,y,z, q.x, q.y, q.z, q.w,
-                  mass, inertia.x, inertia.y, inertia.z,
-                  anode.data.bodyid);
+    if ( bodyId >= world.bodyCount ) {
+      world.addBody(x,y,z, q.x, q.y, q.z, q.w,
+                    mass, inertia.x, inertia.y, inertia.z,
+                    anode.data.bodyid);
+    }
+    else {
+      world.setBody(bodyId, x,y,z, q.x, q.y, q.z, q.w,
+                    mass, inertia.x, inertia.y, inertia.z,
+                    anode.data.bodyid);
+    }
     //add the atomic information
     if (anode.data.radii) {
       if (anode.data.radii && "radii" in anode.data.radii[0]) {
@@ -881,18 +916,26 @@ function createInstancesMesh(pid,anode,start,count) {
             var x=anode.data.pos[0].coords[i*3]*ascale,
                 y=anode.data.pos[0].coords[i*3+1]*ascale,
                 z=anode.data.pos[0].coords[i*3+2]*ascale;
-            world.addParticle(bodyId, x,y,z);
+            if ( particle_id_Count >= world.particleCount )
+            {    world.addParticle(bodyId, x,y,z);}
+            else
+            {    world.setParticle(particle_id_Count,bodyId,x,y,z);}
+            particle_id_Count++;
         }
       }
       else
       {
         for (var i=0;i< anode.data.pos[0].length;i++){
           var p = anode.data.pos[0][i];
-          world.addParticle(bodyId, p[0],p[1],p[2]);
+          if ( particle_id_Count >= world.particleCount )
+          {    world.addParticle(bodyId, p[0],p[1],p[2]);}
+          else
+          {    world.setParticle(particle_id_Count,bodyId,p[0],p[1],p[2]);}
+          particle_id_Count++;
         }
       }
     }
-    instance_infos.push(pid);
+    if (instance_infos.indexOf(pid) === -1) instance_infos.push(pid);
     if (atomData_do) {
       atomData_mapping[pid]["instances_start"]=start;
       atomData_mapping[pid]["instances_count"]=count;
@@ -1312,6 +1355,7 @@ function init(){
             nodes[this.object.comp_id].data.pos[0].coords[mb_id*3+2]=this.object.position.z/ascale;
             //need world position coordinate
             GP_updateMBCompartment(nodes[this.object.comp_id]);
+            GP_CombineGrid();
         }
     });
     scene.add(gizmo);
@@ -1739,7 +1783,21 @@ function GP_initFromData(data){
 }
 
 function GP_initFromNodes(some_nodes,numpart,copy,doatom){
-  if (inited) return;
+  if (inited) {
+    rb_init = false;
+    world.time = 0;//force the flush
+    //everything already initialize. just update.
+    distributesMesh();
+    animate();
+
+    //world.bodyCount = num_instances;
+    //world.particleCount = particle_id_Count;
+
+    //need update instead.
+    //or should the update automatic?
+    //for now try to clean everything ?
+    return;
+  }
   nodes = some_nodes;//flatten--error ?
   console.log(nodes);
   numParticles = numpart;
