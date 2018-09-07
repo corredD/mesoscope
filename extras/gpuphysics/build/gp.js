@@ -1242,8 +1242,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 		        data[p + 3] = 1/mass;
 			},
 	    addParticle: function(bodyId, x, y, z){
-					console.log("add a particle to instance id ",bodyId);
-	        if(this.particleCount >= this.maxParticles){
+					if(this.particleCount >= this.maxParticles){
 	            console.warn("Too many particles: " + this.particleCount+" max "+this.maxParticles);
 	            return;
 	        }
@@ -1262,7 +1261,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        return this.particleCount++;
 	    },
 			setParticle: function(particleId, bodyId, x, y, z){
-					console.log("set a particle to instance id ",particleId,bodyId);
+					//console.log("set a particle to instance id ",particleId,bodyId);
 	        if(particleId >= this.maxParticles){
 	            console.warn("Too many particles: " + particleId+" max "+this.maxParticles);
 	            return;

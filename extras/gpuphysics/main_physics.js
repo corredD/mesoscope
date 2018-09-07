@@ -1152,7 +1152,7 @@ function GP_initRenderer(){
 
   stats = new Stats();
   stats.domElement.style.position = 'absolute';
-  stats.domElement.style.top = '0%';
+  stats.domElement.style.top = '90%';
   container.appendChild( stats.domElement );
 
   scene = window.mainScene = new THREE.Scene();
