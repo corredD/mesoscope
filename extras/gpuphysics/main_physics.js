@@ -1236,7 +1236,7 @@ function GP_initWorld(){
 
 function GP_debugBeadsSpheres(){
     //what if already exists...
-    if (debugMesh!==null) return;//need to update
+    //if (debugMesh!==null) return;//need to update
     var tri_mesh = BuildMeshTriangle(1.0);
     //create the triangle Geometry
     var bufferGeometry = new THREE.BufferGeometry();
@@ -1288,7 +1288,7 @@ function GP_debugBeadsSpheres(){
     debugMesh = new THREE.Mesh( debugGeometry, debugMaterial );
     //cv_Mesh.material.uniforms.atomPositionsTex.value = atomData;
     debugMesh.frustumCulled = false;
-    scene.add( debugMesh );
+    //scene.add( debugMesh );
 }
 
 function init(){
@@ -1669,7 +1669,7 @@ function initDebugGrid(){
   gridPoints.position.sub(world.broadphase.position);
   debugGridMesh.add(gridPoints);
 
-  scene.add(debugGridMesh);
+  //scene.add(debugGridMesh);
   /*
   var n = world.broadphase.resolution.x;
 
@@ -1723,8 +1723,8 @@ function render() {
       //cv_Material.uniforms.atomPositionsTex.value = atomData;
     }
     //use local particle and instance at
-    debugMesh.material.uniforms.particleWorldPosTex.value = world.particlePositionTexture;
-    debugMesh.material.uniforms.quatTex.value = world.bodyQuaternionTexture;
+    if (debugMesh) debugMesh.material.uniforms.particleWorldPosTex.value = world.particlePositionTexture;
+    if (debugMesh) debugMesh.material.uniforms.quatTex.value = world.bodyQuaternionTexture;
 
     composer.render();
     //renderer.render( scene, camera );
