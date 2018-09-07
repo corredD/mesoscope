@@ -289,7 +289,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 			else {\n\
 				if (bodyType_infos1.w > 0.0)\n\
 				{\n\
-					force +=-f*10.0;\n\
+					force +=-f;\n\
 				}\n\
 			}\n\
 			gl_FragColor = vec4(force, 1.0);\n\
@@ -1057,13 +1057,13 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 					for (var i=0;i<n*n*n;i++) {
 							var p = idToDataIndex(i, w, h);
 							compids_data[p + 0] = masterGridId[i];//the compartment
-							compids_data[p + 1] = masterGridField[i*4+3];
-							compids_data[p + 2] = 7.5*ascale;
+							compids_data[p + 1] = masterGridField[i*4+3];//the value
+							compids_data[p + 2] = 7.5*ascale;//thickness could be a uniform too
 							compids_data[p + 3] = 0;
 							gridvalues_data[p + 0] = masterGridField[i*4+0];
 							gridvalues_data[p + 1] = masterGridField[i*4+1];
 							gridvalues_data[p + 2] = masterGridField[i*4+2];
-							gridvalues_data[p + 3] = masterGridField[i*4+3];
+							gridvalues_data[p + 3] = masterGridField[i*4+3];//the value
 					}
 			},
 
@@ -1085,6 +1085,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 					console.log("off",offX, offY, offZ);
 					console.log("inertia",inertiaX, inertiaY, inertiaZ, mass);
 	        // Position
+					// should we add the color as well?
 	        var tex = this.dataTextures.bodyInfos;
 	        tex.needsUpdate = true;
 	        var data = tex.image.data;
@@ -1117,6 +1118,52 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        data[p2 + 3] = 1/mass;
 	        return this.bodyTypeCount++;
 	    },
+			setBodyType: function(bodyTypeId,
+														copynumber,
+														nbeads,
+														surface,
+														radius,
+														pcpX, pcpY, pcpZ,
+														offX, offY, offZ,
+														mass,
+														inertiaX, inertiaY, inertiaZ){
+
+					if(bodyTypeId >= this.maxBodyTypes){
+							console.warn("Too many bodies: " + bodyTypeId+" max "+this.maxBodyTypes);
+							return;
+					}
+					// Position
+					var tex = this.dataTextures.bodyInfos;
+					tex.needsUpdate = true;
+					var data = tex.image.data;
+					var w = tex.image.width;
+					var h = tex.image.height;
+					var p = idToDataIndex(bodyTypeId*2.0, w, h);
+					data[p + 0] = pcpX;
+					data[p + 1] = pcpY;
+					data[p + 2] = pcpZ;
+					data[p + 3] = surface;//compparentId ?
+					p = idToDataIndex(bodyTypeId*2.0+1.0, w, h);
+					data[p + 0] = offX;
+					data[p + 1] = offY;
+					data[p + 2] = offZ;
+					data[p + 3] = radius;//copynumber for this one ?
+					var tex2 = this.dataTextures.bodyInfos2;
+					tex2.needsUpdate = true;
+					var data2 = tex2.image.data;
+					var w2 = tex2.image.width;
+					var h2 = tex2.image.height;
+					var p2 = idToDataIndex(bodyTypeId*2.0, w2, h2);
+					data2[p2 + 0] = copynumber;
+					data2[p2 + 1] = nbeads;
+					data2[p2 + 2] = bodyTypeId;
+					data2[p2 + 3] = 0;//compparentId ?
+					p2 = idToDataIndex(bodyTypeId*2.0+1, w2, h2);
+					data[p2 + 0] = 1/inertiaX;
+					data[p2 + 1] = 1/inertiaY;
+					data[p2 + 2] = 1/inertiaZ;
+					data[p2 + 3] = 1/mass;
+			},
 
 	    addBody: function(x, y, z, qx, qy, qz, qw, mass,
 												inertiaX, inertiaY, inertiaZ,
@@ -1195,6 +1242,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 		        data[p + 3] = 1/mass;
 			},
 	    addParticle: function(bodyId, x, y, z){
+					console.log("add a particle to instance id ",bodyId);
 	        if(this.particleCount >= this.maxParticles){
 	            console.warn("Too many particles: " + this.particleCount+" max "+this.maxParticles);
 	            return;
@@ -1214,6 +1262,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        return this.particleCount++;
 	    },
 			setParticle: function(particleId, bodyId, x, y, z){
+					console.log("set a particle to instance id ",particleId,bodyId);
 	        if(particleId >= this.maxParticles){
 	            console.warn("Too many particles: " + particleId+" max "+this.maxParticles);
 	            return;
@@ -1230,7 +1279,7 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	        data[p + 2] = z;
 	        data[p + 3] = bodyId;
 	        //TODO: update point cloud mapping particles -> bodies?
-	        return this.particleCount++;
+	        //return this.particleCount++;
 	    },
 	    getBodyId: function(particleId){
 	        var tex = this.dataTextures.particleLocalPositions;
@@ -1305,7 +1354,15 @@ vec4 quat_slerp(vec4 v0, vec4 v1, float t){\n\
 	            bodyMass: new THREE.DataTexture( new Float32Array(4*bodyTextureSize*bodyTextureSize), bodyTextureSize, bodyTextureSize, THREE.RGBAFormat, type ),
 	        });
 	    },
-	    // Render data to rendertargets
+			resetData: function(){
+				var bodyTextureSize = powerOfTwoCeil(this.maxBodies);
+				var particleTextureSize = powerOfTwoCeil(this.maxParticles);
+				this.dataTextures.bodyPositions.image.data =new Float32Array(4*bodyTextureSize*bodyTextureSize);
+				this.dataTextures.bodyQuaternions.image.data =new Float32Array(4*bodyTextureSize*bodyTextureSize);
+				this.dataTextures.particleLocalPositions.image.data =new Float32Array(4*particleTextureSize*particleTextureSize);
+			},
+
+			// Render data to rendertargets
 	    flushData: function(){
 	        if(this.massDirty){
 	            this.flushDataToRenderTarget(this.textures.bodyMass, this.dataTextures.bodyMass);

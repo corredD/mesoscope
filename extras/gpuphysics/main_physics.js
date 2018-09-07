@@ -78,6 +78,79 @@ var gp_mouse = THREE.Vector2(0,0);
 
 var general_inertia_mass;
 
+/*display shader*/
+var imposter_vertex="precision highp float;\n\
+uniform sampler2D particleWorldPosTex;\n\
+uniform sampler2D quatTex;\n\
+uniform float radius;\n\
+attribute float instanceInfos;\n\
+varying float vRadius;\n\
+varying vec3 vPosition;\n\
+varying vec4 vColor;\n\
+varying vec2 vUv;\n\
+varying mat4 modelView;\n\
+void main(){\n\
+  float particleId = instanceInfos;\n\
+  vec2 particleUV = indexToUV(particleId,resolution);\n\
+  vec4 particlePosAndBodyId = texture2D(particleWorldPosTex,particleUV);\n\
+  vec2 bodyUV = indexToUV(particlePosAndBodyId.w,bodyTextureResolution);\n\
+  vec4 bodyQuat = texture2D(quatTex,bodyUV).xyzw;\n\
+  vec3 billboardWorldPos = particlePosAndBodyId.xyz;\n\
+  vRadius = radius;\n\
+  vec3 vertexPos = position*radius;// * 0.0078125;//radius;\n\
+  modelView = modelViewMatrix;\n\
+  mat4 VP = projectionMatrix * modelViewMatrix;\n\
+  vec3 CameraRight = vec3(modelViewMatrix[0][0], modelViewMatrix[1][0], modelViewMatrix[2][0]);\n\
+  vec3 CameraUp = vec3(modelViewMatrix[0][1], modelViewMatrix[1][1], modelViewMatrix  [2][1]);\n\
+  vec3 billboardVertexWorldPos = billboardWorldPos.xyz\n\
+           + CameraRight * vertexPos.x + CameraUp * vertexPos.y;\n\
+	vColor = vec4(1.0,0.0,0.0,1.0);\n\
+  vUv = uv;\n\
+	gl_Position = VP  * vec4( billboardVertexWorldPos.xyz , 1.0 );\n\
+  vPosition = billboardVertexWorldPos;\n\
+}\n";
+var imposter_fragment="#include <logdepthbuf_pars_fragment>\n\
+#include <packing>\n\
+precision highp float;\n\
+uniform mat4 projectionMatrix;\n\
+uniform float cameraNear;\n\
+uniform float cameraFar;\n\
+varying float vRadius;\n\
+varying vec3 vPosition;\n\
+varying vec4 vColor;\n\
+varying vec2 vUv;\n\
+varying mat4 modelView;\n\
+vec4 getZparams(){\n\
+  // OpenGL would be this:\n\
+  float zc0 = (1.0 - cameraFar / cameraNear) / 2.0;\n\
+  float zc1 = (1.0 + cameraFar / cameraNear) / 2.0;\n\
+  // D3D is this:\n\
+  //zc0 = 1.0 - m_FarClip / m_NearClip;\n\
+  //zc1 = m_FarClip / m_NearClip;\n\
+  // now set _ZBufferParams with (zc0, zc1, zc0/m_FarClip, zc1/m_FarClip);\n\
+  return vec4(zc0, zc1, zc0/cameraFar, zc1/cameraNear);\n\
+}\n\
+float LinearEyeDepth(vec4 _ZBufferParams,float z){\n\
+  return 1.0 / (_ZBufferParams.x * z + _ZBufferParams.y);\n\
+}\n\
+float calcDepth( float z ){\n\
+    vec2 clipZW = z * projectionMatrix[2].zw + projectionMatrix[3].zw;\n\
+    return 0.5 + 0.5 * clipZW.x / clipZW.y;\n\
+}\n\
+void main() {\n\
+  float lensqr = dot(vUv, vUv);\n\
+  if (lensqr > 1.0) discard;\n\
+  vec3 normal = normalize(vec3(vUv, sqrt(1.0 - lensqr)));\n\
+  vec3 cameraPos = (normal * vRadius) + vPosition;\n\
+  vec4 clipPos = projectionMatrix * modelView * vec4(cameraPos, 1.0);\n\
+  float ndcDepth = clipPos.z / clipPos.w;\n\
+  float gldepth = ((gl_DepthRange.diff * ndcDepth) +\n\
+        gl_DepthRange.near + gl_DepthRange.far) / 2.0;\n\
+  gl_FragDepthEXT = gldepth;\n\
+	gl_FragColor = vec4(normal,1.0);//0.78,0.78,0.78,1.0);\n\
+}\n";
+
+/*functions*/
 function Debug_getValues( i, j, k){
 	var u = (k * world.broadphase.resolution.x * world.broadphase.resolution.x) + (j * world.broadphase.resolution.x) + i;
   var g_value = master_grid_field[u*4+3];
@@ -413,6 +486,8 @@ function GP_createOneCompartmentMesh(anode) {
                           anode.data.radii[0].radii[s]*ascale/2.0,
                           anode.data.radii[0].radii[s]*ascale/2.0);
     aSphereMesh.name = anode.data.name+"_"+s;
+    aSphereMesh.castShadow = true;
+    aSphereMesh.receiveShadow = true;
     comp_sphere.add(aSphereMesh);
   }
   anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2,0.0);
@@ -449,6 +524,8 @@ function GP_createOneCompartmentMesh(anode) {
   compMesh.position.x = (anode.data.mc.data_bound.min.x + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+w/2.0;//+w/2.0;//center of the box
   compMesh.position.y = (anode.data.mc.data_bound.min.y + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+h/2.0;//+h/2.0;
   compMesh.position.z = (anode.data.mc.data_bound.min.z + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+d/2.0;//+d/2.0;
+  compMesh.castShadow = true;
+  compMesh.receiveShadow = true;
   scene.add(compMesh);
   //scene.add(comp_geom);
   return compMesh;
@@ -480,7 +557,7 @@ function distributesMesh(){
 
   //build master grid with everything? should align with gpu_grid
   GP_CombineGrid();
-
+  initDebugGrid();
   for (var i=0;i<n;i++){//nodes.length
     console.log(i,nodes[i].data.name);
     if (nodes[i].data.ingtype == "fiber") continue;
@@ -538,6 +615,8 @@ function distributesMesh(){
   console.log ( "there is instances ",total);
   console.log ( "there is atoms ",num_beads_total);
   num_instances = total;
+  world.particleCount = particle_id_Count;
+  world.bodyCount = num_instances;
   console.log(type_meshs[instance_infos[0]]);
 
   var keys = Object.keys(type_meshs);
@@ -557,7 +636,7 @@ function distributesMesh(){
       console.log("mesh builded",keys[i]);
   }
 
-
+  GP_debugBeadsSpheres();
 }
 
 //when all atoms are loaded
@@ -575,31 +654,12 @@ function createCellVIEW(){
   var geometry = new THREE.InstancedBufferGeometry();
 	geometry.maxInstancedCount = instances; // set so its initalized for dat.GUI, will be set in first draw otherwise
 	geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( tri_mesh.vertices, 3 ) );
-	//geometry.addAttribute( 'offset', new THREE.InstancedBufferAttribute( new Float32Array( offsets ), 3 ) );
-  geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(tri_mesh.indices), 1));
-  geometry.addAttribute( 'uv', new THREE.Float32BufferAttribute( new Float32Array( tri_mesh.uv ), 2 ) );
-	//geometry.addAttribute( 'color', new THREE.InstancedBufferAttribute( new Float32Array( colors ), 4 ) );
-	//geometry.addAttribute( 'orientationStart', new THREE.InstancedBufferAttribute( new Float32Array( orientationsStart ), 4 ) );
-	//geometry.addAttribute( 'orientationEnd', new THREE.InstancedBufferAttribute( new Float32Array( orientationsEnd ), 4 ) );
-	// material
+	geometry.addAttribute( 'uv', new THREE.Float32BufferAttribute( new Float32Array( tri_mesh.uv ), 2 ) );
   geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(tri_mesh.triangles), 1));
-  //InstancedBufferAttribute( array : TypedArray, itemSize : Integer, normalized : Boolean, meshPerAttribute : Number )
   var instanceInfos = new THREE.InstancedBufferAttribute(
     new Float32Array( atomData_mapping_instance.slice(0,instances*2) ), 2, true, 1 );
   //aGeometry.addAttribute( 'bodyColor', bodyColors );
   geometry.addAttribute( 'instanceInfos', instanceInfos );
-  /*
-  var bodyIndices = new THREE.InstancedBufferAttribute( new Float32Array( instances * 1 ), 1, 1  );
-  var partIndices = new THREE.InstancedBufferAttribute( new Float32Array( instances * 1 ), 1, 1  );
-  var j = 0;
-  for ( var i = 0, ul = bodyIndices.count; i < ul; i++ ) {//num_beads_total
-      bodyIndices.setX( i, atomData_mapping_instance[j] ); // one index per instance
-      partIndices.setX( i, atomData_mapping_instance[j+1] );//rgb of the current anode
-      j+=2;
-  }
-  geometry.addAttribute( 'partIndex', partIndices );
-  geometry.addAttribute( 'bodyIndex', bodyIndices );
-  */
   geometry.boundingSphere = null;
 
   var phongShader = THREE.ShaderLib.phong;
@@ -615,7 +675,7 @@ function createCellVIEW(){
 	cv_Material = new THREE.ShaderMaterial( {
 		uniforms: uniforms,
 		vertexShader: sharedShaderCode.innerText + document.getElementById( 'xvertexShader' ).textContent,
-		fragmentShader: document.getElementById( 'xfragmentShader' ).textContent,
+		fragmentShader: imposter_fragment,//document.getElementById( 'xfragmentShader' ).textContent,
 		side: THREE.DoubleSide,
     lights: true,
     depthWrite: true,
@@ -629,14 +689,8 @@ function createCellVIEW(){
 		//transparent: true
 	} );
   cv_Material.extensions.fragDepth = true;
-	//
 	cv_Mesh = new THREE.Mesh( geometry, cv_Material );
-  //cv_Mesh.material.uniforms.atomPositionsTex.value = atomData;
   cv_Mesh.frustumCulled = false;
-  //cv_Mesh.customDepthMaterial = customDepthMaterial;
-  //cv_Mesh.castShadow = true;
-  //cv_Mesh.receiveShadow = true;
-
 	scene.add( cv_Mesh );
   scene.remove(cv_Mesh);
 }
@@ -782,6 +836,36 @@ function GP_getInertiaOneSphere(x,y,z){
   return inertia_mass;
 }
 
+function GP_getInertiaMassBeads(anode) {
+  var inertia = new THREE.Vector3();
+  var mass = 0;
+  var nbeads = 0;
+  if (anode.data.radii) {
+    if (anode.data.radii && "radii" in anode.data.radii[0]) {
+      nbeads = anode.data.radii[0].radii.length;
+      for (var i=0;i<anode.data.radii[0].radii.length;i++){
+        var x=anode.data.pos[0].coords[i*3]*ascale,
+            y=anode.data.pos[0].coords[i*3+1]*ascale,
+            z=anode.data.pos[0].coords[i*3+2]*ascale;
+        var b_intertia = GP_getInertiaOneSphere(x,y,z);
+        inertia.add(new THREE.Vector3(b_intertia.x,b_intertia.y,b_intertia.z));
+        mass+=b_intertia.w;
+      }
+    }
+    else
+    {
+      nbeads = anode.data.pos[0].length;
+      for (var i=0;i< anode.data.pos[0].length;i++){
+        var p = anode.data.pos[0][i];
+        var b_intertia = GP_getInertiaOneSphere(p[0],p[1],p[2]);
+        inertia.add(new THREE.Vector3(b_intertia.x,b_intertia.y,b_intertia.z));
+        mass+=b_intertia.w;
+      }
+    }
+  }
+  return {"inertia":inertia,"mass":mass,"nbeads":nbeads};
+}
+
 function createInstancesMesh(pid,anode,start,count) {
   var w = world.broadphase.resolution.x * world.radius * 2;
   var h = world.broadphase.resolution.y * world.radius * 2;
@@ -794,34 +878,13 @@ function createInstancesMesh(pid,anode,start,count) {
   }
   var inertia = new THREE.Vector3();
   var mass = 0;
-
+  var nbeads = 0;
   if (!(pid in type_meshs) ){
     //number of beads
-    var nbeads = 0;
-
-    if (anode.data.radii) {
-      if (anode.data.radii && "radii" in anode.data.radii[0]) {
-        nbeads = anode.data.radii[0].radii.length;
-        for (var i=0;i<anode.data.radii[0].radii.length;i++){
-          var x=anode.data.pos[0].coords[i*3]*ascale,
-              y=anode.data.pos[0].coords[i*3+1]*ascale,
-              z=anode.data.pos[0].coords[i*3+2]*ascale;
-          var b_intertia = GP_getInertiaOneSphere(x,y,z);
-          inertia.add(new THREE.Vector3(b_intertia.x,b_intertia.y,b_intertia.z));
-          mass+=b_intertia.w;
-        }
-      }
-      else
-      {
-        nbeads = anode.data.pos[0].length;
-        for (var i=0;i< anode.data.pos[0].length;i++){
-          var p = anode.data.pos[0][i];
-          var b_intertia = GP_getInertiaOneSphere(p[0],p[1],p[2]);
-          inertia.add(new THREE.Vector3(b_intertia.x,b_intertia.y,b_intertia.z));
-          mass+=b_intertia.w;
-        }
-      }
-    }
+    var results = GP_getInertiaMassBeads(anode);
+    nbeads = results.nbeads;
+    inertia = results.inertia;
+    mass = results.mass;
     if (!(pid in type_meshs)) type_meshs[pid] = createOneMesh(anode,start,count);
     //add bodyType firstaddBodyType
     anode.data.bodyid = world.bodyTypeCount;
@@ -832,7 +895,18 @@ function createInstancesMesh(pid,anode,start,count) {
                       offset.x, offset.y, offset.z,
                       mass, inertia.x, inertia.y, inertia.z);
   }
-  else updateOneMesh(type_meshs[pid],anode,start,count);//should flag if mesh has changed
+  else {
+    var results = GP_getInertiaMassBeads(anode);
+    nbeads = results.nbeads;
+    inertia = results.inertia;
+    mass = results.mass;
+    var bodyTypeId = anode.data.bodyid;
+    //world.setBodyType(bodyTypeId,count,nbeads, s, anode.data.size*ascale,
+    //                  up.x, up.y, up.z,
+    //                  offset.x, offset.y, offset.z,
+    //                  mass, inertia.x, inertia.y, inertia.z);
+    updateOneMesh(type_meshs[pid],anode,start,count);//should flag if mesh has changed
+  }
   //position should use the halton sequence and the grid size
   //should do it constrained inside the given compartments
   //var comp = anode.parent;
@@ -908,7 +982,7 @@ function createInstancesMesh(pid,anode,start,count) {
                     mass, inertia.x, inertia.y, inertia.z,
                     anode.data.bodyid);
     }
-    //add the atomic information
+    //add the beads information
     if (anode.data.radii) {
       if (anode.data.radii && "radii" in anode.data.radii[0]) {
         for (var i=0;i<anode.data.radii[0].radii.length;i++){
@@ -1049,9 +1123,9 @@ function setupSSAOGui(agui){
 }
 
 function GP_initRenderer(){
-  //if (!stage) {
-  //  stage = new NGL.Stage("container");
-  //}
+  if (!stage) {
+    stage = new NGL.Stage("container");
+  }
   if (renderer) return;
   var container = document.getElementById( 'container' );
   container.setAttribute("class", "show");
@@ -1082,6 +1156,10 @@ function GP_initRenderer(){
   container.appendChild( stats.domElement );
 
   scene = window.mainScene = new THREE.Scene();
+  scene.background = new THREE.Color( 0x050505 );
+  scene.fog = new THREE.Fog( 0x050505, 2000, 3500 );
+  //renderer.setClearColor(0x050505, 1.0);
+  //renderer.setClearColor(0xffffff, 1.0);//ambientLight.color,
 
   light = new THREE.DirectionalLight();
   light.castShadow = true;
@@ -1098,7 +1176,7 @@ function GP_initRenderer(){
   ambientLight = new THREE.AmbientLight( 0xa6a4a4 );
   scene.add( ambientLight );
   //white ?
-  renderer.setClearColor(0xffffff, 1.0);//ambientLight.color,
+
   camera = new THREE.PerspectiveCamera( 30, dm.width / dm.height, 0.01, 100 );
   camera.position.set(0,0.6,1.4);
 
@@ -1156,7 +1234,67 @@ function GP_initWorld(){
     world.setSpherePosition(0,-boxSize.x,-0.5,-boxSize.z);
 }
 
+function GP_debugBeadsSpheres(){
+    /*doesnt work??*/
+    var tri_mesh = BuildMeshTriangle(1.0);
+    //create the triangle Geometry
+    var bufferGeometry = new THREE.BufferGeometry();
+    var positions = new Float32Array(tri_mesh.vertices);
+    bufferGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+    bufferGeometry.addAttribute( 'uv', new THREE.BufferAttribute( new Float32Array( tri_mesh.uv ), 2 ) );
+    bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(tri_mesh.triangles), 1));
+
+    var debugGeometry = new THREE.InstancedBufferGeometry();
+    debugGeometry.maxInstancedCount = (world.particleCount !==0)? world.particleCount:world.maxParticles;
+    for(var attributeName in bufferGeometry.attributes){
+        debugGeometry.addAttribute( attributeName, bufferGeometry.attributes[attributeName].clone() );
+    }
+    debugGeometry.setIndex( bufferGeometry.index.clone() );
+
+    var instanceInfos = new THREE.InstancedBufferAttribute( new Float32Array( debugGeometry.maxInstancedCount * 1 ), 1, true, 1 );
+    //var instancepositions = new THREE.InstancedBufferAttribute( new Float32Array( debugGeometry.maxInstancedCount * 1 ), 1, true, 1 );
+    for ( var i = 0, ul = instanceInfos.count; i < ul; i++ ) {
+        instanceInfos.setX( i, i );
+
+    }
+    debugGeometry.addAttribute( 'instanceInfos', instanceInfos );
+    debugGeometry.boundingSphere = null;
+
+    var phongShader = THREE.ShaderLib.phong;
+    var uniforms = THREE.UniformsUtils.clone(phongShader.uniforms);
+    uniforms.particleWorldPosTex = { value: world.dataTextures.particleLocalPositions };
+    uniforms.quatTex = { value: world.dataTextures.bodyQuaternions };
+    uniforms.cameraNear =   { value: camera.near };
+    uniforms.cameraFar = { value: camera.far };
+    uniforms.radius = { value: world.radius };
+    var debugMaterial = new THREE.ShaderMaterial({
+        uniforms: uniforms,
+        vertexShader: sharedShaderCode.innerText + imposter_vertex,
+    		fragmentShader: imposter_fragment,
+        side: THREE.DoubleSide,
+        lights: true,
+        depthWrite: true,
+        transparent: false,
+        defines: {
+          //USE_MAP: true,
+          DEPTH_PACKING: 3201,
+          bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
+          resolution: 'vec2(' + world.particleTextureSize.toFixed(1) + ',' + world.particleTextureSize.toFixed(1) + ')'
+      }
+    });
+    debugMaterial.extensions.fragDepth = true;
+
+    debugMesh = new THREE.Mesh( debugGeometry, debugMaterial );
+    //cv_Mesh.material.uniforms.atomPositionsTex.value = atomData;
+    debugMesh.frustumCulled = false;
+    scene.add( debugMesh );
+}
+
 function init(){
+  var container = document.getElementById('container');
+  container.onmousemove = GP_onDocumentMouseMove;
+  container.onmousedown = GP_onDocumentMouseDown;
+  container.onkeydown = GP_onDocumentKeyDown;
     /*numParticles = query.n ? parseInt(query.n,10) : 64;
     copy_number = query.c ? parseInt(query.c,10) : 10;
     atomData_do = query.atom ? query.atom === 'true' : false;
@@ -1203,7 +1341,7 @@ function init(){
     //createInstancesMesh(11,nodes[11],2,10);
 
     // Create an instanced mesh for debug spheres, should use the imposter quad.
-    var sphereGeometry = new THREE.SphereBufferGeometry(world.radius, 8, 8);
+    /*var sphereGeometry = new THREE.SphereBufferGeometry(world.radius, 8, 8);
     var instances = world.maxParticles;
     var debugGeometry = new THREE.InstancedBufferGeometry();
     debugGeometry.maxInstancedCount = instances;
@@ -1217,11 +1355,11 @@ function init(){
     }
     debugGeometry.addAttribute( 'particleIndex', particleIndices );
     debugGeometry.boundingSphere = null;
+    */
 
-
-
-    // Particle spheres material / debug material - extend the phong shader in three.js
     var phongShader = THREE.ShaderLib.phong;
+    // Particle spheres material / debug material - extend the phong shader in three.js
+    /*var phongShader = THREE.ShaderLib.phong;
     var uniforms = THREE.UniformsUtils.clone(phongShader.uniforms);
     uniforms.particleWorldPosTex = { value: null };
     uniforms.quatTex = { value: null };
@@ -1241,10 +1379,9 @@ function init(){
     var checkerTexture = new THREE.DataTexture(new Uint8Array([255,0,0,255, 255,255,255,255]), 2, 1, THREE.RGBAFormat, THREE.UnsignedByteType, THREE.UVMapping);
     checkerTexture.needsUpdate = true;
     debugMaterial.uniforms.map.value = checkerTexture;
-
-    initDebugGrid();
+    */
+    //GP_debugBeadsSpheres();
     //create the mesh
-
     var toonMaterial2 = createShaderMaterial( "toon2", light, ambientLight ),
 			hatchingMaterial = createShaderMaterial( "hatching", light, ambientLight ),
 			hatchingMaterial2 = createShaderMaterial( "hatching", light, ambientLight ),
@@ -1483,17 +1620,54 @@ function drawBBmarch(marching){
   return boxmesh;
 }
 
+function GP_points(nparticles){
+  var particles = nparticles;
+  var geometry = new THREE.BufferGeometry();
+  var positions = [];
+  var colors = [];
+  var color = new THREE.Color();
+  var n = 1.0, n2 = n / 2; // particles spread in the cube
+  for ( var i = 0; i < particles; i ++ ) {
+    // positions
+    var wxyz = GP_uToWorldCoordinate(i);
+    var x = wxyz[0]*ascale;//Math.random() * n - n2;
+    var y = wxyz[1]*ascale;//Math.random() * n - n2;
+    var z = wxyz[2]*ascale;//Math.random() * n - n2;
+    positions.push( x, y, z );
+    // colors
+    var v = master_grid_field[i*4+3];
+    //map value v ?
+    var vx = ( x / n ) + 0.5;
+    var vy = ( y / n ) + 0.5;
+    var vz = ( z / n ) + 0.5;
+    color.setRGB( vx, vy, vz );
+    colors.push( color.r, color.g, color.b );
+  }
+  geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( positions, 3 ) );
+  geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+  geometry.computeBoundingSphere();
+  var material = new THREE.PointsMaterial( { size: world.radius*2, vertexColors: THREE.VertexColors } );
+  points = new THREE.Points( geometry, material );
+  return points;
+}
+
 function initDebugGrid(){
   var w = world.broadphase.resolution.x * world.radius * 2;
   var h = world.broadphase.resolution.y * world.radius * 2;
   var d = world.broadphase.resolution.z * world.radius * 2;
   var boxGeom = new THREE.BoxGeometry( w, h, d );
   var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true });
+  if (debugGridMesh!=null) return;
   debugGridMesh = new THREE.Object3D();
   var mesh = new THREE.Mesh(boxGeom,wireframeMaterial);
+  mesh.position.sub(world.broadphase.position);
   debugGridMesh.add(mesh);
-  debugGridMesh.position.copy(world.broadphase.position);
-  mesh.position.set(w/2, h/2, d/2);
+  //debugGridMesh.position.copy(world.broadphase.position);
+  //mesh.position.set(w/2, h/2, d/2);
+  gridPoints = GP_points(world.broadphase.resolution.x*world.broadphase.resolution.x*world.broadphase.resolution.x);
+  gridPoints.position.sub(world.broadphase.position);
+  debugGridMesh.add(gridPoints);
+
   scene.add(debugGridMesh);
   /*
   var n = world.broadphase.resolution.x;
@@ -1547,14 +1721,15 @@ function render() {
       cv_Material.uniforms.bodyQuatTex.value = world.bodyQuaternionTexture;
       //cv_Material.uniforms.atomPositionsTex.value = atomData;
     }
+    //use local particle and instance at
     debugMesh.material.uniforms.particleWorldPosTex.value = world.particlePositionTexture;
     debugMesh.material.uniforms.quatTex.value = world.bodyQuaternionTexture;
 
     composer.render();
     //renderer.render( scene, camera );
 
-    debugMesh.material.uniforms.particleWorldPosTex.value = null;
-    debugMesh.material.uniforms.quatTex.value = null;
+    //debugMesh.material.uniforms.particleWorldPosTex.value = null;
+    //debugMesh.material.uniforms.quatTex.value = null;
 }
 
 function calculateBoxInertia(out, mass, extents){
@@ -1657,9 +1832,9 @@ function initGUI(){
     interactionSphereMesh.scale.set(r,r,r);
     world.setSphereRadius(0,r);
   }
-
+  var customContainer = document.getElementById( 'gui-container' );
   GP_guiChanged_cb = guiChanged;
-  gui = new dat.GUI({ autoPlace: false });
+  gui = new dat.GUI({ autoPlace: (customContainer===null) });
   var gh = gui.addFolder( "GPhysics" );
 
   gh.add( world, "stiffness", 0, 5000, 0.1 );
@@ -1687,10 +1862,8 @@ function initGUI(){
 	}
 
   setupSSAOGui(gui);
-
-  var customContainer = document.getElementById( 'gui-container' );
-  customContainer.appendChild(gui.domElement);
-//.main { position: absolute; top: 100px; left: 100px; }
+  if (customContainer) customContainer.appendChild(gui.domElement);
+  //.main { position: absolute; top: 100px; left: 100px; }
   guiChanged();
 
   //var raycaster = new THREE.Raycaster();
@@ -1785,7 +1958,10 @@ function GP_initFromData(data){
 function GP_initFromNodes(some_nodes,numpart,copy,doatom){
   if (inited) {
     rb_init = false;
+    world.resetData();
     world.time = 0;//force the flush
+    //reset the dataTexture
+
     //everything already initialize. just update.
     distributesMesh();
     animate();
@@ -1898,9 +2074,14 @@ function GP_onDocumentMouseMove( event ) {
 
 function GP_onDocumentMouseDown( event ) {
     //event.preventDefault();
+    var container = document.getElementById('container');
+    var rect = container.getBoundingClientRect();
     if (!nodes || nodes.length === 0 ) return;
-    gp_mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-    gp_mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    console.log(event.clientX,rect.width,( (event.clientX - rect.left) / rect.width ),( (event.clientX - rect.left) / rect.width ) * 2 - 1);
+    console.log(event.clientY,rect.height,( (event.clientY - rect.top) / rect.height ),(-(event.clientY - rect.top) / rect.height ) * 2 + 1);
+    gp_mouse.x = ( (event.clientX - rect.left) / rect.width ) * 2 - 1;
+    gp_mouse.y = ( -(event.clientY - rect.top) / rect.height ) * 2 + 1;
+    //coords — 2D coordinates of the mouse, in normalized device coordinates (NDC)---X and Y components should be between -1 and 1.
     if (!raycaster) raycaster = new THREE.Raycaster();
     raycaster.setFromCamera( gp_mouse, camera );
     var intersects;// = ray.intersectObjects( objects );
@@ -1950,9 +2131,15 @@ function GP_onDocumentMouseDown( event ) {
 	//		scene.add( particle );
 	//	}
 }
-document.addEventListener( 'mousedown', GP_onDocumentMouseDown, false );
-document.addEventListener( 'mousemove', GP_onDocumentMouseMove, false );
-document.addEventListener( "keydown", GP_onDocumentKeyDown, false);
+//document.addEventListener( 'mousedown', GP_onDocumentMouseDown, false );
+//document.addEventListener( 'mousemove', GP_onDocumentMouseMove, false );
+//document.addEventListener( "keydown", GP_onDocumentKeyDown, false);
+
+//function(e) {
+//    var x = e.pageX - this.offsetLeft;
+//    var y = e.pageY - this.offsetTop;
+//}
+
 /*(function() {
    // your page initialization code here
    // the DOM will be available here
