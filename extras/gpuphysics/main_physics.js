@@ -1235,7 +1235,8 @@ function GP_initWorld(){
 }
 
 function GP_debugBeadsSpheres(){
-    /*doesnt work??*/
+    //what if already exists...
+    if (debugMesh!==null) return;//need to update
     var tri_mesh = BuildMeshTriangle(1.0);
     //create the triangle Geometry
     var bufferGeometry = new THREE.BufferGeometry();
