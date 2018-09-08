@@ -72,83 +72,85 @@ var ssao_params= {
 var depthMaterial, saoMaterial, saoModulateMaterial, normalMaterial, vBlurMaterial, hBlurMaterial, copyMaterial;
 var depthRenderTarget, normalRenderTarget, saoRenderTarget, beautyRenderTarget, blurIntermediateRenderTarget;
 var composer, renderPass, saoPass1,saoPass2, copyPass;
+var gridSprite;
 
 var raycaster;
 var gp_mouse = THREE.Vector2(0,0);
+var gp_updateGrid = false;
 
 var general_inertia_mass;
 
 /*display shader*/
 var imposter_vertex="precision highp float;\n\
-uniform sampler2D particleWorldPosTex;\n\
-uniform sampler2D quatTex;\n\
-uniform float radius;\n\
-attribute float instanceInfos;\n\
-varying float vRadius;\n\
-varying vec3 vPosition;\n\
-varying vec4 vColor;\n\
-varying vec2 vUv;\n\
-varying mat4 modelView;\n\
-void main(){\n\
-  float particleId = instanceInfos;\n\
-  vec2 particleUV = indexToUV(particleId,resolution);\n\
-  vec4 particlePosAndBodyId = texture2D(particleWorldPosTex,particleUV);\n\
-  vec2 bodyUV = indexToUV(particlePosAndBodyId.w,bodyTextureResolution);\n\
-  vec4 bodyQuat = texture2D(quatTex,bodyUV).xyzw;\n\
-  vec3 billboardWorldPos = particlePosAndBodyId.xyz;\n\
-  vRadius = radius;\n\
-  vec3 vertexPos = position*radius;// * 0.0078125;//radius;\n\
-  modelView = modelViewMatrix;\n\
-  mat4 VP = projectionMatrix * modelViewMatrix;\n\
-  vec3 CameraRight = vec3(modelViewMatrix[0][0], modelViewMatrix[1][0], modelViewMatrix[2][0]);\n\
-  vec3 CameraUp = vec3(modelViewMatrix[0][1], modelViewMatrix[1][1], modelViewMatrix  [2][1]);\n\
-  vec3 billboardVertexWorldPos = billboardWorldPos.xyz\n\
-           + CameraRight * vertexPos.x + CameraUp * vertexPos.y;\n\
-	vColor = vec4(1.0,0.0,0.0,1.0);\n\
-  vUv = uv;\n\
-	gl_Position = VP  * vec4( billboardVertexWorldPos.xyz , 1.0 );\n\
-  vPosition = billboardVertexWorldPos;\n\
-}\n";
+  uniform sampler2D particleWorldPosTex;\n\
+  uniform sampler2D quatTex;\n\
+  uniform float radius;\n\
+  attribute float instanceInfos;\n\
+  varying float vRadius;\n\
+  varying vec3 vPosition;\n\
+  varying vec4 vColor;\n\
+  varying vec2 vUv;\n\
+  varying mat4 modelView;\n\
+  void main(){\n\
+    float particleId = instanceInfos;\n\
+    vec2 particleUV = indexToUV(particleId,resolution);\n\
+    vec4 particlePosAndBodyId = texture2D(particleWorldPosTex,particleUV);\n\
+    vec2 bodyUV = indexToUV(particlePosAndBodyId.w,bodyTextureResolution);\n\
+    vec4 bodyQuat = texture2D(quatTex,bodyUV).xyzw;\n\
+    vec3 billboardWorldPos = particlePosAndBodyId.xyz;\n\
+    vRadius = radius;\n\
+    vec3 vertexPos = position*radius;// * 0.0078125;//radius;\n\
+    modelView = modelViewMatrix;\n\
+    mat4 VP = projectionMatrix * modelViewMatrix;\n\
+    vec3 CameraRight = vec3(modelViewMatrix[0][0], modelViewMatrix[1][0], modelViewMatrix[2][0]);\n\
+    vec3 CameraUp = vec3(modelViewMatrix[0][1], modelViewMatrix[1][1], modelViewMatrix  [2][1]);\n\
+    vec3 billboardVertexWorldPos = billboardWorldPos.xyz\n\
+             + CameraRight * vertexPos.x + CameraUp * vertexPos.y;\n\
+  	vColor = vec4(1.0,0.0,0.0,1.0);\n\
+    vUv = uv;\n\
+  	gl_Position = VP  * vec4( billboardVertexWorldPos.xyz , 1.0 );\n\
+    vPosition = billboardVertexWorldPos;\n\
+  }\n";
 var imposter_fragment="#include <logdepthbuf_pars_fragment>\n\
-#include <packing>\n\
-precision highp float;\n\
-uniform mat4 projectionMatrix;\n\
-uniform float cameraNear;\n\
-uniform float cameraFar;\n\
-varying float vRadius;\n\
-varying vec3 vPosition;\n\
-varying vec4 vColor;\n\
-varying vec2 vUv;\n\
-varying mat4 modelView;\n\
-vec4 getZparams(){\n\
-  // OpenGL would be this:\n\
-  float zc0 = (1.0 - cameraFar / cameraNear) / 2.0;\n\
-  float zc1 = (1.0 + cameraFar / cameraNear) / 2.0;\n\
-  // D3D is this:\n\
-  //zc0 = 1.0 - m_FarClip / m_NearClip;\n\
-  //zc1 = m_FarClip / m_NearClip;\n\
-  // now set _ZBufferParams with (zc0, zc1, zc0/m_FarClip, zc1/m_FarClip);\n\
-  return vec4(zc0, zc1, zc0/cameraFar, zc1/cameraNear);\n\
-}\n\
-float LinearEyeDepth(vec4 _ZBufferParams,float z){\n\
-  return 1.0 / (_ZBufferParams.x * z + _ZBufferParams.y);\n\
-}\n\
-float calcDepth( float z ){\n\
-    vec2 clipZW = z * projectionMatrix[2].zw + projectionMatrix[3].zw;\n\
-    return 0.5 + 0.5 * clipZW.x / clipZW.y;\n\
-}\n\
-void main() {\n\
-  float lensqr = dot(vUv, vUv);\n\
-  if (lensqr > 1.0) discard;\n\
-  vec3 normal = normalize(vec3(vUv, sqrt(1.0 - lensqr)));\n\
-  vec3 cameraPos = (normal * vRadius) + vPosition;\n\
-  vec4 clipPos = projectionMatrix * modelView * vec4(cameraPos, 1.0);\n\
-  float ndcDepth = clipPos.z / clipPos.w;\n\
-  float gldepth = ((gl_DepthRange.diff * ndcDepth) +\n\
-        gl_DepthRange.near + gl_DepthRange.far) / 2.0;\n\
-  gl_FragDepthEXT = gldepth;\n\
-	gl_FragColor = vec4(normal,1.0);//0.78,0.78,0.78,1.0);\n\
-}\n";
+  #include <packing>\n\
+  precision highp float;\n\
+  uniform mat4 projectionMatrix;\n\
+  uniform float cameraNear;\n\
+  uniform float cameraFar;\n\
+  varying float vRadius;\n\
+  varying vec3 vPosition;\n\
+  varying vec4 vColor;\n\
+  varying vec2 vUv;\n\
+  varying mat4 modelView;\n\
+  vec4 getZparams(){\n\
+    // OpenGL would be this:\n\
+    float zc0 = (1.0 - cameraFar / cameraNear) / 2.0;\n\
+    float zc1 = (1.0 + cameraFar / cameraNear) / 2.0;\n\
+    // D3D is this:\n\
+    //zc0 = 1.0 - m_FarClip / m_NearClip;\n\
+    //zc1 = m_FarClip / m_NearClip;\n\
+    // now set _ZBufferParams with (zc0, zc1, zc0/m_FarClip, zc1/m_FarClip);\n\
+    return vec4(zc0, zc1, zc0/cameraFar, zc1/cameraNear);\n\
+  }\n\
+  float LinearEyeDepth(vec4 _ZBufferParams,float z){\n\
+    return 1.0 / (_ZBufferParams.x * z + _ZBufferParams.y);\n\
+  }\n\
+  float calcDepth( float z ){\n\
+      vec2 clipZW = z * projectionMatrix[2].zw + projectionMatrix[3].zw;\n\
+      return 0.5 + 0.5 * clipZW.x / clipZW.y;\n\
+  }\n\
+  void main() {\n\
+    float lensqr = dot(vUv, vUv);\n\
+    if (lensqr > 1.0) discard;\n\
+    vec3 normal = normalize(vec3(vUv, sqrt(1.0 - lensqr)));\n\
+    vec3 cameraPos = (normal * vRadius) + vPosition;\n\
+    vec4 clipPos = projectionMatrix * modelView * vec4(cameraPos, 1.0);\n\
+    float ndcDepth = clipPos.z / clipPos.w;\n\
+    float gldepth = ((gl_DepthRange.diff * ndcDepth) +\n\
+          gl_DepthRange.near + gl_DepthRange.far) / 2.0;\n\
+    gl_FragDepthEXT = gldepth;\n\
+  	gl_FragColor = vec4(normal,1.0);//0.78,0.78,0.78,1.0);\n\
+  }\n";
 
 /*functions*/
 function Debug_getValues( i, j, k){
@@ -195,8 +197,7 @@ function Debug_trilinearInterpolation(point){
 	return Vxyz;//*1175.0*0.000390625;
 }
 
-function Debug_CalculateSurfaceNormal(p,H)
-{
+function Debug_CalculateSurfaceNormal(p,H){
 	//var H = world.radius/8.0; //1.0f/grid_unit;\n\
   var x = new THREE.Vector3( H, 0.0, 0.0 );
   var y = new THREE.Vector3( 0.0, H, 0.0 );
@@ -281,6 +282,7 @@ function BuildMeshTriangle(radius){
     triMesh.triangles = indices;
     return triMesh;
 }
+
 /*
 public int to1D( int x, int y, int z ) {
     return (z * xMax * yMax) + (y * xMax) + x;
@@ -404,42 +406,42 @@ function GP_CombineGrid(){
   //lets try both
   world.addCompGrid(master_grid_id,master_grid_field);
 }
-/*
-function GP_CombineGrid(root){
-  //need to use the world grid size
-  //create a texture with value,compId ?
-  //onscreen it is 1,1,1
-  var extend = 1.0/ascale;
-  var n = world.broadphase.resolution;
-  var grid_field = new Float32Array(n*n*n);
-  var grid_normal_cache = new Float32Array(n*n*n * 3);
-  for (var z=0;z<n;z++){
-    for (var y=0;y<n;y++){
-      for (var x=0;x<n;x++){
-        var u = (z * n * n) + (y * n) + x;
-        var aXYZ = [(x/64.0)/ascale,(y/64.0)/ascale,(z/64.0)/ascale];
-        //where is this points ?
-        //or do it  per compartement?
-        for (var i=0;i<n;i++){//nodes.length
-          if (!nodes[i].parent)
-            {
-
-            }
-          if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
-              //check int the field
-              var q = nodes[i].parent.data.mc.getUfromXYZ(aXYZ);
-              var e = nodes[i].parent.data.mc.field[q];
-              if (e  > nodes[i].parent.data.mc.isolation-1 && e < nodes[i].parent.data.mc.isolation+1){
-                grid_field[u] =
-              }
-              continue;
-          };
-        }
+/*test using following code :
+world.resetGridCompartmentMB();
+var i = 1;
+var listMetaballs = [];
+for (var s=0;s<nodes[i].data.radii[0].radii.length;s++){
+  //create one sphere per metaballs as well
+  listMetaballs.push(new THREE.Vector4(nodes[i].data.pos[0].coords[s*3]*ascale,
+                          nodes[i].data.pos[0].coords[s*3+1]*ascale,
+                          nodes[i].data.pos[0].coords[s*3+2]*ascale));
+}
+var compId = nodes[i].data.compId;
+world.updateGridCompartmentMB(compId,listMetaballs);
+*/
+function GP_gpuCombineGrid(){
+  //reset grid
+  console.log("update Grid on GPU");
+  for (var i=0;i<nodes.length;i++){//nodes.length
+    if (!nodes[i].parent)
+      {
+        continue;
       }
-    }
+    if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+        var listMetaballs = [];
+        for (var s=0;s<nodes[i].data.radii[0].radii.length;s++){
+          //create one sphere per metaballs as well
+          //transform into grid coordinates ?
+          listMetaballs.push(new THREE.Vector4(nodes[i].data.pos[0].coords[s*3]*ascale,
+                                  nodes[i].data.pos[0].coords[s*3+1]*ascale,
+                                  nodes[i].data.pos[0].coords[s*3+2]*ascale,
+                                  nodes[i].data.radii[0].radii[s]*ascale));
+        }
+        var compId = nodes[i].data.compId;
+        world.updateGridCompartmentMB(compId,listMetaballs);
+    };
   }
-
-}*/
+}
 
 function GP_updateMBCompartment(anode){
   anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2,0.0);
@@ -1196,6 +1198,7 @@ function GP_initRenderer(){
   //add raycaster and mouse
   if (!raycaster) raycaster = new THREE.Raycaster();
   if (!gp_mouse) gp_mouse = new THREE.Vector2();
+  //THREEx.FullScreen.bindKey({ charCode : 'm'.charCodeAt(0) });
 }
 
 function GP_initWorld(){
@@ -1228,7 +1231,8 @@ function GP_initWorld(){
         gridPosition: new THREE.Vector3(-boxSize.x,-0.5,-boxSize.z),//-boxSize.x,-boxSize.y,-boxSize.z),(-0.5,0.0,-0.5)
         gridResolution: gridResolution
     });
-
+    world.callback.push(GP_gpuCombineGrid);
+    world.callback_toggle.push(false);
     // Interaction sphere
     world.setSphereRadius(0, 0.25);
     world.setSpherePosition(0,-boxSize.x,-0.5,-boxSize.z);
@@ -1494,6 +1498,9 @@ function init(){
             //need world position coordinate
             GP_updateMBCompartment(nodes[this.object.comp_id]);
             GP_CombineGrid();
+            //use gpu tell update needed
+            //GP_gpuCombineGrid();
+            gp_updateGrid = false;
         }
     });
     scene.add(gizmo);
@@ -1576,8 +1583,16 @@ function updatePhysics(time){
             //interactionSphereMesh.position.set( x, y, z );
             //world.setSpherePosition( 0, x, y, z );
         }
-
+        //do we need to redo the compartment grid
         world.step( deltaTime );
+        if (gp_updateGrid) {
+          world.callback_toggle[0] = true;
+          gp_updateGrid = false;
+          world.resetGridCompartmentMB();
+        }
+        else {
+          world.callback_toggle[0] = false;
+        }
     }
     else {
       if(!rb_init) {
@@ -1641,7 +1656,8 @@ function GP_points(nparticles){
     var vx = ( x / n ) + 0.5;
     var vy = ( y / n ) + 0.5;
     var vz = ( z / n ) + 0.5;
-    color.setRGB( vx, vy, vz );
+    var c = THREE.Math.mapLinear( v, 0, 1, 1, 0.75 );
+    color.setRGB( c, c, c );
     colors.push( color.r, color.g, color.b );
   }
   geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( positions, 3 ) );
@@ -1668,37 +1684,14 @@ function initDebugGrid(){
   gridPoints = GP_points(world.broadphase.resolution.x*world.broadphase.resolution.x*world.broadphase.resolution.x);
   gridPoints.position.sub(world.broadphase.position);
   debugGridMesh.add(gridPoints);
-
-  //scene.add(debugGridMesh);
-  /*
-  var n = world.broadphase.resolution.x;
-
-  var phongShader = THREE.ShaderLib.phong;
-  var uniforms = THREE.UniformsUtils.clone(phongShader.uniforms);
-  uniforms.size = {value:n};
-	var aMaterial = new THREE.ShaderMaterial( {
-		uniforms: uniforms,
-		vertexShader: document.getElementById( 'gvs' ).textContent,
-		fragmentShader: document.getElementById( 'gfs' ).textContent,
-    blending:       THREE.AdditiveBlending,
-    depthTest:      false,
-    transparent:    true,
-    vertexColors:   true
-	} );
-
-  var bg = new THREE.BufferGeometry();
-  var indices = [];
-  var positions = new Float32Array(n*n*n*3);
-  for ( var i = 0; i < n*n*n; i ++ ) {
-    indices.push(i);
-  }
-  bg.addAttribute('position',new THREE.Float32BufferAttribute( positions, 3 ))
-  bg.addAttribute( 'uindex', new THREE.Float32BufferAttribute( indices, 1 ) );
-  gridPoints = new THREE.Points( bg, aMaterial );
-	//grid.position.copy(world.broadphase.position);
-  //geometry.position.set(w/2, h/2, d/2);
-  scene.add(gridPoints);
-  */
+  //create debug sprite
+  //var textureLoader = new THREE.TextureLoader();
+  //var mapB = textureLoader.load( "images/Pane.png" );
+  var arenderTexture = new THREE.SpriteMaterial( { map: world.textures.gridIdsRead.texture} );//, alignment: THREE.SpriteAlignment.topLeft
+  gridSprite = new THREE.Sprite( arenderTexture );
+  gridSprite.position.set( -0.5, 0, 0 );
+  gridSprite.scale.set(2024*ascale, 2024*ascale, 1.0 ); // imageWidth, imageHeight
+  //scene.add( gridSprite );
 }
 
 function updateDebugGrid(){
@@ -1725,12 +1718,29 @@ function render() {
     //use local particle and instance at
     if (debugMesh) debugMesh.material.uniforms.particleWorldPosTex.value = world.particlePositionTexture;
     if (debugMesh) debugMesh.material.uniforms.quatTex.value = world.bodyQuaternionTexture;
-
+    gridSprite.material.map = world.textures.gridIdsRead.texture;gridSprite.material.needsUpdate = true;
+    //gridSprite.material.uniforms.res.value.set(world.dataTextures.gridIds.image.width,world.dataTextures.gridIds.image.height);
+    //gridSprite.material.uniforms.texture.value = world.textures.gridIdsRead.texture;
+    gridSprite.material.needsUpdate = true;
+    //GP_alignSprite();
     composer.render();
-    //renderer.render( scene, camera );
-
     //debugMesh.material.uniforms.particleWorldPosTex.value = null;
     //debugMesh.material.uniforms.quatTex.value = null;
+}
+
+function GP_alignSprite(){
+  var vec = new THREE.Vector3(); // create once and reuse
+  var pos = new THREE.Vector3(); // create once and reuse
+  vec.set(
+    0.1,
+    0.8,
+    0.0 );
+
+  vec.unproject( camera );
+  vec.sub( camera.position );//.normalize();
+  var distance = - camera.position.z / vec.z;
+  pos.copy( camera.position ).add( vec.multiplyScalar( distance ) );
+  gridSprite.position.copy(vec);
 }
 
 function calculateBoxInertia(out, mass, extents){
@@ -2134,7 +2144,7 @@ function GP_onDocumentMouseDown( event ) {
 }
 //document.addEventListener( 'mousedown', GP_onDocumentMouseDown, false );
 //document.addEventListener( 'mousemove', GP_onDocumentMouseMove, false );
-//document.addEventListener( "keydown", GP_onDocumentKeyDown, false);
+document.addEventListener( "keydown", GP_onDocumentKeyDown, false);
 
 //function(e) {
 //    var x = e.pageX - this.offsetLeft;
