@@ -515,7 +515,7 @@ function GP_createOneCompartmentMesh(anode) {
   mesh.position.x = anode.data.mc.data_bound.center.x *ascale;//(anode.data.mc.data_bound.min.x + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+w/2.0;//+w/2.0;//center of the box
   mesh.position.y = anode.data.mc.data_bound.center.y *ascale;//(anode.data.mc.data_bound.min.y + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+h/2.0;//+h/2.0;
   mesh.position.z = anode.data.mc.data_bound.center.z *ascale;//(anode.data.mc.data_bound.min.z + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+d/2.0;//+d/2.0;
-  comp_geom.add(mesh);
+  //comp_geom.add(mesh);
   /* BUILD THE MESH */
   //anode.data.vol = anode.data.mc.computeVolumeInside();
   var bufferGeometry = new THREE.BufferGeometry();

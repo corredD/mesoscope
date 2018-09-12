@@ -181,15 +181,15 @@ var metaballsShader="//#version 300 es\n\
     return floor(m+0.5);\n\
 	}\n\
 	int uvToIndex(vec2 uv, vec2 size) {\n\
-					ivec2 coord = ivec2(floor(uv*size-0.5));\n\
+					ivec2 coord = ivec2(floor(uv*size));\n\
 					return coord.x + int(size.x) * coord.y;\n\
 	}\n\
 	vec3 getIJK(float index, float size){\n\
 		float sliceNum = size*size;\n\
 		float z = index / sliceNum;\n\
-		float temp = modI(index,sliceNum);//index % (sliceNum);\n\
+		float temp = mod(index,sliceNum);//index % (sliceNum);\n\
 		float y = temp / size;\n\
-		float x = modI(temp,size);//temp % size;\n\
+		float x = mod(temp,size);//temp % size;\n\
 		return vec3(floor(x+0.5), floor(y+0.5), floor(z+0.5));\n\
 		}\n\
 	float getDistance(float magic, float x,float y,float z){\n\
@@ -383,15 +383,15 @@ var updateForceFrag = "uniform vec4 params1;\n\
 				float ltoS = dot(relativePosition,up)+L;\n\
 				//compare ltos and distance\n\
 				//vec3 r_off = vec3_applyQuat(off,arotation);\n\
-				//vec3 body_pos = posTexData.xyz+r_off.xyz;\n\
-				//sfnormal = normalize(CalculateSurfaceNormal(body_pos));\n\
+				vec3 body_pos = posTexData.xyz;\n\
+				sfnormal = normalize(CalculateSurfaceNormal(body_pos));\n\
 				//distance = trilinearInterpolation(body_pos);\n\
 				vij_t = velocity - dot(velocity, sfnormal) * sfnormal;\n\
 				springForce = - stiffness * (ltoS - distance) * sfnormal;\n\
 				dampingForce = damping * dot(velocity, sfnormal) * sfnormal;\n\
 				tangentForce = friction * vij_t;\n\
 				f = springForce + dampingForce + tangentForce;\n\
-			  force = force - f*5.0;\n\
+			  force = force - f;\n\
 			}\n\
 			gl_FragColor = vec4(force, 1.0);\n\
 	}\n"
