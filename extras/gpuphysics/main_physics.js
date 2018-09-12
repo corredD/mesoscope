@@ -529,15 +529,19 @@ function GP_createOneCompartmentMesh(anode) {
   //comp_geom.add(mesh);
   /* BUILD THE MESH */
   //anode.data.vol = anode.data.mc.computeVolumeInside();
+  var texture = THREE.ImageUtils.loadTexture('images/Membrane.jpg');
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  var mat = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x111111, shininess: 1, map: texture } );
   var bufferGeometry = new THREE.BufferGeometry();
   bufferGeometry.dynamic = true;
   var positions = new Float32Array(geo.vertices);
   var normals = new Float32Array(geo.normals);
   bufferGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3).setDynamic( true ) );
   bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3).setDynamic( true ) );
+  bufferGeometry.addAttribute('uv', new THREE.BufferAttribute(geo.uv, 3).setDynamic( true ) );
   bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(geo.faces), 1).setDynamic( true ) );
-  var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: false });
-  var compMesh = new THREE.Mesh(bufferGeometry, wireframeMaterial);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
+  var wireframeMaterial = new THREE.MeshBasicMaterial({map:texture, wireframe: false });
+  var compMesh = new THREE.Mesh(bufferGeometry, mat);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
   compMesh.scale.x = anode.data.mc.grid_scale * ascale;//halfsize?
   compMesh.scale.y = anode.data.mc.grid_scale * ascale;
   compMesh.scale.z = anode.data.mc.grid_scale * ascale;
@@ -1346,7 +1350,6 @@ function GP_debugBeadsSpheres(){
     //var instancepositions = new THREE.InstancedBufferAttribute( new Float32Array( debugGeometry.maxInstancedCount * 1 ), 1, true, 1 );
     for ( var i = 0, ul = instanceInfos.count; i < ul; i++ ) {
         instanceInfos.setX( i, i );
-
     }
     debugGeometry.addAttribute( 'instanceInfos', instanceInfos );
     debugGeometry.boundingSphere = null;

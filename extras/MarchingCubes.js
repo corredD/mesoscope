@@ -759,7 +759,12 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
     };
 
     this.generateGeometry = function() {
-
+        function concatenate( a, b, length ) {
+        		var result = new Float32Array( a.length + length );
+        		result.set( a, 0 );
+        		result.set( b.slice( 0, length ), a.length );
+        		return result;
+        }
         function mmod( v, n) {
          return ((v%n)+n)%n;
         }
@@ -768,7 +773,7 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
         }
 
         var start = 0,
-            geo = {"vertices":[],"faces":[],"faceVertexUvs":[[]],"normals":[]};//new NGL.Geometry();
+            geo = {"vertices":[],"faces":[],"faceVertexUvs":[[]],"uv":[],"normals":[]};//new NGL.Geometry();
         var normals = [], uvs = [];
 
         var zero = new NGL.Vector3( 0, 0, 0 );
@@ -869,12 +874,12 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
             }
 
             start += nfaces;
+            uvArray = concatenate( uvArray, object.uvArray, object.count * 2 );
             object.count = 0;
-
         };
         //geo_callback(this);
         this.render(geo_callback);
-
+        geo.uv = uvArray;
         // console.log( "generated " + geo.faces.length + " triangles" );
         //scale back or translate ?
         return geo;
