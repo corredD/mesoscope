@@ -895,7 +895,8 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
       //var padding ?
       var bounds = Util_ComputeBounds(pos,rad,padding);//center,size,min,max
       //console.log(bounds);
-      this.grid_scale = bounds.maxsize;
+      var scaleradius = bounds.maxsize;
+      this.grid_scale = bounds.maxsize/2.0;
       this.data_bound = bounds;
       this.bounding_box = new NGL.Box3(  this.data_bound.min,  this.data_bound.max );
       for (var i=0;i<numblobs;i++){

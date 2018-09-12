@@ -203,8 +203,8 @@ function Debug_CalculateSurfaceNormal(p,H){
   var y = new THREE.Vector3( 0.0, H, 0.0 );
   var z = new THREE.Vector3( 0.0, 0.0, H );
 	var dx = Debug_trilinearInterpolation(new THREE.Vector3( ).copy(p).add(x)) - Debug_trilinearInterpolation(new THREE.Vector3( ).copy(p).sub(x));
-	var dy = Debug_trilinearInterpolation(new THREE.Vector3( ).copy(p).add(y)) - Debug_trilinearInterpolation(new THREE.Vector3( ).copy(p).sub(x));
-	var dz = Debug_trilinearInterpolation(new THREE.Vector3( ).copy(p).add(z)) - Debug_trilinearInterpolation(new THREE.Vector3( ).copy(p).sub(x));
+	var dy = Debug_trilinearInterpolation(new THREE.Vector3( ).copy(p).add(y)) - Debug_trilinearInterpolation(new THREE.Vector3( ).copy(p).sub(y));
+	var dz = Debug_trilinearInterpolation(new THREE.Vector3( ).copy(p).add(z)) - Debug_trilinearInterpolation(new THREE.Vector3( ).copy(p).sub(z));
   var dxyz = new THREE.Vector3(dx, dy, dz);
   dxyz.normalize();
   return dxyz;
@@ -421,7 +421,7 @@ world.updateGridCompartmentMB(compId,listMetaballs);
 */
 function GP_gpuCombineGrid(){
   //reset grid
-  console.log("update Grid on GPU");
+  //console.log("update Grid on GPU");
   for (var i=0;i<nodes.length;i++){//nodes.length
     if (!nodes[i].parent)
       {
@@ -438,7 +438,7 @@ function GP_gpuCombineGrid(){
                                   nodes[i].data.radii[0].radii[s]*ascale));
         }
         var compId = nodes[i].data.compId;
-        world.updateGridCompartmentMB(compId,listMetaballs);
+        world.updateGridCompartmentMB(compId,listMetaballs,ascale);
     };
   }
 }
@@ -458,6 +458,13 @@ function GP_updateMBCompartment(anode){
     nodes[1].data.mesh.geometry.attributes.position.needsUpdate = true;
     nodes[1].data.mesh.geometry.attributes.normal.needsUpdate = true;
     nodes[1].data.mesh.geometry.index.needsUpdate = true;
+    //update position and scale
+    nodes[1].data.mesh.scale.x = anode.data.mc.grid_scale * ascale;//halfsize?
+    nodes[1].data.mesh.scale.y = anode.data.mc.grid_scale * ascale;
+    nodes[1].data.mesh.scale.z = anode.data.mc.grid_scale * ascale;
+    nodes[1].data.mesh.position.x = anode.data.mc.data_bound.center.x * ascale;//(anode.data.mc.data_bound.min.x + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+w/2.0;//+w/2.0;//center of the box
+    nodes[1].data.mesh.position.y = anode.data.mc.data_bound.center.y * ascale;//(anode.data.mc.data_bound.min.y + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+h/2.0;//+h/2.0;
+    nodes[1].data.mesh.position.z = anode.data.mc.data_bound.center.z * ascale;//(anode.data.mc.data_bound.min.z + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+d/2.0;//+d/2.0;
   }
 }
 
@@ -502,13 +509,13 @@ function GP_createOneCompartmentMesh(anode) {
   var boxGeom = new THREE.BoxGeometry( 1, 1, 1 );
   var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true });
   var mesh = new THREE.Mesh(boxGeom,wireframeMaterial);
-  mesh.scale.x = anode.data.mc.data_bound.maxsize *ascale;//halfsize?
-  mesh.scale.y = anode.data.mc.data_bound.maxsize *ascale;
-  mesh.scale.z = anode.data.mc.data_bound.maxsize *ascale;
-  mesh.position.x = (anode.data.mc.data_bound.min.x + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+w/2.0;//+w/2.0;//center of the box
-  mesh.position.y = (anode.data.mc.data_bound.min.y + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+h/2.0;//+h/2.0;
-  mesh.position.z = (anode.data.mc.data_bound.min.z + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+d/2.0;//+d/2.0;
-  //comp_geom.add(mesh);
+  mesh.scale.x = anode.data.mc.data_bound.maxsize * ascale;//halfsize?
+  mesh.scale.y = anode.data.mc.data_bound.maxsize * ascale;
+  mesh.scale.z = anode.data.mc.data_bound.maxsize * ascale;
+  mesh.position.x = anode.data.mc.data_bound.center.x *ascale;//(anode.data.mc.data_bound.min.x + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+w/2.0;//+w/2.0;//center of the box
+  mesh.position.y = anode.data.mc.data_bound.center.y *ascale;//(anode.data.mc.data_bound.min.y + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+h/2.0;//+h/2.0;
+  mesh.position.z = anode.data.mc.data_bound.center.z *ascale;//(anode.data.mc.data_bound.min.z + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+d/2.0;//+d/2.0;
+  comp_geom.add(mesh);
   /* BUILD THE MESH */
   //anode.data.vol = anode.data.mc.computeVolumeInside();
   var bufferGeometry = new THREE.BufferGeometry();
@@ -520,12 +527,12 @@ function GP_createOneCompartmentMesh(anode) {
   bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(geo.faces), 1).setDynamic( true ) );
   var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: false });
   var compMesh = new THREE.Mesh(bufferGeometry, wireframeMaterial);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
-  compMesh.scale.x = anode.data.mc.data_bound.maxsize/2.0*ascale;//halfsize?
-  compMesh.scale.y = anode.data.mc.data_bound.maxsize/2.0*ascale;
-  compMesh.scale.z = anode.data.mc.data_bound.maxsize/2.0*ascale;
-  compMesh.position.x = (anode.data.mc.data_bound.min.x + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+w/2.0;//+w/2.0;//center of the box
-  compMesh.position.y = (anode.data.mc.data_bound.min.y + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+h/2.0;//+h/2.0;
-  compMesh.position.z = (anode.data.mc.data_bound.min.z + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+d/2.0;//+d/2.0;
+  compMesh.scale.x = anode.data.mc.grid_scale * ascale;//halfsize?
+  compMesh.scale.y = anode.data.mc.grid_scale * ascale;
+  compMesh.scale.z = anode.data.mc.grid_scale * ascale;
+  compMesh.position.x = anode.data.mc.data_bound.center.x * ascale;//(anode.data.mc.data_bound.min.x + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+w/2.0;//+w/2.0;//center of the box
+  compMesh.position.y = anode.data.mc.data_bound.center.y * ascale;//(anode.data.mc.data_bound.min.y + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+h/2.0;//+h/2.0;
+  compMesh.position.z = anode.data.mc.data_bound.center.z * ascale;//(anode.data.mc.data_bound.min.z + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+d/2.0;//+d/2.0;
   compMesh.castShadow = true;
   compMesh.receiveShadow = true;
   scene.add(compMesh);
@@ -1497,10 +1504,10 @@ function init(){
             nodes[this.object.comp_id].data.pos[0].coords[mb_id*3+2]=this.object.position.z/ascale;
             //need world position coordinate
             GP_updateMBCompartment(nodes[this.object.comp_id]);
-            GP_CombineGrid();
+            //GP_CombineGrid();
             //use gpu tell update needed
             //GP_gpuCombineGrid();
-            gp_updateGrid = false;
+            gp_updateGrid = true;
         }
     });
     scene.add(gizmo);

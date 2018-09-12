@@ -80,8 +80,10 @@ function Util_ComputeBounds(points,radius,padding=0.0)
   bbMax.add(new NGL.Vector3(rMax, rMax, rMax));
   var bbSize = new NGL.Vector3();
   bbSize.subVectors(bbMax,bbMin);
+  var maxsize = Math.max(Math.max(bbSize.x,bbSize.y),bbSize.z);
   var bbCenter = new NGL.Vector3();
   bbCenter.copy(sumv);
+  bbSize.copy(new NGL.Vector3(maxsize,maxsize,maxsize));
   var bbSizeHalf = new NGL.Vector3(0,0,0);
   bbSizeHalf.addScaledVector(bbSize,0.5);
   bbMin.copy(sumv);
@@ -90,7 +92,6 @@ function Util_ComputeBounds(points,radius,padding=0.0)
   bbMax.add(bbSizeHalf);
   //bbMin.sub(new NGL.Vector3(rMax, rMax, rMax));
   bbCenter.addVectors(bbMin, bbSizeHalf);
-  var maxsize = Math.max(Math.max(bbSize.x,bbSize.y),bbSize.z);
   return {"center":bbCenter,"size":bbSize,"min":bbMin,"max":bbMax,"maxsize":maxsize};
 }
 

@@ -162,7 +162,8 @@ var densityShader="uniform sampler2D bodyPosTex;\n\
 
 //should we sort according compId?
 //then how do we now the indices start-end
-var metaballsShader="precision highp float;\n\
+var metaballsShader="//#version 300 es\n\
+	precision highp float;\n\
   uniform float compId;\n\
   uniform float gridSize;\n\
 	uniform float scale;\n\
@@ -172,17 +173,24 @@ var metaballsShader="precision highp float;\n\
 	uniform sampler2D gridIds;\n\
 	//define gridIdTextureSize\n\
 	//define numMB\n\
+	/**\n\
+ * Returns accurate MOD when arguments are approximate integers.\n\
+ */\n\
+	float modI(float a,float b) {\n\
+    float m=a-floor((a+0.5)/b)*b;\n\
+    return floor(m+0.5);\n\
+	}\n\
 	int uvToIndex(vec2 uv, vec2 size) {\n\
-					ivec2 coord = ivec2(floor(uv*size+0.5));\n\
+					ivec2 coord = ivec2(floor(uv*size-0.5));\n\
 					return coord.x + int(size.x) * coord.y;\n\
 	}\n\
 	vec3 getIJK(float index, float size){\n\
 		float sliceNum = size*size;\n\
-		float z = index / (sliceNum);\n\
-		float temp = mod(index,sliceNum);//index % (sliceNum);\n\
+		float z = index / sliceNum;\n\
+		float temp = modI(index,sliceNum);//index % (sliceNum);\n\
 		float y = temp / size;\n\
-		float x = mod(temp,size);//temp % size;\n\
-		return vec3(x, y, z);\n\
+		float x = modI(temp,size);//temp % size;\n\
+		return vec3(floor(x+0.5), floor(y+0.5), floor(z+0.5));\n\
 		}\n\
 	float getDistance(float magic, float x,float y,float z){\n\
 		vec3 from = vec3(x,y,z);\n\
@@ -211,7 +219,7 @@ var metaballsShader="precision highp float;\n\
 		vec3 ijk = getIJK(gridIndexU, gridSize);\n\
 		//vec3 p = (point - gridPos)*gridResolution.x;\n\
 		//world position \n\
-		vec3 xyz = ijk/gridSize + gridPos;//normalize between 0 and 1 ?\n\
+		vec3 xyz = ijk/gridSize + gridPos.xyz;//normalize between 0 and 1 ?\n\
 		float d = getDistance(0.0, xyz.x,xyz.y,xyz.z);\n\
 		if (d < cvalue) {\n\
 			cvalue = d;\n\
@@ -220,7 +228,7 @@ var metaballsShader="precision highp float;\n\
 		//if (cvalue <= 0.2) cvalue = 1.0;\n\
 		//else if (cvalue == 2.0) cvalue=2.0;\n\
 		//else cvalue = 0.5;\n\
-		gl_FragColor = vec4(0.0,cvalue,0.0,1.0);//vec4(cid,cvalue,0.0,0.0);//compId,field value,thichness\n\
+		gl_FragColor = vec4(cid,cvalue,0.0,1.0);//vec4(cid,cvalue,0.0,0.0);//compId,field value,thichness\n\
 	}\n\
 ";
 
@@ -238,6 +246,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 	uniform sampler2D velTex;\n\
 	uniform sampler2D bodyAngularVelTex;\n\
 	uniform sampler2D particlePosRelative;\n\
+	uniform sampler2D bodyQuatTex;\n\
 	uniform sampler2D gridTex;\n"+
 	densityShader+
 	"vec3 particleForce(float STIFFNESS, float DAMPING, float DAMPING_T, \n\
@@ -345,17 +354,44 @@ var updateForceFrag = "uniform vec4 params1;\n\
 			vec3 dampingForce = damping * dot(velocity, sfnormal) * sfnormal;\n\
 			vec3 tangentForce = friction * vij_t;\n\
 			vec3 f = springForce + dampingForce + tangentForce;\n\
-			if (abs(distance) < 0.05){\n\
+			//should this force take the offset in account?\n\
+			if (abs(distance) < 0.0078125*2.0){\n\
 					if (distance > 0.0 && bodyType_infos1.w < 0.0) f = -f;//*10\n\
 					if (distance < 0.0 && bodyType_infos1.w == 0.0) f = -f;\n\
-					if (bodyType_infos1.w > 0.0) f=-f;\n\
-					force += f;\n\
+					if (bodyType_infos1.w > 0.0) f=f*0.0;\n\
+					else force = force+f*5.0;\n\
 			}\n\
 			else {\n\
+				if (distance > 0.0 && bodyType_infos1.w < 0.0) force = force -f;//*10\n\
+				if (distance < 0.0 && bodyType_infos1.w == 0.0) force = force -f;\n\
 				if (bodyType_infos1.w > 0.0)\n\
 				{\n\
-					force +=-f;\n\
+					//force =force*10.0-f*10.0;\n\
 				}\n\
+			}\n\
+			if (bodyType_infos1.w > 0.0)\n\
+			{\n\
+				//current position is position\n\
+				//add the offset to current position\n\
+				//posTexData.xyz\n\
+			  vec4 quat = texture2D(bodyQuatTex, bodyIduv);\n\
+			  vec3 up = bodyType_infos1.xyz;\n\
+			  vec3 off = bodyType_infos2.xyz;\n\
+			  vec4 arotation = quat;//computeOrientation(sfnormal, up);\n\
+			  vec3 r_relativePosition = vec3_applyQuat(relativePosition,arotation);\n\
+				float L = -0.0234375;//length(off);\n\
+				float ltoS = dot(relativePosition,up)+L;\n\
+				//compare ltos and distance\n\
+				//vec3 r_off = vec3_applyQuat(off,arotation);\n\
+				//vec3 body_pos = posTexData.xyz+r_off.xyz;\n\
+				//sfnormal = normalize(CalculateSurfaceNormal(body_pos));\n\
+				//distance = trilinearInterpolation(body_pos);\n\
+				vij_t = velocity - dot(velocity, sfnormal) * sfnormal;\n\
+				springForce = - stiffness * (ltoS - distance) * sfnormal;\n\
+				dampingForce = damping * dot(velocity, sfnormal) * sfnormal;\n\
+				tangentForce = friction * vij_t;\n\
+				f = springForce + dampingForce + tangentForce;\n\
+			  force = force - f*5.0;\n\
 			}\n\
 			gl_FragColor = vec4(force, 1.0);\n\
 	}\n"
@@ -594,10 +630,14 @@ var updateBodyPositionFrag = "uniform sampler2D bodyVelTex;\n\
 					vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);\n\
 					if (bodyType_infos1.w > 0.0) {\n\
 						vec3 sfnormal = normalize(CalculateSurfaceNormal(new_pos));\n\
-						float distance = trilinearInterpolation(new_pos)*1175.0*0.000390625;\n\
-						vec3 toward_surface = -sfnormal*abs(distance);\n\
-						//need to add the offset.\n\
-						//if (abs(distance)>0.1) new_pos = new_pos+toward_surface;\n\
+						float distance = trilinearInterpolation(new_pos);\n\
+						vec3 toward_surface = sfnormal*(abs(distance)-length(bodyType_infos2.xyz));\n\
+						vec3 up = bodyType_infos1.xyz;\n\
+						vec3 off = bodyType_infos2.xyz;\n\
+						vec4 arotation = computeOrientation(sfnormal, up);\n\
+						vec3 r_off = vec3_applyQuat(off,arotation);\n\
+						//new_pos = position-(toward_surface.xyz) * deltaTime;\n\
+						//align to the surface\n\
 					}\n\
 	        gl_FragColor = vec4(new_pos, bodyTypeIndex);\n\
 	}\n";
@@ -1580,7 +1620,7 @@ var shared = "float Epsilon = 1e-10;\n\
 				this.dataTextures.gridIds.image.data = new Float32Array(4*gridIdTextureSize*gridIdTextureSize);//0
 				var indices = [];
 				for ( var i = 0; i < n*n*n; i ++ ) {
-					this.dataTextures.gridIds.image.data[i*4+1] = 2.0;
+					this.dataTextures.gridIds.image.data[i*4+1] = 99999.0;
 				}
 				this.dataTextures.gridIds.needsUpdate = true;
 				//this.flushDataToRenderTarget(this.textures.gridIdsRead, this.dataTextures.gridIds);
@@ -1588,7 +1628,7 @@ var shared = "float Epsilon = 1e-10;\n\
 				this.gridDirty = true;
 			},
 			updateGridCompartmentMB: function(compId,listMetaballs,scale){
-					console.log("update Grid on GPU",compId,listMetaballs.length,scale);
+					//console.log("update Grid on GPU",compId,listMetaballs.length,scale);
 					var mat = this.materials.GridCompartment;
 					if(!mat){
 							mat = this.materials.GridCompartment = new THREE.ShaderMaterial({
@@ -1611,6 +1651,7 @@ var shared = "float Epsilon = 1e-10;\n\
 					}
 					// Local particle positions to relative
 	        this.fullscreenQuad.material = mat;
+					mat.uniforms.compId.value = compId;
 					mat.uniforms.gridIds.value = this.textures.gridIdsRead.texture;
 					mat.uniforms.listMetaballs.value = listMetaballs;
 	        this.renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.gridIdsWrite, false );
@@ -1887,6 +1928,7 @@ var shared = "float Epsilon = 1e-10;\n\
 	                    bodyAngularVelTex:  { value: null },
 	                    gridTex:  { value: this.textures.grid.texture },
 											bodyPosTex:  { value: null },
+											bodyQuatTex:  { value: null },
 											bodyInfosTex:  { value: this.dataTextures.bodyInfos },
 											gridIdTex:  { value:null },
 											gridValueTex:  { value: this.dataTextures.gridValues },
@@ -1911,12 +1953,14 @@ var shared = "float Epsilon = 1e-10;\n\
 					forceMaterial.uniforms.gridIdTex.value = this.textures.gridIdsRead.texture;
 					//forceMaterial.uniforms.bodyPosTex.value = this.dataTextures.bodyInfos;
 					forceMaterial.uniforms.bodyPosTex.value = this.textures.bodyPosRead.texture;
+					forceMaterial.uniforms.bodyQuatTex.value = this.textures.bodyQuatRead.texture;
 	        renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.particleForce, false );
 	        forceMaterial.uniforms.posTex.value = null;
 	        forceMaterial.uniforms.particlePosRelative.value = null;
 	        forceMaterial.uniforms.velTex.value = null;
 	        forceMaterial.uniforms.bodyAngularVelTex.value = null;
 					forceMaterial.uniforms.bodyPosTex.value = null;
+					forceMaterial.uniforms.bodyQuatTex.value = null;
 					forceMaterial.uniforms.gridIdTex.value = null;
 	        this.fullscreenQuad.material = null;
 	    },
