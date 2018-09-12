@@ -210,6 +210,13 @@ function Debug_CalculateSurfaceNormal(p,H){
   return dxyz;
 }
 
+function GP_ComputeVolume(nvoxels){
+  var gridStepSize = world.radius;//*2;
+  var unit = gridStepSize * (1.0 / ascale);
+  var volume_one_voxel = unit * unit * unit;
+  return nvoxels * volume_one_voxel;
+}
+
 function ComputeVolume(anode) {
     //Debug.Log("ComputeVolume " + compId.ToString());
     if (anode.data.mc) {
@@ -366,6 +373,7 @@ function GP_CombineGrid(){
                               (center.z*ascale-world.broadphase.position.z)*n,bsize*n,n);
 
         nodes[i].data.mc.bb= bb;
+        nodes[i].data.insides = [];
         var x, y, z;
         for (z = bb.min_z; z < bb.max_z; z++) {
             for (y = bb.min_y; y < bb.max_y; y++) {
@@ -391,6 +399,7 @@ function GP_CombineGrid(){
                     if ( e < nodes[i].data.mc.isolation ) {//-1 && e < nodes[i].data.mc.isolation+1){
                       master_grid_id[u] = counter;
                       nodes[i].data.compId=counter;
+                      nodes[i].data.insides.push(u);
                       //console.log("inside");
                       indices.splice(u,1);
                     }
@@ -398,10 +407,12 @@ function GP_CombineGrid(){
             }
         }
         //
+        nodes[i].data.vol = GP_ComputeVolume(nodes[i].data.insides.length);
     }
     else continue;
   }
   nodes[0].data.insides = indices;
+  nodes[0].data.vol = GP_ComputeVolume(indices.length);
   //make a texture out of it, do we include normal_cache, or should we recompute it ?
   //lets try both
   world.addCompGrid(master_grid_id,master_grid_field);
@@ -540,6 +551,130 @@ function GP_createOneCompartmentMesh(anode) {
   return compMesh;
 }
 
+function GP_SetBodyType(anode, pid, start, count){
+  var up = new THREE.Vector3();
+  var offset = new THREE.Vector3();
+  if (anode.data.surface && anode.parent.data.mesh){
+    offset.set(anode.data.offset[0]*ascale,anode.data.offset[1]*ascale,anode.data.offset[2]*ascale);
+    up.set(anode.data.pcpalAxis[0],anode.data.pcpalAxis[1],anode.data.pcpalAxis[2]);
+  }
+  var inertia = new THREE.Vector3();
+  var mass = 0;
+  var nbeads = 0;
+  if (!(pid in type_meshs) ){
+    //number of beads
+    var results = GP_getInertiaMassBeads(anode);
+    nbeads = results.nbeads;
+    inertia = results.inertia;
+    mass = results.mass;
+    if (!(pid in type_meshs)) type_meshs[pid] = createOneMesh(anode,start,count);
+    //add bodyType firstaddBodyType
+    anode.data.bodyid = world.bodyTypeCount;
+    var s = (!anode.data.surface)? -anode.parent.data.compId:anode.parent.data.compId;//this should be the compartment compId /numcomp
+    console.log("addbodytype",s,anode.data.name,count,nbeads,inertia,mass);
+    world.addBodyType(count,nbeads, s, anode.data.size*ascale,
+                      up.x, up.y, up.z,
+                      offset.x, offset.y, offset.z,
+                      mass, inertia.x, inertia.y, inertia.z);
+  }
+  else {
+    var results = GP_getInertiaMassBeads(anode);
+    nbeads = results.nbeads;
+    inertia = results.inertia;
+    mass = results.mass;
+    var bodyTypeId = anode.data.bodyid;
+    //world.setBodyType(bodyTypeId,count,nbeads, s, anode.data.size*ascale,
+    //                  up.x, up.y, up.z,
+    //                  offset.x, offset.y, offset.z,
+    //                  mass, inertia.x, inertia.y, inertia.z);
+    updateOneMesh(type_meshs[pid],anode,start,count);//should flag if mesh has changed
+  }
+}
+
+function GP_GetCount(anode){
+  var count = 0;
+  if (anode.data.molarity && anode.data.molarity !== 0) {
+    //compute volume..?
+    if (anode.data.surface && anode.parent.data.mesh) {
+      //%surface ?
+      var A = ComputeArea(anode.parent);
+      count = Math.round(anode.data.molarity*A);
+    }
+    else {
+      var V = anode.parent.data.vol;// ComputeVolume(nodes[i].parent);
+      count = Util_getCountFromMolarity(anode.data.molarity, V);
+    }
+  }
+  else if (anode.data.count !== 0) count = anode.data.count;
+  else {
+    count = Util_getRandomInt( copy_number )+1;//remove root
+  }
+  return count;
+}
+
+function GP_GPUdistributes(){
+  var n = nodes.length;
+  var start = 0;
+  var startp = 0;
+  var total = 0;
+  var totalp = 0;
+  var count = 0;//total ?
+  var countp = 0;//total ?
+  particle_id_Count = 0;
+  var body_to_instances={};//per compartments ?
+  var particles_to_instances=[];//id,bodyInstanceId,bodyType
+  //get the count
+  //build master grid with everything? should align with gpu_grid
+  for (var i=0;i<n;i++){//nodes.length
+    if (!nodes[i].parent){
+      //root
+      body_to_instances[nodes[i].data.name]=[];
+    }
+    if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+        //use NGL to load the object?
+        if (!("mc" in nodes[i].data)) nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
+        else GP_updateMBCompartment(nodes[i]);
+        body_to_instances[nodes[i].data.name]=[];
+    }
+  }
+  GP_CombineGrid();
+  initDebugGrid();
+  for (var i=0;i<n;i++){//nodes.length
+    console.log(i,nodes[i].data.name);
+    if (nodes[i].data.ingtype == "fiber") continue;
+    if (nodes[i].children!== null && nodes[i].parent === null) continue;
+    if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+        continue;
+    };
+    //if (!nodes[i].data.surface) continue;
+    //if (nodes[i].parent.parent) continue;
+    if (!nodes[i].data.radii) continue;
+    //if (!nodes[i].data.surface) continue;
+    var pdbname = nodes[i].data.source.pdb;
+    if (pdbname.startsWith("EMD")
+      || pdbname.startsWith("EMDB")
+      || pdbname.slice(-4, pdbname.length) === ".map") {
+      continue;
+    }
+    count = GP_GetCount(nodes[i]);
+    //count = Util_getRandomInt( copy_number )+1;//remove root
+    console.log(i,nodes[i].data.name,nodes[i].parent.data.name,count);
+    //count is how many body we are going to instanciate
+    GP_SetBodyType(nodes[i], i, start, count)
+    body_to_instances[nodes[i].data.name].push({"count":count,"btype":nodes[i].data.bodyid});
+    for (var p=start;p<count;p++)
+    {
+      for (var pi=startp;pi<nodes[i].data.radii[0].radii.length;pi++){
+        particles_to_instances.push([pi,p,nodes[i].data.bodyid]);
+      }
+    }
+    startp= startp + nodes[i].data.radii[0].radii.length;
+    totalp = totalp + nodes[i].data.radii[0].radii.length;
+    start = start + count;
+    total = total + count;
+  }
+}
+
 function distributesMesh(){
   var n = nodes.length;
   var start = 0;
@@ -551,7 +686,7 @@ function distributesMesh(){
   for (var i=0;i<n;i++){//nodes.length
     if (!nodes[i].parent)
       {
-        nodes[i].data.vol = ComputeVolume(nodes[i]);
+        //nodes[i].data.vol = ComputeVolume(nodes[i]);
         continue;
       }
     if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
@@ -559,14 +694,14 @@ function distributesMesh(){
         if (!("mc" in nodes[i].data)) nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
         else GP_updateMBCompartment(nodes[i]);
         //remove volume from parent volume
-        nodes[i].parent.data.vol = nodes[i].parent.data.vol - nodes[i].data.vol;
+        //nodes[i].parent.data.vol = nodes[i].parent.data.vol - nodes[i].data.vol;
         continue;
     };
   }
 
   //build master grid with everything? should align with gpu_grid
   GP_CombineGrid();
-  initDebugGrid();
+  initDebugGrid();//if (debugGridMesh === null)
   for (var i=0;i<n;i++){//nodes.length
     console.log(i,nodes[i].data.name);
     if (nodes[i].data.ingtype == "fiber") continue;
@@ -586,48 +721,20 @@ function distributesMesh(){
     || pdbname.slice(-4, pdbname.length) === ".map") {
       continue;
     }
-    if (nodes[i].data.molarity && nodes[i].data.molarity !== 0) {
-      //compute volume..?
-      if (nodes[i].data.surface && nodes[i].parent.data.mesh) {
-        //%surface ?
-        var A = ComputeArea(nodes[i].parent);
-        count = Math.round(nodes[i].data.molarity*A);
-      }
-      else {
-        var V = nodes[i].parent.data.vol;// ComputeVolume(nodes[i].parent);
-        count = Util_getCountFromMolarity(nodes[i].data.molarity, V);
-      }
-    }
-    else if (nodes[i].data.count !== 0) count = nodes[i].data.count;
-    else {
-      //if (nodes[i].data.surface && nodes[i].parent.data.mesh)
-      //     count = (Util_getRandomInt( nodes[i].parent.data.geo.faces.length/3 )+1)/10;
-      //else
-      count = Util_getRandomInt( copy_number )+1;//remove root
-    }
+    count = GP_GetCount(nodes[i]);
     //count = Util_getRandomInt( copy_number )+1;//remove root
-    console.log(i,nodes[i].data.name,nodes[i].parent.data.name,count);
-    if (!nodes[i].data.surface && nodes[i].parent !== null && !nodes[i].parent.data.insides )
-    {
-       var anode = nodes[i];
-       //this line is really slow with the outside compartments.
-       //should just remove id from it ?
-       anode.parent.data.insides = master_grid_id.reduce((a, e, i) => (e === anode.parent.data.compId) ? a.concat(i) : a, [])
-       //anode.parent.data.insides = anode.parent.data.mc.field.reduce((a, e, i) => (e > 85 ) ? a.concat(i) : a, [])
-       //count = nodes[i].parent.data.insides.length;
-    }
     createInstancesMesh(i,nodes[i],start,count);
     start = start + count;
     total = total + count;
   }
   if (atomData_do) createCellVIEW();
-  console.log ( "there is instances ",total);
-  console.log ( "there is atoms ",num_beads_total);
+  console.log ( "there is n instances ",total);
+  console.log ( "there is n atoms ",num_beads_total);
+  console.log ( "particle_id_Count ",particle_id_Count);
   num_instances = total;
   world.particleCount = particle_id_Count;
   world.bodyCount = num_instances;
   console.log(type_meshs[instance_infos[0]]);
-
   var keys = Object.keys(type_meshs);
   var nMeshs = keys.length;
   var amesh;
@@ -711,7 +818,7 @@ function updateOneMesh(meshGeometry,anode,start,count) {
       color = [Math.random(), Math.random(), Math.random()];;//(anode.data.surface) ? [1,0,0]:[0,1,0];//Math.random(), Math.random(), Math.random()];
       anode.data.color = [color[0],color[1],color[2]];
     }
-    console.log(meshGeometry);
+    console.log("updateOneMesh",meshGeometry);
     meshGeometry.maxInstancedCount =  count;
     var bodyIndices = new THREE.InstancedBufferAttribute( new Float32Array( count * 1 ), 1, true, 1 );
     var bodyColors = new THREE.InstancedBufferAttribute( new Float32Array( count * 3 ), 3, true, 1  );
@@ -888,34 +995,7 @@ function createInstancesMesh(pid,anode,start,count) {
   var inertia = new THREE.Vector3();
   var mass = 0;
   var nbeads = 0;
-  if (!(pid in type_meshs) ){
-    //number of beads
-    var results = GP_getInertiaMassBeads(anode);
-    nbeads = results.nbeads;
-    inertia = results.inertia;
-    mass = results.mass;
-    if (!(pid in type_meshs)) type_meshs[pid] = createOneMesh(anode,start,count);
-    //add bodyType firstaddBodyType
-    anode.data.bodyid = world.bodyTypeCount;
-    var s = (!anode.data.surface)? -anode.parent.data.compId:anode.parent.data.compId;//this should be the compartment compId /numcomp
-    console.log("addbodytype",s,anode.data.name,count,nbeads,inertia,mass);
-    world.addBodyType(count,nbeads, s, anode.data.size*ascale,
-                      up.x, up.y, up.z,
-                      offset.x, offset.y, offset.z,
-                      mass, inertia.x, inertia.y, inertia.z);
-  }
-  else {
-    var results = GP_getInertiaMassBeads(anode);
-    nbeads = results.nbeads;
-    inertia = results.inertia;
-    mass = results.mass;
-    var bodyTypeId = anode.data.bodyid;
-    //world.setBodyType(bodyTypeId,count,nbeads, s, anode.data.size*ascale,
-    //                  up.x, up.y, up.z,
-    //                  offset.x, offset.y, offset.z,
-    //                  mass, inertia.x, inertia.y, inertia.z);
-    updateOneMesh(type_meshs[pid],anode,start,count);//should flag if mesh has changed
-  }
+  GP_SetBodyType(anode, pid, start, count);
   //position should use the halton sequence and the grid size
   //should do it constrained inside the given compartments
   //var comp = anode.parent;
@@ -978,7 +1058,6 @@ function createInstancesMesh(pid,anode,start,count) {
 
     //calculateBoxInertia(inertia, mass, new THREE.Vector3(radius*4,radius*4,radius*2));
     //calculate inertia from the beads
-
     mass = 1;
     calculateBoxInertia(inertia, mass, new THREE.Vector3(radius*2,radius*2,radius*2));
     if ( bodyId >= world.bodyCount ) {
@@ -1227,10 +1306,10 @@ function GP_initWorld(){
         renderer: renderer,
         maxBodyTypes:32*32,
         maxBodies: numBodies * numBodies,
-        maxParticles: 1024 *  1024,
+        maxParticles: 2048 *  2048,
         radius: radius,
         stiffness: 1700,
-        damping: 0,//6,
+        damping: 18,//6,
         fixedTimeStep: 0.001,//1/120,
         friction: 0,//2,
         drag: 0.3,
@@ -1974,12 +2053,16 @@ function GP_initFromData(data){
 }
 
 function GP_initFromNodes(some_nodes,numpart,copy,doatom){
+  nodes = some_nodes;//flatten--error ?
+  console.log(nodes);
+  numParticles = numpart;
+  copy_number = copy;
+  atomData_do = doatom;
   if (inited) {
+    nodes = some_nodes;
     rb_init = false;
     world.resetData();
-    world.time = 0;//force the flush
     //reset the dataTexture
-
     //everything already initialize. just update.
     distributesMesh();
     animate();
@@ -1992,13 +2075,10 @@ function GP_initFromNodes(some_nodes,numpart,copy,doatom){
     //for now try to clean everything ?
     return;
   }
-  nodes = some_nodes;//flatten--error ?
-  console.log(nodes);
-  numParticles = numpart;
-  copy_number = copy;
-  atomData_do = doatom;
-  init();
-  inited = true;
+  else {
+    init();
+    inited = true;
+  }
 }
 
 //(function(){

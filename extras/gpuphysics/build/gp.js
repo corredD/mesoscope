@@ -1387,8 +1387,6 @@ var shared = "float Epsilon = 1e-10;\n\
 	        data[p + 1] = y;
 	        data[p + 2] = z;
 	        data[p + 3] = bodyId;
-	        //TODO: update point cloud mapping particles -> bodies?
-	        //return this.particleCount++;
 	    },
 	    getBodyId: function(particleId){
 	        var tex = this.dataTextures.particleLocalPositions;
@@ -1479,6 +1477,11 @@ var shared = "float Epsilon = 1e-10;\n\
 				this.dataTextures.particleLocalPositions.needsUpdate = true;
 				this.dataTextures.gridIds.needsUpdate = true;
 				this.gridDirty = true;
+				this.time = 0;//force the flush
+				this.accumulator = 0;
+				this.interpolationValue = 0;
+				//this.particleCount current particle count
+
 			},
 
 			// Render data to rendertargets
