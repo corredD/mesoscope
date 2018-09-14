@@ -27,6 +27,7 @@ var copy_number=20;
 var num_instances=0;
 var num_beads_total=0;
 var scene, ambientLight, light, camera, controls, renderer;
+var effect;
 var amesh;
 
 var debugMesh, debugGridMesh, cv_Mesh;
@@ -750,7 +751,9 @@ function distributesMesh(){
   var amesh;
   for (var i=0;i<nMeshs;i++) {
       if (i >= meshMeshs.length) {
+        //change the material uniform color ?
         amesh = new THREE.Mesh( type_meshs[keys[i]], all_materials[current_material].m );
+        //amesh.material.uniform.uBaseColor = new THREE.Color(nodes[keys[i]].data.color[0],nodes[keys[i]].data.color[1],nodes[keys[i]].data.color[2]);
         amesh.frustumCulled = false; // Instances can't be culled like normal meshes
         // Create a depth material for rendering instances to shadow map
         amesh.customDepthMaterial = customDepthMaterial;
@@ -888,7 +891,6 @@ function createOneMesh(anode,start,count) {
   meshGeometry.addAttribute( 'bodyColor', bodyColors );
   meshGeometry.addAttribute( 'bodyIndex', bodyIndices );
   meshGeometry.boundingSphere = null;
-
   return meshGeometry;
 }
 
@@ -1130,6 +1132,31 @@ function createInstancesMesh(pid,anode,start,count) {
   }
 }
 
+function createMeshIngrMaterial(mat,light,ambientlight) {
+  var u = THREE.UniformsUtils.clone( mat.uniforms );
+  u.bodyQuatTex = { value: world.dataTextures.bodyQuaternions };
+  u.bodyPosTex = { value: world.dataTextures.bodyPositions };
+  u.bodyInfosTex = { value: world.dataTextures.bodyInfos };
+  var matShader = mat.fragmentShader;
+  var vs = sharedShaderCode.innerText + renderBodiesVertex.innerText;//shader.vertexShader;
+  var fs = matShader;
+  var material = new THREE.ShaderMaterial( {
+    uniforms: u,
+    vertexShader: vs,
+    fragmentShader: fs,
+    lights: true,
+    vertexColors: true,
+    defines: {
+          bodyInfosTextureResolution: 'vec2( ' + world.textures.bodyInfos.width.toFixed( 1 ) + ', ' + world.textures.bodyInfos.width.toFixed( 1 ) + " )",
+          bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
+          resolution: 'vec2(' + world.particleTextureSize.toFixed(1) + ',' + world.particleTextureSize.toFixed(1) + ')'
+      }} );
+  //material.uniforms.uDirLightPos.value = light.position;
+  //material.uniforms.uDirLightColor.value = light.color;
+  //material.uniforms.uAmbientLightColor.value = ambientLight.color;
+  return material;
+}
+
 function createShaderMaterial( id, light, ambientLight ) {
   var shader = THREE.ShaderToon[ id ];
   var u = THREE.UniformsUtils.clone( shader.uniforms );
@@ -1146,12 +1173,21 @@ function createShaderMaterial( id, light, ambientLight ) {
     vertexShader: vs,
     fragmentShader: fs,
     lights: true,
-    vertexColors: true,
+    vertexColors: false,
     defines: {
           bodyInfosTextureResolution: 'vec2( ' + world.textures.bodyInfos.width.toFixed( 1 ) + ', ' + world.textures.bodyInfos.width.toFixed( 1 ) + " )",
           bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
           resolution: 'vec2(' + world.particleTextureSize.toFixed(1) + ',' + world.particleTextureSize.toFixed(1) + ')'
       }} );
+  /*  material.userData.outlineParameters = {
+     	thickness: 0.01,
+     	color: [ 0, 0, 0 ],
+     	alpha: 0.8,
+     	visible: true,
+     	keepAlive: true
+     };
+     */
+  //base color ?uBaseColor
   material.uniforms.uDirLightPos.value = light.position;
   material.uniforms.uDirLightColor.value = light.color;
   material.uniforms.uAmbientLightColor.value = ambientLight.color;
@@ -1164,6 +1200,17 @@ function setupSSAOPass(){
   composer = new THREE.EffectComposer( renderer );
   renderPass = new THREE.RenderPass( scene, camera );
   composer.addPass( renderPass );
+/*
+  var outlinePass = new THREE.OutlinePass( new THREE.Vector2( window.innerWidth, window.innerHeight ), scene, camera );
+  outlinePass.edgeStrength = Number( 10 );
+  outlinePass.edgeGlow = Number( 0);
+  outlinePass.edgeThickness = Number( 1 );
+  outlinePass.pulsePeriod = Number( 0 );
+  outlinePass.visibleEdgeColor.set( "#ffffff" );
+  outlinePass.hiddenEdgeColor.set( "#000000" );
+  outlinePass.selectedObjects = selectedObject;
+  composer.addPass( outlinePass );
+*/
   saoPass1 = new THREE.SAOPass( scene, camera, true, true );
   saoPass1.renderToScreen = true;
   saoPass1.params.output= 0;//THREE.SAOPass.OUTPUT.Beauty;
@@ -1306,6 +1353,7 @@ function GP_initRenderer(){
   if (!raycaster) raycaster = new THREE.Raycaster();
   if (!gp_mouse) gp_mouse = new THREE.Vector2();
   //THREEx.FullScreen.bindKey({ charCode : 'm'.charCodeAt(0) });
+  //effect = new THREE.OutlineEffect( renderer );
 }
 
 //1024,1024,128
@@ -1494,20 +1542,37 @@ function init(){
     */
     //GP_debugBeadsSpheres();
     //create the mesh
-    var toonMaterial2 = createShaderMaterial( "toon2", light, ambientLight ),
+    var beta = 0.5;
+    var gamma = 0.2;
+    var alpha = 0.5;
+    var specularShininess = Math.pow( 2, alpha * 10 );
+    var amaterial = new THREE.MeshToonMaterial({
+      specular:new THREE.Color( beta * 0.2, beta * 0.2, beta * 0.2 ),
+      reflectivity: beta,
+			shininess: specularShininess
+    });
+    //new THREE.MeshPhongMaterial({ color: 0xffffff })
+    var toonMaterial1 = createShaderMaterial( "toon1", light, ambientLight ),
+        toonMaterial2 = createShaderMaterial( "toon2", light, ambientLight ),
 			hatchingMaterial = createShaderMaterial( "hatching", light, ambientLight ),
 			hatchingMaterial2 = createShaderMaterial( "hatching", light, ambientLight ),
-			dottedMaterial = createShaderMaterial( "dotted", light, ambientLight ),
-			dottedMaterial2 = createShaderMaterial( "dotted", light, ambientLight );
+			dottedMaterial = createShaderMaterial( "dotted", light, ambientLight );
+      //toonMaterial1 = createMeshIngrMaterial(amaterial, light, ambientLight),
+			//dottedMaterial2 = createShaderMaterial( "dotted", light, ambientLight );
+      //toonMaterial1.uniforms.uBaseColor.value.setHSL( 0.4, 1, 0.75 );
 			hatchingMaterial2.uniforms.uBaseColor.value.setRGB( 0, 0, 0 );
 			hatchingMaterial2.uniforms.uLineColor1.value.setHSL( 0, 0.8, 0.5 );
 			hatchingMaterial2.uniforms.uLineColor2.value.setHSL( 0, 0.8, 0.5 );
 			hatchingMaterial2.uniforms.uLineColor3.value.setHSL( 0, 0.8, 0.5 );
 			hatchingMaterial2.uniforms.uLineColor4.value.setHSL( 0.1, 0.8, 0.5 );
-			dottedMaterial2.uniforms.uBaseColor.value.setRGB( 0, 0, 0 );
-			dottedMaterial2.uniforms.uLineColor1.value.setHSL( 0.05, 1.0, 0.5 );
+			//dottedMaterial2.uniforms.uBaseColor.value.setRGB( 0, 0, 0 );
+			dottedMaterial.uniforms.uLineColor1.value.setHSL( 0.05, 1.0, 0.5 );
 
       all_materials = {
+        "toon1" :{
+  				m: toonMaterial1,
+  				h: 0.4, s: 1, l: 0.75
+  			},
 			"toon2" :
 			{
 				m: toonMaterial2,
@@ -1528,17 +1593,13 @@ function init(){
 				m: dottedMaterial,
 				h: 0.2, s: 1, l: 0.9
 			},
-			"dotted2" :
-			{
-				m: dottedMaterial2,
-				h: 0.1, s: 1, l: 0.5
-			}
-			};
+		};
     // Mesh material - extend the phong shader
     var meshUniforms = THREE.UniformsUtils.clone(phongShader.uniforms);//phongShader.uniforms);
     meshUniforms.bodyQuatTex = { value: world.dataTextures.bodyQuaternions };
     meshUniforms.bodyPosTex = { value: world.dataTextures.bodyPositions };
     meshUniforms.bodyInfosTex = { value: world.dataTextures.bodyInfos };
+    meshUniforms.uBaseColor= { value:new THREE.Color(0.2,0.2,0.2)};
     meshMaterial = new THREE.ShaderMaterial({
         uniforms: meshUniforms,
         vertexShader: sharedShaderCode.innerText + renderBodiesVertex.innerText,
@@ -1551,6 +1612,17 @@ function init(){
             resolution: 'vec2(' + world.particleTextureSize.toFixed(1) + ',' + world.particleTextureSize.toFixed(1) + ')'
         }
     });
+    //var toonMat = new THREE.MeshToonMaterial( {
+								//map: imgTexture,
+								//bumpMap: imgTexture,
+								//bumpScale: bumpScale,
+								//color: diffuseColor,
+								//specular: specularColor,
+								//reflectivity: beta,
+								//shininess: specularShininess,
+								//envMap: alphaIndex % 2 === 0 ? null : reflectionCube
+		//					} );
+
     all_materials["default"] = {m:meshMaterial,h: 0.1, s: 1, l: 0.5};
     current_material = "default";//"toon2";
 
@@ -1830,7 +1902,8 @@ function render() {
     //gridSprite.material.uniforms.texture.value = world.textures.gridIdsRead.texture;
     gridSprite.material.needsUpdate = true;
     //GP_alignSprite();
-    composer.render();
+    composer.render();//or scene ?
+    //effect.render( scene, camera );
     //debugMesh.material.uniforms.particleWorldPosTex.value = null;
     //debugMesh.material.uniforms.quatTex.value = null;
 }
@@ -1886,6 +1959,7 @@ function initGUI(){
       var nMeshs = keys.length;
       for (var i=0;i<nMeshs;i++) {
         meshMeshs[i].material = mat.m;
+        //meshMeshs[i].material.uniform.uBaseColor = new THREE.Color(nodes[keys[i]].data.color[0],nodes[keys[i]].data.color[1],nodes[keys[i]].data.color[2]);
       }
     };
   };

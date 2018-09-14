@@ -1500,7 +1500,7 @@ function NGL_applyBUtoMesh(nglobj,meshobj){
           if (meshobj.normals) {
             newnormals.push(-meshobj.normals[v*3]);
             newnormals.push(-meshobj.normals[v*3+1]);
-            newnormals.push(-normals.normals[v*3+2]);
+            newnormals.push(-meshobj.normals[v*3+2]);
           }
       }
       if (meshobj.faces) {
@@ -1548,14 +1548,14 @@ function NGL_buildCMS(){
       if (!surf) {
         if (arep.repr.dataList.length)
           {
-            surf = rep.repr.dataList[0].info.surface;
+            surf = arep.repr.dataList[0].info.surface;
           }
       }
       if (surf) {
         //change the position according the bu ? append indexes
         var mesh = {"verts":(surf.position)?Array.from(surf.position):null,
                     "faces":(surf.index)?Array.from(surf.index):null,
-                    "normals":(surf.normals)?Array.from(surf.normals):null }
+                    "normals":(surf.normal)?Array.from(surf.normal):null }
         console.log("MESH:", mesh);
         if (assambly_elem.selectedOptions[0].value!=="AU") {
           mesh = NGL_applyBUtoMesh(ngl_current_structure,mesh);

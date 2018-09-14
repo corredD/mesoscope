@@ -1381,12 +1381,11 @@ function LoadExampleHIV(){
 
 function LoadExampleBlood(){
 		stage.removeAllComponents();
-	  var url = cellpack_repo+"recipes/BloodPlasma_serialized.json";
+	  var url = "data/BloodPlasma_serialized.json";
 	  csv_mapping= false;
 	  comp_column = false;
-    d3v4.json(url, function (error,json) {
+    d3v4.json(url, function (json) {
 						if (DEBUGLOG) {
-							console.log("error",error)
 							console.log("json",json);
 						}
 						var adata = parseCellPackRecipeSerialized(json)
