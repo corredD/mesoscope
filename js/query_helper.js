@@ -881,6 +881,7 @@ function buildFromServer(pdb,cms,beads,astructure){
     if (cms) {
       //add form for cms
       formData.append("cms", true);
+      //bu?selection?
     }
     if (beads) {
       //add form for beads
@@ -1010,9 +1011,9 @@ function buildCMS()
     //build from coordinates
     //buildFromServer("",true,false,null);
     //build from PDB ids
-    var rep = stage.getRepresentationsByName("surface");
+    var rep = stage.getRepresentationsByName("cms_surface");
     if (rep.list.length > 0) {
-      var mesh = NGL_getRawMesh("surface");
+      var mesh = NGL_getRawMesh("cms_surface");
       console.log("MESH:", mesh);
       NGL_ShowMeshVFN(mesh);
       if (node_selected) {

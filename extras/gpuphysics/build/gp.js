@@ -1090,7 +1090,7 @@ var shared = "float Epsilon = 1e-10;\n\
 
 
 	Object.assign( World.prototype, {
-	    getDefines: function(overrides){
+			getDefines: function(overrides){
 	        var boxSize = this.boxSize;
 	        var particleTextureSize = this.textures.particlePosLocal.height;
 	        var gridResolution = this.broadphase.resolution;

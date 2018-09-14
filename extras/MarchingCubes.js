@@ -783,7 +783,7 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
             console.log( 'CALLBACK' );
 
             var i, x, y, z, vertex, normal,
-                face, a, b, c, na, nb, nc, nfaces,
+                face, a, b, c, d, na, nb, nc, nfaces,
                 u, v;
 
             for (i = 0; i < object.count; i++) {
@@ -791,7 +791,7 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
                 a = i * 3;
                 b = a + 1;
                 c = a + 2;
-
+                d = i * 2;
                 px = object.positionArray[ a ];
                 py = object.positionArray[ b ];
                 pz = object.positionArray[ c ];
@@ -848,7 +848,9 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
 
                 uv = new NGL.Vector2( u, v );
                 uvs.push( uv );
-
+                //use uvArray?
+                geo.uv.push( object.uvArray[ d ] );
+                geo.uv.push( object.uvArray[ d + 1 ]);
             }
 
             nfaces = object.count / 3;
@@ -874,12 +876,12 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
             }
 
             start += nfaces;
-            uvArray = concatenate( uvArray, object.uvArray, object.count * 2 );
+            //this.uvArray = concatenate( this.uvArray, object.uvArray, object.count * 2 );
             object.count = 0;
         };
         //geo_callback(this);
         this.render(geo_callback);
-        geo.uv = uvArray;
+        //geo.uv = this.uvArray;
         // console.log( "generated " + geo.faces.length + " triangles" );
         //scale back or translate ?
         return geo;

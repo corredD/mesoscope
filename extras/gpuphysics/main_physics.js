@@ -513,6 +513,7 @@ function GP_createOneCompartmentMesh(anode) {
   anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2,0.0);
   anode.data.mc.isolation = 0.0;
   //NGL_updateMetaBallsGeom(anode);
+  anode.data.mc.enableUvs = true;
   var geo = anode.data.mc.generateGeometry();
   anode.data.geo = geo;
   /* BUILD THE BOX */
@@ -529,16 +530,17 @@ function GP_createOneCompartmentMesh(anode) {
   //comp_geom.add(mesh);
   /* BUILD THE MESH */
   //anode.data.vol = anode.data.mc.computeVolumeInside();
-  var texture = THREE.ImageUtils.loadTexture('images/Membrane.jpg');
+  ///var texture = THREE.ImageUtils.loadTexture('images/Membrane.jpg');
+  var texture = new THREE.TextureLoader().load( 'images/Membrane.jpg' );
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-  var mat = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x111111, shininess: 1, map: texture } );
+  var mat = new THREE.MeshPhongMaterial( { color: 0x17ff00, specular: 0x111111, shininess: 1, map: texture } );//color: 0x17ff00, specular: 0x111111, shininess: 1,
   var bufferGeometry = new THREE.BufferGeometry();
   bufferGeometry.dynamic = true;
   var positions = new Float32Array(geo.vertices);
   var normals = new Float32Array(geo.normals);
   bufferGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3).setDynamic( true ) );
   bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3).setDynamic( true ) );
-  bufferGeometry.addAttribute('uv', new THREE.BufferAttribute(geo.uv, 3).setDynamic( true ) );
+  bufferGeometry.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(geo.uv), 2).setDynamic( true ) );
   bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(geo.faces), 1).setDynamic( true ) );
   var wireframeMaterial = new THREE.MeshBasicMaterial({map:texture, wireframe: false });
   var compMesh = new THREE.Mesh(bufferGeometry, mat);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
@@ -720,12 +722,13 @@ function distributesMesh(){
     if (!nodes[i].data.radii) continue;
     //if (!nodes[i].data.surface) continue;
     var pdbname = nodes[i].data.source.pdb;
-    if (pdbname.startsWith("EMD")
+    if (pdbname && (pdbname.startsWith("EMD")
     || pdbname.startsWith("EMDB")
-    || pdbname.slice(-4, pdbname.length) === ".map") {
+    || pdbname.slice(-4, pdbname.length) === ".map")) {
       continue;
     }
     count = GP_GetCount(nodes[i]);
+    console.log(i, nodes[i].data.name, count);
     //count = Util_getRandomInt( copy_number )+1;//remove root
     createInstancesMesh(i,nodes[i],start,count);
     start = start + count;
@@ -1291,6 +1294,7 @@ function GP_initRenderer(){
   //THREEx.FullScreen.bindKey({ charCode : 'm'.charCodeAt(0) });
 }
 
+//1024,1024,128
 function GP_initWorld(){
     //numParticles = nparticles ? nparticles : 64;
     //copy_number = ncopy ? ncopy : 10;
@@ -1298,7 +1302,7 @@ function GP_initWorld(){
     var r = 30.0 ;// (radius in angstrom)
     var gridResolution = new THREE.Vector3();
     gridResolution.set(numParticles/2, numParticles/2, numParticles/2);
-    var numBodies = 1024;//numParticles / 2;
+    var numBodies = 512;//numParticles / 2;
     //radius = (1/numParticles * 0.5)*4.0;
     radius = r/(numParticles*r);
     ascale = radius/r;
@@ -1310,7 +1314,7 @@ function GP_initWorld(){
         renderer: renderer,
         maxBodyTypes:32*32,
         maxBodies: numBodies * numBodies,
-        maxParticles: 2048 *  2048,
+        maxParticles: 1024 *  1024,
         radius: radius,
         stiffness: 1700,
         damping: 18,//6,

@@ -129,7 +129,7 @@ var ngl_options= ''+
     '<div>'+
       '<input type="checkbox"  id="showgeom" onclick="NGL_showGeomNode(this)" checked>' +
       '<label for="showgeom"> Show Geometry used </label> '+
-      '<button onclick="buildCMS()">Rebuild Geometry</button>'+getSpinner("stopbuildgeom","stopGeom()")+
+      '<button onclick="NGL_buildCMS()">Rebuild Geometry</button>'+getSpinner("stopbuildgeom","stopGeom()")+
     '</div>' +
     getSelect("beads_elem", "options_elems", "Show Beads",
                             "NGL_showBeadsLevel(this)", ["All","0","1","2","None"],"None")+

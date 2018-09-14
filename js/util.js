@@ -494,6 +494,14 @@ function Util_getCountFromMolarity(molarity, volume) {
     return Math.round(molarity * 0.0006022 * volume);
 }
 
+function Util_Wait(ms){
+   var start = new Date().getTime();
+   var end = start;
+   while(end < start + ms) {
+     end = new Date().getTime();
+  }
+}
+
 function Util_getIJK(index,size){
   /*var i = u % size;
   var j = ( u / size ) % size;

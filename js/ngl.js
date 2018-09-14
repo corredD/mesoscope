@@ -84,8 +84,8 @@ var ngl_available_color_schem = [
   "volume"
 ];
 
-
-var ngl_styles = ["cartoon","spacefill","licorice","surface"];
+var cms_scale = 0.2;
+var ngl_styles = ["cartoon","spacefill","licorice","surface","cms"];
 
 var geom_purl = cellpack_repo+"geometries/"
 
@@ -1099,12 +1099,29 @@ function NGL_ChangeRepresentation(selectedO) {
   stage.getRepresentationsByName("polymer").dispose();
   stage.getRepresentationsByName("axes").dispose();
   stage.eachComponent(function(o) {
-    o.addRepresentation(selectedO.value, {
-      colorScheme: color_elem.selectedOptions[0].value,
-      sele: sele_elem.value,
-      name: "polymer",
-      assembly: assambly_elem.selectedOptions[0].value
-    });
+    if (selectedO.value==="cms"){
+      o.addRepresentation("surface", {
+        colorScheme: color_elem.selectedOptions[0].value,
+        sele: sele_elem.value,
+        name: "polymer",
+        assembly: assambly_elem.selectedOptions[0].value,
+        surfaceType: "edt",
+        smooth: 2,
+        probeRadius: 1.0,
+        scaleFactor: cms_scale,
+        flatShaded: false,
+        opacity: 1.0,
+        lowResolution: true,
+      });
+    }
+    else {
+      o.addRepresentation(selectedO.value, {
+        colorScheme: color_elem.selectedOptions[0].value,
+        sele: sele_elem.value,
+        name: "polymer",
+        assembly: assambly_elem.selectedOptions[0].value
+      });
+    }
     //doesnt work with biological assambly
     o.addRepresentation("axes", {
       sele: sele_elem.value,
@@ -1403,6 +1420,9 @@ function NGL_getRawMesh(rep_name) {
     var rep = stage.getRepresentationsByName(rep_name).list[0];
     //rep.repr.__isolevel
     var surf = rep.repr.surface;
+    if (!surf) {
+      surf = rep.repr.__infoList[0].surface;
+    }
     var mesh = {"verts":(surf.position)?Array.from(surf.position):null,
                 "faces":(surf.index)?Array.from(surf.index):null,
                 "normals":(surf.normals)?Array.from(surf.normals):null }
@@ -1433,6 +1453,102 @@ function NGL_ShowMeshVFN(mesh) {
     side: "double"
   });
   NGL_showGeomNode_cb(document.getElementById("showgeom").checked);
+}
+
+function NGL_applyBUtoMesh(nglobj,meshobj){
+  var ass=assambly_elem.selectedOptions[0].value;
+  console.log(nglobj.object.biomolDict[ass].partList.length);
+  console.log(nglobj.object.biomolDict[ass]);
+  var newpos=[]
+  var newindices=[]
+  var newnormals=[]
+  var startindice = 0;
+  var count = (meshobj.verts)? meshobj.verts.length/3:0;
+  for (var j = 0; j < nglobj.object.biomolDict[ass].partList.length; j++) {
+    console.log(nglobj.object.biomolDict[ass].partList[j].matrixList.length);
+    for (var k = 0; k < nglobj.object.biomolDict[ass].partList[j].matrixList.length; k++) {
+      var mat = nglobj.object.biomolDict[ass].partList[j].matrixList[k];
+      for (var v = 0;v<count;v++){
+          if (meshobj.verts) {
+            var new_pos = new NGL.Vector3(meshobj.verts[v],meshobj.verts[v+1],meshobj.verts[v+2]);
+            new_pos.applyMatrix4(mat);
+            newpos.push(new_pos.x);
+            newpos.push(new_pos.y);
+            newpos.push(new_pos.z);
+          }
+          if (meshobj.normals) {
+            newnormals.push(meshobj.normals[v]);
+            newnormals.push(meshobj.normals[v+1]);
+            newnormals.push(normals.normals[v+2]);
+          }
+      }
+      if (meshobj.faces) {
+        for (var f=0;f<meshobj.faces.length;f++)
+        {
+          newindices.push(meshobj.faces[f]+count*k);
+        }
+      }
+      //startindice += count;
+    }
+  }
+  var mesh = {"verts":(newpos.length!==0)?Array.from(newpos):null,
+              "faces":(newindices.length!==0)?Array.from(newindices):null,
+              "normals":(newnormals.length!==0)?Array.from(newnormals):null }
+  return mesh;
+}
+
+function NGL_buildCMS(){
+  stage.getRepresentationsByName("cms_surface").dispose();
+  //return RepresentationComponent
+  var rep = ngl_current_structure.addRepresentation("surface", {
+      //colorScheme: color_elem.selectedOptions[0].value,
+      sele: sele_elem.value,
+      name: "cms_surface",
+      assembly: assambly_elem.selectedOptions[0].value,
+      surfaceType: "edt",
+      smooth: 2,
+      probeRadius: 1.0,
+      scaleFactor: cms_scale,
+      flatShaded: false,
+      opacity: 1.0,
+      useWorker: false,
+      lowResolution: true,
+    });
+  ngl_current_structure.autoView();
+  var myVar = setInterval(myTimerToGetTHeBuffer, 1000);
+  function myStopFunction() {
+      clearInterval(myVar);
+  }
+  function myTimerToGetTHeBuffer() {
+      var arep = stage.getRepresentationsByName("cms_surface").list[0];
+      var surf;
+      console.log(arep)
+      if (arep) surf = arep.repr.surface;
+      if (!surf) {
+        if (arep.repr.dataList.length)
+          {
+            surf = rep.repr.dataList[0].info.surface;
+          }
+      }
+      if (surf) {
+        //change the position according the bu ? append indexes
+        var mesh = {"verts":(surf.position)?Array.from(surf.position):null,
+                    "faces":(surf.index)?Array.from(surf.index):null,
+                    "normals":(surf.normals)?Array.from(surf.normals):null }
+        console.log("MESH:", mesh);
+        if (assambly_elem.selectedOptions[0].value!=="AU") {
+          mesh = NGL_applyBUtoMesh(ngl_current_structure,mesh);
+        }
+        console.log("MESH:", mesh);
+        NGL_ShowMeshVFN(mesh);
+        if (node_selected) {
+          node_selected.data.geom = mesh; //v,f,n directly
+          node_selected.data.geom_type = "raw"; //mean that it provide the v,f,n directly
+        }
+        //stage.getRepresentationsByName("cms_surface").dispose();
+        myStopFunction();
+      }
+  }
 }
 
 function NGL_getCollada_cb(scene) {
@@ -2318,12 +2434,29 @@ function NGL_ReprensentOne(o,anode){
     showBox: true,
     radius: 0.2
   })
-  o.addRepresentation(rep_elem.selectedOptions[0].value, {
-    //colorScheme: color_elem.selectedOptions[0].value,
-    sele: sele,
-    name: "polymer",
-    assembly: assambly
-  });
+  if (rep_elem.selectedOptions[0].value==="cms"){
+    o.addRepresentation("surface", {
+      //colorScheme: color_elem.selectedOptions[0].value,
+      sele: sele,
+      name: "polymer",
+      assembly: assambly,
+      surfaceType: "edt",
+      smooth: 2,
+      probeRadius: 1.0,
+      scaleFactor: cms_scale,
+      flatShaded: false,
+      opacity: 1.0,
+      lowResolution: true,
+    });
+  }
+  else {
+      o.addRepresentation(rep_elem.selectedOptions[0].value, {
+      //colorScheme: color_elem.selectedOptions[0].value,
+      sele: sele,
+      name: "polymer",
+      assembly: assambly
+    });
+  }
   if (document.getElementById("showgeom").checked) {
     NGL_LoadAShapeObj(anode, anode.data.geom);
     NGL_showGeomNode_cb(true);
@@ -2456,13 +2589,29 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
         radius: 0.2,
         assembly: assambly
       })
-
-      o.addRepresentation(rep_elem.selectedOptions[0].value, {
-        //colorScheme: color_elem.selectedOptions[0].value,
-        sele: sele,
-        name: "polymer",
-        assembly: assambly
-      });
+      if (rep_elem.selectedOptions[0].value==="cms"){
+        o.addRepresentation("surface", {
+          //colorScheme: color_elem.selectedOptions[0].value,
+          sele: sele,
+          name: "polymer",
+          assembly: assambly,
+          surfaceType: "edt",
+          smooth: 2,
+          probeRadius: 1.0,
+          scaleFactor: cms_scale,
+          flatShaded: false,
+          opacity: 1.0,
+          lowResolution: true,
+        });
+      }
+      else {
+        o.addRepresentation(rep_elem.selectedOptions[0].value, {
+          //colorScheme: color_elem.selectedOptions[0].value,
+          sele: sele,
+          name: "polymer",
+          assembly: assambly
+        });
+      }
       console.log("done ?");
     }).then(function() {
       var o = stage.getComponentsByName(aname).list[0];
