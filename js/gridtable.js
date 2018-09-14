@@ -1579,6 +1579,10 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
             }
           } else {
             //do nothing
+            stage.removeAllComponents();
+            ngl_current_node = node_selected;
+            SetObjectsOptionsDiv(node_selected);
+            NGL_noPdbProxy(node_selected.data.name,node_selected.data.size);
           }
           ngl_current_item_id = arow.id;
         }

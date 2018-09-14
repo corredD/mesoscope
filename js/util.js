@@ -595,3 +595,28 @@ function Util_indexToUV(index, resx,resy){
     var uv = new THREE.Vector2((index/resx)%1.0, Math.floor( index/resy ) / resx);
     return uv;
 }
+
+function Util_FixBeadsFormat(p,r){
+  var result = {"pos":[],"radii":[]};
+  if (p && p.length!==0) {
+    if (!("coords" in p[0])) {
+      var pos = [];
+      var rad = [];
+      for (var lod=0; lod < p.length;lod++)
+      {
+        pos.push({"coords":[]});
+        rad.push({"radii":[]});
+        for (var i=0;i<p[lod].length;i++)
+        {
+            pos[lod].coords.push(p[lod][i][0]);
+            pos[lod].coords.push(p[lod][i][1]);
+            pos[lod].coords.push(p[lod][i][2]);
+            rad[lod].radii.push(r[lod][i]);
+        }
+      }
+      p = pos;
+      r = rad;
+    }
+  }
+  return {"pos":p,"radii":r};
+}

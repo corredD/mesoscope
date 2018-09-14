@@ -903,6 +903,7 @@ function NGL_changeClusterMethod(e) {
 }
 
 function NGL_showBeadsLevel_cb(alevel) {
+  if (!node_selected.data.pos) return;
   if (!ngl_load_params.beads.pos) return;
   if (!ngl_load_params.beads.rad) return;
   if (alevel === "None") {
@@ -1057,7 +1058,11 @@ function NGL_ChangeSymmetry(select0) {}
 
 function NGL_ChangeBiologicalAssambly(selected0) {
   NGL_ChangeRepresentation(rep_elem.selectedOptions[0]);
+  //also change the geometric center
+  var center_bu= NGL_GetBUCenter(ngl_current_structure,selected0.value);
+  ngl_current_structure.setPosition([-center_bu.x,-center_bu.y,-center_bu.z]);
   //updatTheTable
+  console.log("NGL_ChangeBiologicalAssambly",center_bu,assambly_elem.selectedOptions[0].value);
   if (ngl_current_item_id) {
     updateDataGridRowElem(0, ngl_current_item_id, "bu", selected0.value);
     //update the grid according the multimeric state automatically ?
@@ -1439,8 +1444,8 @@ function NGL_ShowMeshVFN(mesh) {
     }
   }
   var anode = node_selected;
-  var shape = new NGL.Shape("geom_surface");var color = [1,0,0];
-  var color;
+  var shape = new NGL.Shape("geom_surface");
+  var color = [1,0,0];
   if (("color" in anode.data)&&(anode.data.color!==null)) color = anode.data.color;
   else {
     //color = [Math.random(), Math.random(), Math.random()];;//(anode.data.surface) ? [1,0,0]:[0,1,0];//Math.random(), Math.random(), Math.random()];
@@ -1476,6 +1481,7 @@ function NGL_applyBUtoMesh(nglobj,meshobj){
   var count = (meshobj.verts)? meshobj.verts.length/3:0;
   //first loop to get the center
   var center_bu= NGL_GetBUCenter(nglobj,ass);
+  console.log("NGL_applyBUtoMesh",center_bu);
   //nglobj.setPosition(-center_bu.x,-center_bu.y,-center_bu.z);
   for (var j = 0; j < nglobj.object.biomolDict[ass].partList.length; j++) {
     console.log(nglobj.object.biomolDict[ass].partList[j].matrixList.length);
@@ -2198,10 +2204,15 @@ function buildWithKmeans(o, center, ncluster) {
   // parameters: 3 - number of clusters
   //center the selection?
   var clusters = kmeans.run(dataset, ncluster);
-  center = o.position;
+  //center = o.position;//negatif?
   console.log(bu, clusters);
-  if (!bu) return NGL_ClusterToBeads(clusters, o, center,dataset);
-  else return NGL_applybuToclusters(o,clusters,center,dataset);
+  if (!bu) {
+    return NGL_ClusterToBeads(clusters, o, center,dataset);
+  }
+  else {
+    center = NGL_GetBUCenter(o,o.assambly);
+    return NGL_applybuToclusters(o,clusters,center,dataset);
+  }
 }
 
 function NGL_applyBUtoResultsBeads(o,beads,center){
@@ -2513,7 +2524,7 @@ function NGL_ReprensentOnePost(o,anode){
 }
 
 function NGL_GetBUCenter(nglobj,ass){
-  var chain_center = nglobj.position;
+  var chain_center = nglobj.gcenter;//use the geometric selection center not .position which can alreayd be the bu
   var center_bu=new NGL.Vector3();
   var center=new NGL.Vector3();
   var bucount=0;
@@ -2607,6 +2618,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       //console.log("atomcenter",sc.atomCenter());
       //if (o.object.biomolDict.BU1) console.log(o.object.biomolDict.BU1);
       var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
+      ngl_current_structure.gcenter = center;
       if (assambly !== "AU") center = NGL_GetBUCenter(ngl_current_structure,assambly);
       console.log("gcenter", center, ngl_force_build_beads);
       o.setPosition([-center.x, -center.y, -center.z]); //center molecule
@@ -2803,25 +2815,46 @@ function NGL_noPdbProxy(name, radius) {
   var align_axis = false;
   NGL_ShowOrigin();
   if (ngl_load_params.dogeom) {
-    NGL_LoadAShapeObj(null,ngl_load_params.geom);
+    if (node_selected.geom_type !== "None" && node_selected.geom_type !== "sphere")
+        NGL_LoadAShapeObj(null,ngl_load_params.geom);
+    else {
+      //build the sphere and assign it
+      var comp = stage.getComponentsByName("geom_surface");
+      if (comp.list) {
+        for (var i = 0; i < comp.list.length; i++) {
+          stage.removeComponent(comp.list[i]);
+        }
+      }
+      var shape = new NGL.Shape("geom_surface", {
+        disableImpostor: true,
+        radialSegments: 10
+      });
+      var color = [1,0,0];
+      if (("color" in node_selected.data)&&(node_selected.data.color!==null)) color = node_selected.data.color;
+      else {
+        color = [1,0,0];
+      }
+      var tcolor = new THREE.Color( color[0], color[1], color[2] );
+      shape.addSphere([0, 0, 0], [1, 0, 0], radius);
+      var shapeComp = stage.addComponentFromObject(shape);
+      shapeComp.addRepresentation("geom_surface", {
+        wireframe: true,
+        diffuse: tcolor,
+      }); //wireframe ?
+      node_selected.data.geom_type = "sphere"
+    }
     ngl_load_params.dogeom = false;
   }
   if (ngl_load_params.dobeads) {
+    //fix pos and rad to new format in case
+    var pr = Util_FixBeadsFormat(ngl_load_params.beads.pos,ngl_load_params.beads.rad)
+    ngl_load_params.beads.pos = pr.pos;
+    ngl_load_params.beads.rad = pr.radii;
     NGL_LoadSpheres(ngl_load_params.beads.pos, ngl_load_params.beads.rad);
     ngl_load_params.dobeads = false;
     NGL_showBeadsLevel(beads_elem.selectedOptions[0]);
   }
   //label
-  var shape = new NGL.Shape("proxy", {
-    disableImpostor: true,
-    radialSegments: 10
-  });
-  shape.addSphere([0, 0, 0], [1, 0, 0], radius);
-  var shapeComp = stage.addComponentFromObject(shape);
-  shapeComp.addRepresentation("proxy" + name, {
-    wireframe: true
-  }); //wireframe ?
-
   console.log(name, radius);
   title_annotation.innerHTML = name;
   pdb_id_elem.innerHTML = name;

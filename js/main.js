@@ -1379,20 +1379,20 @@ function LoadExampleHIV(){
 	            })
 		}
 
-		function LoadExampleBlood(){
-				stage.removeAllComponents();
-			  var url = cellpack_repo+"recipes/BloodPlasma1.0.json";
-			  csv_mapping= false;
-			  comp_column = false;
-		    d3v4.json(url, function (json) {
-		    	      if (DEBUGLOG) console.log(json);
-					      var adata = parseCellPackRecipe(json)
-					      //var alink =[]
-					      //alert("worked??");
-					      //alert(JSON.stringify(adata));
-					      update_graph(adata.nodes,adata.links);
-		            })
-			}
+function LoadExampleBlood(){
+		stage.removeAllComponents();
+	  var url = cellpack_repo+"recipes/BloodPlasma_serialized.json";
+	  csv_mapping= false;
+	  comp_column = false;
+    d3v4.json(url, function (error,json) {
+						if (DEBUGLOG) {
+							console.log("error",error)
+							console.log("json",json);
+						}
+						var adata = parseCellPackRecipeSerialized(json)
+			      update_graph(adata.nodes,adata.links);
+            })
+}
 
 function LoadExampleBloodHIV(){
 		//file is in data
@@ -3310,18 +3310,22 @@ function dragended() {
   	if (current_mode===0) {
 			NGL_UpdateWithNode(d3v4.event.subject);
 			//also update the PDB component and sequence viewer
-			UpdatePDBcomponent(d3v4.event.subject.data.source.pdb.toLowerCase());
-			if (!(d3v4.event.subject.data.uniprot)||d3v4.event.subject.data.uniprot === "") {
-				//gather the first uniprot code ?
-				var entry = CleanEntryPDB(d3v4.event.subject.data.source.pdb.toLowerCase());
-				current_list_pdb=[entry]
-				custom_report_uniprot_only = true;
-				customReport(entry);//should update the uniprot
-			}
-			else {
-				setupProVista(d3v4.event.subject.data.uniprot);
-				console.log(protvista_instance);
-				UpdateUniPDBcomponent(d3v4.event.subject.data.uniprot);
+			var nopdb = (!d3v4.event.subject.data.source.pdb || d3v4.event.subject.data.source.pdb === "None");
+			if (!nopdb)
+			{
+				UpdatePDBcomponent(d3v4.event.subject.data.source.pdb.toLowerCase());
+				if (!(d3v4.event.subject.data.uniprot)||d3v4.event.subject.data.uniprot === "") {
+					//gather the first uniprot code ?
+					var entry = CleanEntryPDB(d3v4.event.subject.data.source.pdb.toLowerCase());
+					current_list_pdb=[entry]
+					custom_report_uniprot_only = true;
+					customReport(entry);//should update the uniprot
+				}
+				else {
+					setupProVista(d3v4.event.subject.data.uniprot);
+					console.log(protvista_instance);
+					UpdateUniPDBcomponent(d3v4.event.subject.data.uniprot);
+				}
 			}
 		}
   	line_selected = null;

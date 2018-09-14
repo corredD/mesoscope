@@ -729,6 +729,7 @@ function distributesMesh(){
     || pdbname.slice(-4, pdbname.length) === ".map")) {
       continue;
     }
+    if (nodes[i].data.geom_type !== "raw" && nodes[i].data.geom_type !== "sphere") continue;
     count = GP_GetCount(nodes[i]);
     console.log(i, nodes[i].data.name, count);
     //count = Util_getRandomInt( copy_number )+1;//remove root
@@ -844,22 +845,30 @@ function updateOneMesh(meshGeometry,anode,start,count) {
 }
 
 function createOneMesh(anode,start,count) {
+  //this assume the geom_type is raw
   var color = [1,0,0];
   if (("color" in anode.data)&&(anode.data.color!==null)) color = anode.data.color;
   else {
     color = [Math.random(), Math.random(), Math.random()];;//(anode.data.surface) ? [1,0,0]:[0,1,0];//Math.random(), Math.random(), Math.random()];
     anode.data.color = [color[0],color[1],color[2]];
   }
-  var bufferGeometry = new THREE.BufferGeometry();
-  var positions = new Float32Array(anode.data.geom.verts);
-  bufferGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-  if (anode.data.geom.normals!==null)
-  {
-    var normals = new Float32Array(anode.data.geom.normals);
-    bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+  var bufferGeometry;
+  if (anode.data.geom_type === "sphere") {
+     var R = anode.data.size;
+     bufferGeometry = new THREE.SphereBufferGeometry(R, 8, 8);
   }
- //bufferGeometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
-  bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(anode.data.geom.faces), 1));
+  else {//assume raw geo
+    bufferGeometry = new THREE.BufferGeometry();
+    var positions = new Float32Array(anode.data.geom.verts);
+    bufferGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+    if (anode.data.geom.normals!==null)
+    {
+      var normals = new Float32Array(anode.data.geom.normals);
+      bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    }
+   //bufferGeometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
+    bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(anode.data.geom.faces), 1));
+  }
   bufferGeometry.scale(ascale,ascale,ascale);
   var numBodies = numParticles ;
   var bodyInstances = count ;
