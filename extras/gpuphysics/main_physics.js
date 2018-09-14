@@ -230,8 +230,8 @@ function ComputeVolume(anode) {
 }
 
 function ComputeArea(anode){
-    var m = anode.parent.data.geo;
-    var inv_scale = anode.parent.data.mc.data_bound.maxsize;//1.0/ascale;
+    var m = anode.data.geo;
+    var inv_scale = anode.data.mc.data_bound.maxsize;//1.0/ascale;
     var result = new THREE.Vector3(0,0,0);
     for (var p = m.vertices.length/3 - 1, q = 0; q < m.vertices.length/3; p = q++)
     {
@@ -603,7 +603,9 @@ function GP_GetCount(anode){
     //compute volume..?
     if (anode.data.surface && anode.parent.data.mesh) {
       //%surface ?
-      var A = ComputeArea(anode.parent);
+      //surface of the protein? 30?
+      var A = ComputeArea(anode.parent)/100.0;
+      //var B = A/100.0;
       count = Math.round(anode.data.molarity*A);
     }
     else {
@@ -850,10 +852,13 @@ function createOneMesh(anode,start,count) {
   }
   var bufferGeometry = new THREE.BufferGeometry();
   var positions = new Float32Array(anode.data.geom.verts);
-  var normals = new Float32Array(anode.data.geom.normals);
   bufferGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-  bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-  //bufferGeometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
+  if (anode.data.geom.normals!==null)
+  {
+    var normals = new Float32Array(anode.data.geom.normals);
+    bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+  }
+ //bufferGeometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
   bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(anode.data.geom.faces), 1));
   bufferGeometry.scale(ascale,ascale,ascale);
   var numBodies = numParticles ;

@@ -1438,18 +1438,28 @@ function NGL_ShowMeshVFN(mesh) {
       stage.removeComponent(comp.list[i]);
     }
   }
-  var shape = new NGL.Shape("geom_surface");
+  var anode = node_selected;
+  var shape = new NGL.Shape("geom_surface");var color = [1,0,0];
+  var color;
+  if (("color" in anode.data)&&(anode.data.color!==null)) color = anode.data.color;
+  else {
+    //color = [Math.random(), Math.random(), Math.random()];;//(anode.data.surface) ? [1,0,0]:[0,1,0];//Math.random(), Math.random(), Math.random()];
+    //anode.data.color = [color[0],color[1],color[2]];
+    color = [1,1,1];
+  }
+
   var col = Array(mesh.verts.length).fill(1);
   shape.addMesh( //position, color, index, normal
     mesh.verts, // a plane
     col, // all green
     mesh.faces,
-    mesh.normals
+    //mesh.normals
   );
-
+  var tcolor = new THREE.Color( color[0], color[1], color[2] );
   var shapeComp = stage.addComponentFromObject(shape);
   var r = shapeComp.addRepresentation("geom_surface", {
     opacity: 0.5,
+    diffuse: tcolor,
     side: "double"
   });
   NGL_showGeomNode_cb(document.getElementById("showgeom").checked);
@@ -1464,22 +1474,27 @@ function NGL_applyBUtoMesh(nglobj,meshobj){
   var newnormals=[]
   var startindice = 0;
   var count = (meshobj.verts)? meshobj.verts.length/3:0;
+  //first loop to get the center
+  var center_bu= NGL_GetBUCenter(nglobj,ass);
+  //nglobj.setPosition(-center_bu.x,-center_bu.y,-center_bu.z);
   for (var j = 0; j < nglobj.object.biomolDict[ass].partList.length; j++) {
     console.log(nglobj.object.biomolDict[ass].partList[j].matrixList.length);
     for (var k = 0; k < nglobj.object.biomolDict[ass].partList[j].matrixList.length; k++) {
       var mat = nglobj.object.biomolDict[ass].partList[j].matrixList[k];
       for (var v = 0;v<count;v++){
           if (meshobj.verts) {
-            var new_pos = new NGL.Vector3(meshobj.verts[v],meshobj.verts[v+1],meshobj.verts[v+2]);
+            var new_pos = new NGL.Vector3(meshobj.verts[v*3],
+                                          meshobj.verts[v*3+1],
+                                          meshobj.verts[v*3+2]);
             new_pos.applyMatrix4(mat);
-            newpos.push(new_pos.x);
-            newpos.push(new_pos.y);
-            newpos.push(new_pos.z);
+            newpos.push(new_pos.x-center_bu.x);
+            newpos.push(new_pos.y-center_bu.y);
+            newpos.push(new_pos.z-center_bu.z);
           }
           if (meshobj.normals) {
-            newnormals.push(meshobj.normals[v]);
-            newnormals.push(meshobj.normals[v+1]);
-            newnormals.push(normals.normals[v+2]);
+            newnormals.push(-meshobj.normals[v*3]);
+            newnormals.push(-meshobj.normals[v*3+1]);
+            newnormals.push(-normals.normals[v*3+2]);
           }
       }
       if (meshobj.faces) {
@@ -1539,13 +1554,26 @@ function NGL_buildCMS(){
         if (assambly_elem.selectedOptions[0].value!=="AU") {
           mesh = NGL_applyBUtoMesh(ngl_current_structure,mesh);
         }
+        else {
+          //recenter the verts
+          var center = ngl_current_structure.position;
+          for (var v = 0;v<mesh.verts.length/3;v++){
+                mesh.verts[v*3]=mesh.verts[v*3]+center.x;
+                mesh.verts[v*3+1]=mesh.verts[v*3+1]+center.y;
+                mesh.verts[v*3+2]=mesh.verts[v*3+2]+center.z;
+                //mesh.normals[v*3]=-mesh.normals[v*3];
+                //mesh.normals[v*3+1]=-mesh.normals[v*3+1];
+                //mesh.normals[v*3+2]=-mesh.normals[v*3+2];
+          }
+        }
         console.log("MESH:", mesh);
         NGL_ShowMeshVFN(mesh);
         if (node_selected) {
           node_selected.data.geom = mesh; //v,f,n directly
           node_selected.data.geom_type = "raw"; //mean that it provide the v,f,n directly
         }
-        //stage.getRepresentationsByName("cms_surface").dispose();
+        //hide or destroy?
+        stage.getRepresentationsByName("cms_surface").dispose();
         myStopFunction();
       }
   }
@@ -2170,6 +2198,7 @@ function buildWithKmeans(o, center, ncluster) {
   // parameters: 3 - number of clusters
   //center the selection?
   var clusters = kmeans.run(dataset, ncluster);
+  center = o.position;
   console.log(bu, clusters);
   if (!bu) return NGL_ClusterToBeads(clusters, o, center,dataset);
   else return NGL_applybuToclusters(o,clusters,center,dataset);
@@ -2483,6 +2512,24 @@ function NGL_ReprensentOnePost(o,anode){
     NGL_ShowOrigin();
 }
 
+function NGL_GetBUCenter(nglobj,ass){
+  var chain_center = nglobj.position;
+  var center_bu=new NGL.Vector3();
+  var center=new NGL.Vector3();
+  var bucount=0;
+  for (var j = 0; j < nglobj.object.biomolDict[ass].partList.length; j++) {
+    console.log(nglobj.object.biomolDict[ass].partList[j].matrixList.length);
+    for (var k = 0; k < nglobj.object.biomolDict[ass].partList[j].matrixList.length; k++) {
+      var mat = nglobj.object.biomolDict[ass].partList[j].matrixList[k];
+      center.copy(chain_center).applyMatrix4(mat);
+      center_bu.add(center);
+      bucount++;
+    }
+  }
+  center_bu.divideScalar(bucount);
+  return center_bu;
+}
+
 function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
 
   if (ngl_current_node && ngl_current_node.data.surface) {
@@ -2560,6 +2607,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       //console.log("atomcenter",sc.atomCenter());
       //if (o.object.biomolDict.BU1) console.log(o.object.biomolDict.BU1);
       var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
+      if (assambly !== "AU") center = NGL_GetBUCenter(ngl_current_structure,assambly);
       console.log("gcenter", center, ngl_force_build_beads);
       o.setPosition([-center.x, -center.y, -center.z]); //center molecule
       //ngl_force_build_beads
