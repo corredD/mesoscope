@@ -149,7 +149,7 @@ var densityShader="uniform sampler2D bodyPosTex;\n\
 		V011.w*(1.0 - x)*y*z +\n\
 		V110.w*x*y*(1.0 - z) +\n\
 		V111.w*x*y*z;\n\
-		return Vxyz*1175.0*0.000390625;\n\
+		return Vxyz;//*1175.0*0.000390625\n\
 	}\n\
 	vec3 CalculateSurfaceNormal(vec3 p)\n\
 	{\n\
@@ -247,6 +247,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 	uniform sampler2D bodyAngularVelTex;\n\
 	uniform sampler2D particlePosRelative;\n\
 	uniform sampler2D bodyQuatTex;\n\
+	uniform sampler2D bodyInfosTex1;\n\
 	uniform sampler2D gridTex;\n"+
 	densityShader+
 	"vec3 particleForce(float STIFFNESS, float DAMPING, float DAMPING_T, \n\
@@ -269,10 +270,10 @@ var updateForceFrag = "uniform vec4 params1;\n\
 			vec2 bodyIduv = indexToUV(bodyId,bodyTextureResolution);\n\
 			vec4 posTexData = texture2D(bodyPosTex, bodyIduv);\n\
 			float bodyTypeIndex = posTexData.w;\n\
-			vec2 bodyType_uv = indexToUV( bodyTypeIndex*2.0, bodyInfosTextureResolution );\n\
+			vec2 bodyType_uv = indexToUV( bodyTypeIndex, bodyInfosTextureResolution );\n\
 			vec4 bodyType_infos1 = texture2D(bodyInfosTex, bodyType_uv);\n\
-			bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
-			vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);\n\
+			//bodyType_uv = indexToUV( bodyTypeIndex, bodyInfosTextureResolution );\n\
+			vec4 bodyType_infos2 = texture2D(bodyInfosTex1, bodyType_uv);\n\
 			vec3 velocity = texture2D(velTex, uv).xyz;\n\
 	    vec3 particleGridPos = worldPosToGridPos(position, gridPos, cellSize);\n\
 	    vec3 bodyAngularVelocity = texture2D(bodyAngularVelTex, bodyIduv).xyz;\n\
@@ -355,7 +356,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 			vec3 tangentForce = friction * vij_t;\n\
 			vec3 f = springForce + dampingForce + tangentForce;\n\
 			//should this force take the offset in account?\n\
-			if (abs(distance) < 0.0078125*2.0){\n\
+			if (abs(distance) < radius*2.0){\n\
 					if (distance > 0.0 && bodyType_infos1.w < 0.0) f = -f;//*10\n\
 					if (distance < 0.0 && bodyType_infos1.w == 0.0) f = -f;\n\
 					if (bodyType_infos1.w > 0.0) f=f*0.0;\n\
@@ -378,13 +379,17 @@ var updateForceFrag = "uniform vec4 params1;\n\
 			  vec3 up = bodyType_infos1.xyz;\n\
 			  vec3 off = bodyType_infos2.xyz;\n\
 			  vec4 arotation = quat;//computeOrientation(sfnormal, up);\n\
+				vec3 rup = vec3_applyQuat(up,quat);\n\
+				vec3 r_off = vec3_applyQuat(off,quat);\n\
 			  vec3 r_relativePosition = vec3_applyQuat(relativePosition,arotation);\n\
-				float L = -0.0234375;//length(off);\n\
-				float ltoS = dot(relativePosition,up)+L;\n\
+				float L = dot(off,up);//length(off);//dot(off,up);//-0.02361;//length(off);//0.023617652535438873\n\
+				float D = dot(relativePosition,rup);//dot(r_relativePosition,rup);\n\
+				float ltoS = D+L*5.0;//ideal distance from surface along normal\n\
+				//need to check why the *5.0 fix the offset ??\n\
 				//compare ltos and distance\n\
 				//vec3 r_off = vec3_applyQuat(off,arotation);\n\
 				vec3 body_pos = posTexData.xyz;\n\
-				sfnormal = normalize(CalculateSurfaceNormal(body_pos));\n\
+				//sfnormal = normalize(CalculateSurfaceNormal(body_pos));\n\
 				//distance = trilinearInterpolation(body_pos);\n\
 				vij_t = velocity - dot(velocity, sfnormal) * sfnormal;\n\
 				springForce = - stiffness * (ltoS - distance) * sfnormal;\n\
@@ -407,6 +412,7 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 	uniform sampler2D particlePosRelative;\n\
 	uniform sampler2D velTex;\n\
 	uniform sampler2D bodyAngularVelTex;\n\
+	uniform sampler2D bodyInfosTex1;\n\
 	uniform sampler2D gridTex;\n"+
 	densityShader+
 	"void main() {\n\
@@ -418,10 +424,10 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 			vec2 bodyIduv = indexToUV(bodyId,bodyTextureResolution);\n\
 			vec4 posTexData = texture2D(bodyPosTex, bodyIduv);\n\
 			float bodyTypeIndex = posTexData.w;\n\
-			vec2 bodyType_uv = indexToUV( bodyTypeIndex*2.0, bodyInfosTextureResolution );\n\
+			vec2 bodyType_uv = indexToUV( bodyTypeIndex, bodyInfosTextureResolution );\n\
 			vec4 bodyType_infos1 = texture2D(bodyInfosTex, bodyType_uv);\n\
-			bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
-			vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);\n\
+			//bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
+			vec4 bodyType_infos2 = texture2D(bodyInfosTex1, bodyType_uv);\n\
 	    vec4 relativePositionAndBodyId = texture2D(particlePosRelative, uv);\n\
 	    vec3 relativePosition = relativePositionAndBodyId.xyz;\n\
 	    vec3 velocity = texture2D(velTex, uv).xyz;\n\
@@ -486,7 +492,8 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 			//compute torque from surface collision\n\
 			vec3 sfnormal = normalize(CalculateSurfaceNormal(position));\n\
 			float distance = trilinearInterpolation(position);\n\
-			if (abs(distance) < 0.05 && bodyType_infos1.w <= 0.0){\n\
+			//if (abs(distance) < radius*2.0){\n\
+			if (abs(distance) < radius*2.0 && bodyType_infos1.w <= 0.0){\n\
 			    if (distance > 0.0 && bodyType_infos1.w < 0.0) sfnormal = -sfnormal;\n\
 			    if (distance < 0.0 && bodyType_infos1.w == 0.0) sfnormal = -sfnormal;\n\
 			    vec3 relVel = (velocity - cross(relativePosition + (radius) * sfnormal, angularVelocity));\n\
@@ -494,7 +501,7 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 			    torque += friction * cross(relativePosition + radius * sfnormal, relTangentVel);\n\
 			}\n\
 			if (bodyType_infos1.w > 0.0) {\n\
-				vec3 up = vec3(0,0,1);//bodyType_infos1.xyz;\n\
+				vec3 up = bodyType_infos1.xyz;\n\
 				vec3 off = bodyType_infos2.xyz;\n\
 				if (distance < 0.0) sfnormal=-sfnormal;\n\
 				vec4 arotation = computeOrientation(sfnormal, up);\n\
@@ -502,7 +509,7 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 				vec3 dir = normalize(r_relativePosition - relativePosition);\n\
 				vec3 v = velocity - cross(relativePosition + radius * dir, angularVelocity);\n\
 				vec3 relTangentVel = (v - dot(v, dir) * dir);\n\
-			  //torque = friction * cross(relativePosition + radius * dir, relTangentVel);\n\
+			  //torque += friction * cross(relativePosition + radius * dir, relTangentVel);\n\
 			}\n\
 			gl_FragColor = vec4(torque, 0.0);\n\
 	}\n";
@@ -552,6 +559,7 @@ var updateBodyVelocityFrag = "uniform sampler2D bodyQuatTex;\n\
 	uniform sampler2D bodyForceTex;\n\
 	uniform sampler2D bodyMassTex;\n\
 	uniform sampler2D bodyInfos2Tex;\n\
+	uniform sampler2D bodyInfosTex1;\n\
 	uniform float linearAngular;\n\
 	uniform vec3 gravity;\n\
 	uniform vec3 maxVelocity;\n\
@@ -568,10 +576,10 @@ var updateBodyVelocityFrag = "uniform sampler2D bodyQuatTex;\n\
 	    vec3 newVelocity = velocity.xyz;\n\
 			vec4 posTexData = texture2D(bodyPosTex, uv);\n\
 			float bodyTypeIndex = posTexData.w;\n\
-			vec2 bodyType_uv = indexToUV( bodyTypeIndex*2.0, bodyInfosTextureResolution );\n\
+			vec2 bodyType_uv = indexToUV( bodyTypeIndex, bodyInfosTextureResolution );\n\
 			vec4 bodyType_infos1 = texture2D(bodyInfosTex, bodyType_uv);\n\
-			bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
-			vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);\n\
+			//bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
+			vec4 bodyType_infos2 = texture2D(bodyInfosTex1, bodyType_uv);\n\
 			vec3 up = bodyType_infos1.xyz;\n\
 			vec3 off = bodyType_infos2.xyz;\n\
 			vec4 massProps = texture2D(bodyInfos2Tex, bodyType_uv);\n\
@@ -614,6 +622,7 @@ var updateBodyVelocityFrag = "uniform sampler2D bodyQuatTex;\n\
 //step 11 updateBodyPosition()
 //force surface here.
 var updateBodyPositionFrag = "uniform sampler2D bodyVelTex;\n\
+	uniform sampler2D bodyInfosTex1;\n\
 	uniform vec4 params2;\n\
 	#define deltaTime params2.x\n"+
 	densityShader+
@@ -624,10 +633,10 @@ var updateBodyPositionFrag = "uniform sampler2D bodyVelTex;\n\
 	        vec3 velocity = texture2D(bodyVelTex, uv).xyz;\n\
 					vec3 new_pos = position + velocity * deltaTime;\n\
 					float bodyTypeIndex = posTexData.w;\n\
-					vec2 bodyType_uv = indexToUV( bodyTypeIndex*2.0, bodyInfosTextureResolution );\n\
+					vec2 bodyType_uv = indexToUV( bodyTypeIndex, bodyInfosTextureResolution );\n\
 					vec4 bodyType_infos1 = texture2D(bodyInfosTex, bodyType_uv);\n\
-					bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
-					vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);\n\
+					//bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
+					vec4 bodyType_infos2 = texture2D(bodyInfosTex1, bodyType_uv);\n\
 					if (bodyType_infos1.w > 0.0) {\n\
 						vec3 sfnormal = normalize(CalculateSurfaceNormal(new_pos));\n\
 						float distance = trilinearInterpolation(new_pos);\n\
@@ -646,6 +655,7 @@ var updateBodyPositionFrag = "uniform sampler2D bodyVelTex;\n\
 //force surface here.
 var updateBodyQuaternionFrag = "uniform sampler2D bodyQuatTex;\n\
 	uniform sampler2D bodyAngularVelTex;\n\
+	uniform sampler2D bodyInfosTex1;\n\
 	uniform vec4 params2;\n\
 	#define deltaTime params2.x\n"+
 	densityShader+
@@ -657,32 +667,38 @@ var updateBodyQuaternionFrag = "uniform sampler2D bodyQuatTex;\n\
 					vec3 angularVel = texture2D(bodyAngularVelTex, uv).xyz;\n\
 					vec4 new_quat = quat_integrate(quat, angularVel*10.0, deltaTime);\n\
 					float bodyTypeIndex = posTexData.w;\n\
-					vec2 bodyType_uv = indexToUV( bodyTypeIndex*2.0, bodyInfosTextureResolution );\n\
+					vec2 bodyType_uv = indexToUV( bodyTypeIndex, bodyInfosTextureResolution );\n\
 					vec4 bodyType_infos1 = texture2D(bodyInfosTex, bodyType_uv);\n\
-					bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
-					vec4 bodyType_infos2 = texture2D(bodyInfosTex, bodyType_uv);\n\
+					//bodyType_uv = indexToUV( bodyTypeIndex*2.0+1.0, bodyInfosTextureResolution );\n\
+					vec4 bodyType_infos2 = texture2D(bodyInfosTex1, bodyType_uv);\n\
 					if (bodyType_infos1.w > 0.0) {\n\
 						vec3 up = bodyType_infos1.xyz;\n\
 						vec3 off = bodyType_infos2.xyz;\n\
-						vec3 sfnormal = normalize(CalculateSurfaceNormal(position));\n\
-						float distance = trilinearInterpolation(position);\n\
 						//vec3 p = (position - gridPos)*gridResolution.x;\n\
 						//vec4 data=getValues(floor(p.x),floor(p.y),floor(p.z));\n\
 						//sfnormal = data.xyz;\n\
-						//if (distance < 0.0) sfnormal=-sfnormal;\n\
-						if (length(sfnormal) == 0.0) sfnormal = vec3(0,1,0);\n\
-						vec4 arotation = computeOrientation(sfnormal, up);\n\
+						float L = dot(off,up);\n\
+						//if (length(sfnormal) == 0.0) sfnormal = vec3(0,1,0);\n\
+						vec3 roff = vec3_applyQuat(off,new_quat);\n\
+						vec3 sfnormal = normalize(CalculateSurfaceNormal(position-roff));\n\
+						float distance = trilinearInterpolation(position-roff);\n\
+						if ( distance < 0.0 ) sfnormal=-sfnormal;\n\
 						vec3 rup = vec3_applyQuat(up,new_quat);\n\
+						vec4 arotation = computeOrientation(sfnormal, rup);\n\
+						vec3 axis = cross(normalize(rup),normalize(sfnormal));\n\
+						vec4 q1 = QuaternionLookRotation(axis,rup);\n\
+						vec4 q2 = QuaternionLookRotation(axis,sfnormal);\n\
+						float alpha = acos(dot(normalize(rup),normalize(sfnormal)));\n\
 						vec3 newup = vec3_applyQuat(up,arotation);//use current ?\n\
 						vec3 torque = cross(normalize(rup), normalize(newup));\n\
 						float theta = asin(length(torque));\n\
-						vec4 q = QuaternionFromAxisAngle(torque, theta);\n\
+						vec4 q = QuaternionFromAxisAngle(axis, alpha);\n\
 						q = normalize(q);\n\
-						vec4 R = QuaternionMul(q, arotation);\n\
-						//R = quat_slerp(new_quat, arotation, deltaTime);\n\
+						vec4 R = QuaternionMul(new_quat, arotation);\n\
+						R = quat_slerp(q1, q2, deltaTime);\n\
 						//if (abs(distance) < 2.0**1175.0*0.000390625) \n\
 						//if (abs(distance) <= 2.0*1175.0*0.000390625) \n\
-						new_quat = arotation;\n\
+						new_quat = q2;//quat_integrate(arotation, q, deltaTime);\n\
 					}\n\
 					gl_FragColor = new_quat;//quat;\n\
 	}\n"
@@ -854,6 +870,60 @@ var shared = "float Epsilon = 1e-10;\n\
 		q.z = axis.z * sin(angle/2.0);\n\
 		q.w = cos(angle/2.0);\n\
 		return q;\n\
+	}\n\
+	vec4 QuaternionLookRotation(vec3 forward, vec3 up)\n\
+	{\n\
+	    vec3 vector = normalize(forward);\n\
+	    vec3 vector2 = normalize(cross(up, vector));\n\
+	    vec3 vector3 = cross(vector, vector2);\n\
+	    float m00 = vector2.x;\n\
+	    float m01 = vector2.y;\n\
+	    float m02 = vector2.z;\n\
+	    float m10 = vector3.x;\n\
+	    float m11 = vector3.y;\n\
+	    float m12 = vector3.z;\n\
+	    float m20 = vector.x;\n\
+	    float m21 = vector.y;\n\
+	    float m22 = vector.z;\n\
+	    float num8 = (m00 + m11) + m22;\n\
+	    vec4 quaternion = vec4(0.0,0.0,0.0,1.0);\n\
+	    if (num8 > 0.0)\n\
+	    {\n\
+	        float num = sqrt(num8 + 1.0);\n\
+	        quaternion.w = num * 0.5;\n\
+	        num = 0.5 / num;\n\
+	        quaternion.x = (m12 - m21) * num;\n\
+	        quaternion.y = (m20 - m02) * num;\n\
+	        quaternion.z = (m01 - m10) * num;\n\
+	        return quaternion;\n\
+	    }\n\
+	    if ((m00 >= m11) && (m00 >= m22))\n\
+	    {\n\
+	        float num7 = sqrt(((1.0 + m00) - m11) - m22);\n\
+	        float num4 = 0.5 / num7;\n\
+	        quaternion.x = 0.5 * num7;\n\
+	        quaternion.y = (m01 + m10) * num4;\n\
+	        quaternion.z = (m02 + m20) * num4;\n\
+	        quaternion.w = (m12 - m21) * num4;\n\
+	        return quaternion;\n\
+	    }\n\
+	    if (m11 > m22)\n\
+	    {\n\
+	        float num6 = sqrt(((1.0 + m11) - m00) - m22);\n\
+	        float num3 = 0.5 / num6;\n\
+	        quaternion.x = (m10+ m01) * num3;\n\
+	        quaternion.y = 0.5 * num6;\n\
+	        quaternion.z = (m21 + m12) * num3;\n\
+	        quaternion.w = (m20 - m02) * num3;\n\
+	        return quaternion; \n\
+	    }\n\
+	    var num5 = sqrt(((1f + m22) - m00) - m11);\n\
+	    var num2 = 0.5f / num5;\n\
+	    quaternion.x = (m20 + m02) * num2;\n\
+	    quaternion.y = (m21 + m12) * num2;\n\
+	    quaternion.z = 0.5f * num5;\n\
+	    quaternion.w = (m01 - m10) * num2;\n\
+	    return quaternion;\n\
 	}\n\
 	vec4 QuaternionMul(vec4 lhs, vec4 rhs)\n\
 	{\n\
@@ -1177,7 +1247,7 @@ var shared = "float Epsilon = 1e-10;\n\
 					}
 			},
 
-			addBodyType: function(copynumber,
+			addBodyType1: function(copynumber,
 														nbeads,
 														surface,
 														radius,
@@ -1190,7 +1260,7 @@ var shared = "float Epsilon = 1e-10;\n\
 	            console.warn("Too many bodies: " + this.bodyTypeCount+" max "+this.maxBodyTypes);
 	            return;
 	        }
-					console.log(" addbodytype",surface,radius);
+					console.log("addbodytype",surface,radius);
 					console.log("pcp",pcpX, pcpY, pcpZ);
 					console.log("off",offX, offY, offZ);
 					console.log("inertia",inertiaX, inertiaY, inertiaZ, mass);
@@ -1206,11 +1276,70 @@ var shared = "float Epsilon = 1e-10;\n\
 	        data[p + 1] = pcpY;
 					data[p + 2] = pcpZ;
 					data[p + 3] = surface;//compparentId ?
-					p = idToDataIndex(this.bodyTypeCount*2.0+1.0, w, h);
-					data[p + 0] = offX;
-					data[p + 1] = offY;
-					data[p + 2] = offZ;
-					data[p + 3] = radius;//copynumber for this one ?
+					//p = idToDataIndex(this.bodyTypeCount*2.0+1.0, w, h);
+					data[p + 4] = offX;
+					data[p + 5] = offY;
+					data[p + 6] = offZ;
+					data[p + 7] = radius;//copynumber for this one ?
+
+					var tex2 = this.dataTextures.bodyInfos2;
+					tex2.needsUpdate = true;
+	        var data2 = tex2.image.data;
+	        var w2 = tex2.image.width;
+	        var h2 = tex2.image.height;
+	        var p2 = idToDataIndex(this.bodyTypeCount*2.0, w2, h2);
+					data2[p2 + 0] = copynumber;
+	        data2[p2 + 1] = nbeads;
+					data2[p2 + 2] = this.bodyTypeCount;
+					data2[p2 + 3] = 0;//compparentId ?
+					p2 = idToDataIndex(this.bodyTypeCount*2.0+1, w2, h2);
+					data[p2 + 0] = 1/inertiaX;
+	        data[p2 + 1] = 1/inertiaY;
+	        data[p2 + 2] = 1/inertiaZ;
+	        data[p2 + 3] = 1/mass;
+	        return this.bodyTypeCount++;
+	    },
+			addBodyType: function(copynumber,
+														nbeads,
+														surface,
+														radius,
+														pcpX, pcpY, pcpZ,
+														offX, offY, offZ,
+														mass,
+														inertiaX, inertiaY, inertiaZ){
+
+	        if(this.bodyTypeCount >= this.maxBodyTypes){
+	            console.warn("Too many bodies: " + this.bodyTypeCount+" max "+this.maxBodyTypes);
+	            return;
+	        }
+					console.log("addbodytype",surface,radius);
+					console.log("pcp",pcpX, pcpY, pcpZ);
+					console.log("off",offX, offY, offZ);
+					console.log("inertia",inertiaX, inertiaY, inertiaZ, mass);
+	        // Position
+					// should we add the color as well?
+	        var tex = this.dataTextures.bodyInfos;
+	        tex.needsUpdate = true;
+	        var data = tex.image.data;
+	        var w = tex.image.width;
+	        var h = tex.image.height;
+	        var p = idToDataIndex(this.bodyTypeCount, w, h);
+	        data[p + 0] = pcpX;
+	        data[p + 1] = pcpY;
+					data[p + 2] = pcpZ;
+					data[p + 3] = surface;//compparentId ?
+
+					var tex1 = this.dataTextures.bodyInfos1;
+	        tex1.needsUpdate = true;
+	        var data1 = tex1.image.data;
+	        var w1 = tex1.image.width;
+	        var h1 = tex1.image.height;
+	        var p1 = idToDataIndex(this.bodyTypeCount, w1, h1);
+					data1[p + 0] = offX;
+					data1[p + 1] = offY;
+					data1[p + 2] = offZ;
+					data1[p + 3] = radius;//copynumber for this one ?
+
 					var tex2 = this.dataTextures.bodyInfos2;
 					tex2.needsUpdate = true;
 	        var data2 = tex2.image.data;
@@ -1351,7 +1480,8 @@ var shared = "float Epsilon = 1e-10;\n\
 		        data[p + 2] = 1/inertiaZ;
 		        data[p + 3] = 1/mass;
 			},
-	    addParticle: function(bodyId, x, y, z) {
+	    addParticle: function(bodyId,x, y, z)
+				{
 					if(this.particleCount >= this.maxParticles){
 	            console.warn("Too many particles: " + this.particleCount+" max "+this.maxParticles);
 	            return;
@@ -1420,7 +1550,7 @@ var shared = "float Epsilon = 1e-10;\n\
 	        var type = ( /(iPad|iPhone|iPod)/g.test( navigator.userAgent ) ) ? THREE.HalfFloatType : THREE.FloatType;
 	        var bodyTextureSize = powerOfTwoCeil(maxBodies);
 	        var particleTextureSize = powerOfTwoCeil(maxParticles);
-					var bodyInfosTextureSize = powerOfTwoCeil(maxBodyTypes)*2;
+					var bodyInfosTextureSize = powerOfTwoCeil(maxBodyTypes);
 					var gridIdTextureSize = powerOfTwoCeil(this.broadphase.resolution.x*this.broadphase.resolution.x*this.broadphase.resolution.x);
 					Object.assign(this.textures, {
 	            // Body textures
@@ -1457,6 +1587,7 @@ var shared = "float Epsilon = 1e-10;\n\
 							gridIds: new THREE.DataTexture( new Float32Array(4*gridIdTextureSize*gridIdTextureSize), gridIdTextureSize, gridIdTextureSize, THREE.RGBAFormat, type ),
 							gridValues: new THREE.DataTexture( new Float32Array(4*gridIdTextureSize*gridIdTextureSize), gridIdTextureSize, gridIdTextureSize, THREE.RGBAFormat, type ),
 							bodyInfos: new THREE.DataTexture( new Float32Array(4*bodyInfosTextureSize*bodyInfosTextureSize), bodyInfosTextureSize, bodyInfosTextureSize, THREE.RGBAFormat, type ),
+							bodyInfos1: new THREE.DataTexture( new Float32Array(4*bodyInfosTextureSize*bodyInfosTextureSize), bodyInfosTextureSize, bodyInfosTextureSize, THREE.RGBAFormat, type ),
 							bodyInfos2: new THREE.DataTexture( new Float32Array(4*bodyInfosTextureSize*bodyInfosTextureSize), bodyInfosTextureSize, bodyInfosTextureSize, THREE.RGBAFormat, type ),
 							bodyPositions: new THREE.DataTexture( new Float32Array(4*bodyTextureSize*bodyTextureSize), bodyTextureSize, bodyTextureSize, THREE.RGBAFormat, type ),
 	            bodyQuaternions: new THREE.DataTexture( new Float32Array(4*bodyTextureSize*bodyTextureSize), bodyTextureSize, bodyTextureSize, THREE.RGBAFormat, type ),
@@ -1468,20 +1599,35 @@ var shared = "float Epsilon = 1e-10;\n\
 				var bodyTextureSize = powerOfTwoCeil(this.maxBodies);
 				var particleTextureSize = powerOfTwoCeil(this.maxParticles);
 				var gridIdTextureSize = powerOfTwoCeil(this.broadphase.resolution.x*this.broadphase.resolution.x*this.broadphase.resolution.x);
-				this.dataTextures.bodyPositions.image.data =new Float32Array(4*bodyTextureSize*bodyTextureSize);
-				this.dataTextures.bodyQuaternions.image.data =new Float32Array(4*bodyTextureSize*bodyTextureSize);
-				this.dataTextures.particleLocalPositions.image.data =new Float32Array(4*particleTextureSize*particleTextureSize);
+				var bodyInfosTextureSize = powerOfTwoCeil(this.maxBodyTypes)*2;
+				this.dataTextures.bodyPositions.image.data = new Float32Array(4*bodyTextureSize*bodyTextureSize);
+				this.dataTextures.bodyQuaternions.image.data = new Float32Array(4*bodyTextureSize*bodyTextureSize);
+				this.dataTextures.particleLocalPositions.image.data = new Float32Array(4*particleTextureSize*particleTextureSize);
 				this.dataTextures.gridIds.image.data = new Float32Array(4*gridIdTextureSize*gridIdTextureSize);
+				this.dataTextures.bodyInfos.image.data =new Float32Array(4*bodyInfosTextureSize*bodyInfosTextureSize);
+				this.dataTextures.bodyInfos1.image.data =new Float32Array(4*bodyInfosTextureSize*bodyInfosTextureSize);
+				this.dataTextures.bodyInfos2.image.data = new Float32Array(4*bodyInfosTextureSize*bodyInfosTextureSize);
 				this.dataTextures.bodyPositions.needsUpdate = true;
 				this.dataTextures.bodyQuaternions.needsUpdate = true;
 				this.dataTextures.particleLocalPositions.needsUpdate = true;
 				this.dataTextures.gridIds.needsUpdate = true;
+				this.dataTextures.bodyInfos.needUpdate = true;
+				this.dataTextures.bodyInfos1.needUpdate = true;
+				this.dataTextures.bodyInfos2.needUpdate = true;
 				this.gridDirty = true;
 				this.time = 0;//force the flush
 				this.accumulator = 0;
 				this.interpolationValue = 0;
+				this.bodyCount = 0;
+				this.particleCount = 0;
+				this.bodyTypeCount = 0;
+				//clear the render target ?
+				for (var texture in this.textures) {
+    			if (this.textures.hasOwnProperty(texture)) {
+        			this.renderer.clearTarget( this.textures[texture], true, true, true );
+			    }
+				}
 				//this.particleCount current particle count
-
 			},
 
 			// Render data to rendertargets
@@ -1512,7 +1658,20 @@ var shared = "float Epsilon = 1e-10;\n\
 	        texturedMaterial.uniforms.texture.value = null;
 	        this.fullscreenQuad.material = null;
 	    },
-	    setRenderTargetSubData: function(ids, getDataCallback, renderTarget, renderTarget2){
+	    saveRendererState: function(){
+	        this.oldAutoClear = this.renderer.autoClear;
+	        this.renderer.autoClear = false;
+
+	        this.oldClearColor = this.renderer.getClearColor().getHex();
+	        this.oldClearAlpha = this.renderer.getClearAlpha();
+	        this.renderer.setClearColor( 0x000000, 1.0 );
+	    },
+	    restoreRendererState: function(){
+	        this.renderer.autoClear = this.oldAutoClear;
+	        this.renderer.setRenderTarget( null );
+	        this.renderer.setClearColor( this.oldClearColor, this.oldClearAlpha );
+	    },
+			setRenderTargetSubData: function(ids, getDataCallback, renderTarget, renderTarget2){
 	        this.saveRendererState();
 	        var numVertices = 128; // Good number?
 	        if(!this.scenes.setBodyData){
@@ -1933,6 +2092,7 @@ var shared = "float Epsilon = 1e-10;\n\
 											bodyPosTex:  { value: null },
 											bodyQuatTex:  { value: null },
 											bodyInfosTex:  { value: this.dataTextures.bodyInfos },
+											bodyInfosTex1:  { value: this.dataTextures.bodyInfos1 },
 											gridIdTex:  { value:null },
 											gridValueTex:  { value: this.dataTextures.gridValues },
 	                    params1: { value: this.params1 },
@@ -1957,6 +2117,14 @@ var shared = "float Epsilon = 1e-10;\n\
 					//forceMaterial.uniforms.bodyPosTex.value = this.dataTextures.bodyInfos;
 					forceMaterial.uniforms.bodyPosTex.value = this.textures.bodyPosRead.texture;
 					forceMaterial.uniforms.bodyQuatTex.value = this.textures.bodyQuatRead.texture;
+
+					forceMaterial.uniforms.gridPos.value = this.broadphase.position;
+					forceMaterial.uniforms.cellSize.value = new THREE.Vector3(this.radius*2,this.radius*2,this.radius*2);
+					forceMaterial.uniforms.gridTex.value = this.textures.grid.texture;
+					forceMaterial.uniforms.bodyInfosTex.value = this.dataTextures.bodyInfos;
+					forceMaterial.uniforms.bodyInfosTex1.value = this.dataTextures.bodyInfos1;
+					forceMaterial.uniforms.gridValueTex.value = this.dataTextures.gridValues;
+
 	        renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.particleForce, false );
 	        forceMaterial.uniforms.posTex.value = null;
 	        forceMaterial.uniforms.particlePosRelative.value = null;
@@ -1988,6 +2156,7 @@ var shared = "float Epsilon = 1e-10;\n\
 	                    gridTex:  { value: null },
 											bodyPosTex:  { value: null },
 											bodyInfosTex:  { value: this.dataTextures.bodyInfos },
+											bodyInfosTex1:  { value: this.dataTextures.bodyInfos1 },
 											gridIdTex:  { value: null },
 											gridValueTex:  { value: this.dataTextures.gridValues },
 	                    params1: { value: this.params1 },
@@ -2010,6 +2179,14 @@ var shared = "float Epsilon = 1e-10;\n\
 	        updateTorqueMaterial.uniforms.bodyAngularVelTex.value = this.textures.bodyAngularVelRead.texture; // Angular velocity for indivitual particles and bodies are the same
 					updateTorqueMaterial.uniforms.bodyPosTex.value = this.textures.bodyPosRead.texture;
 					updateTorqueMaterial.uniforms.gridIdTex.value = this.textures.gridIdsRead.texture;
+
+					updateTorqueMaterial.uniforms.gridPos.value = this.broadphase.position;
+					updateTorqueMaterial.uniforms.cellSize.value = new THREE.Vector3(this.radius*2,this.radius*2,this.radius*2);
+					updateTorqueMaterial.uniforms.gridTex.value = this.textures.grid.texture;
+					updateTorqueMaterial.uniforms.bodyInfosTex.value = this.dataTextures.bodyInfos;
+					updateTorqueMaterial.uniforms.bodyInfosTex1.value = this.dataTextures.bodyInfos1;
+					updateTorqueMaterial.uniforms.gridValueTex.value = this.dataTextures.gridValues;
+
 	        renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.particleTorque, false );
 					updateTorqueMaterial.uniforms.bodyPosTex.value = null;
 	        updateTorqueMaterial.uniforms.posTex.value = null;
@@ -2021,6 +2198,25 @@ var shared = "float Epsilon = 1e-10;\n\
 	        this.fullscreenQuad.material = null;
 	    },
 
+
+			//need to update the material attribute since we change the particule data on reset...
+			//need to update this.mapParticleToBodyMesh;
+			updateMapParticleToBodyMesh: function(){
+				var numParticles = this.textures.particlePosLocal.width;
+				var bodyIndices = new Float32Array( numParticles * numParticles );
+				var particleIndices = new Float32Array( numParticles * numParticles );
+				for(var i=0; i<numParticles * numParticles; i++){
+						var particleId = i;
+						particleIndices[i] = particleId;
+						bodyIndices[i] = this.getBodyId(particleId);
+				}
+				this.mapParticleToBodyMesh.geometry.attributes.position.copy(new THREE.BufferAttribute( new Float32Array(numParticles*numParticles*3), 3 ) );
+				this.mapParticleToBodyMesh.geometry.attributes.particleIndex.copy(new THREE.BufferAttribute( particleIndices, 1 ) );
+				this.mapParticleToBodyMesh.geometry.attributes.bodyIndex.copy(new THREE.BufferAttribute( bodyIndices, 1 ) );
+				this.mapParticleToBodyMesh.geometry.attributes.position.needsUpdate = true;
+				this.mapParticleToBodyMesh.geometry.attributes.particleIndex.needsUpdate = true;
+				this.mapParticleToBodyMesh.geometry.attributes.bodyIndex.needsUpdate = true;
+			},
 	    updateBodyForce: function(){
 	        var renderer = this.renderer;
 	        var buffers = renderer.state.buffers;
@@ -2072,21 +2268,6 @@ var shared = "float Epsilon = 1e-10;\n\
 	        this.mapParticleToBodyMesh.material = null;
 	    },
 
-	    saveRendererState: function(){
-	        this.oldAutoClear = this.renderer.autoClear;
-	        this.renderer.autoClear = false;
-
-	        this.oldClearColor = this.renderer.getClearColor().getHex();
-	        this.oldClearAlpha = this.renderer.getClearAlpha();
-	        this.renderer.setClearColor( 0x000000, 1.0 );
-	    },
-
-	    restoreRendererState: function(){
-	        this.renderer.autoClear = this.oldAutoClear;
-	        this.renderer.setRenderTarget( null );
-	        this.renderer.setClearColor( this.oldClearColor, this.oldClearAlpha );
-	    },
-
 	    updateBodyTorque: function(){
 	        var renderer = this.renderer;
 
@@ -2133,6 +2314,7 @@ var shared = "float Epsilon = 1e-10;\n\
 	                    bodyVelTex:  { value: null },
 	                    bodyMassTex:  { value: null },
 											bodyInfosTex:  { value: this.dataTextures.bodyInfos },
+											bodyInfosTex1:  { value: this.dataTextures.bodyInfos1 },
 											bodyInfos2Tex:  { value: this.dataTextures.bodyInfos2 },
 											gridIdTex:  { value: null },
 											gridValueTex:  { value: this.dataTextures.gridValues },
@@ -2165,6 +2347,8 @@ var shared = "float Epsilon = 1e-10;\n\
 					updateBodyVelocityMaterial.uniforms.bodyPosTex.value = this.textures.bodyPosRead.texture;
 					updateBodyVelocityMaterial.uniforms.bodyQuatTex.value = this.textures.bodyQuatRead.texture;
 					updateBodyVelocityMaterial.uniforms.gridIdTex.value = this.textures.gridIdsRead.texture;
+					updateBodyVelocityMaterial.uniforms.bodyInfosTex.value = this.dataTextures.bodyInfos;
+					updateBodyVelocityMaterial.uniforms.bodyInfosTex1.value = this.dataTextures.bodyInfos1;
 	        renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.bodyVelWrite, false );
 	        this.fullscreenQuad.material = null;
 					updateBodyVelocityMaterial.uniforms.bodyPosTex.value = null;
@@ -2189,6 +2373,8 @@ var shared = "float Epsilon = 1e-10;\n\
 	        updateBodyVelocityMaterial.uniforms.bodyVelTex.value = this.textures.bodyAngularVelRead.texture;
 	        updateBodyVelocityMaterial.uniforms.bodyForceTex.value = this.textures.bodyTorque.texture;
 					updateBodyVelocityMaterial.uniforms.gridIdTex.value = this.textures.gridIdsRead.texture;
+					updateBodyVelocityMaterial.uniforms.bodyInfosTex.value = this.dataTextures.bodyInfos;
+					updateBodyVelocityMaterial.uniforms.bodyInfosTex1.value = this.dataTextures.bodyInfos1;
 	        renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.bodyAngularVelWrite, false );
 	        this.fullscreenQuad.material = null;
 	        updateBodyVelocityMaterial.uniforms.bodyQuatTex.value = null;
@@ -2210,6 +2396,7 @@ var shared = "float Epsilon = 1e-10;\n\
 											bodyPosTex:  { value: null },
 											bodyVelTex:  { value: null },
 											bodyInfosTex:  { value: this.dataTextures.bodyInfos },
+											bodyInfosTex1:  { value: this.dataTextures.bodyInfos1 },
 											gridIdTex:  { value: null},
 											gridValueTex:  { value: this.dataTextures.gridValues },
 											cellSize: { value: new THREE.Vector3(this.radius*2,this.radius*2,this.radius*2) },
@@ -2226,6 +2413,8 @@ var shared = "float Epsilon = 1e-10;\n\
 					this.fullscreenQuad.material = setBodyPositionMaterial;
 					setBodyPositionMaterial.uniforms.bodyPosTex.value = this.textures.bodyPosRead.texture;
 					setBodyPositionMaterial.uniforms.bodyVelTex.value = this.textures.bodyVelRead.texture;
+					setBodyPositionMaterial.uniforms.bodyInfosTex.value = this.dataTextures.bodyInfos;
+					setBodyPositionMaterial.uniforms.bodyInfosTex1.value = this.dataTextures.bodyInfos1;
 					//setBodyPositionMaterial.uniforms.bodyInfosTex.value = this.textures.bodyInfos.texture;
 					renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.bodyPosWrite, false );
 					setBodyPositionMaterial.uniforms.bodyPosTex.value = null;
@@ -2247,6 +2436,7 @@ var shared = "float Epsilon = 1e-10;\n\
 											bodyAngularVelTex: { value: null },
 											bodyPosTex:  { value: null },
 											bodyInfosTex:  { value: this.dataTextures.bodyInfos },
+											bodyInfosTex1:  { value: this.dataTextures.bodyInfos1 },
 											gridIdTex:  { value: null },
 											gridValueTex:  { value: this.dataTextures.gridValues },
 											cellSize: { value: new THREE.Vector3(this.radius*2,this.radius*2,this.radius*2) },
@@ -2264,7 +2454,8 @@ var shared = "float Epsilon = 1e-10;\n\
 					setBodyQuaternionMaterial.uniforms.bodyQuatTex.value = this.textures.bodyQuatRead.texture;
 					setBodyQuaternionMaterial.uniforms.bodyAngularVelTex.value = this.textures.bodyAngularVelRead.texture;
 					setBodyQuaternionMaterial.uniforms.bodyPosTex.value = this.textures.bodyAngularVelRead.texture;
-					//setBodyQuaternionMaterial.uniforms.bodyInfosTex.value = this.textures.bodyInfos.texture;
+					setBodyQuaternionMaterial.uniforms.bodyInfosTex.value = this.dataTextures.bodyInfos;
+					setBodyQuaternionMaterial.uniforms.bodyInfosTex1.value = this.dataTextures.bodyInfos1;
 					renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.bodyQuatWrite, false );
 					setBodyQuaternionMaterial.uniforms.bodyQuatTex.value = null;
 					setBodyQuaternionMaterial.uniforms.bodyAngularVelTex.value = null;
@@ -2446,6 +2637,12 @@ var shared = "float Epsilon = 1e-10;\n\
 	        updateBodyQuaternionMaterial.uniforms.bodyAngularVelTex.value = this.textures.bodyAngularVelRead.texture;
 					updateBodyQuaternionMaterial.uniforms.bodyPosTex.value = this.textures.bodyPosRead.texture;
 					updateBodyQuaternionMaterial.uniforms.gridIdTex.value = this.textures.gridIdsRead.texture;
+
+					updateBodyQuaternionMaterial.uniforms.gridPos.value = this.broadphase.position;
+					updateBodyQuaternionMaterial.uniforms.cellSize.value = new THREE.Vector3(this.radius*2,this.radius*2,this.radius*2);
+					updateBodyQuaternionMaterial.uniforms.bodyInfosTex.value = this.dataTextures.bodyInfos;
+					updateBodyQuaternionMaterial.uniforms.gridValueTex.value = this.dataTextures.gridValues;
+
 					//updateBodyQuaternionMaterial.uniforms.bodyInfosTex.value = this.textures.bodyInfos.texture;
 	        renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.bodyQuatWrite, false );
 	        updateBodyQuaternionMaterial.uniforms.bodyQuatTex.value = null;

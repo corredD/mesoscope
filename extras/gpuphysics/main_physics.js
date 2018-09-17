@@ -84,6 +84,8 @@ var general_inertia_mass;
 /*display shader*/
 var imposter_vertex="precision highp float;\n\
   uniform sampler2D particleWorldPosTex;\n\
+  uniform sampler2D bodyPosTex;\n\
+  uniform sampler2D bodyInfosTex;\n\
   uniform sampler2D quatTex;\n\
   uniform float radius;\n\
   attribute float instanceInfos;\n\
@@ -97,6 +99,10 @@ var imposter_vertex="precision highp float;\n\
     vec2 particleUV = indexToUV(particleId,resolution);\n\
     vec4 particlePosAndBodyId = texture2D(particleWorldPosTex,particleUV);\n\
     vec2 bodyUV = indexToUV(particlePosAndBodyId.w,bodyTextureResolution);\n\
+    vec4 bodyPos = texture2D(bodyPosTex, bodyUV);\n\
+    float bodyTypeIndex = bodyPos.w;\n\
+    vec2 bodyType_uv = indexToUV( bodyTypeIndex*2.0, bodyInfosTextureResolution );\n\
+    vec4 bodyType_infos1 = texture2D(bodyInfosTex, bodyType_uv);\n\
     vec4 bodyQuat = texture2D(quatTex,bodyUV).xyzw;\n\
     vec3 billboardWorldPos = particlePosAndBodyId.xyz;\n\
     vRadius = radius;\n\
@@ -108,6 +114,9 @@ var imposter_vertex="precision highp float;\n\
     vec3 billboardVertexWorldPos = billboardWorldPos.xyz\n\
              + CameraRight * vertexPos.x + CameraUp * vertexPos.y;\n\
   	vColor = vec4(1.0,0.0,0.0,1.0);\n\
+    if (bodyType_infos1.w > 0.0) vColor = vec4(0.0,1.0,0.0,1.0);\n\
+    if (bodyType_infos1.w < 0.0) vColor = vec4(0.0,0.0,1.0,1.0);\n\
+    if (bodyType_infos1.w == 0.0) vColor = vec4(1.0,0.0,0.0,1.0);\n\
     vUv = uv;\n\
   	gl_Position = VP  * vec4( billboardVertexWorldPos.xyz , 1.0 );\n\
     vPosition = billboardVertexWorldPos;\n\
@@ -150,7 +159,7 @@ var imposter_fragment="#include <logdepthbuf_pars_fragment>\n\
     float gldepth = ((gl_DepthRange.diff * ndcDepth) +\n\
           gl_DepthRange.near + gl_DepthRange.far) / 2.0;\n\
     gl_FragDepthEXT = gldepth;\n\
-  	gl_FragColor = vec4(normal,1.0);//0.78,0.78,0.78,1.0);\n\
+  	gl_FragColor = vec4(normal*vColor.rgb,1.0);//0.78,0.78,0.78,1.0);\n\
   }\n";
 
 /*functions*/
@@ -512,7 +521,7 @@ function GP_createOneCompartmentMesh(anode) {
     comp_sphere.add(aSphereMesh);
   }
   anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2,0.0);
-  anode.data.mc.isolation = 0.0;
+  anode.data.mc.isolation = 0.0;//scaled distance to surface
   //NGL_updateMetaBallsGeom(anode);
   anode.data.mc.enableUvs = true;
   var geo = anode.data.mc.generateGeometry();
@@ -568,6 +577,7 @@ function GP_SetBodyType(anode, pid, start, count){
   var inertia = new THREE.Vector3();
   var mass = 0;
   var nbeads = 0;
+  var s = (!anode.data.surface)? -anode.parent.data.compId:anode.parent.data.compId;//this should be the compartment compId /numcomp
   if (!(pid in type_meshs) ){
     //number of beads
     var results = GP_getInertiaMassBeads(anode);
@@ -577,7 +587,6 @@ function GP_SetBodyType(anode, pid, start, count){
     if (!(pid in type_meshs)) type_meshs[pid] = createOneMesh(anode,start,count);
     //add bodyType firstaddBodyType
     anode.data.bodyid = world.bodyTypeCount;
-    var s = (!anode.data.surface)? -anode.parent.data.compId:anode.parent.data.compId;//this should be the compartment compId /numcomp
     console.log("addbodytype",s,anode.data.name,count,nbeads,inertia,mass);
     world.addBodyType(count,nbeads, s, anode.data.size*ascale,
                       up.x, up.y, up.z,
@@ -590,11 +599,18 @@ function GP_SetBodyType(anode, pid, start, count){
     inertia = results.inertia;
     mass = results.mass;
     var bodyTypeId = anode.data.bodyid;
+    console.log("updatebodytype",s,anode.data.name,count,nbeads,inertia,mass);
     //world.setBodyType(bodyTypeId,count,nbeads, s, anode.data.size*ascale,
     //                  up.x, up.y, up.z,
     //                  offset.x, offset.y, offset.z,
     //                  mass, inertia.x, inertia.y, inertia.z);
-    updateOneMesh(type_meshs[pid],anode,start,count);//should flag if mesh has changed
+    anode.data.bodyid = world.bodyTypeCount;
+    world.addBodyType(count,nbeads, s, anode.data.size*ascale,
+                      up.x, up.y, up.z,
+                      offset.x, offset.y, offset.z,
+                      mass, inertia.x, inertia.y, inertia.z);
+    var mid = type_meshs[pid]._idmesh;
+    updateOneMesh(meshMeshs[mid].geometry,anode,start,count);//should flag if mesh has changed
   }
 }
 
@@ -647,7 +663,7 @@ function GP_GPUdistributes(){
     }
   }
   GP_CombineGrid();
-  initDebugGrid();
+  if (!inited) initDebugGrid();
   for (var i=0;i<n;i++){//nodes.length
     console.log(i,nodes[i].data.name);
     if (nodes[i].data.ingtype == "fiber") continue;
@@ -686,6 +702,7 @@ function GP_GPUdistributes(){
 
 function distributesMesh(){
   var n = nodes.length;
+  num_beads_total = 0;
   var start = 0;
   var total = 0;
   var count = 0;//total ?
@@ -710,7 +727,7 @@ function distributesMesh(){
 
   //build master grid with everything? should align with gpu_grid
   GP_CombineGrid();
-  initDebugGrid();//if (debugGridMesh === null)
+  if (!inited) initDebugGrid();
   for (var i=0;i<n;i++){//nodes.length
     console.log(i,nodes[i].data.name);
     if (nodes[i].data.ingtype == "fiber") continue;
@@ -743,13 +760,14 @@ function distributesMesh(){
   console.log ( "there is n atoms ",num_beads_total);
   console.log ( "particle_id_Count ",particle_id_Count);
   num_instances = total;
-  world.particleCount = particle_id_Count;
-  world.bodyCount = num_instances;
+  //world.particleCount = particle_id_Count;
+  //world.bodyCount = num_instances;
   console.log(type_meshs[instance_infos[0]]);
   var keys = Object.keys(type_meshs);
   var nMeshs = keys.length;
   var amesh;
   for (var i=0;i<nMeshs;i++) {
+      console.log("mesh check ",keys[i]);
       if (i >= meshMeshs.length) {
         //change the material uniform color ?
         amesh = new THREE.Mesh( type_meshs[keys[i]], all_materials[current_material].m );
@@ -759,13 +777,17 @@ function distributesMesh(){
         amesh.customDepthMaterial = customDepthMaterial;
         amesh.castShadow = true;
         amesh.receiveShadow = true;
+        type_meshs[keys[i]]._idmesh = meshMeshs.length;
         meshMeshs.push(amesh);
         scene.add( amesh );
+        console.log("mesh builded",keys[i]);
       }
-      console.log("mesh builded",keys[i]);
+      else {
+        //already updated
+      }
   }
-
-  GP_debugBeadsSpheres();
+  if (inited)GP_updateDebugBeadsSpheres();
+  else GP_debugBeadsSpheres();
 }
 
 //when all atoms are loaded
@@ -831,7 +853,8 @@ function updateOneMesh(meshGeometry,anode,start,count) {
       color = [Math.random(), Math.random(), Math.random()];;//(anode.data.surface) ? [1,0,0]:[0,1,0];//Math.random(), Math.random(), Math.random()];
       anode.data.color = [color[0],color[1],color[2]];
     }
-    console.log("updateOneMesh",meshGeometry);
+    console.log("updateOneMesh",meshGeometry,count);
+    meshGeometry.startInstancedCount = start;
     meshGeometry.maxInstancedCount =  count;
     var bodyIndices = new THREE.InstancedBufferAttribute( new Float32Array( count * 1 ), 1, true, 1 );
     var bodyColors = new THREE.InstancedBufferAttribute( new Float32Array( count * 3 ), 3, true, 1  );
@@ -962,7 +985,6 @@ function addAtoms(anode,pid,start,o){
   return count;
 }
 
-
 function GP_getInertiaOneSphere(x,y,z){
   var r = radius;
   var density = 500000;
@@ -1024,12 +1046,12 @@ function createInstancesMesh(pid,anode,start,count) {
   //var comp = anode.parent;
   for (var bodyId=start;bodyId<start+count;bodyId++) {
     //if (loading_bar) loading_bar.set(bodyId/start+count);
-    var x = -boxSize.x + 2*boxSize.x*Math.random();
-    var y = ySpread*Math.random();
-    var z = -boxSize.z + 2*boxSize.z*Math.random();
-    x = -boxSize.x + Util_halton(bodyId,2)*w;
-    y =  Util_halton(bodyId,3)*h;
-    z = -boxSize.z + Util_halton(bodyId,5)*d;
+    //var x = -boxSize.x + 2*boxSize.x*Math.random();
+    //var y = ySpread*Math.random();
+    //var z = -boxSize.z + 2*boxSize.z*Math.random();
+    var x = -boxSize.x + Util_halton(bodyId,2)*w;
+    var y =  Util_halton(bodyId,3)*h;
+    var z = -boxSize.z + Util_halton(bodyId,5)*d;
     var q = new THREE.Quaternion();
     var axis = new THREE.Vector3(
         Math.random()-0.5,
@@ -1054,6 +1076,7 @@ function createInstancesMesh(pid,anode,start,count) {
       var rotation = new THREE.Quaternion().setFromUnitVectors (up,ni);
       var rand_rot = new THREE.Quaternion();
       rand_rot.setFromAxisAngle(up, Math.random() * Math.PI * 2);
+      rotation.multiply(rand_rot);
       var pos = new THREE.Vector3(v[vi*3]*mscale.x,
                                   v[vi*3+1]*mscale.y,
                                   v[vi*3+2]*mscale.z);
@@ -1083,7 +1106,10 @@ function createInstancesMesh(pid,anode,start,count) {
     //calculate inertia from the beads
     mass = 1;
     calculateBoxInertia(inertia, mass, new THREE.Vector3(radius*2,radius*2,radius*2));
-    if ( bodyId >= world.bodyCount ) {
+    world.addBody(x,y,z, q.x, q.y, q.z, q.w,
+                  mass, inertia.x, inertia.y, inertia.z,
+                  anode.data.bodyid);
+   /*if ( bodyId >= world.bodyCount ) {
       world.addBody(x,y,z, q.x, q.y, q.z, q.w,
                     mass, inertia.x, inertia.y, inertia.z,
                     anode.data.bodyid);
@@ -1093,6 +1119,7 @@ function createInstancesMesh(pid,anode,start,count) {
                     mass, inertia.x, inertia.y, inertia.z,
                     anode.data.bodyid);
     }
+    */
     //add the beads information
     if (anode.data.radii) {
       if (anode.data.radii && "radii" in anode.data.radii[0]) {
@@ -1101,10 +1128,11 @@ function createInstancesMesh(pid,anode,start,count) {
             var x=anode.data.pos[0].coords[i*3]*ascale,
                 y=anode.data.pos[0].coords[i*3+1]*ascale,
                 z=anode.data.pos[0].coords[i*3+2]*ascale;
-            if ( particle_id_Count >= world.particleCount )
+            world.addParticle(bodyId, x,y,z);
+            /*if ( particle_id_Count >= world.particleCount )
             {    world.addParticle(bodyId, x,y,z);}
             else
-            {    world.setParticle(particle_id_Count,bodyId,x,y,z);}
+            {    world.setParticle(particle_id_Count,bodyId,x,y,z);}*/
             particle_id_Count++;
         }
       }
@@ -1112,10 +1140,11 @@ function createInstancesMesh(pid,anode,start,count) {
       {
         for (var i=0;i< anode.data.pos[0].length;i++){
           var p = anode.data.pos[0][i];
-          if ( particle_id_Count >= world.particleCount )
+          world.addParticle(bodyId, p[0],p[1],p[2]);
+          /*if ( particle_id_Count >= world.particleCount )
           {    world.addParticle(bodyId, p[0],p[1],p[2]);}
           else
-          {    world.setParticle(particle_id_Count,bodyId,p[0],p[1],p[2]);}
+          {    world.setParticle(particle_id_Count,bodyId,p[0],p[1],p[2]);}*/
           particle_id_Count++;
         }
       }
@@ -1394,6 +1423,17 @@ function GP_initWorld(){
     world.setSpherePosition(0,-boxSize.x,-0.5,-boxSize.z);
 }
 
+function GP_updateDebugBeadsSpheres(){
+  debugMesh.geometry.maxInstancedCount = (world.particleCount !==0)? world.particleCount : world.maxParticles;
+  var instanceInfos = new THREE.InstancedBufferAttribute( new Float32Array( debugMesh.geometry.maxInstancedCount * 1 ), 1, true, 1 );
+  //var instancepositions = new THREE.InstancedBufferAttribute( new Float32Array( debugGeometry.maxInstancedCount * 1 ), 1, true, 1 );
+  for ( var i = 0, ul = instanceInfos.count; i < ul; i++ ) {
+      instanceInfos.setX( i, i );
+  }
+  debugMesh.geometry.attributes.instanceInfos.copy(instanceInfos);//addAttribute( 'instanceInfos', instanceInfos );
+  debugMesh.geometry.attributes.instanceInfos.needsUpdate = true;
+}
+
 function GP_debugBeadsSpheres(){
     //what if already exists...
     //if (debugMesh!==null) return;//need to update
@@ -1406,7 +1446,7 @@ function GP_debugBeadsSpheres(){
     bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(tri_mesh.triangles), 1));
 
     var debugGeometry = new THREE.InstancedBufferGeometry();
-    debugGeometry.maxInstancedCount = (world.particleCount !==0)? world.particleCount:world.maxParticles;
+    debugGeometry.maxInstancedCount = (world.particleCount !==0)? world.particleCount : world.maxParticles;
     for(var attributeName in bufferGeometry.attributes){
         debugGeometry.addAttribute( attributeName, bufferGeometry.attributes[attributeName].clone() );
     }
@@ -1424,9 +1464,13 @@ function GP_debugBeadsSpheres(){
     var uniforms = THREE.UniformsUtils.clone(phongShader.uniforms);
     uniforms.particleWorldPosTex = { value: world.dataTextures.particleLocalPositions };
     uniforms.quatTex = { value: world.dataTextures.bodyQuaternions };
+    uniforms.bodyPosTex = { value: world.dataTextures.bodyPositions };
+    uniforms.bodyInfosTex = { value: world.dataTextures.bodyInfos };
     uniforms.cameraNear =   { value: camera.near };
     uniforms.cameraFar = { value: camera.far };
     uniforms.radius = { value: world.radius };
+    var defines = world.getDefines();
+    defines.DEPTH_PACKING=3201;
     var debugMaterial = new THREE.ShaderMaterial({
         uniforms: uniforms,
         vertexShader: sharedShaderCode.innerText + imposter_vertex,
@@ -1435,12 +1479,13 @@ function GP_debugBeadsSpheres(){
         lights: true,
         depthWrite: true,
         transparent: false,
-        defines: {
+        defines: defines
+        //{
           //USE_MAP: true,
-          DEPTH_PACKING: 3201,
-          bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
-          resolution: 'vec2(' + world.particleTextureSize.toFixed(1) + ',' + world.particleTextureSize.toFixed(1) + ')'
-      }
+          //DEPTH_PACKING: 3201,
+          //bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
+          //resolution: 'vec2(' + world.particleTextureSize.toFixed(1) + ',' + world.particleTextureSize.toFixed(1) + ')'
+      //}
     });
     debugMaterial.extensions.fragDepth = true;
 
@@ -1882,21 +1927,25 @@ function render() {
 
     // Render main scene
     updateDebugGrid();
-
-    all_materials[ current_material ].m.uniforms.bodyPosTex.value = world.bodyPositionTexture;
-    all_materials[ current_material ].m.uniforms.bodyQuatTex.value = world.bodyQuaternionTexture;
-    all_materials[ current_material ].m.uniforms.bodyInfosTex.value = world.textures.bodyInfos.texture;
-
-    customDepthMaterial.uniforms.bodyPosTex.value = world.bodyPositionTexture;
-    customDepthMaterial.uniforms.bodyQuatTex.value = world.bodyQuaternionTexture;
-    if (cv_Material && atomData_do) {
+    if(controller.renderMeshs) {
+      all_materials[ current_material ].m.uniforms.bodyPosTex.value = world.bodyPositionTexture;
+      all_materials[ current_material ].m.uniforms.bodyQuatTex.value = world.bodyQuaternionTexture;
+      all_materials[ current_material ].m.uniforms.bodyInfosTex.value = world.textures.bodyInfos.texture;
+      customDepthMaterial.uniforms.bodyPosTex.value = world.bodyPositionTexture;
+      customDepthMaterial.uniforms.bodyQuatTex.value = world.bodyQuaternionTexture;
+        }
+    if (cv_Material && atomData_do && controller.renderAtoms) {
       cv_Material.uniforms.bodyPosTex.value = world.bodyPositionTexture;
       cv_Material.uniforms.bodyQuatTex.value = world.bodyQuaternionTexture;
       //cv_Material.uniforms.atomPositionsTex.value = atomData;
     }
     //use local particle and instance at
-    if (debugMesh) debugMesh.material.uniforms.particleWorldPosTex.value = world.particlePositionTexture;
-    if (debugMesh) debugMesh.material.uniforms.quatTex.value = world.bodyQuaternionTexture;
+    if (debugMesh && controller.renderParticles) {
+      debugMesh.material.uniforms.particleWorldPosTex.value = world.particlePositionTexture;
+      debugMesh.material.uniforms.quatTex.value = world.bodyQuaternionTexture;
+      debugMesh.material.uniforms.bodyPosTex.value = world.bodyPositionTexture;
+    }
+
     gridSprite.material.map = world.textures.gridIdsRead.texture;gridSprite.material.needsUpdate = true;
     //gridSprite.material.uniforms.res.value.set(world.dataTextures.gridIds.image.width,world.dataTextures.gridIds.image.height);
     //gridSprite.material.uniforms.texture.value = world.textures.gridIdsRead.texture;
@@ -2155,13 +2204,15 @@ function GP_initFromNodes(some_nodes,numpart,copy,doatom){
   atomData_do = doatom;
   if (inited) {
     nodes = some_nodes;
-    rb_init = false;
+    //rb_init = false;
     world.resetData();
     //reset the dataTexture
     //everything already initialize. just update.
     distributesMesh();
+    world.updateMapParticleToBodyMesh();
+    world.flushData();
+    world.singleStep();
     animate();
-
     //world.bodyCount = num_instances;
     //world.particleCount = particle_id_Count;
 
