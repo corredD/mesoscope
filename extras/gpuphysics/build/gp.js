@@ -118,6 +118,10 @@ var densityShader="uniform sampler2D bodyPosTex;\n\
 		vec4 g_values = vec4(g_infos.x,0.0,0.0,g_infos.y);//texture2D(gridValueTex, grid_uv);//normal,value\n\
 		return g_values;\n\
 	}\n\
+	vec4 getGridValues(vec3 point){\n\
+		vec3 p = (point - gridPos)*gridResolution.x;\n\
+		return getValues(floor(p.x),floor(p.y),floor(p.z));\n\
+	}\n\
 	float trilinearInterpolation(vec3 point){\n\
 		// Find the x, y and z values of the \n\
 		// 8 vertices of the cube that surrounds the point\n\
@@ -674,31 +678,25 @@ var updateBodyQuaternionFrag = "uniform sampler2D bodyQuatTex;\n\
 					if (bodyType_infos1.w > 0.0) {\n\
 						vec3 up = bodyType_infos1.xyz;\n\
 						vec3 off = bodyType_infos2.xyz;\n\
+						vec3 sfnormal = normalize(CalculateSurfaceNormal(position));\n\
+						float distance = trilinearInterpolation(position);\n\
 						//vec3 p = (position - gridPos)*gridResolution.x;\n\
 						//vec4 data=getValues(floor(p.x),floor(p.y),floor(p.z));\n\
 						//sfnormal = data.xyz;\n\
-						float L = dot(off,up);\n\
-						//if (length(sfnormal) == 0.0) sfnormal = vec3(0,1,0);\n\
-						vec3 roff =vec3(0,0,0);// vec3_applyQuat(off,new_quat);\n\
-						vec3 sfnormal = normalize(CalculateSurfaceNormal(position-roff));\n\
-						float distance = trilinearInterpolation(position-roff);\n\
-						if ( distance < 0.0 ) sfnormal=-sfnormal;\n\
-						vec3 rup = vec3_applyQuat(up,new_quat);\n\
+						//if (distance < 0.0) sfnormal=-sfnormal;\n\
+						if (length(sfnormal) == 0.0) sfnormal = vec3(0,1,0);\n\
 						vec4 arotation = computeOrientation(sfnormal, up);\n\
-						vec3 axis = cross(normalize(rup),normalize(sfnormal));\n\
-						//vec4 q1 = QuaternionLookRotation(axis,rup);\n\
-						//vec4 q2 = QuaternionLookRotation(axis,sfnormal);\n\
-						float alpha = acos(dot(normalize(rup),normalize(sfnormal)));\n\
+						vec3 rup = vec3_applyQuat(up,new_quat);\n\
 						vec3 newup = vec3_applyQuat(up,arotation);//use current ?\n\
 						vec3 torque = cross(normalize(rup), normalize(newup));\n\
 						float theta = asin(length(torque));\n\
-						vec4 q = QuaternionFromAxisAngle(axis, alpha);\n\
+						vec4 q = QuaternionFromAxisAngle(torque, theta);\n\
 						q = normalize(q);\n\
-						vec4 R = QuaternionMul(new_quat, arotation);\n\
-						R = quat_slerp(new_quat, R, deltaTime);\n\
+						vec4 R = QuaternionMul(q, arotation);\n\
+						//R = quat_slerp(new_quat, arotation, deltaTime);\n\
 						//if (abs(distance) < 2.0**1175.0*0.000390625) \n\
 						//if (abs(distance) <= 2.0*1175.0*0.000390625) \n\
-						new_quat = arotation;//quat_integrate(arotation, q, deltaTime);\n\
+						new_quat = arotation;\n\
 					}\n\
 					gl_FragColor = new_quat;//quat;\n\
 	}\n"
