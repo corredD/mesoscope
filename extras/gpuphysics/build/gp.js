@@ -679,15 +679,15 @@ var updateBodyQuaternionFrag = "uniform sampler2D bodyQuatTex;\n\
 						//sfnormal = data.xyz;\n\
 						float L = dot(off,up);\n\
 						//if (length(sfnormal) == 0.0) sfnormal = vec3(0,1,0);\n\
-						vec3 roff = vec3_applyQuat(off,new_quat);\n\
+						vec3 roff =vec3(0,0,0);// vec3_applyQuat(off,new_quat);\n\
 						vec3 sfnormal = normalize(CalculateSurfaceNormal(position-roff));\n\
 						float distance = trilinearInterpolation(position-roff);\n\
 						if ( distance < 0.0 ) sfnormal=-sfnormal;\n\
 						vec3 rup = vec3_applyQuat(up,new_quat);\n\
-						vec4 arotation = computeOrientation(sfnormal, rup);\n\
+						vec4 arotation = computeOrientation(sfnormal, up);\n\
 						vec3 axis = cross(normalize(rup),normalize(sfnormal));\n\
-						vec4 q1 = QuaternionLookRotation(axis,rup);\n\
-						vec4 q2 = QuaternionLookRotation(axis,sfnormal);\n\
+						//vec4 q1 = QuaternionLookRotation(axis,rup);\n\
+						//vec4 q2 = QuaternionLookRotation(axis,sfnormal);\n\
 						float alpha = acos(dot(normalize(rup),normalize(sfnormal)));\n\
 						vec3 newup = vec3_applyQuat(up,arotation);//use current ?\n\
 						vec3 torque = cross(normalize(rup), normalize(newup));\n\
@@ -695,10 +695,10 @@ var updateBodyQuaternionFrag = "uniform sampler2D bodyQuatTex;\n\
 						vec4 q = QuaternionFromAxisAngle(axis, alpha);\n\
 						q = normalize(q);\n\
 						vec4 R = QuaternionMul(new_quat, arotation);\n\
-						R = quat_slerp(q1, q2, deltaTime);\n\
+						R = quat_slerp(new_quat, R, deltaTime);\n\
 						//if (abs(distance) < 2.0**1175.0*0.000390625) \n\
 						//if (abs(distance) <= 2.0*1175.0*0.000390625) \n\
-						new_quat = q2;//quat_integrate(arotation, q, deltaTime);\n\
+						new_quat = arotation;//quat_integrate(arotation, q, deltaTime);\n\
 					}\n\
 					gl_FragColor = new_quat;//quat;\n\
 	}\n"
@@ -917,11 +917,11 @@ var shared = "float Epsilon = 1e-10;\n\
 	        quaternion.w = (m20 - m02) * num3;\n\
 	        return quaternion; \n\
 	    }\n\
-	    var num5 = sqrt(((1f + m22) - m00) - m11);\n\
-	    var num2 = 0.5f / num5;\n\
+	    float num5 = sqrt(((1.0 + m22) - m00) - m11);\n\
+	    float num2 = 0.5 / num5;\n\
 	    quaternion.x = (m20 + m02) * num2;\n\
 	    quaternion.y = (m21 + m12) * num2;\n\
-	    quaternion.z = 0.5f * num5;\n\
+	    quaternion.z = 0.5 * num5;\n\
 	    quaternion.w = (m01 - m10) * num2;\n\
 	    return quaternion;\n\
 	}\n\
