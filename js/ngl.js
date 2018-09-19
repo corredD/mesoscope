@@ -2648,6 +2648,12 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
     var aradius = ngl_current_node.data.size;
     //node_selected = anode;
     if (!(ngl_current_node.data.hasOwnProperty("litemol"))) ngl_current_node.data.litemol = null;
+    if (ngl_current_node.parent.data.geom_type === "mb"){
+      if (ngl_current_node.parent.data.geom.radii)
+        aradius = ngl_current_node.parent.data.geom.radii[0];
+      else if (ngl_current_node.parent.data.radii)
+        aradius = ngl_current_node.parent.data.radii[0].radii[0];
+    }
     NGL_BuildSUPERCELL(ngl_current_node, pdburl, aradius);//this is async ?
   }
   //this is async!
@@ -2950,7 +2956,8 @@ function LM_getUrlStructure(anode,pdbname){
           //console.log(hdoc);
       }
     }
-    return "https://www.ebi.ac.uk/pdbe/static/entry/" + pdbname + ".cif";
+    return "https://files.rcsb.org/download/" + pdbname + ".cif";
+    //return "https://www.ebi.ac.uk/pdbe/static/entry/" + pdbname + ".cif";
   }
   else
   {

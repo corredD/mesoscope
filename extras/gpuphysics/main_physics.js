@@ -29,7 +29,9 @@ var num_beads_total=0;
 var scene, ambientLight, light, camera, controls, renderer;
 var effect;
 var amesh;
-
+var clipPlane;
+var clipPlanesHelper;
+var clipPlanes;
 var debugMesh, debugGridMesh, cv_Mesh;
 var gridPoints;
 
@@ -363,6 +365,7 @@ function GP_CombineGrid(){
     if (!nodes[i].parent)
     {
         nodes[i].data.compId=counter;
+        nodes[i].data.sign = 1;
         counter+=1;
         continue;
     }
@@ -384,6 +387,9 @@ function GP_CombineGrid(){
 
         nodes[i].data.mc.bb= bb;
         nodes[i].data.insides = [];
+        nodes[i].data.compId=counter;
+        nodes[i].data.sign = nodes[i].parent.data.sign * -1;
+        counter+=1;
         var x, y, z;
         for (z = bb.min_z; z < bb.max_z; z++) {
             for (y = bb.min_y; y < bb.max_y; y++) {
@@ -396,9 +402,40 @@ function GP_CombineGrid(){
                     //                                      ((z/n-boxSize.z)/ascale) );
                     var q = nodes[i].data.mc.getUfromXYZ( wxyz[0],wxyz[1],wxyz[2] );
                     if (q<0) continue;
-                    var e = nodes[i].data.mc.field[q];
+                    var e = nodes[i].data.mc.field[q]*nodes[i].data.mc.data_bound.maxsize*ascale;//does e need scaling ?
                     //if ( e  >= nodes[i].data.mc.isolation) {//-1 && e < nodes[i].data.mc.isolation+1){
                     //inside is negative
+                    //current compId is
+                    var compId = master_grid_id[u];
+                    //if (compId === 0) {
+                    var test = (e < nodes[i].data.mc.isolation && Math.abs(e) < Math.abs(master_grid_field[u*4+3]));
+                    if ( test ) {//-1 && e < nodes[i].data.mc.isolation+1){
+                      master_grid_id[u] = nodes[i].data.compId;
+                      nodes[i].data.insides.push(u);
+                      //console.log("inside");
+                      indices.splice(u,1);
+                      //we are inside
+                      e = e * nodes[i].parent.data.sign;
+                      master_grid_field[u*4+3] = e;
+                      master_grid_field[u*4+2] = nodes[i].parent.data.sign;
+                    }
+                    else {
+                      e = e * nodes[i].parent.data.sign;
+                      master_grid_field[u*4+3] = Math.min(e,master_grid_field[u*4+3]);
+                      //master_grid_field[u*4+3] = e;
+                      master_grid_field[u*4+2] = nodes[i].parent.data.sign;
+                    }
+                    /*}
+                    else if (compId !== nodes[i].data.compId && compId!==0){
+                      //check the parent compId ?
+                      if ( e < nodes[i].data.mc.isolation && Math.abs(e) < Math.abs(master_grid_field[u*4+3])) {//-1 && e < nodes[i].data.mc.isolation+1){
+                        master_grid_id[u] = nodes[i].data.compId;
+                        nodes[i].data.insides.push(u);
+                        //console.log("inside");
+                        indices.splice(u,1);
+                      }
+
+                    }
                     if ( e < master_grid_field[u*4+3])
                     {
                       master_grid_field[u*4+3] = e;
@@ -407,12 +444,11 @@ function GP_CombineGrid(){
                       master_grid_field[u*4+2] = nodes[i].data.mc.normal_cache[q * 3+2];
                     }
                     if ( e < nodes[i].data.mc.isolation ) {//-1 && e < nodes[i].data.mc.isolation+1){
-                      master_grid_id[u] = counter;
-                      nodes[i].data.compId=counter;
+                      master_grid_id[u] = nodes[i].data.compId;
                       nodes[i].data.insides.push(u);
                       //console.log("inside");
                       indices.splice(u,1);
-                    }
+                    }*/
                 }
             }
         }
@@ -473,19 +509,19 @@ function GP_updateMBCompartment(anode){
     anode.data.geo = geo;
     var positions = new Float32Array(geo.vertices);
     var normals = new Float32Array(geo.normals);
-    nodes[1].data.mesh.geometry.attributes.position = new THREE.BufferAttribute(positions, 3);
-    nodes[1].data.mesh.geometry.attributes.normal = new THREE.BufferAttribute(positions, 3);
-    nodes[1].data.mesh.geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(geo.faces), 1));
-    nodes[1].data.mesh.geometry.attributes.position.needsUpdate = true;
-    nodes[1].data.mesh.geometry.attributes.normal.needsUpdate = true;
-    nodes[1].data.mesh.geometry.index.needsUpdate = true;
+    anode.data.mesh.geometry.attributes.position = new THREE.BufferAttribute(positions, 3);
+    anode.data.mesh.geometry.attributes.normal = new THREE.BufferAttribute(positions, 3);
+    anode.data.mesh.geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(geo.faces), 1));
+    anode.data.mesh.geometry.attributes.position.needsUpdate = true;
+    anode.data.mesh.geometry.attributes.normal.needsUpdate = true;
+    anode.data.mesh.geometry.index.needsUpdate = true;
     //update position and scale
-    nodes[1].data.mesh.scale.x = anode.data.mc.grid_scale * ascale;//halfsize?
-    nodes[1].data.mesh.scale.y = anode.data.mc.grid_scale * ascale;
-    nodes[1].data.mesh.scale.z = anode.data.mc.grid_scale * ascale;
-    nodes[1].data.mesh.position.x = anode.data.mc.data_bound.center.x * ascale;//(anode.data.mc.data_bound.min.x + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+w/2.0;//+w/2.0;//center of the box
-    nodes[1].data.mesh.position.y = anode.data.mc.data_bound.center.y * ascale;//(anode.data.mc.data_bound.min.y + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+h/2.0;//+h/2.0;
-    nodes[1].data.mesh.position.z = anode.data.mc.data_bound.center.z * ascale;//(anode.data.mc.data_bound.min.z + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+d/2.0;//+d/2.0;
+    anode.data.mesh.scale.x = anode.data.mc.grid_scale * ascale;//halfsize?
+    anode.data.mesh.scale.y = anode.data.mc.grid_scale * ascale;
+    anode.data.mesh.scale.z = anode.data.mc.grid_scale * ascale;
+    anode.data.mesh.position.x = anode.data.mc.data_bound.center.x * ascale;//(anode.data.mc.data_bound.min.x + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+w/2.0;//+w/2.0;//center of the box
+    anode.data.mesh.position.y = anode.data.mc.data_bound.center.y * ascale;//(anode.data.mc.data_bound.min.y + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+h/2.0;//+h/2.0;
+    anode.data.mesh.position.z = anode.data.mc.data_bound.center.z * ascale;//(anode.data.mc.data_bound.min.z + anode.data.mc.data_bound.maxsize/2.0)*ascale;//+d/2.0;//+d/2.0;
   }
 }
 
@@ -555,7 +591,7 @@ function GP_createOneCompartmentMesh(anode) {
   bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(geo.faces), 1).setDynamic( true ) );
 
   var wireframeMaterial = new THREE.MeshBasicMaterial({map:texture, wireframe: false });
-  GP_triplanarShaderMaterial(texture);
+  if (!triplanarMaterial) GP_triplanarShaderMaterial(texture);
   var compMesh = new THREE.Mesh(bufferGeometry, triplanarMaterial);//mat);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
   compMesh.scale.x = anode.data.mc.grid_scale * ascale;//halfsize?
   compMesh.scale.y = anode.data.mc.grid_scale * ascale;
@@ -666,7 +702,9 @@ function GP_GPUdistributes(){
     }
   }
   GP_CombineGrid();
-  if (!inited) initDebugGrid();
+  if (!inited) {
+    initDebugGrid();
+  }
   for (var i=0;i<n;i++){//nodes.length
     console.log(i,nodes[i].data.name);
     if (nodes[i].data.ingtype == "fiber") continue;
@@ -1052,9 +1090,28 @@ function createInstancesMesh(pid,anode,start,count) {
       //count out of the supercellbuilding?
       var pdburl = LM_getUrlStructure(anode, anode.data.source.pdb);
       var aradius = anode.data.size;
+      var comp_offset = new THREE.Vector3(0);
       //node_selected = anode;
+
+      if (anode.parent.data.geom_type === "mb"){
+        if (anode.parent.data.geom.radii){
+          aradius = anode.parent.data.geom.radii[0];
+
+          comp_offset = new THREE.Vector3(anode.parent.data.geom.positions[0],
+                                          anode.parent.data.geom.positions[1],
+                                          anode.parent.data.geom.positions[2]);
+        }
+        else if (anode.parent.data.radii){
+          aradius = anode.parent.data.radii[0].radii[0];
+
+          comp_offset = new THREE.Vector3(anode.parent.data.pos[0].coords[0],
+                                          anode.parent.data.pos[0].coords[1],
+                                          anode.parent.data.pos[0].coords[2]);
+        }
+      }
       if (!(anode.data.hasOwnProperty("litemol"))) anode.data.litemol = null;
       NGL_BuildSUPERCELL(anode, pdburl, aradius);//this is async ?
+      //this doesnt work..
       var safety = 20000;
       var s =0;
       while (!(anode.data.litemol)){
@@ -1084,6 +1141,7 @@ function createInstancesMesh(pid,anode,start,count) {
     //per compartments?
     if (anode.data.buildtype === "supercell") {
       //need x,y,z qx,qy,qz,qw
+      //offset to the center of the parent node ?
       if (counter >= anode.data.litemol.crystal_mat.operators.length) continue;
       var matrix = new THREE.Matrix4();
       matrix.elements = anode.data.litemol.crystal_mat.operators[counter].matrix
@@ -1092,7 +1150,9 @@ function createInstancesMesh(pid,anode,start,count) {
       var scale = new THREE.Vector3();
       matrix.decompose ( pos , rotation, scale )
       counter+=1;
-      x=pos.x*ascale;y=pos.y*ascale;z=pos.z*ascale;
+      x=(pos.x+comp_offset.x)*ascale;
+      y=(pos.y+comp_offset.y)*ascale;
+      z=(pos.z+comp_offset.z)*ascale;
       q.copy(rotation);
     }
     else if (anode.data.surface && anode.parent.data.mesh){
@@ -1234,11 +1294,12 @@ function GP_triplanarShaderMaterial(texture){
             texScale: { type: 'f', value: 5 },
             useSSS: { type: 'f', value: 1 },
             useScreen: { type: 'f', value: 0 },
+            opacity:{type:'f',value: 0.5},
             color: { type: 'c', value: new THREE.Color( 0, 0, 0 ) }
         },
 		    vertexShader: document.getElementById( 'tri_vertexShader' ).textContent,
-		    fragmentShader: document.getElementById( 'tri_fragmentShader' ).textContent
-        //side: THREE.DoubleSide
+		    fragmentShader: document.getElementById( 'tri_fragmentShader' ).textContent,
+        side: THREE.DoubleSide
 	} );
   GP_switchTexture();
 }
@@ -1446,7 +1507,17 @@ function GP_initRenderer(){
   renderer.gammaInput = true;
   renderer.gammaOutput = true;
   renderer.physicallyBasedShading = true;
-
+  renderer.localClippingEnabled = true;
+  clipPlanes = [
+    new THREE.Plane( new THREE.Vector3( 0, 0, 1 ), 0 )
+    //new THREE.Plane( new THREE.Vector3( 0, - 1, 0 ), 0 ),
+    //new THREE.Plane( new THREE.Vector3( 0, 0, - 1 ), 0 )
+  ];
+  clipPlanesHelper= [
+    new THREE.Plane( new THREE.Vector3( 0, 0, 1 ), 0 )
+    //new THREE.Plane( new THREE.Vector3( 0, - 1, 0 ), 0 ),
+    //new THREE.Plane( new THREE.Vector3( 0, 0, - 1 ), 0 )
+  ];
   //container.setAttribute("class", "show");
   container.appendChild( renderer.domElement );
   window.addEventListener( 'resize', GP_onWindowResize, false );
@@ -1487,6 +1558,15 @@ function GP_initRenderer(){
   groundMesh.receiveShadow = true;
   groundMesh.position.set(0.0,-0.5,0.0);
   scene.add( groundMesh );
+
+  var clipMaterial = new THREE.MeshPhongMaterial( { color: 0xff0000, side: THREE.DoubleSide, wireframe:true } );
+  clipPlane = new THREE.Mesh( new THREE.PlaneBufferGeometry( 0.75, 0.75 ), clipMaterial );
+  //clipPlane.rotation.x = - Math.PI / 2;
+  groundMesh.receiveShadow = true;
+  clipPlane.position.set(0.0,0.0,0.0);
+
+  //clipPlane = new THREE.PlaneHelper( clipPlanesHelper[ 0 ], 0.5, 0xff0000 )
+  scene.add( clipPlane );
 
   // Add controls
   controls = new THREE.OrbitControls( camera, renderer.domElement );
@@ -1829,6 +1909,15 @@ function init(){
             world.broadphase.position.copy(debugGridMesh.position);
             console.log(world.broadphase.position);
         }
+        else if (this.object === clipPlane){
+          //update the uniform  describing the cliping plane
+          clipPlanes[0].copy(clipPlanesHelper[0]);
+          clipPlanes[0].normal.applyQuaternion(clipPlane.quaternion);
+          clipPlanes[0].translate(clipPlane.position);
+          //rotation ?
+          //clipPlanes[0].copy(clipPlanesHelper[0]);
+          //clipPlanes[0].applyMatrix4(clipPlane.matrix);
+        }
         else if (this.object.ismb) {
             //update the metaball and the grid
             var mb_id = this.object.mb_id;
@@ -1991,19 +2080,24 @@ function GP_points(nparticles){
     var z = wxyz[2]*ascale;//Math.random() * n - n2;
     positions.push( x, y, z );
     // colors
-    var v = master_grid_field[i*4+3];
+    var v = master_grid_field[i*4+3];//-1,1
     //map value v ?
     var vx = ( x / n ) + 0.5;
     var vy = ( y / n ) + 0.5;
     var vz = ( z / n ) + 0.5;
-    var c = THREE.Math.mapLinear( v, 0, 1, 1, 0.75 );
-    color.setRGB( c, c, c );
+    var c = v;
+    if (v <= 0.0) color.setRGB( v, 0, 0 );
+    else if (v > 0.0) color.setRGB( 0, 0, v );
     colors.push( color.r, color.g, color.b );
   }
   geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( positions, 3 ) );
   geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
   geometry.computeBoundingSphere();
-  var material = new THREE.PointsMaterial( { size: world.radius*2, vertexColors: THREE.VertexColors } );
+  var material = new THREE.PointsMaterial( {
+    size: world.radius*8,
+    vertexColors: THREE.VertexColors,
+    clippingPlanes: clipPlanes,
+    clipIntersection: true } );
   points = new THREE.Points( geometry, material );
   return points;
 }
@@ -2113,6 +2207,9 @@ function initGUI(){
     gravity: world.gravity.y,
     interaction: 'none',
     sphereRadius: world.getSphereRadius(0),
+    switchCompMatTexture: function(){GP_switchTexture();},
+    CompMatSide: "DoubleSide",
+    CompMatTransparent: false,
     material: "shiny"
   };
   var createHandler = function( id ) {
@@ -2188,6 +2285,24 @@ function initGUI(){
     var r = controller.sphereRadius;
     interactionSphereMesh.scale.set(r,r,r);
     world.setSphereRadius(0,r);
+    if (!triplanarMaterial) return;
+    switch(controller.CompMatSide){
+      //THREE.FrontSide, THREE.BackSide, or THREE.DoubleSide. Default is null.
+      //inverted for metaballs
+      case 'DoubleSide':
+        triplanarMaterial.side = THREE.DoubleSide;
+        break;
+      case 'FrontSide':
+        triplanarMaterial.side = THREE.BackSide;
+        break;
+      case 'BackSide':
+        triplanarMaterial.side = THREE.FrontSide;
+        break;
+    }
+    //or use slider ?
+    //triplanarMaterial.uniforms.opacity = controller.CompMatOpacity;
+    triplanarMaterial.transparent = controller.CompMatTransparent;
+    //triplanarMaterial.uniforms.opacity = (controller.CompMatTransparent)? 0.5 : 1.0;
   }
   var customContainer = document.getElementById( 'gui-container' );
   GP_guiChanged_cb = guiChanged;
@@ -2198,9 +2313,9 @@ function initGUI(){
   gh.add( world, "damping", 0, 100, 0.1 );
   gh.add( world, "drag", 0, 1, 0.01 );
   gh.add( world, "friction", 0, 10, 0.001 );
-  gh.add( world, "fixedTimeStep", 0, 0.1, 0.001 );
+  gh.add( world, "fixedTimeStep", 0, 0.1, 0.0001 );
   gh.add( controller, "paused" ).onChange( guiChanged );
-  gh.add( controller, "gravity", -2, 2, 0.1 ).onChange( guiChanged );
+  gh.add( controller, "gravity", -4, 4, 0.1 ).onChange( guiChanged );
   gh.add( controller, "moreObjects" );
   gh.add( controller, "lessObjects" );
   gh.add( controller, "renderParticles" ).onChange( guiChanged );
@@ -2217,6 +2332,10 @@ function initGUI(){
 		controller[ m ] = createHandler( m );
 		h.add( controller, m ).name( m );
 	}
+  //add compartment material options
+  h.add( controller, 'switchCompMatTexture');
+  h.add( controller, 'CompMatSide', [ 'DoubleSide', 'FrontSide', 'BackSide' ] ).onChange( guiChanged );
+  h.add( controller, 'CompMatTransparent').onChange( guiChanged );
 
   setupSSAOGui(gui);
   if (customContainer) customContainer.appendChild(gui.domElement);
@@ -2421,10 +2540,54 @@ function GP_onDocumentKeyDown(event) {
     //o
     if (keyCode == 80){
       controller.paused=!controller.paused;
+      gui.updateDisplay();
     }
     //p
     if (keyCode == 79){
       saoPass1.params.output = (saoPass1.params.output===THREE.SAOPass.OUTPUT.Beauty)? THREE.SAOPass.OUTPUT.Default:THREE.SAOPass.OUTPUT.Beauty;
+      gui.updateDisplay();
+  }
+/*"W" translate | "E" rotate | "R" scale | "+" increase size | "-" decrease size
+"Q" toggle world/local space | Hold "Ctrl" down to snap to grid
+"X" toggle X | "Y" toggle Y | "Z" toggle Z | "Spacebar" toggle enabled
+*/
+  switch ( keyCode ) {
+      case 81: // Q
+        control.setSpace( gizmo.space === "local" ? "world" : "local" );
+        break;
+      case 17: // Ctrl
+        gizmo.setTranslationSnap( 100 );
+        gizmo.setRotationSnap( THREE.Math.degToRad( 15 ) );
+        break;
+      case 87: // W
+        gizmo.setMode( "translate" );
+        break;
+      case 69: // E
+        gizmo.setMode( "rotate" );
+        break;
+      case 82: // R
+        gizmo.setMode( "scale" );
+        break;
+      case 187:
+      case 107: // +, =, num+
+        gizmo.setSize( gizmo.size + 0.1 );
+        break;
+      case 189:
+      case 109: // -, _, num-
+        gizmo.setSize( Math.max( control.size - 0.1, 0.1 ) );
+        break;
+      case 88: // X
+        gizmo.showX = !gizmo.showX;
+        break;
+      case 89: // Y
+        gizmo.showY = !gizmo.showY;
+        break;
+      case 90: // Z
+        gizmo.showZ = !gizmo.showZ;
+        break;
+      case 32: // Spacebar
+        gizmo.enabled = !gizmo.enabled;
+        break;
     }
 
 };
@@ -2479,7 +2642,11 @@ function GP_onDocumentMouseDown( event ) {
     }
     else
     {
-      if (interactionSphereMesh) {
+      intersects = raycaster.intersectObjects( [clipPlane] );
+      if ( intersects.length > 0 ) {
+        gizmo.attach(intersects[0].object);
+      }
+      else if (interactionSphereMesh) {
         intersects = raycaster.intersectObjects( [interactionSphereMesh] );
         if ( intersects.length > 0 ) {
           controller.interaction = 'sphere';

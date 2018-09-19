@@ -573,7 +573,7 @@
       uniform float texScale;
       uniform float useSSS;
       uniform float useScreen;
-
+      uniform float opacity;
       varying vec3 vNormal;
       varying vec4 vPosition;
       varying vec4 vOPosition;
@@ -634,8 +634,7 @@
   		float nn = .05 * random( vec3( 1. ), length( gl_FragCoord ) );
           base += vec3( nn );
 
-          gl_FragColor = vec4( base.rgb, 1. );
-
+          gl_FragColor = vec4( base.rgb, opacity );
       }
   </script>
 

@@ -114,8 +114,8 @@ var densityShader="uniform sampler2D bodyPosTex;\n\
 	vec4 getValues(float i,float j,float k){\n\
 		float u = (k * gridResolution.x * gridResolution.x) + (j * gridResolution.x) + i;\n\
 		vec2 grid_uv = indexToUV( u, gridIdTextureSize );\n\
-		vec4 g_infos = texture2D(gridIdTex, grid_uv);//compid,value\n\
-		vec4 g_values = vec4(g_infos.x,0.0,0.0,g_infos.y);//texture2D(gridValueTex, grid_uv);//normal,value\n\
+		vec4 g_infos = texture2D(gridIdTex, grid_uv);//compid,value,thick,sign\n\
+		vec4 g_values = vec4(g_infos.x,g_infos.z,g_infos.w,g_infos.y);//texture2D(gridValueTex, grid_uv);//compId,.,.,value\n\
 		return g_values;\n\
 	}\n\
 	vec4 getGridValues(vec3 point){\n\
@@ -352,14 +352,18 @@ var updateForceFrag = "uniform vec4 params1;\n\
 						position, interactionSpherePos, velocity, vec3(0))*10.0;\n\
 			}\n\
 			//surface collision\n\
+			//compID ?\n\
+			vec4 grid_infos = getGridValues(position);//compId,thickness,sign,value\n\
 			vec3 sfnormal = normalize(CalculateSurfaceNormal(position));\n\
 			float distance = trilinearInterpolation(position);\n\
+			//distance = distance * grid_infos.z;\n\
 			vec3 vij_t = velocity - dot(velocity, sfnormal) * sfnormal;\n\
 			vec3 springForce = - stiffness * (radius - distance) * sfnormal;\n\
 			vec3 dampingForce = damping * dot(velocity, sfnormal) * sfnormal;\n\
 			vec3 tangentForce = friction * vij_t;\n\
 			vec3 f = springForce + dampingForce + tangentForce;\n\
 			//should this force take the offset in account?\n\
+			if (grid_infos.z < 0.0) f = -f;\n\
 			if (abs(distance) < radius*2.0){\n\
 					if (distance > 0.0 && bodyType_infos1.w < 0.0) f = -f;//*10\n\
 					if (distance < 0.0 && bodyType_infos1.w == 0.0) f = -f;\n\
@@ -388,7 +392,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 			  vec3 r_relativePosition = vec3_applyQuat(relativePosition,arotation);\n\
 				float L = dot(off,up);//length(off);//dot(off,up);//-0.02361;//length(off);//0.023617652535438873\n\
 				float D = dot(relativePosition,rup);//dot(r_relativePosition,rup);\n\
-				float ltoS = D+L*5.0;//ideal distance from surface along normal\n\
+				float ltoS = D+L;//ideal distance from surface along normal\n\
 				//need to check why the *5.0 fix the offset ??\n\
 				//compare ltos and distance\n\
 				//vec3 r_off = vec3_applyQuat(off,arotation);\n\
@@ -1237,11 +1241,11 @@ var shared = "float Epsilon = 1e-10;\n\
 							compids_data[p + 0] = masterGridId[i];//the compartment
 							compids_data[p + 1] = masterGridField[i*4+3];//the value
 							compids_data[p + 2] = 7.5*ascale;//thickness could be a uniform too
-							compids_data[p + 3] = 0;
-							gridvalues_data[p + 0] = masterGridField[i*4+0];
-							gridvalues_data[p + 1] = masterGridField[i*4+1];
-							gridvalues_data[p + 2] = masterGridField[i*4+2];
-							gridvalues_data[p + 3] = masterGridField[i*4+3];//the value
+							compids_data[p + 3] = masterGridField[i*4+2];
+							gridvalues_data[p + 0] = 0.0;//masterGridField[i*4+0];
+							gridvalues_data[p + 1] = 0.0;//masterGridField[i*4+1];
+							gridvalues_data[p + 2] = 0.0;//masterGridField[i*4+2];
+							gridvalues_data[p + 3] = 0.0;//masterGridField[i*4+3];//the value
 					}
 			},
 
@@ -1305,7 +1309,7 @@ var shared = "float Epsilon = 1e-10;\n\
 														offX, offY, offZ,
 														mass,
 														inertiaX, inertiaY, inertiaZ){
-
+          //what about bodyColor?
 	        if(this.bodyTypeCount >= this.maxBodyTypes){
 	            console.warn("Too many bodies: " + this.bodyTypeCount+" max "+this.maxBodyTypes);
 	            return;
