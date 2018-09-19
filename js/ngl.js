@@ -55,6 +55,9 @@ var ngl_current_structure;
 var ngl_current_node;
 var ngl_current_item_id;
 var ngl_grid_mode = false;
+
+var litemol_current_model;
+
 var pcontainer = document.getElementById("NGL") || document.getElementById("NGLpane"); //
 
 var viewport = document.getElementById("viewport");
@@ -1557,7 +1560,10 @@ function NGL_buildCMS(){
                     "faces":(surf.index)?Array.from(surf.index):null,
                     "normals":(surf.normal)?Array.from(surf.normal):null }
         console.log("MESH:", mesh);
-        if (assambly_elem.selectedOptions[0].value!=="AU") {
+        if (assambly_elem.selectedOptions[0].value==="SUPERCELL" || node_selected.data.buildtype === "supercell") {
+            //do nothing
+        }
+        else if (assambly_elem.selectedOptions[0].value!=="AU") {
           mesh = NGL_applyBUtoMesh(ngl_current_structure,mesh);
         }
         else {
@@ -1939,6 +1945,38 @@ for (var j = 0; j < o.object.biomolDict[o.assambly].partList.length; j++) {
   }
 }*/
 
+function LiteMolLoad_cb(data,anode) {
+  var parsed = LiteMol.Core.Formats.CIF.Text.parse(data);
+  if (parsed.isError) {
+        console.log(parsed.toString());
+        return;
+    }
+  anode.data.litemol = litemol_current_model = LiteMol.Core.Formats.Molecule.mmCIF.ofDataBlock(parsed.result.dataBlocks[0]).models[0];
+  if (anode.data.crystal_radius) {
+    litemol_current_model.crystal_mat =LiteMol.Core.Structure.buildSymmetryMates(litemol_current_model, anode.crystal_radius);
+  }
+}
+
+function LiteMolLoad(pdburl,anode){
+  var url =pdburl
+  //LiteMol.Core.Formats.CIF.Text.parse
+  //let model = LiteMol.Core.Formats.Molecule.mmCIF.ofDataBlock(parsed.result.dataBlocks[0]).models[0];
+  //LiteMol.Core.Structure.buildSymmetryMates(amodel, radius) :
+  if (!anode.data.litemol) callAjax(url, LiteMolLoad_cb, anode);
+}
+//supercell affect the uncentered assymetric unit ?
+function NGL_BuildSUPERCELL(anode, pdburl, aradius){
+  var url = pdburl;
+  anode.data.crystal_radius = aradius;
+  //LiteMol.Core.Formats.CIF.Text.parse
+  //let model = LiteMol.Core.Formats.Molecule.mmCIF.ofDataBlock(parsed.result.dataBlocks[0]).models[0];
+  //LiteMol.Core.Structure.buildSymmetryMates(amodel, radius) :
+  if (!anode.data.litemol) callAjax(url, LiteMolLoad_cb, anode);
+  else {
+    litemol_current_model = anode.data.litemol;
+    litemol_current_model.crystal_mat =LiteMol.Core.Structure.buildSymmetryMates(litemol_current_model, aradius);
+  }
+}
 
 function NGL_GetAtomDataSet(pdb,struture_object){
   var dataset = [];
@@ -2210,8 +2248,14 @@ function buildWithKmeans(o, center, ncluster) {
     return NGL_ClusterToBeads(clusters, o, center,dataset);
   }
   else {
-    center = NGL_GetBUCenter(o,o.assambly);
-    return NGL_applybuToclusters(o,clusters,center,dataset);
+    if (assambly_elem.selectedOptions[0].value==="SUPERCELL" || node_selected.data.buildtype === "supercell") {
+      //should we use litemol here?
+      return NGL_ClusterToBeads(clusters, o, new NGL.Vector3(0),dataset);
+    }
+    else {
+      center = NGL_GetBUCenter(o,o.assambly);
+      return NGL_applybuToclusters(o,clusters,center,dataset);
+    }
   }
 }
 
@@ -2599,7 +2643,13 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
     params.assembly = bu;
     assambly = bu;
   }
-
+  if (bu ==="SUPERCELL" || ngl_current_node.data.buildtype === "supercell") {
+    var pdburl = LM_getUrlStructure(ngl_current_node, ngl_current_node.data.source.pdb);
+    var aradius = ngl_current_node.data.size;
+    //node_selected = anode;
+    if (!(ngl_current_node.data.hasOwnProperty("litemol"))) ngl_current_node.data.litemol = null;
+    NGL_BuildSUPERCELL(ngl_current_node, pdburl, aradius);//this is async ?
+  }
   //this is async!
   stage.loadFile(purl, params)
     .then(function(o) {
@@ -2869,6 +2919,74 @@ function NGL_noPdbProxy(name, radius) {
   } //stage.animationControls.rotate(ngl_load_params.axis.axis.getRotationQuaternion(), 0);
   stage.autoView();
 }
+
+function LM_getUrlStructure(anode,pdbname){
+  if (pdbname.length === 4) {
+    if (anode.data.surface)
+    {
+      if (anode.data.opm === 1){
+      //replace purl
+          return cellpack_repo+"other/" + pdbname + ".pdb";
+      }
+      else if (anode.data.opm === 0)
+      {
+          //check if exists
+          var search_url = cellpack_repo+"other/"+pdbname+ ".pdb";
+          var results = syncCall(search_url);
+          if (results !=="")
+          {
+            purl = cellpack_repo+"other/" + pdbname + ".pdb";
+            anode.data.opm = 1;
+            return purl;
+          }
+          else {
+            anode.data.opm = -1;
+          }
+          //check if exist in opm..doesnt work
+          //var search_url = "http://opm.phar.umich.edu/protein.php?search="+aname//1l7v
+          //var results = syncCall(search_url);
+          //var parser = new DOMParser();
+          //var hdoc = parser.parseFromString(results,"text/xml");
+          //console.log(hdoc);
+      }
+    }
+    return "https://www.ebi.ac.uk/pdbe/static/entry/" + pdbname + ".cif";
+  }
+  else
+  {
+    var ext = pdbname.slice(-4, pdbname.length);
+    if (pdbname.startsWith("EMD") || pdbname.startsWith("EMDB") || pdbname.slice(-4, pdbname.length) === ".map") {
+      var params = {
+        defaultRepresentation: false
+      };
+      //this is async!
+      console.log("try to load ", pdbname, ext);
+      if (ext !== ".map") pdbname = pdbname + ".map";
+      if (folder_elem && folder_elem.files.length != "")
+      {
+        return pathList_[pdbname];
+      }
+      else
+      {
+        return cellpack_repo+"other/" + pdbname;
+      }
+    }
+    else
+    {
+      //what about emdb
+      if (folder_elem && folder_elem.files.length != "") {
+        //alert(pathList_[d.data.source]),
+        return pathList_[pdbname];
+      }
+      else
+      {
+        return cellpack_repo+"other/" + pdbname;
+      }
+    }
+  }
+  return "";
+}
+
 
 function NGL_getUrlStructure(anode,pdbname){
   if (pdbname.length === 4) {

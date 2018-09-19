@@ -37,7 +37,7 @@ var controller;
 var boxSize;
 var numParticles;
 var radius;
-
+var triplanarMaterial;
 var meshMaterial;
 var cv_Material;
 var customDepthMaterial;
@@ -544,6 +544,7 @@ function GP_createOneCompartmentMesh(anode) {
   var texture = new THREE.TextureLoader().load( 'images/Membrane.jpg' );
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
   var mat = new THREE.MeshPhongMaterial( { color: 0x17ff00, specular: 0x111111, shininess: 1, map: texture } );//color: 0x17ff00, specular: 0x111111, shininess: 1,
+
   var bufferGeometry = new THREE.BufferGeometry();
   bufferGeometry.dynamic = true;
   var positions = new Float32Array(geo.vertices);
@@ -552,8 +553,10 @@ function GP_createOneCompartmentMesh(anode) {
   bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3).setDynamic( true ) );
   bufferGeometry.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(geo.uv), 2).setDynamic( true ) );
   bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(geo.faces), 1).setDynamic( true ) );
+
   var wireframeMaterial = new THREE.MeshBasicMaterial({map:texture, wireframe: false });
-  var compMesh = new THREE.Mesh(bufferGeometry, mat);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
+  GP_triplanarShaderMaterial(texture);
+  var compMesh = new THREE.Mesh(bufferGeometry, triplanarMaterial);//mat);//new THREE.MeshPhongMaterial({ color: 0xffffff }));
   compMesh.scale.x = anode.data.mc.grid_scale * ascale;//halfsize?
   compMesh.scale.y = anode.data.mc.grid_scale * ascale;
   compMesh.scale.z = anode.data.mc.grid_scale * ascale;
@@ -1044,6 +1047,24 @@ function createInstancesMesh(pid,anode,start,count) {
   //position should use the halton sequence and the grid size
   //should do it constrained inside the given compartments
   //var comp = anode.parent;
+  //check the buildtype? anode.data.buildtype
+  if (anode.data.buildtype === "supercell") {
+      //count out of the supercellbuilding?
+      var pdburl = LM_getUrlStructure(anode, anode.data.source.pdb);
+      var aradius = anode.data.size;
+      //node_selected = anode;
+      if (!(anode.data.hasOwnProperty("litemol"))) anode.data.litemol = null;
+      NGL_BuildSUPERCELL(anode, pdburl, aradius);//this is async ?
+      var safety = 20000;
+      var s =0;
+      while (!(anode.data.litemol)){
+        //wait
+        //console.log(s,anode.data.litemol);
+        s++;
+        if (s>=safety) break;
+      }
+  }
+  var counter = 0;
   for (var bodyId=start;bodyId<start+count;bodyId++) {
     //if (loading_bar) loading_bar.set(bodyId/start+count);
     //var x = -boxSize.x + 2*boxSize.x*Math.random();
@@ -1061,8 +1082,20 @@ function createInstancesMesh(pid,anode,start,count) {
     axis.normalize();
     q.setFromAxisAngle(axis, Math.random() * Math.PI * 2);
     //per compartments?
-
-    if (anode.data.surface && anode.parent.data.mesh){
+    if (anode.data.buildtype === "supercell") {
+      //need x,y,z qx,qy,qz,qw
+      if (counter >= anode.data.litemol.crystal_mat.operators.length) continue;
+      var matrix = new THREE.Matrix4();
+      matrix.elements = anode.data.litemol.crystal_mat.operators[counter].matrix
+      var pos = new THREE.Vector3();
+      var rotation = new THREE.Quaternion();
+      var scale = new THREE.Vector3();
+      matrix.decompose ( pos , rotation, scale )
+      counter+=1;
+      x=pos.x*ascale;y=pos.y*ascale;z=pos.z*ascale;
+      q.copy(rotation);
+    }
+    else if (anode.data.surface && anode.parent.data.mesh){
       //should random in random triangle ?
       //q should align the object to the surface, and pos should put on a vertices/faces
       var v = anode.parent.data.mesh.geometry.attributes.position.array;
@@ -1097,8 +1130,6 @@ function createInstancesMesh(pid,anode,start,count) {
       var xyz = GP_uToWorldCoordinate(qi);
       //jitter
       var jitter = [Math.random()*ascale,Math.random()*ascale,Math.random()*ascale]
-      //var xyz = anode.parent.data.mc.getXYZ(qi);
-      //var r = Util_getXYZ(qi,world.broadphase.resolution.x,ascale);
       x = xyz[0]*ascale+jitter[0]; y = xyz[1]*ascale+jitter[1]; z = xyz[2]*ascale+jitter[2];
     }
 
@@ -1186,6 +1217,86 @@ function createMeshIngrMaterial(mat,light,ambientlight) {
   return material;
 }
 
+var texture = 0;
+
+function GP_triplanarShaderMaterial(texture){
+  //from https://www.clicktorelease.com/code/bumpy-metaballs/
+  //var mat = new THREE.MeshPhongMaterial( { color: 0x17ff00, specular: 0x111111, shininess: 1, map: texture } );//color: 0x17ff00, specular: 0x111111, shininess: 1,
+  //var phongShader = THREE.ShaderLib.phong;
+  //var uniform = THREE.UniformsUtils.clone(phongShader.uniforms);
+  //var vs = phongShader.vertexShader;//shader.vertexShader;
+  //var fs = triplanarShader;
+  triplanarMaterial = new THREE.ShaderMaterial( {
+		uniforms: {
+            textureMap: { type: 't', value: null },
+            normalMap: { type: 't', value: null },
+            normalScale: { type: 'f', value: 1 },
+            texScale: { type: 'f', value: 5 },
+            useSSS: { type: 'f', value: 1 },
+            useScreen: { type: 'f', value: 0 },
+            color: { type: 'c', value: new THREE.Color( 0, 0, 0 ) }
+        },
+		    vertexShader: document.getElementById( 'tri_vertexShader' ).textContent,
+		    fragmentShader: document.getElementById( 'tri_fragmentShader' ).textContent
+        //side: THREE.DoubleSide
+	} );
+  GP_switchTexture();
+}
+
+function GP_switchTexture() {
+	texture++;
+	texture %= 4;
+	switch( texture ) {
+		case 0:
+			triplanarMaterial.uniforms.normalScale.value = .5;
+			triplanarMaterial.uniforms.texScale.value = 10;
+			triplanarMaterial.uniforms.useSSS.value = .15;
+			triplanarMaterial.uniforms.useScreen.value = 0;
+			triplanarMaterial.uniforms.textureMap.value = new THREE.TextureLoader().load( 'images/matcap2.jpg' );
+			triplanarMaterial.uniforms.normalMap.value = new THREE.TextureLoader().load( 'images/723-normal.jpg' );
+			triplanarMaterial.uniforms.color.value.setRGB( 18. / 255., 72. / 255., 85. / 255. );
+			//sphereMaterial.uniforms.color.value.setRGB( 18. / 255., 72. / 255., 85. / 255. );
+			break;
+		case 1:
+			triplanarMaterial.uniforms.normalScale.value = 1;
+			triplanarMaterial.uniforms.texScale.value = 5;
+			triplanarMaterial.uniforms.useSSS.value = 1;
+			triplanarMaterial.uniforms.useScreen.value = 0;
+			triplanarMaterial.uniforms.textureMap.value = new THREE.TextureLoader().load( 'images/matcap.jpg' );
+			triplanarMaterial.uniforms.normalMap.value = new THREE.TextureLoader().load( 'images/ice-snow.jpg' );
+			triplanarMaterial.uniforms.color.value.setRGB( 181. / 255., 65. / 255., 52. / 255. );
+			//sphereMaterial.uniforms.color.value.setRGB( 181. / 255., 65. / 255., 52. / 255. );
+			break;
+		case 2:
+			triplanarMaterial.uniforms.normalScale.value = 1;
+			triplanarMaterial.uniforms.texScale.value = 10;
+			triplanarMaterial.uniforms.useSSS.value = 0;
+			triplanarMaterial.uniforms.useScreen.value = 1;
+			triplanarMaterial.uniforms.textureMap.value = new THREE.TextureLoader().load( 'images/944_large_remake2.jpg' );
+			triplanarMaterial.uniforms.normalMap.value = new THREE.TextureLoader().load( 'images/carbon-fiber.jpg' );
+			triplanarMaterial.uniforms.color.value.setRGB( 36. / 255., 70. / 255., 106. / 255. );
+			//sphereMaterial.uniforms.color.value.setRGB( 36. / 255., 70. / 255., 106. / 255. );
+			break;
+    case 3:
+			triplanarMaterial.uniforms.normalScale.value = 1;
+			triplanarMaterial.uniforms.texScale.value = 10;
+			triplanarMaterial.uniforms.useSSS.value = 0;
+			triplanarMaterial.uniforms.useScreen.value = 1;
+			triplanarMaterial.uniforms.textureMap.value = new THREE.TextureLoader().load( 'images/matcap2.jpg' );
+			triplanarMaterial.uniforms.normalMap.value = new THREE.TextureLoader().load( 'images/Membrane.jpg' );
+			triplanarMaterial.uniforms.color.value.setRGB( 0.0, 1.0, 0.0 );
+			//sphereMaterial.uniforms.color.value.setRGB( 36. / 255., 70. / 255., 106. / 255. );
+			break;
+		break;
+	}
+
+	triplanarMaterial.uniforms.textureMap.value.wrapS = triplanarMaterial.uniforms.textureMap.value.wrapT =
+	THREE.ClampToEdgeWrapping;
+
+	triplanarMaterial.uniforms.normalMap.value.wrapS = triplanarMaterial.uniforms.normalMap.value.wrapT =
+	THREE.RepeatWrapping;
+}
+
 function createShaderMaterial( id, light, ambientLight ) {
   var shader = THREE.ShaderToon[ id ];
   var u = THREE.UniformsUtils.clone( shader.uniforms );
@@ -1195,6 +1306,7 @@ function createShaderMaterial( id, light, ambientLight ) {
   unif.bodyQuatTex = { value: world.dataTextures.bodyQuaternions };
   unif.bodyPosTex = { value: world.dataTextures.bodyPositions };
   unif.bodyInfosTex = { value: world.dataTextures.bodyInfos };
+  unif.uBaseColor= { value:new THREE.Color(0.2,0.2,0.2)};
   var vs = sharedShaderCode.innerText + renderBodiesVertex.innerText;//shader.vertexShader;
   var fs = shader.fragmentShader;
   var material = new THREE.ShaderMaterial( {
@@ -1202,7 +1314,7 @@ function createShaderMaterial( id, light, ambientLight ) {
     vertexShader: vs,
     fragmentShader: fs,
     lights: true,
-    vertexColors: false,
+    vertexColors: true,
     defines: {
           bodyInfosTextureResolution: 'vec2( ' + world.textures.bodyInfos.width.toFixed( 1 ) + ', ' + world.textures.bodyInfos.width.toFixed( 1 ) + " )",
           bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
@@ -1327,10 +1439,14 @@ function GP_initRenderer(){
     }
   }
   console.log("renderer",dm);
-  renderer = new THREE.WebGLRenderer();
-  renderer.setPixelRatio( 1 );
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio || 1 );
   renderer.setSize( dm.width, dm.height );
   renderer.shadowMap.enabled = true;
+  renderer.gammaInput = true;
+  renderer.gammaOutput = true;
+  renderer.physicallyBasedShading = true;
+
   //container.setAttribute("class", "show");
   container.appendChild( renderer.domElement );
   window.addEventListener( 'resize', GP_onWindowResize, false );
@@ -2302,10 +2418,15 @@ function GP_selectFile(e){
 
 function GP_onDocumentKeyDown(event) {
     var keyCode = event.which;
-    //p
+    //o
     if (keyCode == 80){
       controller.paused=!controller.paused;
     }
+    //p
+    if (keyCode == 79){
+      saoPass1.params.output = (saoPass1.params.output===THREE.SAOPass.OUTPUT.Beauty)? THREE.SAOPass.OUTPUT.Default:THREE.SAOPass.OUTPUT.Beauty;
+    }
+
 };
 
 function GP_onDocumentMouseMove( event ) {
