@@ -458,14 +458,15 @@ function GP_CombineGrid(){
                       nodes[i].parent.data.insides.splice(u,1);
                       //we are inside
                       //e = e * nodes[i].parent.data.sign;
-                      master_grid_field[u*4+3] = Math.abs(e);
+                      master_grid_field[u*4+3] = e;
                       master_grid_field[u*4+2] = -1;
                     }
                     else {
                       //e = e * nodes[i].parent.data.sign;
                       //min-max ? or R-function ?
+                      var me = Math.min(Math.abs(e),Math.abs(ce));
                       var newd = ce + e - Math.sqrt(ce*ce+e*e)
-                      master_grid_field[u*4+3] = Math.min(Math.abs(e),Math.abs(ce));
+                      master_grid_field[u*4+3] = (Math.abs(e)<Math.abs(ce) && ce < 0.0 )? -me : me;
                       //master_grid_field[u*4+3] = e;
                       master_grid_field[u*4+2] = nodes[i].parent.data.sign;
                     }

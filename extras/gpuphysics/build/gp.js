@@ -364,7 +364,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 			vec3 sfnormal = normalize(CalculateSurfaceNormal(position));\n\
 			float distance = trilinearInterpolation(position);\n\
 			//distance = distance * grid_infos.z;\n\
-			if (grid_infos.x != 0.0) distance = -distance;\n\
+			//if (grid_infos.x != 0.0) distance = -distance;\n\
 			vec3 vij_t = velocity - dot(velocity, sfnormal) * sfnormal;\n\
 			vec3 springForce = - stiffness * (radius - distance) * sfnormal;\n\
 			vec3 dampingForce = damping * dot(velocity, sfnormal) * sfnormal;\n\
@@ -402,7 +402,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 			  vec3 r_relativePosition = vec3_applyQuat(relativePosition,arotation);\n\
 				float L = dot(off,up);//length(off);//dot(off,up);//-0.02361;//length(off);//0.023617652535438873\n\
 				float D = dot(relativePosition,rup);//dot(r_relativePosition,rup);\n\
-				float ltoS = D+L;//ideal distance from surface along normal\n\
+				float ltoS = D+L*2.0;//ideal distance from surface along normal\n\
 				//need to check why the *5.0 fix the offset ??\n\
 				//compare ltos and distance\n\
 				//vec3 r_off = vec3_applyQuat(off,arotation);\n\
