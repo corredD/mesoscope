@@ -166,6 +166,7 @@ var densityShader="uniform sampler2D bodyPosTex;\n\
 
 //should we sort according compId?
 //then how do we now the indices start-end
+//define nbComp?
 var metaballsShader="//#version 300 es\n\
 	precision highp float;\n\
   uniform float compId;\n\
@@ -225,13 +226,16 @@ var metaballsShader="//#version 300 es\n\
 		//world position \n\
 		vec3 xyz = ijk/gridSize + gridPos.xyz;//normalize between 0 and 1 ?\n\
 		float d = getDistance(0.2, xyz.x,xyz.y,xyz.z);\n\
+		d = abs(d);\n\
 		float newvalue = min(cvalue,d);// + d - sqrt(cvalue*cvalue+d*d);\n\
 		if (d < 0.0 && d < cvalue) {\n\
-			d = d-(compId-1.0);\n\
-			cvalue = d;\n\
+			//d = d-(compId-1.0);\n\
+			newvalue = d;\n\
 			cid = compId;\n\
 		}\n\
-		else {}\n\
+		else {\n\
+			newvalue = min(cvalue,d);//\n\
+		}\n\
 		//if (cvalue <= 0.2) cvalue = 1.0;\n\
 		//else if (cvalue == 2.0) cvalue=2.0;\n\
 		//else cvalue = 0.5;\n\
@@ -360,6 +364,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 			vec3 sfnormal = normalize(CalculateSurfaceNormal(position));\n\
 			float distance = trilinearInterpolation(position);\n\
 			//distance = distance * grid_infos.z;\n\
+			if (grid_infos.x != 0.0) distance = -distance;\n\
 			vec3 vij_t = velocity - dot(velocity, sfnormal) * sfnormal;\n\
 			vec3 springForce = - stiffness * (radius - distance) * sfnormal;\n\
 			vec3 dampingForce = damping * dot(velocity, sfnormal) * sfnormal;\n\
@@ -369,14 +374,14 @@ var updateForceFrag = "uniform vec4 params1;\n\
 			//if (grid_infos.z < 0.0) f = -f;\n\
 			if (abs(distance) < radius*2.0){\n\
 					if (distance > 0.0 && bodyType_infos1.w < 0.0) f = -f;//*10\n\
-					if (distance < 0.0 && distance > bodyType_infos1.w+1.0) f = -f;//*10\n\
+					if (distance < 0.0 && grid_infos.x != abs(bodyType_infos1.w)) f = -f;//*10\n\
 					if (distance < 0.0 && bodyType_infos1.w == 0.0) f = -f;\n\
 					if (bodyType_infos1.w > 0.0) f=f*0.0;\n\
 					else force = force+f*5.0;\n\
 			}\n\
 			else {\n\
 				if ( distance > 0.0 && bodyType_infos1.w < 0.0) force = force -f;//*10\n\
-				if ( distance < 0.0 && distance > bodyType_infos1.w  ) f = -f;//*10\n\
+				if ( distance < 0.0 && grid_infos.x != abs(bodyType_infos1.w)) f = -f;//*10\n\
 				if ( distance < 0.0 && bodyType_infos1.w == 0.0) force = force -f;\n\
 				if ( bodyType_infos1.w > 0.0)\n\
 				{\n\
@@ -1830,6 +1835,7 @@ var shared = "float Epsilon = 1e-10;\n\
 						// Local particle positions to relative
 						mat.needsUpdate = true;
 	        }
+					console.log("updateMB with comp",compId);
 					buffers.depth.setTest( false );
 					buffers.stencil.setTest( false );
 					this.fullscreenQuad.material = mat;

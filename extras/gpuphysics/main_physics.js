@@ -34,6 +34,7 @@ var clipPlanesHelper;
 var clipPlanes;
 var debugMesh, debugGridMesh, cv_Mesh;
 var gridPoints;
+var compartments_count = 0;
 
 var controller;
 var boxSize;
@@ -179,9 +180,15 @@ var points_vertex="uniform float psize;\n\
     vec2 pointUV = indexToUV(indices, gridIdTextureSize);\n\
     vec4 grid_infos = texture2D( gridId, pointUV );\n\
     vColor = vec3(0.0,0.0,0.0);\n\
-    if (grid_infos.y <= -1.0) vColor = vec3(0.0,1.0-grid_infos.y,0.0);\n\
-    else if (grid_infos.y <= 0.0) vColor = vec3(1.0-grid_infos.y,0.0,0.0);\n\
-    else vColor = vec3(0.0,0.0,grid_infos.y);\n\
+    float cid = grid_infos.x;\n\
+    if (cid > 1.0) vColor = vec3(0.0,1.0-grid_infos.y,0.0);\n\
+    else if (cid > 0.0) vColor = vec3(1.0-grid_infos.y,0.0,0.0);\n\
+    else if (cid == 0.0) vColor = vec3(0.0,0.0,1.0-grid_infos.y);\n\
+    else if (cid < 0.0) vColor = vec3(1.0,1.0,0.0);\n\
+    else vColor = vec3(1.0,0.0,1.0);\n\
+    //if (grid_infos.y <= -1.0) vColor = vec3(0.0,1.0-grid_infos.y,0.0);\n\
+    //else if (grid_infos.y <= 0.0) vColor = vec3(1.0-grid_infos.y,0.0,0.0);\n\
+    //else vColor = vec3(0.0,0.0,grid_infos.y);\n\
     gl_PointSize = 20.0;\n\
     vViewPosition = - mvPosition.xyz;\n\
     gl_Position = projectionMatrix * mvPosition;\n\
@@ -389,7 +396,8 @@ function GP_CombineGrid(){
   var indices = [];
   for ( var i = 0; i < n*n*n; i ++ ) {
     indices.push(i);
-    master_grid_field[i*4+3] = 2.0;
+    master_grid_id[i] = 0;
+    master_grid_field[i*4+3] = 10.0;
   }
   nodes[0].data.insides = indices;
   for (var i=0;i<nodes.length;i++){//nodes.length
@@ -439,7 +447,7 @@ function GP_CombineGrid(){
                     //current compId is
                     var compId = master_grid_id[u];
                     var ce = master_grid_field[u*4+3];
-                    var cee = (e < 0)?e - (nodes[i].data.compId-1):e + (nodes[i].data.compId-1);
+                    //var cee = (e < 0)?e - (nodes[i].data.compId-1):e + (nodes[i].data.compId-1);
                     //if (compId === 0) {
                     var test = (e < nodes[i].data.mc.isolation && Math.abs(e) < Math.abs(ce));
                     if ( test ) {//-1 && e < nodes[i].data.mc.isolation+1){
@@ -450,14 +458,14 @@ function GP_CombineGrid(){
                       nodes[i].parent.data.insides.splice(u,1);
                       //we are inside
                       //e = e * nodes[i].parent.data.sign;
-                      master_grid_field[u*4+3] = cee;
-                      master_grid_field[u*4+2] = nodes[i].parent.data.sign;
+                      master_grid_field[u*4+3] = Math.abs(e);
+                      master_grid_field[u*4+2] = -1;
                     }
                     else {
                       //e = e * nodes[i].parent.data.sign;
                       //min-max ? or R-function ?
                       var newd = ce + e - Math.sqrt(ce*ce+e*e)
-                      master_grid_field[u*4+3] = (master_grid_field[u*4+3]<0)? -Math.min(Math.abs(e),Math.abs(ce)):Math.min(e,ce);
+                      master_grid_field[u*4+3] = Math.min(Math.abs(e),Math.abs(ce));
                       //master_grid_field[u*4+3] = e;
                       master_grid_field[u*4+2] = nodes[i].parent.data.sign;
                     }
@@ -795,6 +803,7 @@ function distributesMesh(){
         //use NGL to load the object?
         if (!("mc" in nodes[i].data)) nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
         else GP_updateMBCompartment(nodes[i]);
+        compartments_count+=1;
         //remove volume from parent volume
         //nodes[i].parent.data.vol = nodes[i].parent.data.vol - nodes[i].data.vol;
         continue;
@@ -1196,7 +1205,7 @@ function createInstancesMesh(pid,anode,start,count) {
       var v = anode.parent.data.mesh.geometry.attributes.position.array;
       var n = anode.parent.data.mesh.geometry.attributes.normal.array;
       //pick a random one.
-      var mscale = nodes[1].data.mesh.scale;
+      var mscale = anode.parent.data.mesh.scale;
       var vi = Math.round(Util_halton(bodyId,2)*v.length/3);
       var ni = new THREE.Vector3( -n[vi*3],-n[vi*3+1],-n[vi*3+2]);
       var rotation1 = Util_computeOrientation(ni,up);
@@ -1337,7 +1346,7 @@ function GP_triplanarShaderMaterial(texture){
         },
 		    vertexShader: document.getElementById( 'tri_vertexShader' ).textContent,
 		    fragmentShader: document.getElementById( 'tri_fragmentShader' ).textContent,
-        side: THREE.DoubleSide
+        side: THREE.FrontSide
 	} );
   GP_switchTexture();
 }
@@ -2274,7 +2283,7 @@ function initGUI(){
     interaction: 'none',
     sphereRadius: world.getSphereRadius(0),
     switchCompMatTexture: function(){GP_switchTexture();},
-    CompMatSide: "DoubleSide",
+    CompMatSide: "BackSide",
     CompMatTransparent: false,
     material: "shiny"
   };
