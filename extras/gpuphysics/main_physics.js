@@ -121,7 +121,7 @@ var imposter_vertex="precision highp float;\n\
     if (bodyType_infos1.w < 0.0) vColor = vec4(0.0,0.0,1.0,1.0);\n\
     if (bodyType_infos1.w == 0.0) vColor = vec4(1.0,0.0,0.0,1.0);\n\
     vUv = uv;\n\
-  	gl_Position = VP  * vec4( billboardVertexWorldPos.xyz , 1.0 );\n\
+    gl_Position = VP  * vec4( billboardVertexWorldPos.xyz , 1.0 );\n\
     vPosition = billboardVertexWorldPos;\n\
   }\n";
 var imposter_fragment="#include <logdepthbuf_pars_fragment>\n\
@@ -130,6 +130,7 @@ var imposter_fragment="#include <logdepthbuf_pars_fragment>\n\
   uniform mat4 projectionMatrix;\n\
   uniform float cameraNear;\n\
   uniform float cameraFar;\n\
+  uniform vec4 clippingPlanes[ NUM_CLIPPING_PLANES ];\n\
   varying float vRadius;\n\
   varying vec3 vPosition;\n\
   varying vec4 vColor;\n\
@@ -157,6 +158,10 @@ var imposter_fragment="#include <logdepthbuf_pars_fragment>\n\
     if (lensqr > 1.0) discard;\n\
     vec3 normal = normalize(vec3(vUv, sqrt(1.0 - lensqr)));\n\
     vec3 cameraPos = (normal * vRadius) + vPosition;\n\
+    vec3 vViewPosition = -(modelView * vec4(cameraPos, 1.0)).xyz;\n\
+    #include <clipping_planes_fragment>\n\
+    //vec3 normal = normalize(vec3(vUv, sqrt(1.0 - lensqr)));\n\
+    //vec3 cameraPos = (normal * vRadius) + vPosition;\n\
     vec4 clipPos = projectionMatrix * modelView * vec4(cameraPos, 1.0);\n\
     float ndcDepth = clipPos.z / clipPos.w;\n\
     float gldepth = ((gl_DepthRange.diff * ndcDepth) +\n\
@@ -916,6 +921,9 @@ function createCellVIEW(){
 		side: THREE.DoubleSide,
     lights: true,
     depthWrite: true,
+    clipping: true,
+    clippingPlanes: clipPlanes,
+    clipIntersection: true,
     defines: {
         USE_MAP: true,
         DEPTH_PACKING: 3201,
@@ -1345,9 +1353,12 @@ function GP_triplanarShaderMaterial(texture){
             opacity:{type:'f',value: 0.5},
             color: { type: 'c', value: new THREE.Color( 0, 0, 0 ) }
         },
+        clipping: true,
+        clippingPlanes: clipPlanes,
+        clipIntersection: true,
 		    vertexShader: document.getElementById( 'tri_vertexShader' ).textContent,
 		    fragmentShader: document.getElementById( 'tri_fragmentShader' ).textContent,
-        side: THREE.FrontSide
+        side: THREE.DoubleSide
 	} );
   GP_switchTexture();
 }
@@ -1726,6 +1737,9 @@ function GP_debugBeadsSpheres(){
         lights: true,
         depthWrite: true,
         transparent: false,
+        clipping: true,
+        clippingPlanes: clipPlanes,
+        clipIntersection: true,
         defines: defines
         //{
           //USE_MAP: true,
@@ -1928,6 +1942,9 @@ function init(){
         ]),
         vertexShader: sharedShaderCode.innerText + renderBodiesDepth.innerText,
         fragmentShader: THREE.ShaderLib.depth.fragmentShader,
+        clipping: true,
+        clippingPlanes: clipPlanes,
+        clipIntersection: true,
         defines: {
             DEPTH_PACKING: 3201,
             bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
@@ -2018,6 +2035,7 @@ function init(){
 }
 
 function GP_onWindowResize() {
+  if (!renderer) return;
   var container = document.getElementById( 'container' );
   var dm = container.getBoundingClientRect();
   if (!DEBUGGPU){
@@ -2290,7 +2308,7 @@ function initGUI(){
     interaction: 'none',
     sphereRadius: world.getSphereRadius(0),
     switchCompMatTexture: function(){GP_switchTexture();},
-    CompMatSide: "BackSide",
+    CompMatSide: "DoubleSide",
     CompMatTransparent: false,
     material: "shiny"
   };

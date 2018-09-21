@@ -2870,8 +2870,8 @@ function NGL_multiSpheresComp(name,pos, radii) {
 function NGL_noPdbProxy(name, radius) {
   var align_axis = false;
   NGL_ShowOrigin();
-  if (ngl_load_params.dogeom) {
-    if (node_selected.geom_type !== "None" && node_selected.geom_type !== "sphere")
+  //if (ngl_load_params.dogeom) {
+    if (node_selected.data.geom_type && node_selected.data.geom_type !== "None" && node_selected.data.geom_type !== "sphere")
         NGL_LoadAShapeObj(null,ngl_load_params.geom);
     else {
       //build the sphere and assign it
@@ -2897,10 +2897,11 @@ function NGL_noPdbProxy(name, radius) {
         wireframe: true,
         diffuse: tcolor,
       }); //wireframe ?
-      node_selected.data.geom_type = "sphere"
+      node_selected.data.geom_type = "sphere";
+      node_selected.data.geom = "sphere";
     }
-    ngl_load_params.dogeom = false;
-  }
+  //  ngl_load_params.dogeom = false;
+  //}
   if (ngl_load_params.dobeads) {
     //fix pos and rad to new format in case
     var pr = Util_FixBeadsFormat(ngl_load_params.beads.pos,ngl_load_params.beads.rad)

@@ -551,18 +551,13 @@
   	varying vec3 vONormal;
     varying vec3 vU;
     varying vec3 vEye;
-
     void main() {
-
           vOPosition = modelViewMatrix * vec4( position, 1.0 );
           gl_Position = projectionMatrix * vOPosition;
-
           vU = normalize( vec3( modelViewMatrix * vec4( position, 1.0 ) ) );
-
           vPosition = vec4( position, 1.0 );
           vNormal = normalMatrix * normal;
           vONormal = normal;
-
       }
   </script>
   <script type="x-shader/x-vertex" id="tri_fragmentShader">
@@ -577,14 +572,14 @@
       varying vec3 vNormal;
       varying vec4 vPosition;
       varying vec4 vOPosition;
-  	varying vec3 vONormal;
-  	varying vec3 vU;
+  	  varying vec3 vONormal;
+  	  varying vec3 vU;
       varying vec3 vEye;
-
-  	float random(vec3 scale,float seed){return fract(sin(dot(gl_FragCoord.xyz+seed,scale))*43758.5453+seed);}
-
+      uniform vec4 clippingPlanes[ NUM_CLIPPING_PLANES ];
+	    float random(vec3 scale,float seed){return fract(sin(dot(gl_FragCoord.xyz+seed,scale))*43758.5453+seed);}
       void main() {
-
+          vec3 vViewPosition = -vOPosition.xyz;
+          #include <clipping_planes_fragment>
           vec3 n = normalize( vONormal.xyz );
           vec3 blend_weights = abs( n );
           blend_weights = ( blend_weights - 0.2 ) * 7.;

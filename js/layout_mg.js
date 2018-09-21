@@ -184,7 +184,7 @@ var ngl_viewport='' +
 
 var gpu_phy_viewport='' +
 '<div class="GPGPU" id="GPGPU">'+
-  '<button onclick="GP_initFromNodes(graph.nodes,128,10,false);" style="position:absolute;top:0px;right:50%">Preview</button>' +
+  '<button onclick="GP_initFromNodes(graph.nodes,128,10,false);" style="position:absolute;top:0px;right:50%;z-index:999">Preview</button>' +
   '<div id="gui-container"></div>'+
   '<div id="container" style="width:100%; height:100%;"></div>'+
 '</div>';
@@ -602,7 +602,7 @@ gpgpuComponent.prototype._Setup = function() {
   var optionsDropdown = $(gpu_phy_viewport); //$( 'NGLOptionTemplate' ).html() );
   this._container.getElement().append(optionsDropdown);
   //this._container.getElement().append(ngl);
-  GP_initRenderer();
+  //GP_initRenderer();
   this._container.on('resize', this._Resize, this);
   this._Resize();
   all_intialized[1] = true;
