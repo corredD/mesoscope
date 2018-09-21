@@ -164,6 +164,36 @@ var imposter_fragment="#include <logdepthbuf_pars_fragment>\n\
   	gl_FragColor = vec4(normal*vColor.rgb,1.0);//0.78,0.78,0.78,1.0);\n\
   }\n";
 
+var points_vertex="uniform float psize;\n\
+ uniform sampler2D gridId;\n\
+ attribute float indices;\n\
+ varying vec3 vColor;\n\
+ varying vec3 vViewPosition;\n\
+ vec2 indexToUV(float index, vec2 res){\n\
+     vec2 uv = vec2(mod(index/res.x,1.0), floor( index/res.y ) / res.x);\n\
+     return uv;\n\
+ }\n\
+ void main(){\n\
+    vec3 transformed = vec3( position );\n\
+    vec4 mvPosition = modelViewMatrix * vec4( transformed, 1.0 );\n\
+    vec2 pointUV = indexToUV(indices, gridIdTextureSize);\n\
+    vec4 grid_infos = texture2D( gridId, pointUV );\n\
+    vColor = vec3(0.0,0.0,0.0);\n\
+    if (grid_infos.y <= -1.0) vColor = vec3(0.0,1.0-grid_infos.y,0.0);\n\
+    else if (grid_infos.y <= 0.0) vColor = vec3(1.0-grid_infos.y,0.0,0.0);\n\
+    else vColor = vec3(0.0,0.0,grid_infos.y);\n\
+    gl_PointSize = 20.0;\n\
+    vViewPosition = - mvPosition.xyz;\n\
+    gl_Position = projectionMatrix * mvPosition;\n\
+}";
+var points_fragment="#include <common>\n\
+ varying vec3 vColor;\n\
+ varying vec3 vViewPosition;\n\
+ uniform vec4 clippingPlanes[ NUM_CLIPPING_PLANES ];\n\
+ void main(){\n\
+   #include <clipping_planes_fragment>\n\
+   gl_FragColor = vec4(vColor,1);//outgoingLight, diffuseColor.a );\n\
+}";
 /*functions*/
 function Debug_getValues( i, j, k){
 	var u = (k * world.broadphase.resolution.x * world.broadphase.resolution.x) + (j * world.broadphase.resolution.x) + i;
@@ -361,6 +391,7 @@ function GP_CombineGrid(){
     indices.push(i);
     master_grid_field[i*4+3] = 2.0;
   }
+  nodes[0].data.insides = indices;
   for (var i=0;i<nodes.length;i++){//nodes.length
     if (!nodes[i].parent)
     {
@@ -407,21 +438,26 @@ function GP_CombineGrid(){
                     //inside is negative
                     //current compId is
                     var compId = master_grid_id[u];
+                    var ce = master_grid_field[u*4+3];
+                    var cee = (e < 0)?e - (nodes[i].data.compId-1):e + (nodes[i].data.compId-1);
                     //if (compId === 0) {
-                    var test = (e < nodes[i].data.mc.isolation && Math.abs(e) < Math.abs(master_grid_field[u*4+3]));
+                    var test = (e < nodes[i].data.mc.isolation && Math.abs(e) < Math.abs(ce));
                     if ( test ) {//-1 && e < nodes[i].data.mc.isolation+1){
                       master_grid_id[u] = nodes[i].data.compId;
                       nodes[i].data.insides.push(u);
                       //console.log("inside");
-                      indices.splice(u,1);
+                      //indices.splice(u,1);
+                      nodes[i].parent.data.insides.splice(u,1);
                       //we are inside
-                      e = e * nodes[i].parent.data.sign;
-                      master_grid_field[u*4+3] = e;
+                      //e = e * nodes[i].parent.data.sign;
+                      master_grid_field[u*4+3] = cee;
                       master_grid_field[u*4+2] = nodes[i].parent.data.sign;
                     }
                     else {
-                      e = e * nodes[i].parent.data.sign;
-                      master_grid_field[u*4+3] = Math.min(e,master_grid_field[u*4+3]);
+                      //e = e * nodes[i].parent.data.sign;
+                      //min-max ? or R-function ?
+                      var newd = ce + e - Math.sqrt(ce*ce+e*e)
+                      master_grid_field[u*4+3] = (master_grid_field[u*4+3]<0)? -Math.min(Math.abs(e),Math.abs(ce)):Math.min(e,ce);
                       //master_grid_field[u*4+3] = e;
                       master_grid_field[u*4+2] = nodes[i].parent.data.sign;
                     }
@@ -457,7 +493,6 @@ function GP_CombineGrid(){
     }
     else continue;
   }
-  nodes[0].data.insides = indices;
   nodes[0].data.vol = GP_ComputeVolume(indices.length);
   //make a texture out of it, do we include normal_cache, or should we recompute it ?
   //lets try both
@@ -501,10 +536,10 @@ function GP_gpuCombineGrid(){
 }
 
 function GP_updateMBCompartment(anode){
-  anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2,0.0);
-  anode.data.mc.isolation = 0.0;
   //NGL_updateMetaBallsGeom(anode);
   if (controller.renderIsoMB){
+    anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2,0.0);
+    anode.data.mc.isolation = 0.0;
     var geo = anode.data.mc.generateGeometry();
     anode.data.geo = geo;
     var positions = new Float32Array(geo.vertices);
@@ -1266,6 +1301,9 @@ function createMeshIngrMaterial(mat,light,ambientlight) {
     fragmentShader: fs,
     lights: true,
     vertexColors: true,
+    clipping: true,
+    clippingPlanes: clipPlanes,
+    clipIntersection: true,
     defines: {
           bodyInfosTextureResolution: 'vec2( ' + world.textures.bodyInfos.width.toFixed( 1 ) + ', ' + world.textures.bodyInfos.width.toFixed( 1 ) + " )",
           bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
@@ -2026,8 +2064,9 @@ function updatePhysics(time){
     else {
       if(!rb_init) {
         //warm up
-        for (var i=0;i<10;i++)
-            world.step(0.01);
+        world.step(0.01);
+        //for (var i=0;i<10;i++)
+        //    world.step(0.01);
         rb_init = true;
       }
     }
@@ -2070,6 +2109,7 @@ function GP_points(nparticles){
   var geometry = new THREE.BufferGeometry();
   var positions = [];
   var colors = [];
+  var indices = [];
   var color = new THREE.Color();
   var n = 1.0, n2 = n / 2; // particles spread in the cube
   for ( var i = 0; i < particles; i ++ ) {
@@ -2089,16 +2129,35 @@ function GP_points(nparticles){
     if (v <= 0.0) color.setRGB( v, 0, 0 );
     else if (v > 0.0) color.setRGB( 0, 0, v );
     colors.push( color.r, color.g, color.b );
+    indices.push(i);
   }
   geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( positions, 3 ) );
   geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+  geometry.addAttribute( 'indices', new THREE.Float32BufferAttribute( indices, 1 ) );
   geometry.computeBoundingSphere();
+  //with clipping plane
+  //pass the grid data texture
+  //update with world.textures.gridIdsRead.texture
+  var sh_material = new THREE.ShaderMaterial({
+      uniforms: {
+          psize:  { value: world.radius*8},
+          gridId: { value: world.dataTextures.gridIds}
+      },
+      clipping: true,
+      clippingPlanes: clipPlanes,
+      clipIntersection: true,
+      vertexShader: points_vertex,
+      fragmentShader: points_fragment,
+      defines: {
+        gridIdTextureSize: 'vec2(' + world.dataTextures.gridIds.image.width + ', ' + world.dataTextures.gridIds.image.height + ')',
+      }
+  });
   var material = new THREE.PointsMaterial( {
     size: world.radius*8,
     vertexColors: THREE.VertexColors,
     clippingPlanes: clipPlanes,
     clipIntersection: true } );
-  points = new THREE.Points( geometry, material );
+  points = new THREE.Points( geometry, sh_material );
   return points;
 }
 
@@ -2156,7 +2215,14 @@ function render() {
       debugMesh.material.uniforms.bodyPosTex.value = world.bodyPositionTexture;
     }
 
-    gridSprite.material.map = world.textures.gridIdsRead.texture;gridSprite.material.needsUpdate = true;
+    if (gridSprite) {
+      gridSprite.material.map = world.textures.gridIdsRead.texture;
+      gridSprite.material.needsUpdate = true;
+    }
+    if (gridPoints) {
+        gridPoints.material.uniforms.gridId.value = world.textures.gridIdsRead.texture;
+        gridPoints.material.needsUpdate = true;
+    }
     //gridSprite.material.uniforms.res.value.set(world.dataTextures.gridIds.image.width,world.dataTextures.gridIds.image.height);
     //gridSprite.material.uniforms.texture.value = world.textures.gridIdsRead.texture;
     gridSprite.material.needsUpdate = true;

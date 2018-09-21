@@ -194,7 +194,7 @@ var metaballsShader="//#version 300 es\n\
 		float temp = mod(index,sliceNum);//index % (sliceNum);\n\
 		float y = temp / size;\n\
 		float x = mod(temp,size);//temp % size;\n\
-		return vec3(floor(x+0.5), floor(y+0.5), floor(z+0.5));\n\
+		return vec3(floor(x), floor(y), floor(z));\n\
 		}\n\
 	float getDistance(float magic, float x,float y,float z){\n\
 		vec3 from = vec3(x,y,z);\n\
@@ -224,15 +224,18 @@ var metaballsShader="//#version 300 es\n\
 		//vec3 p = (point - gridPos)*gridResolution.x;\n\
 		//world position \n\
 		vec3 xyz = ijk/gridSize + gridPos.xyz;//normalize between 0 and 1 ?\n\
-		float d = getDistance(0.0, xyz.x,xyz.y,xyz.z);\n\
-		if (d < cvalue) {\n\
+		float d = getDistance(0.2, xyz.x,xyz.y,xyz.z);\n\
+		float newvalue = min(cvalue,d);// + d - sqrt(cvalue*cvalue+d*d);\n\
+		if (d < 0.0 && d < cvalue) {\n\
+			d = d-(compId-1.0);\n\
 			cvalue = d;\n\
 			cid = compId;\n\
 		}\n\
+		else {}\n\
 		//if (cvalue <= 0.2) cvalue = 1.0;\n\
 		//else if (cvalue == 2.0) cvalue=2.0;\n\
 		//else cvalue = 0.5;\n\
-		gl_FragColor = vec4(cid,cvalue,0.0,1.0);//vec4(cid,cvalue,0.0,0.0);//compId,field value,thichness\n\
+		gl_FragColor = vec4(cid,newvalue,1.0,1.0);//vec4(cid,cvalue,0.0,0.0);//compId,field value,thichness\n\
 	}\n\
 ";
 
@@ -363,17 +366,19 @@ var updateForceFrag = "uniform vec4 params1;\n\
 			vec3 tangentForce = friction * vij_t;\n\
 			vec3 f = springForce + dampingForce + tangentForce;\n\
 			//should this force take the offset in account?\n\
-			if (grid_infos.z < 0.0) f = -f;\n\
+			//if (grid_infos.z < 0.0) f = -f;\n\
 			if (abs(distance) < radius*2.0){\n\
 					if (distance > 0.0 && bodyType_infos1.w < 0.0) f = -f;//*10\n\
+					if (distance < 0.0 && distance > bodyType_infos1.w+1.0) f = -f;//*10\n\
 					if (distance < 0.0 && bodyType_infos1.w == 0.0) f = -f;\n\
 					if (bodyType_infos1.w > 0.0) f=f*0.0;\n\
 					else force = force+f*5.0;\n\
 			}\n\
 			else {\n\
-				if (distance > 0.0 && bodyType_infos1.w < 0.0) force = force -f;//*10\n\
-				if (distance < 0.0 && bodyType_infos1.w == 0.0) force = force -f;\n\
-				if (bodyType_infos1.w > 0.0)\n\
+				if ( distance > 0.0 && bodyType_infos1.w < 0.0) force = force -f;//*10\n\
+				if ( distance < 0.0 && distance > bodyType_infos1.w  ) f = -f;//*10\n\
+				if ( distance < 0.0 && bodyType_infos1.w == 0.0) force = force -f;\n\
+				if ( bodyType_infos1.w > 0.0)\n\
 				{\n\
 					//force =force*10.0-f*10.0;\n\
 				}\n\
@@ -1793,8 +1798,12 @@ var shared = "float Epsilon = 1e-10;\n\
 			},
 			updateGridCompartmentMB: function(compId,listMetaballs,scale){
 					//console.log("update Grid on GPU",compId,listMetaballs.length,scale);
+					var renderer = this.renderer;
+					var buffers = renderer.state.buffers;
+					var gl = renderer.context;
 					var mat = this.materials.GridCompartment;
 					if(!mat){
+						  console.log("buildMaterial GridCompartment");
 							mat = this.materials.GridCompartment = new THREE.ShaderMaterial({
 									uniforms: {
 											compId: {value: compId},
@@ -1813,12 +1822,18 @@ var shared = "float Epsilon = 1e-10;\n\
 									}
 							});
 					}
-					// Local particle positions to relative
-	        this.fullscreenQuad.material = mat;
-					mat.uniforms.compId.value = compId;
-					mat.uniforms.gridIds.value = this.textures.gridIdsRead.texture;
-					mat.uniforms.listMetaballs.value = listMetaballs;
-	        this.renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.gridIdsWrite, false );
+					else {
+						mat.uniforms.compId.value = compId;
+						mat.uniforms.gridIds.value = this.textures.gridIdsRead.texture;
+						mat.uniforms.listMetaballs.value = listMetaballs;
+						mat.defines.numMB = ''+listMetaballs.length.toFixed( 0 )+'';
+						// Local particle positions to relative
+						mat.needsUpdate = true;
+	        }
+					buffers.depth.setTest( false );
+					buffers.stencil.setTest( false );
+					this.fullscreenQuad.material = mat;
+					this.renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.gridIdsWrite, false );
 					mat.uniforms.gridIds.value = null;
 					this.fullscreenQuad.material = null;
 					this.swapTextures('gridIdsWrite', 'gridIdsRead');

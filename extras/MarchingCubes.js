@@ -576,7 +576,7 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
             //this.balls[i].pos.sub(from);
             //var r = this.balls[i].pos.length ()
             //var r = (blob.c - from).length();
-            if (r <= this.balls[i].rad) {
+            if (r <= R) {
             // this can be factored for speed if you want
               sumDensity += 2 * (r * r * r) / (R * R * R) -
                 3 * (r * r) / (R * R) + 1;
@@ -584,7 +584,8 @@ NGL.MarchingCubes = function(resolution, material, enableUvs, enableColors) {
         minDistance = Math.min(minDistance, r - R);
         sumRi += R;
       }
-      return Math.max(minDistance, (magic - sumDensity) / ( 3 / 2.0 * sumRi));
+      //magic is the threshold
+      return Math.max(minDistance, (magic - sumDensity) / ( 3.0 / 2.0 * sumRi));
     };
 
     this.addPlaneX = function(strength, subtract) {
