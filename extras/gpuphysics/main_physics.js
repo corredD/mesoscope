@@ -1424,6 +1424,9 @@ function createShaderMaterial( id, light, ambientLight ) {
     fragmentShader: fs,
     lights: true,
     vertexColors: true,
+    clipping: true,
+    clippingPlanes: clipPlanes,
+    clipIntersection: true,
     defines: {
           bodyInfosTextureResolution: 'vec2( ' + world.textures.bodyInfos.width.toFixed( 1 ) + ', ' + world.textures.bodyInfos.width.toFixed( 1 ) + " )",
           bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
@@ -1895,6 +1898,9 @@ function init(){
         fragmentShader:phongShader.fragmentShader,//all_materials["dotted"].m.fragmentShader,//phongShader.fragmentShader,// fragmentShader.innerText,//phongFragmentShaderCode.innerText,//phongShader.fragmentShader,
         lights: true,
         vertexColors: true,
+        clipping: true,
+        clippingPlanes: clipPlanes,
+        clipIntersection: true,
         defines: {
             bodyInfosTextureResolution: 'vec2( ' + world.textures.bodyInfos.width.toFixed( 1 ) + ', ' + world.textures.bodyInfos.width.toFixed( 1 ) + " )",
             bodyTextureResolution: 'vec2(' + world.bodyTextureSize.toFixed(1) + ',' + world.bodyTextureSize.toFixed(1) + ')',
