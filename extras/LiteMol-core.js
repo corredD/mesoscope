@@ -1,6 +1,3 @@
-
-; var __LiteMol_Core = function () {
-  'use strict';
 /*!
  * @overview es6-promise - a tiny implementation of Promises/A+.
  * @copyright Copyright (c) 2014 Yehuda Katz, Tom Dale, Stefan Penner and contributors (Conversion to ES6 API by Jake Archibald)
@@ -11413,8 +11410,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -19457,6 +19454,29 @@ var LiteMol;
                     }
                     return transforms;
                 }
+                function findMatesIJK(model, radius, dim) {
+                    var bounds = getBoudingSphere(model.positions, model.positions.indices);
+                    var spacegroup = new Structure.Spacegroup(model.data.symmetryInfo);
+                    var t = Mat4.zero();
+                    var v = Vec3.zero();
+                    var transforms = [];
+                    for (var i = -dim; i <= dim; i++) {
+                        for (var j = -dim; j <= dim; j++) {
+                            for (var k = -dim; k <= dim; k++) {
+                                for (var op = 0; op < spacegroup.operatorCount; op++) {
+                                    spacegroup.getOperatorMatrix(op, i, j, k, t);
+                                    Vec3.transformMat4(v, bounds.center, t);
+                                    if (getSphereDist(v, bounds.radius, bounds) > radius)
+                                        continue;
+                                    var copy = Mat4.zero();
+                                    Mat4.copy(copy, t);
+                                    transforms.push(createSymmetryTransform(i, j, k, op, copy));
+                                }
+                            }
+                        }
+                    }
+                    return transforms;
+                }
                 function findMateParts(model, transforms) {
                     var _a = model.data, atoms = _a.atoms, chains = _a.chains, entities = _a.entities, residues = _a.residues;
                     var residueIndices = Core.Utils.ArrayBuilder.create(function (s) { return new Int32Array(s); }, residues.count * transforms.length, 1), operatorIndices = Core.Utils.ArrayBuilder.create(function (s) { return new Int32Array(s); }, residues.count * transforms.length, 1);
@@ -19491,6 +19511,16 @@ var LiteMol;
                     return assemble(model, parts, transforms);
                 }
                 SymmetryHelpers.buildMates = buildMates;
+                function buildMatesIJK(model, radius, dim) {
+                    var info = model.data.symmetryInfo;
+                    if (!info || (info.cellSize[0] < 1.1 && info.cellSize[1] < 1.1 && info.cellSize[2] < 1.1)) {
+                        return model;
+                    }
+                    var transforms = findMatesIJK(model, radius, dim);
+                    var parts = findMateParts(model, transforms);
+                    return assemble(model, parts, transforms);
+                }
+                SymmetryHelpers.buildMatesIJK = buildMatesIJK;
                 function createOperators(operators, list, i, current) {
                     if (i < 0) {
                         list[list.length] = current.slice(0);
@@ -19604,6 +19634,10 @@ var LiteMol;
                 return SymmetryHelpers.buildMates(model, radius);
             }
             Structure.buildSymmetryMates = buildSymmetryMates;
+            function buildSymmetryMatesIJK(model, radius, dim) {
+                return SymmetryHelpers.buildMatesIJK(model, radius, dim);
+            }
+            Structure.buildSymmetryMatesIJK = buildSymmetryMatesIJK;
             function buildAssembly(model, assembly) {
                 return SymmetryHelpers.buildAssembly(model, assembly);
             }
@@ -20807,15 +20841,3 @@ var LiteMol;
         })(Structure = Core.Structure || (Core.Structure = {}));
     })(Core = LiteMol.Core || (LiteMol.Core = {}));
 })(LiteMol || (LiteMol = {}));
-  return LiteMol.Core;
-}
-if (typeof module === 'object' && typeof module.exports === 'object') {
-  module.exports = __LiteMol_Core();
-} else if (typeof define === 'function' && define.amd) {
-  define(['require'], function(require) { return __LiteMol_Core(); })
-} else {
-  var __target = !!window ? window : this;
-  if (!__target.LiteMol) __target.LiteMol = {};
-  __target.LiteMol.Core = __LiteMol_Core();
-}
-

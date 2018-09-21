@@ -1953,7 +1953,7 @@ function LiteMolLoad_cb(data,anode) {
     }
   anode.data.litemol = litemol_current_model = LiteMol.Core.Formats.Molecule.mmCIF.ofDataBlock(parsed.result.dataBlocks[0]).models[0];
   if (anode.data.crystal_radius) {
-    litemol_current_model.crystal_mat =LiteMol.Core.Structure.buildSymmetryMates(litemol_current_model, anode.crystal_radius);
+    litemol_current_model.crystal_mat =LiteMol.Core.Structure.buildSymmetryMatesIJK(litemol_current_model, anode.crystal_radius, 30);
   }
 }
 
@@ -1964,6 +1964,7 @@ function LiteMolLoad(pdburl,anode){
   //LiteMol.Core.Structure.buildSymmetryMates(amodel, radius) :
   if (!anode.data.litemol) callAjax(url, LiteMolLoad_cb, anode);
 }
+// /LiteMol.Core.Structure.SymmetryHelpers
 //supercell affect the uncentered assymetric unit ?
 function NGL_BuildSUPERCELL(anode, pdburl, aradius){
   var url = pdburl;
@@ -1974,7 +1975,8 @@ function NGL_BuildSUPERCELL(anode, pdburl, aradius){
   if (!anode.data.litemol) callAjax(url, LiteMolLoad_cb, anode);
   else {
     litemol_current_model = anode.data.litemol;
-    litemol_current_model.crystal_mat =LiteMol.Core.Structure.buildSymmetryMates(litemol_current_model, aradius);
+    litemol_current_model.crystal_mat =LiteMol.Core.Structure.buildSymmetryMatesIJK(litemol_current_model, aradius, 30);
+    //litemol_current_model.crystal_mat =LiteMol.Core.Structure.buildSymmetryMates(litemol_current_model, aradius);
   }
 }
 
@@ -2650,9 +2652,9 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
     if (!(ngl_current_node.data.hasOwnProperty("litemol"))) ngl_current_node.data.litemol = null;
     if (ngl_current_node.parent.data.geom_type === "mb"){
       if (ngl_current_node.parent.data.geom.radii)
-        aradius = ngl_current_node.parent.data.geom.radii[0];
+        aradius = ngl_current_node.parent.data.geom.radii[0]/2.0;
       else if (ngl_current_node.parent.data.radii)
-        aradius = ngl_current_node.parent.data.radii[0].radii[0];
+        aradius = ngl_current_node.parent.data.radii[0].radii[0]/2.0;
     }
     NGL_BuildSUPERCELL(ngl_current_node, pdburl, aradius);//this is async ?
   }
