@@ -219,26 +219,24 @@ var metaballsShader="//#version 300 es\n\
 		vec2 uv = gl_FragCoord.xy / gridIdTextureSize;\n\
 		vec4 gridData = texture2D(gridIds, uv);\n\
 		float cid = gridData.x;\n\
-		float cvalue = gridData.y;\n\
+		float ce = gridData.y;\n\
 		float gridIndexU = float(uvToIndex(uv, gridIdTextureSize));\n\
 		vec3 ijk = getIJK(gridIndexU, gridSize);\n\
 		//vec3 p = (point - gridPos)*gridResolution.x;\n\
 		//world position \n\
 		vec3 xyz = ijk/gridSize + gridPos.xyz;//normalize between 0 and 1 ?\n\
-		float d = getDistance(0.2, xyz.x,xyz.y,xyz.z);\n\
-		d = abs(d);\n\
-		float newvalue = min(cvalue,d);// + d - sqrt(cvalue*cvalue+d*d);\n\
-		if (d < 0.0 && d < cvalue) {\n\
-			//d = d-(compId-1.0);\n\
-			newvalue = d;\n\
+		float e = getDistance(0.2, xyz.x,xyz.y,xyz.z);\n\
+		//d = abs(d);\n\
+		float newvalue = e;// + d - sqrt(cvalue*cvalue+d*d);\n\
+		bool test = (e < 0.0 && abs(e) < abs(ce));\n\
+		if (test){\n\
 			cid = compId;\n\
+			newvalue = e;\n\
 		}\n\
 		else {\n\
-			newvalue = min(cvalue,d);//\n\
+			float me = min(abs(e),abs(ce));\n\
+			newvalue = (abs(e)<abs(ce) && ce < 0.0 )? -me : me;\n\
 		}\n\
-		//if (cvalue <= 0.2) cvalue = 1.0;\n\
-		//else if (cvalue == 2.0) cvalue=2.0;\n\
-		//else cvalue = 0.5;\n\
 		gl_FragColor = vec4(cid,newvalue,1.0,1.0);//vec4(cid,cvalue,0.0,0.0);//compId,field value,thichness\n\
 	}\n\
 ";

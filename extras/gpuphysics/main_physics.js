@@ -1663,7 +1663,7 @@ function GP_initWorld(){
         renderer: renderer,
         maxBodyTypes:32*32,
         maxBodies: numBodies * numBodies,
-        maxParticles: 1024 * 2 *  1024 * 2,
+        maxParticles: 1024  *  1024 ,
         radius: radius,
         stiffness: 1700,
         damping: 18,//6,
