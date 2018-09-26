@@ -12,6 +12,7 @@ var query;
 var ySpread = 0.1;
 var nodes;
 var root;
+var gridcolor = 0;
 var pack = d3v4.pack()
       .size([600, 600])
       .padding(30);
@@ -170,11 +171,27 @@ var imposter_fragment="#include <logdepthbuf_pars_fragment>\n\
   	gl_FragColor = vec4(normal*vColor.rgb,1.0);//0.78,0.78,0.78,1.0);\n\
   }\n";
 
-var points_vertex="uniform float psize;\n\
- uniform sampler2D gridId;\n\
+
+//render the trilinear interpolation instead ?
+//and the normal ?
+var points_vertex=" uniform float psize;\n\
+ uniform sampler2D gridIdTex;\n\
+ uniform vec3 cellSize;\n\
+ uniform vec3 gridPos;\n\
+ uniform int colorMode;\n\
+ uniform float gridSize;\n\
  attribute float indices;\n\
  varying vec3 vColor;\n\
- varying vec3 vViewPosition;\n\
+ varying vec3 vViewPosition;\n"+
+ //THREE.densityShader +
+ " vec3 getIJK(float index, float size){\n\
+   float sliceNum = size*size;\n\
+   float z = index / sliceNum;\n\
+   float temp = mod(index,sliceNum);//index % (sliceNum);\n\
+   float y = temp / size;\n\
+   float x = mod(temp,size);//temp % size;\n\
+   return vec3(floor(x), floor(y), floor(z));\n\
+   }\n\
  vec2 indexToUV(float index, vec2 res){\n\
      vec2 uv = vec2(mod(index/res.x,1.0), floor( index/res.y ) / res.x);\n\
      return uv;\n\
@@ -183,14 +200,28 @@ var points_vertex="uniform float psize;\n\
     vec3 transformed = vec3( position );\n\
     vec4 mvPosition = modelViewMatrix * vec4( transformed, 1.0 );\n\
     vec2 pointUV = indexToUV(indices, gridIdTextureSize);\n\
-    vec4 grid_infos = texture2D( gridId, pointUV );\n\
+    vec4 grid_infos = texture2D( gridIdTex, pointUV );\n\
+    vec3 ijk = getIJK(indices, gridSize);\n\
+		//vec3 p = (point - gridPos)*gridResolution.x;\n\
+		//world position \n\
+		vec3 pos = ijk/gridSize + gridPos.xyz;//normalize between 0 and 1 ?\n\
+    vec3 sfnormal = vec3(0.0,0.0,0.0);//normalize(CalculateSurfaceNormal(pos));\n\
+    float distance = 0.0;//trilinearInterpolation(pos);\n\
     vColor = vec3(0.0,0.0,0.0);\n\
     float cid = grid_infos.x;\n\
-    if (cid > 1.0) vColor = vec3(0.0,1.0-grid_infos.y,0.0);\n\
-    else if (cid > 0.0) vColor = vec3(1.0-grid_infos.y,0.0,0.0);\n\
-    else if (cid == 0.0) vColor = vec3(0.0,0.0,1.0-grid_infos.y);\n\
-    else if (cid < 0.0) vColor = vec3(1.0,1.0,0.0);\n\
-    else vColor = vec3(1.0,0.0,1.0);\n\
+    if (colorMode==0) {\n\
+      if (cid > 1.0) vColor = vec3(0.0,1.0-grid_infos.y,0.0);\n\
+      else if (cid > 0.0) vColor = vec3(1.0-grid_infos.y,0.0,0.0);\n\
+      else if (cid == 0.0) vColor = vec3(0.0,0.0,1.0-grid_infos.y);\n\
+      else if (cid < 0.0) vColor = vec3(1.0,1.0,0.0);\n\
+      else vColor = vec3(1.0,0.0,1.0);\n\
+    }\n\
+    else if (colorMode ==1){\n\
+      vColor = vec3(distance,0.0,0.0);\n\
+    }\n\
+    else if (colorMode ==3){\n\
+      vColor = vec3(sfnormal.xyz);\n\
+    }\n\
     //if (grid_infos.y <= -1.0) vColor = vec3(0.0,1.0-grid_infos.y,0.0);\n\
     //else if (grid_infos.y <= 0.0) vColor = vec3(1.0-grid_infos.y,0.0,0.0);\n\
     //else vColor = vec3(0.0,0.0,grid_infos.y);\n\
@@ -386,6 +417,20 @@ function GP_getMinMax(xs,ys,zs,radius,n){
           "min_z":min_z,"max_z":max_z}
 }
 
+function GP_fOpUnionRound( a,  b,  r) {
+  var u = new THREE.Vector2(0);
+  u.max(new THREE.Vector2(r - a,r - b));
+  return Math.max(r, Math.min (a, b)) - u.length();
+}
+function GP_fOpIntersectionRound( a,  b,  r) {
+  var u = new THREE.Vector2(0);
+  u.max(new THREE.Vector2(r + a,r + b));
+  return Math.min(-r, Math.max (a, b)) + u.length();
+}
+function GP_fOpDifferenceRound ( a,  b,  r) {
+  return GP_fOpIntersectionRound(a, -b, r);
+}
+
 function GP_CombineGrid(){
   //do it starting from the compartments...
   var w = world.broadphase.resolution.x * world.radius * 2;//1
@@ -398,10 +443,11 @@ function GP_CombineGrid(){
   master_grid_field = new Float32Array(n*n*n*4);//intialized to 0
   master_grid_id = new Float32Array(n*n*n);//intialized to 0
   //initialize root inside indices
+  var round_r = 0.3;//*ascale;
   var indices = [];
   for ( var i = 0; i < n*n*n; i ++ ) {
     indices.push(i);
-    master_grid_id[i] = 0;
+    master_grid_id[i] = 0.0;//root
     master_grid_field[i*4+3] = 10.0;
   }
   nodes[0].data.insides = indices;
@@ -450,31 +496,52 @@ function GP_CombineGrid(){
                     //if ( e  >= nodes[i].data.mc.isolation) {//-1 && e < nodes[i].data.mc.isolation+1){
                     //inside is negative
                     //current compId is
-                    var compId = master_grid_id[u];
+                    var compIdx = master_grid_id[u];
+                    var compId = Math.floor(compIdx);
+                    var lvl = (compIdx - compId)*10.0;
                     var ce = master_grid_field[u*4+3];
                     //var cee = (e < 0)?e - (nodes[i].data.compId-1):e + (nodes[i].data.compId-1);
                     //if (compId === 0) {
+                    if (compId === 0 ) {
+                      if (ce === 10.0) master_grid_field[u*4+3] = e;
+                      else master_grid_field[u*4+3] = GP_fOpUnionRound( ce,  e,  round_r);
+                    }
+                    else if (lvl === nodes[i].depth){
+                      //Union
+                      //console.log("Union",compIdx,compId,lvl,i,u,ce,e);
+                      master_grid_field[u*4+3] = Math.min (ce, e);//GP_fOpUnionRound( ce,  e,  round_r);//Math.min (ce, e);//GP_fOpUnionRound( ce,  e,  round_r);
+                    }
+                    else {
+                      //0.0004666440363507718 0.054253473839101694
+                      //Diff 0 2 112347 0.1758081018924713 0.06645351337889831
+                      // 1 1.000000238418579 2
+                      //console.log("Diff",compIdx,compId,lvl,i,u,ce,e);
+                      master_grid_field[u*4+3] = GP_fOpDifferenceRound( ce,  e,  round_r);//Math.max (-e, ce);//
+                    }
                     var test = (e < nodes[i].data.mc.isolation && Math.abs(e) < Math.abs(ce));
-                    if ( test ) {//-1 && e < nodes[i].data.mc.isolation+1){
-                      master_grid_id[u] = nodes[i].data.compId;
+                    if ( e < nodes[i].data.mc.isolation && nodes[i].data.compId > compId) {//-1 && e < nodes[i].data.mc.isolation+1){
+                      master_grid_id[u] = nodes[i].data.compId + nodes[i].depth/10.0;
+                      //console.log("Inside",master_grid_id[u],nodes[i].data.compId,nodes[i].depth,
+                      //            " compIdx ",compIdx,compId,lvl,u,ce,e,
+                      //            master_grid_field[u*4+3]);
                       nodes[i].data.insides.push(u);
                       //console.log("inside");
                       //indices.splice(u,1);
                       nodes[i].parent.data.insides.splice(u,1);
                       //we are inside
                       //e = e * nodes[i].parent.data.sign;
-                      master_grid_field[u*4+3] = e;
-                      master_grid_field[u*4+2] = -1;
+                      //master_grid_field[u*4+3] = e;
+                      //master_grid_field[u*4+2] = -1;
                     }
-                    else {
+                    //else {
                       //e = e * nodes[i].parent.data.sign;
                       //min-max ? or R-function ?
-                      var me = Math.min(Math.abs(e),Math.abs(ce));
-                      var newd = ce + e - Math.sqrt(ce*ce+e*e)
-                      master_grid_field[u*4+3] = (Math.abs(e)<Math.abs(ce) && ce < 0.0 )? -me : me;
+                      //var me = Math.min(Math.abs(e),Math.abs(ce));
+                      //var newd = ce + e - Math.sqrt(ce*ce+e*e)
+                      //master_grid_field[u*4+3] = (Math.abs(e)<Math.abs(ce) && ce < 0.0 )? -me : me;
                       //master_grid_field[u*4+3] = e;
-                      master_grid_field[u*4+2] = nodes[i].parent.data.sign;
-                    }
+                      //master_grid_field[u*4+2] = nodes[i].parent.data.sign;
+                    //}
                     /*}
                     else if (compId !== nodes[i].data.compId && compId!==0){
                       //check the parent compId ?
@@ -593,7 +660,7 @@ function GP_createOneCompartmentMesh(anode) {
   for (var s=0;s<anode.data.radii[0].radii.length;s++){
     //create one sphere per metaballs as well
     var aSphereMesh = new THREE.Mesh(new THREE.SphereBufferGeometry(1,16,16),
-                                   new THREE.MeshPhongMaterial({ color: 0xffffff }));
+                                   new THREE.MeshPhongMaterial({ color: 0xffffff, wireframe: true }));
     aSphereMesh.position.set(anode.data.pos[0].coords[s*3]*ascale,
                             anode.data.pos[0].coords[s*3+1]*ascale,
                             anode.data.pos[0].coords[s*3+2]*ascale);
@@ -1666,7 +1733,7 @@ function GP_initWorld(){
         maxParticles: 1024  *  1024 ,
         radius: radius,
         stiffness: 1700,
-        damping: 18,//6,
+        damping: 15,//6,
         fixedTimeStep: 0.001,//1/120,
         friction: 0,//2,
         drag: 0.3,
@@ -2087,9 +2154,11 @@ function updatePhysics(time){
         //do we need to redo the compartment grid
         world.step( deltaTime );
         if (gp_updateGrid) {
-          world.callback_toggle[0] = true;
-          gp_updateGrid = false;
+          //world.callback_toggle[0] = true;
           world.resetGridCompartmentMB();
+          world.flushGridData();
+          GP_gpuCombineGrid();
+          gp_updateGrid = false;
         }
         else {
           world.callback_toggle[0] = false;
@@ -2102,6 +2171,13 @@ function updatePhysics(time){
         //for (var i=0;i<10;i++)
         //    world.step(0.01);
         rb_init = true;
+      }
+      if (gp_updateGrid) {
+        //world.callback_toggle[0] = true;
+        world.resetGridCompartmentMB();
+        world.flushGridData();
+        GP_gpuCombineGrid();
+        gp_updateGrid = false;
       }
     }
     prevTime = time;
@@ -2175,8 +2251,12 @@ function GP_points(nparticles){
   var sh_material = new THREE.ShaderMaterial({
       uniforms: {
           psize:  { value: world.radius*8},
-          gridId: { value: world.dataTextures.gridIds}
-      },
+          gridIdTex: { value: world.dataTextures.gridIds},
+          cellSize: { value: new THREE.Vector3(world.radius*2,world.radius*2,world.radius*2) },
+          gridPos: { value: world.broadphase.position },
+          colorMode: { value: gridcolor},
+          gridSize: {value:world.broadphase.resolution.x}
+          },
       clipping: true,
       clippingPlanes: clipPlanes,
       clipIntersection: true,
@@ -2184,6 +2264,7 @@ function GP_points(nparticles){
       fragmentShader: points_fragment,
       defines: {
         gridIdTextureSize: 'vec2(' + world.dataTextures.gridIds.image.width + ', ' + world.dataTextures.gridIds.image.height + ')',
+        gridResolution: 'vec3( ' + world.broadphase.resolution.x.toFixed( 1 ) + ', ' + world.broadphase.resolution.y.toFixed( 1 ) + ', ' + world.broadphase.resolution.z.toFixed( 1 ) + " )"
       }
   });
   var material = new THREE.PointsMaterial( {
@@ -2254,7 +2335,8 @@ function render() {
       gridSprite.material.needsUpdate = true;
     }
     if (gridPoints) {
-        gridPoints.material.uniforms.gridId.value = world.textures.gridIdsRead.texture;
+        gridPoints.material.uniforms.gridIdTex.value = world.textures.gridIdsRead.texture;
+        gridPoints.material.uniforms.colorMode.value = gridcolor;
         gridPoints.material.needsUpdate = true;
     }
     //gridSprite.material.uniforms.res.value.set(world.dataTextures.gridIds.image.width,world.dataTextures.gridIds.image.height);
@@ -2651,6 +2733,7 @@ function GP_onDocumentKeyDown(event) {
 "Q" toggle world/local space | Hold "Ctrl" down to snap to grid
 "X" toggle X | "Y" toggle Y | "Z" toggle Z | "Spacebar" toggle enabled
 */
+  if (!inited) return;
   switch ( keyCode ) {
       case 81: // Q
         control.setSpace( gizmo.space === "local" ? "world" : "local" );

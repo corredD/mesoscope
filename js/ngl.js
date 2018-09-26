@@ -144,7 +144,7 @@ function NGL_resetPcp()
   NGL_applyPcp();
 }
 
-function NGL_applyPcp(axis,offset) {
+function NGL_applyPcp(axis,offset,asyncloop=false) {
   if (!axis) axis = [pcp_elem[0].value / 100.0, pcp_elem[1].value / 100.0, pcp_elem[2].value / 100.0];
   if (!offset) offset = [offset_elem[0].value / 1.0, offset_elem[1].value / 1.0, offset_elem[2].value / 1.0];
   ngl_load_params.axis.axis = axis;
@@ -1521,6 +1521,79 @@ function NGL_applyBUtoMesh(nglobj,meshobj){
   return mesh;
 }
 
+function NGL_buildCMS_cb(nglobject){
+  stage.getRepresentationsByName("cms_surface").dispose();
+  //return RepresentationComponent
+  var rep = nglobject.addRepresentation("surface", {
+      //colorScheme: color_elem.selectedOptions[0].value,
+      sele: nglobject.sele_elem,
+      name: "cms_surface",
+      assembly: nglobject.assambly,
+      surfaceType: "edt",
+      smooth: 2,
+      probeRadius: 1.0,
+      scaleFactor: cms_scale,
+      flatShaded: false,
+      opacity: 1.0,
+      useWorker: false,
+      lowResolution: true,
+    });
+  var myVar = setInterval(myTimerToGetTHeBuffer, 1000);
+  function myStopFunction() {
+      clearInterval(myVar);
+  }
+
+  function myTimerToGetTHeBuffer() {
+      var arep = stage.getRepresentationsByName("cms_surface").list[0];
+      var surf;
+      console.log(arep)
+      if (arep) {
+        surf = arep.repr.surface;
+        console.log(surf)
+      }
+      if (!surf) {
+        if (arep.repr.dataList.length)
+          {
+            surf = arep.repr.dataList[0].info.surface;
+          }
+      }
+      if (surf) {
+        //change the position according the bu ? append indexes
+        var mesh = {"verts":(surf.position)?Array.from(surf.position):null,
+                    "faces":(surf.index)?Array.from(surf.index):null,
+                    "normals":(surf.normal)?Array.from(surf.normal):null }
+        console.log("MESH:", mesh);
+        if (nglobject.assambly==="SUPERCELL" || nglobject.node.data.buildtype === "supercell") {
+            //do nothing
+        }
+        else if (nglobject.assambly!=="AU") {
+          mesh = NGL_applyBUtoMesh(nglobject,mesh);
+        }
+        else {
+          //recenter the verts
+          var center = nglobject.position;
+          for (var v = 0;v<mesh.verts.length/3;v++){
+                mesh.verts[v*3]=mesh.verts[v*3]+center.x;
+                mesh.verts[v*3+1]=mesh.verts[v*3+1]+center.y;
+                mesh.verts[v*3+2]=mesh.verts[v*3+2]+center.z;
+                //mesh.normals[v*3]=-mesh.normals[v*3];
+                //mesh.normals[v*3+1]=-mesh.normals[v*3+1];
+                //mesh.normals[v*3+2]=-mesh.normals[v*3+2];
+          }
+        }
+        console.log("MESH:", mesh);
+        //NGL_ShowMeshVFN(mesh);
+        if (nglobject.node) {
+          nglobject.node.data.geom = mesh; //v,f,n directly
+          nglobject.node.data.geom_type = "raw"; //mean that it provide the v,f,n directly
+        }
+        //hide or destroy?
+        stage.getRepresentationsByName("cms_surface").dispose();
+        myStopFunction();
+      }
+  }
+}
+
 function NGL_buildCMS(){
   stage.getRepresentationsByName("cms_surface").dispose();
   //return RepresentationComponent
@@ -1543,6 +1616,7 @@ function NGL_buildCMS(){
   function myStopFunction() {
       clearInterval(myVar);
   }
+
   function myTimerToGetTHeBuffer() {
       var arep = stage.getRepresentationsByName("cms_surface").list[0];
       var surf;
@@ -2623,10 +2697,12 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
   } else {
     document.getElementById('surface').setAttribute("class", "hidden");
   }
+  if (!purl) return;
   var isseq = document.getElementById("sequence_mapping").checked;
   if (isseq) querySequenceMapping(aname);//async call
   if (!bu) bu="";
   console.log("load url " + purl + " " + bu + " " + sel_str);
+
   //if its a surface protein show the modal for the pcpalAxis and the offset
   var params = {
     defaultRepresentation: false,
@@ -2634,11 +2710,10 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
   };
   var sele = "";
   if (sel_str && sel_str != "") {
-    sele = sel_str;
+    sele = NGL_GetSelection(sel_str,"");
     //update html input string
   }
   sele_elem.value = sele;
-
   var assambly = "AU";
   if (bu !== -1 && bu !== null && bu !== "") {
     if (!bu.startsWith("BU") && bu !== "AU" && bu != "UNICELL" && bu !== "SUPERCELL") bu = "BU" + bu;
@@ -3066,6 +3141,29 @@ function NGL_getUrlStructure(anode,pdbname){
 }
 
 function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
+    console.log("headless load ?");
+    if (anode.data.surface) {
+      if (aname.length === 4){
+        if (anode.data.opm === 1){
+        //replace purl
+            purl = cellpack_repo+"other/" + aname + ".pdb";
+        }
+        else if (anode.data.opm === 0)
+        {
+            //check if exists
+            var search_url = cellpack_repo+"other/"+aname+ ".pdb";
+            var results = syncCall(search_url);
+            if (results !=="")
+            {
+              purl = cellpack_repo+"other/" + aname + ".pdb";
+              anode.data.opm = 1;
+            }
+            else {
+              anode.data.opm = -1;
+            }
+        }
+      }
+    }
     var params = {
       defaultRepresentation: false,
       name: aname
@@ -3078,13 +3176,37 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
     }
     var sele = "";
     if (sel_str && sel_str != "") {
-      sele = sel_str;
-      //update html input string
+      sele = NGL_GetSelection(sel_str,"");
+      //get NGL string selection
     }
+    //selection and supercell?
+    if (bu ==="SUPERCELL" || anode.data.buildtype === "supercell") {
+      var pdburl = LM_getUrlStructure(anode, anode.data.source.pdb);
+      var aradius = anode.data.size;
+      //node_selected = anode;
+      if (!(anode.data.hasOwnProperty("litemol"))) anode.data.litemol = null;
+      if (anode.parent.data.geom_type === "mb"){
+        if (anode.parent.data.geom.radii)
+          aradius = anode.parent.data.geom.radii[0]/2.0;
+        else if (anode.parent.data.radii)
+          aradius = anode.parent.data.radii[0].radii[0]/2.0;
+      }
+      NGL_BuildSUPERCELL(anode, pdburl, aradius);//this is async ?
+    }
+    console.log("before stage load ?",sele, purl, params);
     stage.loadFile(purl, params).then(function(o) {
+      console.log("then stage load ?",sele,assambly);
+      if (sele === ""  && assambly !== "AU"){
+        //take the chain selection from the bu
+        sele = o.structure.biomolDict[assambly].getSelection().string;
+      }
+      o.node = anode;
       o.sele = sele;
       o.assambly = assambly;
+      console.log("NGL_GetGeometricCenter",sele);
       var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
+      o.gcenter = center;
+      if (assambly !== "AU") center = NGL_GetBUCenter(o,assambly);
       console.log("gcenter", center, ngl_force_build_beads);
       //center molecule
       o.setPosition([-center.x, -center.y, -center.z]);
@@ -3104,9 +3226,10 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
       };
       anode.data.pos[0] = JSON.parse(JSON.stringify(_pos));
       anode.data.radii[0] = JSON.parse(JSON.stringify(_rad));
-      console.log("kmeans done with 10 cluster ",anode.data.pos)
+      console.log("kmeans done with 10 cluster ",anode.data.pos);
     }).then(function(){
         var o = stage.getComponentsByName(aname).list[0];
+        //NGL_buildCMS_cb(o);
         stage.removeComponent(o);
         //do next
         document.getElementById("stopbeads_lbl").innerHTML = "building " + current_compute_index + " / " + graph.nodes.length;

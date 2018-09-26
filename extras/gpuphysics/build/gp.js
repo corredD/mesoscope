@@ -4,9 +4,9 @@
 	(factory((global.gp = global.gp || {}),global.THREE));
 }(this, (function (exports,THREE) { 'use strict';
 
-	var passThroughVert = "void main() {\n    gl_Position = vec4( position, 1.0 );\n}";
+var passThroughVert = "void main() {\n    gl_Position = vec4( position, 1.0 );\n}";
 
-	var passThroughFrag = "uniform sampler2D texture;\nuniform vec2 res;\nvoid main() {\n\tvec2 uv = gl_FragCoord.xy / res;\n\tgl_FragColor = texture2D( texture, uv );\n}";
+var passThroughFrag = "uniform sampler2D texture;\nuniform vec2 res;\nvoid main() {\n\tvec2 uv = gl_FragCoord.xy / res;\n\tgl_FragColor = texture2D( texture, uv );\n}";
 
 var setBodyDataVert = "uniform vec2 res;\n\
 	attribute float bodyIndex;\n\
@@ -101,28 +101,22 @@ var localParticlePositionToRelativeFrag = "uniform sampler2D localParticlePosTex
 		gl_Position = vec4(2.0*(gridUV-0.5), 0, 1);\n\
 	}\n";
 
-	var mapParticleToCellFrag = "varying float vParticleIndex;\n\
+var mapParticleToCellFrag = "varying float vParticleIndex;\n\
 	void main() {\n\
 				gl_FragColor = vec4( vParticleIndex+1.0, 0, 0, 1 );}";
 
-var densityShader="uniform sampler2D bodyPosTex;\n\
-	uniform sampler2D bodyInfosTex;\n\
-	uniform sampler2D gridIdTex;\n\
-	uniform sampler2D gridValueTex;\n\
-	uniform vec3 cellSize;\n\
-	uniform vec3 gridPos;\n\
-	vec4 getValues(float i,float j,float k){\n\
-		float u = (k * gridResolution.x * gridResolution.x) + (j * gridResolution.x) + i;\n\
-		vec2 grid_uv = indexToUV( u, gridIdTextureSize );\n\
-		vec4 g_infos = texture2D(gridIdTex, grid_uv);//compid,value,thick,sign\n\
-		vec4 g_values = vec4(g_infos.x,g_infos.z,g_infos.w,g_infos.y);//texture2D(gridValueTex, grid_uv);//compId,.,.,value\n\
-		return g_values;\n\
-	}\n\
-	vec4 getGridValues(vec3 point){\n\
+var coredensityShader = THREE.densityShader =" vec4 getValues(float i,float j,float k){\n\
+   float u = (k * gridResolution.x * gridResolution.x) + (j * gridResolution.x) + i;\n\
+   vec2 grid_uv = indexToUV( u, gridIdTextureSize );\n\
+	 vec4 g_infos = texture2D(gridIdTex, grid_uv);//compid,value,thick,sign\n\
+	 vec4 g_values = vec4(g_infos.x,g_infos.z,g_infos.w,g_infos.y);//texture2D(gridValueTex, grid_uv);//compId,.,.,value\n\
+	 return g_values;\n\
+ }\n\
+ vec4 getGridValues(vec3 point){\n\
 		vec3 p = (point - gridPos)*gridResolution.x;\n\
 		return getValues(floor(p.x),floor(p.y),floor(p.z));\n\
-	}\n\
-	float trilinearInterpolation(vec3 point){\n\
+ }\n\
+ float trilinearInterpolation(vec3 point){\n\
 		// Find the x, y and z values of the \n\
 		// 8 vertices of the cube that surrounds the point\n\
 		vec3 p = (point - gridPos)*gridResolution.x;\n\
@@ -154,19 +148,28 @@ var densityShader="uniform sampler2D bodyPosTex;\n\
 		V110.w*x*y*(1.0 - z) +\n\
 		V111.w*x*y*z;\n\
 		return Vxyz;//*1175.0*0.000390625\n\
-	}\n\
-	vec3 CalculateSurfaceNormal(vec3 p)\n\
-	{\n\
+ }\n\
+ vec3 CalculateSurfaceNormal(vec3 p)\n\
+ {\n\
 		float H = cellSize.x; //1.0f/grid_unit;\n\
 		float dx = trilinearInterpolation(p + vec3(H, 0.0, 0.0)) - trilinearInterpolation(p - vec3(H, 0.0, 0.0));\n\
 		float dy = trilinearInterpolation(p + vec3(0.0, H, 0.0)) - trilinearInterpolation(p - vec3(0.0, H, 0.0));\n\
 		float dz = trilinearInterpolation(p + vec3(0.0, 0.0, H)) - trilinearInterpolation(p - vec3(0.0, 0.0, H));\n\
 		return normalize(vec3(dx, dy, dz));\n\
-	}\n"
+ }\n"
 
+var densityShader = "uniform sampler2D bodyPosTex;\n\
+		uniform sampler2D bodyInfosTex;\n\
+		uniform sampler2D gridIdTex;\n\
+		uniform vec3 cellSize;\n\
+		uniform vec3 gridPos;\n\
+		uniform sampler2D gridValueTex;\n"+
+		coredensityShader;
 //should we sort according compId?
 //then how do we now the indices start-end
 //define nbComp?
+//erbuild the normal?
+//	//from http://mercury.sexy/hg_sdf/
 var metaballsShader="//#version 300 es\n\
 	precision highp float;\n\
   uniform float compId;\n\
@@ -215,29 +218,55 @@ var metaballsShader="//#version 300 es\n\
 		}\n\
 		return max(minDistance, (magic - sumDensity) / ( 3.0 / 2.0 * sumRi));\n\
 	}\n\
+	/*float fOpUnionRound(float a, float b, float r) {\n\
+		vec2 u = max(vec2(r - a,r - b), vec2(0.0,0.0));\n\
+		return max(r, min (a, b)) - length(u);\n\
+	}\n\
+	float fOpIntersectionRound(float a, float b, float r) {\n\
+		vec2 u = max(vec2(r + a,r + b), vec2(0.0,0.0));\n\
+		return min(-r, max (a, b)) + length(u);\n\
+	}\n\
+	float fOpDifferenceRound (float a, float b, float r) {\n\
+		return fOpIntersectionRound(a, -b, r);\n\
+	}*/\n\
 	void main() {\n\
+		float round_r = 0.3;//*scale;\n\
 		vec2 uv = gl_FragCoord.xy / gridIdTextureSize;\n\
 		vec4 gridData = texture2D(gridIds, uv);\n\
-		float cid = gridData.x;\n\
+		float cidx = gridData.x;\n\
+		float cid = floor(cidx);\n\
+		float clvl = (cidx - cid)*10.0;\n\
 		float ce = gridData.y;\n\
+		float newcompId = floor(compId);\n\
+		float newlvl = (compId - newcompId)*10.0;\n\
 		float gridIndexU = float(uvToIndex(uv, gridIdTextureSize));\n\
 		vec3 ijk = getIJK(gridIndexU, gridSize);\n\
 		//vec3 p = (point - gridPos)*gridResolution.x;\n\
 		//world position \n\
 		vec3 xyz = ijk/gridSize + gridPos.xyz;//normalize between 0 and 1 ?\n\
 		float e = getDistance(0.2, xyz.x,xyz.y,xyz.z);\n\
-		//d = abs(d);\n\
 		float newvalue = e;// + d - sqrt(cvalue*cvalue+d*d);\n\
-		bool test = (e < 0.0 && abs(e) < abs(ce));\n\
-		if (test){\n\
-			cid = compId;\n\
-			newvalue = e;\n\
+		if (clvl == newlvl){\n\
+			newvalue = min(e,ce);//fOpUnionRound( ce,  e,  round_r)\n\
 		}\n\
 		else {\n\
-			float me = min(abs(e),abs(ce));\n\
-			newvalue = (abs(e)<abs(ce) && ce < 0.0 )? -me : me;\n\
+			newvalue = max(-e,ce);//fOpDifferenceRound( ce,  e,  round_r)\n\
 		}\n\
-		gl_FragColor = vec4(cid,newvalue,1.0,1.0);//vec4(cid,cvalue,0.0,0.0);//compId,field value,thichness\n\
+		if (e < 0.0 && newcompId > cid)\n\
+		{\n\
+			cidx = compId;\n\
+		}\n\
+		//d = abs(d);\n\
+		//bool test = (e < 0.0 && abs(e) < abs(ce));\n\
+		//if (test){\n\
+		//	cid = compId;\n\
+		//	newvalue = e;\n\
+		//}\n\
+		//else {\n\
+		//	float me = min(abs(e),abs(ce));\n\
+		//	newvalue = (abs(e)<abs(ce) && ce < 0.0 )? -me : me;\n\
+		//}\n\
+		gl_FragColor = vec4(cidx,newvalue,1.0,1.0);//vec4(cid,cvalue,0.0,0.0);//compId,field value,thichness\n\
 	}\n\
 ";
 
@@ -257,6 +286,9 @@ var updateForceFrag = "uniform vec4 params1;\n\
 	uniform sampler2D particlePosRelative;\n\
 	uniform sampler2D bodyQuatTex;\n\
 	uniform sampler2D bodyInfosTex1;\n\
+	uniform float scalePartCollision;\n\
+	uniform float scaleCompCollision;\n\
+	uniform float scaleSurfaceAttraction;\n\
 	uniform sampler2D gridTex;\n"+
 	densityShader+
 	"vec3 particleForce(float STIFFNESS, float DAMPING, float DAMPING_T, \n\
@@ -324,6 +356,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 	            }\n\
 	        }\n\
 	    }\n\
+			force *= scalePartCollision;\n\
 	    //vec3 boxMin = vec3(-boxSize.x, 0.0, -boxSize.z);//vec3(-boxSize.x, 0.0, -boxSize.z);\n\
 	    //vec3 boxMax = vec3(boxSize.x, boxSize.y*0.5, boxSize.z);\n\
 			vec3 boxMin = vec3(-boxSize.x, -0.5, -boxSize.z);//vec3(-boxSize.x, 0.0, -boxSize.z);\n\
@@ -375,7 +408,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 					if (distance < 0.0 && grid_infos.x != abs(bodyType_infos1.w)) f = -f;//*10\n\
 					if (distance < 0.0 && bodyType_infos1.w == 0.0) f = -f;\n\
 					if (bodyType_infos1.w > 0.0) f=f*0.0;\n\
-					else force = force+f*5.0;\n\
+					else force = force+f*scaleCompCollision;\n\
 			}\n\
 			else {\n\
 				if ( distance > 0.0 && bodyType_infos1.w < 0.0) force = force -f;//*10\n\
@@ -412,7 +445,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 				dampingForce = damping * dot(velocity, sfnormal) * sfnormal;\n\
 				tangentForce = friction * vij_t;\n\
 				f = springForce + dampingForce + tangentForce;\n\
-			  force = force - f;\n\
+			  force = force - f*scaleSurfaceAttraction;\n\
 			}\n\
 			gl_FragColor = vec4(force, 1.0);\n\
 	}\n"
@@ -1043,6 +1076,9 @@ var shared = "float Epsilon = 1e-10;\n\
 	    this.interpolationValue = 0;
 			this.callback=[];
 			this.callback_toggle=[];
+			this.scalePartCollision=5.0;
+			this.scaleCompCollision=5.0;
+			this.scaleSurfaceAttraction=5.0;
 	    var that = this;
 	    function updateMaxVelocity(){
 	        // Set max velocity so that we don't get too much overlap
@@ -1647,9 +1683,7 @@ var shared = "float Epsilon = 1e-10;\n\
 	            this.massDirty = false;
 	        }
 					if (this.gridDirty) {
-						this.flushDataToRenderTarget(this.textures.gridIdsRead, this.dataTextures.gridIds);
-						this.flushDataToRenderTarget(this.textures.gridIdsWrite, this.dataTextures.gridIds);
-						this.gridDirty = false;
+						this.flushGridData();
 					}
 	        if(this.time > 0) return; // Only want to flush initial data
 	        this.flushDataToRenderTarget(this.textures.bodyPosWrite, this.dataTextures.bodyPositions); // Need to initialize both read+write in case someone is interpolating..
@@ -1659,6 +1693,11 @@ var shared = "float Epsilon = 1e-10;\n\
 	        this.flushDataToRenderTarget(this.textures.particlePosLocal, this.dataTextures.particleLocalPositions);
 					//this.flushDataToRenderTarget(this.textures.bodyInfos, this.dataTextures.bodyInfos);
 	    },
+			flushGridData: function(){
+				this.flushDataToRenderTarget(this.textures.gridIdsRead, this.dataTextures.gridIds);
+				this.flushDataToRenderTarget(this.textures.gridIdsWrite, this.dataTextures.gridIds);
+				this.gridDirty = false;
+			},
 	    flushDataToRenderTarget: function(renderTarget, dataTexture){
 	        var texturedMaterial = this.materials.textured;
 	        texturedMaterial.uniforms.texture.value = dataTexture;
@@ -1797,7 +1836,7 @@ var shared = "float Epsilon = 1e-10;\n\
 				this.dataTextures.gridIds.needsUpdate = true;
 				//this.flushDataToRenderTarget(this.textures.gridIdsRead, this.dataTextures.gridIds);
 				//this.flushDataToRenderTarget(this.textures.gridIdsWrite, this.dataTextures.gridIds);
-				this.gridDirty = true;
+				world.flushGridData();//this.gridDirty = true;
 			},
 			updateGridCompartmentMB: function(compId,listMetaballs,scale){
 					//console.log("update Grid on GPU",compId,listMetaballs.length,scale);
@@ -1826,6 +1865,7 @@ var shared = "float Epsilon = 1e-10;\n\
 							});
 					}
 					else {
+						mat.uniforms.scale.value = scale;
 						mat.uniforms.compId.value = compId;
 						mat.uniforms.gridIds.value = this.textures.gridIdsRead.texture;
 						mat.uniforms.listMetaballs.value = listMetaballs;
@@ -1833,7 +1873,7 @@ var shared = "float Epsilon = 1e-10;\n\
 						// Local particle positions to relative
 						mat.needsUpdate = true;
 	        }
-					console.log("updateMB with comp",compId);
+					//console.log("updateMB with comp",compId);
 					buffers.depth.setTest( false );
 					buffers.stencil.setTest( false );
 					this.fullscreenQuad.material = mat;
@@ -2119,6 +2159,9 @@ var shared = "float Epsilon = 1e-10;\n\
 	                    params1: { value: this.params1 },
 	                    params2: { value: this.params2 },
 	                    params3: { value: this.params3 },
+											scalePartCollision:{ value: this.scalePartCollision },
+											scaleCompCollision:{ value: this.scaleCompCollision },
+											scaleSurfaceAttraction:{ value: this.scaleSurfaceAttraction },
 	                },
 	                vertexShader: passThroughVert,
 	                fragmentShader: getShader( 'updateForceFrag' ),
@@ -2135,6 +2178,9 @@ var shared = "float Epsilon = 1e-10;\n\
 	        forceMaterial.uniforms.velTex.value = this.textures.particleVel.texture;
 	        forceMaterial.uniforms.bodyAngularVelTex.value = this.textures.bodyAngularVelRead.texture;
 					forceMaterial.uniforms.gridIdTex.value = this.textures.gridIdsRead.texture;
+					forceMaterial.uniforms.scalePartCollision.value= this.scalePartCollision;
+					forceMaterial.uniforms.scaleCompCollision.value=  this.scaleCompCollision;
+					forceMaterial.uniforms.scaleSurfaceAttraction.value= this.scaleSurfaceAttraction;
 					//forceMaterial.uniforms.bodyPosTex.value = this.dataTextures.bodyInfos;
 					forceMaterial.uniforms.bodyPosTex.value = this.textures.bodyPosRead.texture;
 					forceMaterial.uniforms.bodyQuatTex.value = this.textures.bodyQuatRead.texture;

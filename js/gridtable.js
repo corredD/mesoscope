@@ -1565,7 +1565,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
             if (ngl_grid_mode) {
               NGL_ClearGridMode();
             }
-            if (ngl_current_item_id !== arow.id) {
+            if (ngl_current_item_id !== arow.id || !ngl_current_structure ) {
               console.log("update NGL by removing all component");
               stage.removeAllComponents();
               ngl_current_node = node_selected;
