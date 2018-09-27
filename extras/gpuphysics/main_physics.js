@@ -504,7 +504,7 @@ function GP_CombineGrid(){
                     //if (compId === 0) {
                     if (compId === 0 ) {
                       if (ce === 10.0) master_grid_field[u*4+3] = e;
-                      else master_grid_field[u*4+3] = GP_fOpUnionRound( ce,  e,  round_r);
+                      else master_grid_field[u*4+3] = Math.min(e,ce);//GP_fOpUnionRound( ce,  e,  round_r);
                     }
                     else if (lvl === nodes[i].depth){
                       //Union
@@ -516,7 +516,7 @@ function GP_CombineGrid(){
                       //Diff 0 2 112347 0.1758081018924713 0.06645351337889831
                       // 1 1.000000238418579 2
                       //console.log("Diff",compIdx,compId,lvl,i,u,ce,e);
-                      master_grid_field[u*4+3] = GP_fOpDifferenceRound( ce,  e,  round_r);//Math.max (-e, ce);//
+                      master_grid_field[u*4+3] = max(-e,ce);//GP_fOpDifferenceRound( ce,  e,  round_r);//Math.max (-e, ce);//
                     }
                     var test = (e < nodes[i].data.mc.isolation && Math.abs(e) < Math.abs(ce));
                     if ( e < nodes[i].data.mc.isolation && nodes[i].data.compId > compId) {//-1 && e < nodes[i].data.mc.isolation+1){
@@ -619,6 +619,7 @@ function GP_gpuCombineGrid(){
 function GP_updateMBCompartment(anode){
   //NGL_updateMetaBallsGeom(anode);
   if (controller.renderIsoMB){
+    //scale the coords?
     anode.data.mc.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2,0.0);
     anode.data.mc.isolation = 0.0;
     var geo = anode.data.mc.generateGeometry();
@@ -2097,6 +2098,7 @@ function init(){
     }
     else {
       distributesMesh();
+      GP_WarmUp();
       animate();
     }
 }
@@ -2138,6 +2140,19 @@ function animate( time ) {
         var y = 0.3 + 0.05*Math.cos(11 * world.fixedTime);
         world.setBodyPositions([(prevSpawnedBody++) % world.maxBodies], [new THREE.Vector3(x,y,z)]);
 */
+function GP_WarmUp(){
+  console.log("Warm Up");
+  //update the metaball using gpu
+  for (var i=0;i<3;i++)
+  {
+    console.log("Warm Up",i);
+    world.step(0.01);
+    world.resetGridCompartmentMB();
+    world.flushGridData();
+    GP_gpuCombineGrid();
+  }
+}
+
 var prevTime, prevSpawnedBody=0;
 function updatePhysics(time){
     var deltaTime = prevTime === undefined ? 0 : (time - prevTime) / 1000;
@@ -2167,9 +2182,7 @@ function updatePhysics(time){
     else {
       if(!rb_init) {
         //warm up
-        world.step(0.01);
-        //for (var i=0;i<10;i++)
-        //    world.step(0.01);
+        GP_WarmUp();
         rb_init = true;
       }
       if (gp_updateGrid) {
