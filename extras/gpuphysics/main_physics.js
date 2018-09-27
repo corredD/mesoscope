@@ -1734,7 +1734,7 @@ function GP_initWorld(){
         maxParticles: 1024  *  1024 ,
         radius: radius,
         stiffness: 1700,
-        damping: 15,//6,
+        damping: 3,//6,
         fixedTimeStep: 0.001,//1/120,
         friction: 0,//2,
         drag: 0.3,
