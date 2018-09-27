@@ -191,7 +191,7 @@ function EvaluateCurrentReadyState(){
 			}
 			else {
 				//compartments
-				if (d.parent) {
+				if (d.parent && d.data.nodetype === "compartment") {
 					ncomp++;
 					if( "data" in d && "geom" in d.data
 								&& (!d.data.geom || d.data.geom === "None"

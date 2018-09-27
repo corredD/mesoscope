@@ -1621,6 +1621,7 @@ function NGL_buildCMS(){
       var arep = stage.getRepresentationsByName("cms_surface").list[0];
       var surf;
       console.log(arep)
+      if (!arep) return;
       if (arep) surf = arep.repr.surface;
       if (!surf) {
         if (arep.repr.dataList.length)
@@ -2648,6 +2649,7 @@ function NGL_GetBUCenter(nglobj,ass){
   var center_bu=new NGL.Vector3();
   var center=new NGL.Vector3();
   var bucount=0;
+  if (ass==="AU") return chain_center;
   for (var j = 0; j < nglobj.object.biomolDict[ass].partList.length; j++) {
     console.log(nglobj.object.biomolDict[ass].partList[j].matrixList.length);
     for (var k = 0; k < nglobj.object.biomolDict[ass].partList[j].matrixList.length; k++) {
