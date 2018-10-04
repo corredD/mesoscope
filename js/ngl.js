@@ -2569,6 +2569,7 @@ function NGL_ReprensentOne(o,anode){
   sele_elem.value = sele;
 
   var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
+  if (assambly !== "AU") center = NGL_GetBUCenter(o,assambly);
   o.setPosition([-center.x, -center.y, -center.z]); //center molecule
   if (anode.data.surface){
     align_axis = true;

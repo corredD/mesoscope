@@ -1,5 +1,6 @@
 https://www.digitalocean.com/community/tutorials/how-to-set-up-automatic-deployment-with-git-with-a-vps
 use the git --bar system to update the beta and production website
+mkdir mesoscope_beta.git;cd mesoscope_beta.git; git init --bare;
 on mgl2 there is two bar repo in /usr/local/repos/ and they are hook to the www projects/mesoscope and projects/mesoscopebeta
 on push live master and push beta master change are automatically pass
 here is the hoook as a shell script (e.g. repo/hooks/post-receive):
@@ -17,6 +18,10 @@ on the local git clone working copy simply add the two remote
 git clone orca:/mnt/raid/services/git/mesoscope.git
 git remote add live ssh://autin@mgl2.scripps.edu/usr/local/repo/mesoscope_release.git
 git remote add beta ssh://autin@mgl2.scripps.edu/usr/local/repo/mesoscope_beta.git
+
+git remote add live_virtual ssh://autin@mesoscope.scripps.edu/var/local/mesoscope_release.git/
+git remote add beta_virtual ssh://autin@mesoscope.scripps.edu/var/local/mesoscope_beta.git/
+
 
 #for developement
 git push origin master
