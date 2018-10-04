@@ -1263,6 +1263,7 @@ function setupProtVistaEvents()
 /*protvista features*/
 //the pvf features to protvista e.g. pdb,model,pfam...
 function setupProVista(uniid){
+  return;
   if (uniid===null) uniid = (node_selected)?node_selected.data.uniprot:"";
   if (!(uniid) || uniid ==="" || uniid === null) {
     console.log("Update ProVista with null ",uniid);
