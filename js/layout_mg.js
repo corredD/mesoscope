@@ -1162,10 +1162,18 @@ function UpdatePDBseq(entry){
   if (ngl_current_structure) {
     var nEntity = ngl_current_structure.structure.entityList.length;
     console.log("UpdatePDBseq", nEntity);//limit this number ?
+    //if entity is 0 probably a opm
+    var special_case = false;
+    if (nEntity === 0 ) {
+      nEntity = 1;
+      special_case=true;
+    }
     for (var i=0;i<nEntity;i++){
-      console.log(ngl_current_structure.structure.entityList[i]);
-      if (!ngl_current_structure.structure.entityList[i].isPolymer()) continue;
-      if (!NGL_testSelectedChainInEntity(i)) continue;
+      if (!special_case){
+        console.log(ngl_current_structure.structure.entityList[i]);
+        if (!ngl_current_structure.structure.entityList[i].isPolymer()) continue;
+        if (!NGL_testSelectedChainInEntity(i)) continue;
+      }
       seqv.innerHTML += '&lt;pdb-seq-viewer entry-id="'+entry+'" entity-id="'+(i+1).toString()+'" height="370"&gt;&lt;/pdb-seq-viewer&gt;';
       if (i>=3) break;
     }
@@ -1190,10 +1198,17 @@ function UpdatePDBtopo(entry){
   if (ngl_current_structure) {
     var nEntity = ngl_current_structure.structure.entityList.length;
     console.log("UpdatePDBseq", nEntity);
+    var special_case = false;
+    if (nEntity === 0 ) {
+      nEntity = 1;
+      special_case=true;
+    }
     for (var i=0;i<nEntity;i++){
-      console.log(ngl_current_structure.structure.entityList[i]);
-      if (!ngl_current_structure.structure.entityList[i].isPolymer()) continue;
-      if (!NGL_testSelectedChainInEntity(i)) continue;
+      if (!special_case){
+        console.log(ngl_current_structure.structure.entityList[i]);
+        if (!ngl_current_structure.structure.entityList[i].isPolymer()) continue;
+        if (!NGL_testSelectedChainInEntity(i)) continue;
+      }
       topo.innerHTML += '&lt;pdb-topology-viewer entry-id="'+entry+'" entity-id="'+(i+1).toString()+'" height="370"&gt;&lt;/pdb-topology-viewer&gt;';
       if (i>=3) break;
     }
