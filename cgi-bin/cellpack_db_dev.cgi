@@ -1,5 +1,5 @@
 #!python2.7
-#!python
+#!/bin/python
 import sys,os
 import json
 #import MySQLdb
