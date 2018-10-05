@@ -16,7 +16,8 @@ var stop_current_compute = false;
 //so we can use the mgl2 copy and put there some computed geometry
 var pmv_server = "cgi-bin/get_geom_dev.cgi"; //(local_host_dev)?"cgi-bin/get_geom_dev.cgi":
 var sql_server = "cgi-bin/cellpack_db_dev.cgi"; //(local_host_dev)?"cgi-bin/cellpack_db_dev.cgi":
-var cellpack_repo = "http://mgldev.scripps.edu/projects/autoPACK/data/cellPACK_data/cellPACK_database_1.1.0/"//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/other/";
+var cellpack_repo = "http://mgldev.scripps.edu/projects/autoPACK/data/cellPACK_data/cellPACK_database_1.1.0/";
+cellpack_repo = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/other/";
 //use mgl2
 var local_host_dev = false;
 if (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") {
@@ -659,7 +660,7 @@ function querySequenceMapping(pdbid) {
   $.ajax({
         type: "POST",
         //url: "http://mgldev.scripps.edu/cgi-bin/get_geom_dev.py",
-        url: pmv_server,
+        url: sql_server,
         success: function(data) {
           console.log("##MappingFileData###");
           console.log( typeof data);
