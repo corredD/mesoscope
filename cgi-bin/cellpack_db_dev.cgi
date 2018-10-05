@@ -3,6 +3,9 @@
 import sys,os
 import json
 #import MySQLdb
+import urllib2
+from StringIO import StringIO
+import gzip
 import cgi
 import cgitb
 cgitb.enable()
@@ -422,9 +425,7 @@ def main():
     #first check the query type
     #cache it ?
     if form.has_key("mapping") :
-        import urllib2
-        from StringIO import StringIO
-        import gzip
+        print("Content-type: text/xml\n")
         pdbId = form.getvalue("pdbId")
         url = "ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/xml/"+pdbId+".xml.gz"
         req = urllib2.Request(url);

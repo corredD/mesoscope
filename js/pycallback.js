@@ -80,7 +80,7 @@ function syncCall(url)
   var res = "";
   if (xmlhttp.status === 200)
   {
-    console.log(xmlhttp.responseText);
+    //console.log(xmlhttp.responseText);
     res = xmlhttp.responseText;
   }
   return res;
