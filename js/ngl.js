@@ -2672,16 +2672,16 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
     if (aname.length === 4){
       if (ngl_current_node.data.opm === 1){
       //replace purl
-          purl = cellpack_repo+"other/" + aname + ".pdb";
+          purl = cellpack_repo+"opm/" + aname + ".mmtf";
       }
       else if (ngl_current_node.data.opm === 0)
       {
           //check if exists
-          var search_url = cellpack_repo+"other/"+aname+ ".pdb";
+          var search_url = cellpack_repo+"opm/"+aname+ ".mmtf";
           var results = syncCall(search_url);
           if (results !=="")
           {
-            purl = cellpack_repo+"other/" + aname + ".pdb";
+            purl = cellpack_repo+"opm/" + aname + ".mmtf";
             ngl_current_node.data.opm = 1;
           }
           else {
@@ -3013,16 +3013,16 @@ function LM_getUrlStructure(anode,pdbname){
     {
       if (anode.data.opm === 1){
       //replace purl
-          return cellpack_repo+"other/" + pdbname + ".pdb";
+          return cellpack_repo+"opm/" + pdbname + ".mmtf";
       }
       else if (anode.data.opm === 0)
       {
           //check if exists
-          var search_url = cellpack_repo+"other/"+pdbname+ ".pdb";
+          var search_url = cellpack_repo+"opm/"+pdbname+ ".mmtf";
           var results = syncCall(search_url);
           if (results !=="")
           {
-            purl = cellpack_repo+"other/" + pdbname + ".pdb";
+            purl = cellpack_repo+"opm/" + pdbname + ".mmtf";
             anode.data.opm = 1;
             return purl;
           }
@@ -3082,16 +3082,16 @@ function NGL_getUrlStructure(anode,pdbname){
     {
       if (anode.data.opm === 1){
       //replace purl
-          return cellpack_repo+"other/" + pdbname + ".pdb";
+          return cellpack_repo+"opm/" + pdbname + ".mmtf";
       }
       else if (anode.data.opm === 0)
       {
           //check if exists
-          var search_url = cellpack_repo+"other/"+pdbname+ ".pdb";
+          var search_url = cellpack_repo+"opm/"+pdbname+ ".mmtf";
           var results = syncCall(search_url);
           if (results !=="")
           {
-            purl = cellpack_repo+"other/" + pdbname + ".pdb";
+            purl = cellpack_repo+"opm/" + pdbname + ".mmtf";
             anode.data.opm = 1;
             return purl;
           }
@@ -3149,16 +3149,16 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
       if (aname.length === 4){
         if (anode.data.opm === 1){
         //replace purl
-            purl = cellpack_repo+"other/" + aname + ".pdb";
+            purl = cellpack_repo+"opm/" + aname + ".mmtf";
         }
         else if (anode.data.opm === 0)
         {
             //check if exists
-            var search_url = cellpack_repo+"other/"+aname+ ".pdb";
+            var search_url = cellpack_repo+"opm/"+aname+ ".mmtf";
             var results = syncCall(search_url);
             if (results !=="")
             {
-              purl = cellpack_repo+"other/" + aname + ".pdb";
+              purl = cellpack_repo+"opm/" + aname + ".mmtf";
               anode.data.opm = 1;
             }
             else {
