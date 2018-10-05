@@ -667,8 +667,8 @@ function querySequenceMapping(pdbid) {
           console.log( data );
           //var rdata = Util_gunzip(Util_stringToArray(data));
           //console.log(rdata);
-          var parsed_data = Util_parseXML(data);
-          console.log(parsed_data);
+          var parsed_data = data;//Util_parseXML(data);
+          //console.log(parsed_data);
           var mapping = SetSequenceMapping(parsed_data);
           console.log(mapping);
           if (node_selected)
