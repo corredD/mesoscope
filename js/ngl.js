@@ -3006,7 +3006,10 @@ function NGL_noPdbProxy(name, radius) {
   } //stage.animationControls.rotate(ngl_load_params.axis.axis.getRotationQuaternion(), 0);
   stage.autoView();
 }
-
+//opm search could augmented by memprotMD
+//https://github.com/tomnewport/mpm_api/blob/master/MemProtMD%20API%20Documentation.ipynb
+//also http://blanco.biomol.uci.edu/mpstruc/#id_2BRD_20_3
+//can access from the PDB directly ?
 function LM_getUrlStructure(anode,pdbname){
   if (pdbname.length === 4) {
     if (anode.data.surface)

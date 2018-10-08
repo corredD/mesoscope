@@ -420,6 +420,7 @@ function GuessColumn(field1name,allfield2){
 	 for (var i=0;i<allfield2.length;i++){
 	 		//comon = sharedStart([tocompare,allfield2[i].toLowerCase().replace(" ","")]);
 			for (var j=0;j<tocompare.length;j++) {
+				if (!allfield2[i] || allfield2[i]==="") continue;
 				comon = findLongestCommonSubstring(tocompare[j],allfield2[i].toLowerCase().replace(" ",""))
 		 		console.log(tocompare[j],allfield2[i].toLowerCase(),comon);
 		 		if (comon && comon!=="" ) {//comon!=="" &&
@@ -614,6 +615,7 @@ function getModalMapping(data_header,jsondic,rootName) {
 		for (var i = 0; i < data_header.length; i++) {
 			var h = data_header[i];
 			//use the slice ?
+			if ((!h)||(h==="")) continue;
 			if (h.slice(0,2)==="I_"){ //interior
 					comp_column =true;
 					var cname = data_header[i].slice(2,data_header[i].length);

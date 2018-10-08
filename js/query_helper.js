@@ -566,6 +566,7 @@ function queryPDBfromSequence(sequence) {
   submitForm(query, sequence);
 }
 
+//should replace with the ePDB Rest
 function SetSequenceMapping(xmldata){
   //node_selected.data.xmldata = xmldata;//for debug
   //set up the obect that will hold the seq mapping.
