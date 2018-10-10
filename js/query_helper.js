@@ -279,8 +279,9 @@ function customReportCB(response, querytxt) {
   custom_report_uniprot_only = false;
 }
 
+//this return xml contents
 function customReport(querytxt) {
-  var url = "http://www.rcsb.org/pdb/rest/customReport.csv?pdbids=" + current_list_pdb;
+  var url = "https://www.rcsb.org/pdb/rest/customReport.csv?pdbids=" + current_list_pdb;
   url += "&customReportColumns="
   url += "structureId,structureTitle,experimentalTechnique,uniprotRecommendedName,uniprotAcc,"
   url += "geneName,taxonomyId,taxonomy,structureMolecularWeight,molecularWeight"
