@@ -3011,6 +3011,7 @@ function NGL_noPdbProxy(name, radius) {
 //also http://blanco.biomol.uci.edu/mpstruc/#id_2BRD_20_3
 //can access from the PDB directly ?
 function LM_getUrlStructure(anode,pdbname){
+  pdbname = pdbname.toLowerCase();
   if (pdbname.length === 4) {
     if (anode.data.surface)
     {
