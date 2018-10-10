@@ -1030,7 +1030,7 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 				var comp =  (allfield.compartment_index!==-1) ? idata[allfield.compartment_index]: "";
 				var comp_elem = null;
 				if (!comp_column) {
-					//not the multicolumn compartment definition
+					//not the multicolumn compartment definition from Brett with I_ and S_
 					if (comp!==""){
 							var csplit = comp.split(".")
 							if (csplit.length >1) comp = csplit[csplit.length-1];
@@ -1076,6 +1076,12 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 									//undefined ?>
 								//  console.log("comp for "+name+" "+values+" "+comp_column_names[c].name+" "+ comp_column_names[c].surface+" "+comp_column_names[c].id+" "+elem.surface);
 							}
+              else {
+                //column define but not value specified
+                //elem.surface = comp_column_names[c].surface;
+                comp = comp_column_names[c].name;
+                comp_elem = float_compartments[comp];
+              }
 						}
 					}
 				if (comp_elem===null) {
@@ -1180,7 +1186,7 @@ function process_wb(wb) {
 		//HTMLOUT.style.width = (window.innerWidth - 50) + "px";
 
 		if(typeof console !== 'undefined') console.log("output", new Date());
-		var result = mainParsingSpreadshit(JSON.parse(jsdata),wb.Props.Title);//parseSpreadSheetRecipe(JSON.parse(jsdata),wb.Props.Title);
+		var result = mainParsingSpreadshit(JSON.parse(jsdata),"root");//wb.Props.Title);//parseSpreadSheetRecipe(JSON.parse(jsdata),wb.Props.Title);
 		return result;
 	}
 
