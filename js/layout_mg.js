@@ -657,7 +657,6 @@ var pfvComponent = function(container, state) {
 
 };
 
-
 pfvComponent.prototype._Setup = function() {
   var optionsDropdown = $(pfvoptions); //$( 'NGLOptionTemplate' ).html() );
   this._container.getElement().append(optionsDropdown);
@@ -859,7 +858,7 @@ myLayout.registerComponent('uniprot_viewer', function(container, state) {
   container.on( 'tab', function( tab ){
       tab.element.append( uniprot_viewer_tab_lbl );
       tab.element[0].onclick = function(e) {
-        UpdateUniPDBcomponent(null);
+        UpdateUniPDBcomponent(uniprot_viewer_tab_lbl.text());
       };
   });
   //container.on('tab', setupProVista, this);
@@ -880,33 +879,6 @@ myLayout.registerComponent('protvista', function(container, state) {
 })
 //myLayout.createDragSource( element, newItemConfig );
 //uniprot_viewer
-var persistentComponent = function(container, state) {
-
-  //Check for localStorage
-  if (!typeof window.localStorage) {
-    container.getElement().append('<h2 class="err">Your browser doesn\'t support localStorage.</h2>');
-    return;
-  }
-
-  // Create the input
-  var input = $('<input type="text" />');
-
-  // Set the initial / saved state
-  if (state.label) {
-    input.val(state.label);
-  }
-
-  // Store state updates
-  input.on('change', function() {
-    container.setState({
-      label: input.val()
-    });
-  });
-
-  // Append it to the DOM
-  container.getElement().append('<h2>I\'ll be saved to localStorage</h2>', input);
-};
-
 var setuped = false;
 var evaluate_interval;
 myLayout.init();
@@ -1233,13 +1205,13 @@ function UpdateUniPDBcomponent(entry){
   puv.innerHTML = "";
   if (!(entry) || entry === "" || entry === null)
   {
-    console.log("UpdatePDBcomponent with null ", entry);
+    console.log("UpdateUniPDBcomponent with null ", entry);
     puv = document.getElementById("puv");
     puv.innerHTML = "";
     uniprot_viewer_tab_lbl.text("");
     return;
   }
-  puv.innerHTML = '&lt;pdb-uniprot-viewer entry-id="'+entry+'" entity-id="1" height="370"&gt;&lt;/pdb-uniprot-viewer&gt;';
+  puv.innerHTML = '&lt;pdb-uniprot-viewer entry-id="'+entry+'" entity-id="1" &gt;&lt;/pdb-uniprot-viewer&gt;';//height="100%"
   uniprot_viewer_tab_lbl.text(entry);
   //protvista_tab_lbl.text(entry);
 }
@@ -1278,7 +1250,7 @@ function setupProtVistaEvents()
 /*protvista features*/
 //the pvf features to protvista e.g. pdb,model,pfam...
 function setupProVista(uniid){
-  return;
+  //return;
   if (uniid===null) uniid = (node_selected)?node_selected.data.uniprot:"";
   if (!(uniid) || uniid ==="" || uniid === null) {
     console.log("Update ProVista with null ",uniid);

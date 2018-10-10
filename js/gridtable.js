@@ -1308,6 +1308,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
         return parseFloat(d);
       });*/
       //update with only the changed data
+      console.log("updateAttributesNode ",cid);
       n = updateAttributesNode(n,arow,cid);
       console.log(n);
       console.log("offset is ", n.data.offset, n.data.pcpalAxis);
@@ -1574,7 +1575,8 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
               NGL_Load(arow.pdb, arow.bu, arow.selection);
             }
             else {
-                if ( document.getElementById("sequence_mapping").checked)
+                //not pdb_component_enable?
+                if ( document.getElementById("pdb_component_enable").checked)//sequence_mapping
                     NGL_pdbComponentPost(arow.pdb,arow.uniprot);
                 else NGL_cleanpdbComponentPost();
             }

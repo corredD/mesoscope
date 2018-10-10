@@ -2890,7 +2890,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       else stage.animationControls.rotate(o.structure.getPrincipalAxes().getRotationQuaternion(), 0);
 
       //update PDB components
-      if ( document.getElementById("sequence_mapping").checked)
+      if ( document.getElementById("pdb_component_enable").checked)//sequence_mapping
           NGL_pdbComponentPost(aname,ngl_current_node.data.uniprot);
       else NGL_cleanpdbComponentPost();
     });

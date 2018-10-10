@@ -218,7 +218,7 @@ function serializedRecipe(some_data, some_links) {
         var pgroup;
         if (root.IngredientGroups.length === 0) {
           var pgroup = new sIngredientGroup("proteins", 0,
-                                            IngredientGroup_static_id);
+                                            sIngredientGroup_static_id);
           sIngredientGroup_static_id += 1;
           root.addIngredientGroup(pgroup);
         } else {
@@ -236,7 +236,7 @@ function serializedRecipe(some_data, some_links) {
         var pgroup;
         if (list_comp[cname + "_surface"].IngredientGroups.length === 0) {
           var pgroup = new sIngredientGroup("proteins", 0,
-                                            IngredientGroup_static_id);
+                                            sIngredientGroup_static_id);
           sIngredientGroup_static_id += 1;
           list_comp[cname + "_surface"].addIngredientGroup(pgroup);
         } else {
