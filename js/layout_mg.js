@@ -5,16 +5,16 @@ var featureView;// = new Object()
 var ProtVista;
 var protvista_instance;
 var pdbcomponent_setup = false;
-var angular_app = (app!==null)?app : null;
+var angular_app = (app !== null) ? app : null;
 
 var seq_feature_viewer_lbl;
 var uniprot_viewer_tab_lbl;
 var topology_viewer_lbl;
 var protvista_tab_lbl;
 
-var grid_tab_label=[];
+var grid_tab_label = [];
 
-console.log("angular is defined ?",app);
+console.log("angular is defined ?", app);
 //add interaction viewer : https://github.com/ebi-uniprot/interaction-viewer
 //add spv https://github.com/Sinnefa/SPV_Signaling_Pathway_Visualizer_v1.0
 //metacy: https://websvc.biocyc.org/META/foreignid?ids=Uniprot:P75392
@@ -100,7 +100,7 @@ var canvasOption = '' +
   '</div>'
 
 var ngl_options= ''+
-'<div class="NGLOptions">'+
+  '<div class="NGLOptions">'+
   '<button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
   '<button onclick="NextIgredient()" style="">Next Ingredient</button>' +
   '<button class="accordion">NGL options</button>'+
@@ -173,21 +173,21 @@ var ngl_options= ''+
   '<div class="accordion_panel" id="objectOptions">'+
    //either compartment or ingredient
   '</div>' +
-'</div>'
+  '</div>'
 
 
 
 var ngl_viewport='' +
-'<div class="NGL" id="NGL">'+
-  '<div id="viewport" style="width:100%; height:100%;">'+  '</div>'+
-'</div>';
+  '<div class="NGL" id="NGL">'+
+    '<div id="viewport" style="width:100%; height:100%;">'+  '</div>'+
+  '</div>';
 
 var gpu_phy_viewport='' +
-'<div class="GPGPU" id="GPGPU">'+
-  '<button onclick="GP_initFromNodes(graph.nodes,128,10,false);" style="position:absolute;top:0px;right:50%;z-index:999">Preview</button>' +
-  '<div id="gui-container"></div>'+
-  '<div id="container" style="width:100%; height:100%;"></div>'+
-'</div>';
+  '<div class="GPGPU" id="GPGPU">'+
+    '<button onclick="GP_initFromNodes(graph.nodes,128,10,false);" style="position:absolute;top:0px;right:50%;z-index:999">Preview</button>' +
+    '<div id="gui-container"></div>'+
+    '<div id="container" style="width:100%; height:100%;"></div>'+
+  '</div>';
 
 var ngloptions = '' +
   '<div class="NGLpan">'+
@@ -413,7 +413,7 @@ function get_PDB_component(atitle, atooltip,acname,states){
 }
 
 
-//topology_viewer
+//Main Config
 var config = {
   settings: {
     showPopoutIcon: false,
@@ -456,6 +456,7 @@ var config = {
   }]
 };
 
+//for mobile
 var alt_layout = [];
 
 var myLayout,
@@ -468,7 +469,6 @@ var current_version = {"version":1.007};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()
-
 
 //console.log(config);
 //console.log(savedState);

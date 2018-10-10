@@ -48,7 +48,7 @@ function loadView(itemDetail) {
   //iframe ? -> uniprot ?
   aHtml = [];
   aHtml.push('<div>');
-  aHtml.push('<h4>' + itemDetail.title + '</h4>', );
+  aHtml.push('<h4>' + itemDetail.title + '</h4>');
   var thekeys = Object.keys(itemDetail);
   for (var k in itemDetail) {
     aHtml.push('<div class="detail"><label>' + k + ':</label> <span>' + itemDetail[k] + '</span></div>');
@@ -57,12 +57,13 @@ function loadView(itemDetail) {
   return aHtml.join('');
 }
 
+/* //not used ///
 function loadView2(itemDetail) {
   //iframe ? -> uniprot ?
-  aHtml = '<div><iframe src="http://www.uniprot.org/uniprot/' + itemDetail.Entry + '"></iframe></div>'
+  aHtml = '<div><iframe src="http://www.uniprot.org/uniprot/' + itemDetail.Entry + '"></iframe></div>';
   return aHtml;
 }
-
+*/
 
 function simulateServerCall(item) {
   // let's add some property to our item for a better simulation

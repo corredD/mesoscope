@@ -1,69 +1,70 @@
 //main debug flag for console print
-var DEBUGLOG=false;
-var DEBUGGPU=true;
+//TOO MANY Global variable...
+var DEBUGLOG = false;
+var DEBUGGPU = true;
 
 var recipe_changed = false; //toggle when change occurs, and autosave/save occurs.
 //how to efficiently save work ?
-var current_mode=0;//0-view/curate mode, 1-create mode
+var current_mode = 0;//0-view/curate mode, 1-create mode
 var sql_data;
-var start_drag = {"x":0,"y":0};
-var mousexy = {"x":0,"y":0};
+var start_drag = {"x": 0, "y": 0};
+var mousexy = {"x": 0, "y": 0};
 var mousein = false;
 var draw_debug_mouse = false;
 var comp_column = false;
-var comp_column_names =[];//index,name
+var comp_column_names = [];//index,name
 var comp_count = 0;
 var csv_mapping = false; //if true, the column index is the column name
 var canvas_label = document.getElementById("canvas_label");
-var canvas_label_options = ["name","None","pdb","uniprot","label"];
+var canvas_label_options = ["name", "None", "pdb", "uniprot", "label"];
 
 var canvas_color = document.getElementById("canvas_color");
-var canvas_color_options = ["pdb","pcpalAxis","offset","count_molarity","Beads",
-														"geom","confidence","color","viewed","size","count",
-														"molarity","mw"];
+var canvas_color_options = ["pdb", "pcpalAxis", "offset", "count_molarity", "Beads",
+                            "geom", "confidence", "color", "viewed", "size", "count",
+                            "molarity", "mw"];
 var current_scale = 1;
 //extracellular
-var localisation_tag = ["cytosol","periplasm","inner_membrane","outer_membrane","membrane","cytoplasm","lumen"];
-var surface_tag = ["membrane","x","surface","tm","true"];
+var localisation_tag = ["cytosol", "periplasm", "inner_membrane", "outer_membrane", "membrane", "cytoplasm", "lumen"];
+var surface_tag = ["membrane", "x", "surface", "tm", "true"];
 var current_ready_state = 0;//0-1-2
 var current_ready_state_value;//0-1-2
 var current_ready_state_details;
-var list_missing_beads=[];
-var list_missing_geom=[];
-var list_missing_pdb=[];
-var totalNbInclude=0;
+var list_missing_beads = [];
+var list_missing_geom = [];
+var list_missing_pdb = [];
+var totalNbInclude = 0;
 
-var sheet_name=[];
+var sheet_name = [];
 var current_data_header,
-		current_jsondic,
-		current_rootName;
+    current_jsondic,
+    current_rootName;
 
 //eukaryote type
 var comp_template_cell = {
-	nodetype: "compartment",
-	name: "periplasm",
-	size: 150,
-	children: [{
-		nodetype: "compartment",
-		name: "cytosol",
-		size: 150,
-		children: []
-	}]
+  nodetype: "compartment",
+  name: "periplasm",
+  size: 150,
+  children: [{
+    nodetype: "compartment",
+    name: "cytosol",
+    size: 150,
+    children: []
+  }]
 };
 
 var periplasm = comp_template_cell;
-var cytosol= comp_template_cell.children[0];
+var cytosol = comp_template_cell.children[0];
 
 var lumen = {
-	nodetype: "compartment",
-	name: "lumen",
-	size: 150,
-	children: []};
+  nodetype: "compartment",
+  name: "lumen",
+  size: 150,
+  children: []};
 
 var comp_template = {
-	"periplasm":periplasm,
-	"cytosol":cytosol
-}
+  "periplasm": periplasm,
+  "cytosol": cytosol
+};
 /*
 Definitions of inner and outer membrane sides in OPM
 
@@ -81,12 +82,12 @@ var temp_link;
 
 var header_index;
 var start_index;
-var property_mapping={};
-property_mapping.size = {"min":999999,"max":0};
-property_mapping.molecularweight = {"min":999999,"max":0};
-property_mapping.molarity = {"min":999999,"max":0};
-property_mapping.count = {"min":999999,"max":0};
-property_mapping.confidence = {"min":999999,"max":0};
+var property_mapping = {};
+property_mapping.size = {"min": 999999, "max": 0};
+property_mapping.molecularweight = {"min": 999999, "max": 0};
+property_mapping.molarity = {"min": 999999, "max": 0};
+property_mapping.count = {"min": 999999, "max": 0};
+property_mapping.confidence = {"min": 999999, "max": 0};
 
 var comp_highligh;
 var comp_highligh_surface;
@@ -97,9 +98,9 @@ var draggin_d_node = false;
 var cDg;
 var mouse_mooving = false;
 
-var mainTextColor = [74,74,74],//"#4A4A4A",
-		titleFont = "Oswald",
-		bodyFont = "Merriweather Sans";
+var mainTextColor = [74, 74, 74],//"#4A4A4A",
+    titleFont = "Oswald",
+    bodyFont = "Merriweather Sans";
 
 //currently node over
 var node_over;
@@ -110,7 +111,7 @@ var node_selected;
 var node_selected_indice;
 var line_selected;
 //if ctrlKey down, multiple selection
-var nodes_selections=[];
+var nodes_selections = [];
 var ctrlKey = false;
 
 var canvas,
@@ -118,7 +119,7 @@ var canvas,
     transform,
     searchRadius = 140;
 
-var container ,
+var container,
     width,
     height;
 
@@ -128,21 +129,21 @@ var color = d3v4.scaleLinear()
     .interpolate(d3v4.interpolateHcl);
 
 var centerX = 0,//width/2,
-				centerY =0;// height/2;
+    centerY = 0;// height/2;
 
 var root;
 var nodes;
 
-var offx ;
+var offx;
 var offy;
 
-var graph={};
+var graph = {};
 var users;
 var simulation;
-var pack ;
+var pack;
 var HQ = false;
 
-function EvaluateCurrentReadyState(){
+function EvaluateCurrentReadyState() {
 	//check number of names != of default name out of all ingr
 	//check number of sources out of all ingr
 	//check number of beads setup
@@ -3463,60 +3464,39 @@ function drawLinkTwoNode(d1,d2) {
 
 function drawNode(d) {
   //if (!d.parent) return;
-  context.moveTo(d.x , d.y);//why +3?
+  context.moveTo(d.x, d.y);//why +3?
   var ndx = d.x;
   var ndy = d.y;
   var surface = false;
-   if (d.parent && !d.children && d.data.surface) {
-   	  surface = true;
-  		//go to the circle parent contour
-         var dx = d.x  - d.parent.x ,
-          dy = d.y  - d.parent.y ,
-          r = Math.sqrt(dx * dx + dy * dy),
-          k = (d.parent.r - r) * 2  * 1 / r;
-      d.vx += dx * k;
-      d.vy += dy * k;
-  		//context.arc(d.x, d.y, d.r, 0, 10);//10
-  		}
-  else if (!d.children && d.parent) {
-  	//this go to the center of the parent. could also try to collide with the inner circle of the par
-      //d.vx += (d.parent.x - d.x) * 0.01 * 1;
-      //d.vy += (d.parent.y - d.y) * 0.01 * 1;
-  	 //context.arc(d.x, d.y, d.r, 0, 10);//10
+  if (d.parent && !d.children && d.data.surface) {
+    surface = true;
+    //go to the circle parent contour
+    var dx = d.x - d.parent.x,
+        dy = d.y - d.parent.y,
+        r = Math.sqrt(dx * dx + dy * dy),
+        k = (d.parent.r - r) * 2 * 1 / r;
+    d.vx += dx * k;
+    d.vy += dy * k;
   }
-  else if (d.parent ) {
-     //d.vx += (d.parent.x - d.x) * 0.1 * 1;
-     //d.vy += (d.parent.y - d.y) * 0.1 * 1;
-  	 //context.arc(d.x, d.y, d.r, 0, 10);//10
-
-  }
+  else if (!d.children && d.parent) {}
+  else if (d.parent) {}
   else //context.arc(d.x, d.y, d.r, 0, 10);//0?
-   {
-   d.vx += ( - d.x) * 0.1 * 1;
-   d.vy += ( - d.y) * 0.1 * 1;
-   //d.fixed=true;
-   //d.vx=0;
-   //d.vy=0;
-   //d.fx=null;
-   //d.fy=null;
-   }
-  context.beginPath();
-  if (!d.parent) {
-  	//context.rect(ndx,ndy,d.r*2.5,d.r*2.5);
-  	//context.stroke();
+  {
+    d.vx += (-d.x) * 0.1 * 1;
+    d.vy += (-d.y) * 0.1 * 1;
   }
+  context.beginPath();
+  if (!d.parent) {}
   else {
-  	//constraint inside his parent
-  	//var hyp2 = Math.pow(d.parent.r, 2),
-    var dx = d.x  - d.parent.x ,
-        dy = d.y  - d.parent.y ,
+    var dx = d.x - d.parent.x,
+        dy = d.y - d.parent.y,
         r = Math.sqrt(dx * dx + dy * dy);
-  	if (r + d.r*1.2 > d.parent.r && !surface && d.parent.parent )//outside parent
-  	{
-  		 d.vx += (d.parent.x - d.x) * 0.15 * 1;
-       d.vy += (d.parent.y - d.y) * 0.15 * 1;
-  	}
-  	context.arc(ndx,ndy,d.r,0,10);//0?
+    if (r + d.r * 1.2 > d.parent.r && !surface && d.parent.parent)//outside parent
+    {
+      d.vx += (d.parent.x - d.x) * 0.15 * 1;
+      d.vy += (d.parent.y - d.y) * 0.15 * 1;
+    }
+    context.arc(ndx, ndy, d.r, 0, 10);//0?
   }
 }
 

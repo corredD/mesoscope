@@ -28,6 +28,6 @@ git push origin master
 #for testing online
 git push beta master
 #for deploying
-git push live_virtual master
+git push beta_virtual master
 
 alternative could be to use the hook directly on origin but for a particular branch
