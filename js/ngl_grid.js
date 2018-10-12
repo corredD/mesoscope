@@ -43,7 +43,7 @@ function NGLg_loadList( pdbList ){
 						var name = value;
 						var nsi = NGLg_current_list[name];
 						nlgg_current = nsi;
-            heading.innerText = "Grid loading entry " + i +" "+name+" of " + pdbList.length + " entries";
+            //heading.innerText = "Grid loading entry " + i +" "+name+" of " + pdbList.length + " entries";
             if (name === "None") return;
 						var nameurl = "";
 						if ( nsi !== -1 )
@@ -104,7 +104,9 @@ function NGLg_prepareImage( data ){
 			//do axis/surface if surface
 			//show beads if on
 			//show geom if on
+			console.log("NGL_ReprensentOne",o,anode);
 			NGL_ReprensentOne(o,anode);
+			console.log("NGL_ReprensentOnePost");
 			NGL_ReprensentOnePost(o,anode);
 		}
 		else

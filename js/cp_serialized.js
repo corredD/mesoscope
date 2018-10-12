@@ -370,7 +370,6 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
   return elem;
 }
 
-
 function OneIngredientDeserializedPartner(ing_dic, linkdata) {
   var pproperty = ing_dic.partners_properties;
   for (var i = 0; i < pproperty.length; i++) {

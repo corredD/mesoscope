@@ -2569,7 +2569,9 @@ function NGL_ReprensentOne(o,anode){
   sele_elem.value = sele;
 
   var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
+  o.gcenter = center;
   if (assambly !== "AU") center = NGL_GetBUCenter(o,assambly);
+  console.log("setPosition");
   o.setPosition([-center.x, -center.y, -center.z]); //center molecule
   if (anode.data.surface){
     align_axis = true;
@@ -2590,6 +2592,7 @@ function NGL_ReprensentOne(o,anode){
       rep.list.forEach(function(elem){stage.removeComponent(elem);});
     }
   }
+  console.log("axes");
   o.addRepresentation("axes", {
     sele: sele,
     showAxes: true,
@@ -2619,6 +2622,7 @@ function NGL_ReprensentOne(o,anode){
       assembly: assambly
     });
   }
+  console.log("show geom");
   if (document.getElementById("showgeom").checked) {
     NGL_LoadAShapeObj(anode, anode.data.geom);
     NGL_showGeomNode_cb(true);
@@ -2835,7 +2839,6 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
         NGL_LoadAShapeObj(null,ngl_load_params.geom);
         ngl_load_params.dogeom = false;
       }
-
       //label
       NGL_ShowOrigin();
       //if (label_elem.selectedOptions[0].value !=="None") {

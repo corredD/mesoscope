@@ -865,7 +865,6 @@ myLayout.registerComponent('uniprot_viewer', function(container, state) {
   container.getElement().html(ahtml);
 })
 
-
 myLayout.registerComponent('protvista', function(container, state) {
   protvista_tab_lbl = $('<div class="messageTab">' + '' + '</div>');
   // Add the counter element whenever a tab is created

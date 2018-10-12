@@ -1012,7 +1012,7 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 					if (tmp === true) include = true;
 					if (tmp === false) include = false;
 				}
-				var color;
+				var color=[1,0,0];
 				if (allfield.color_index !==-1) {
 					if (idata[allfield.color_index]) color = idata[allfield.color_index].split(',').map(Number);//chain:residues?
 				}
