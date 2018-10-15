@@ -876,7 +876,7 @@ function NGLtoPMVselection(asele) {
 use
 ngl_current_structure = o;
 ngl_current_structure.sele = sele;
-ngl_current_structure.assambly = assambly;
+ngl_current_structure.assembly = assembly;
 */
 function buildFromServer(pdb,cms,beads,astructure){
     var lod = beads_elem.selectedOptions[0].value;
@@ -923,7 +923,7 @@ function buildFromServer(pdb,cms,beads,astructure){
         }
         if ("centers" in results) {
           //deal with bu
-          if (astructure.assambly !== "AU" && astructure.object.biomolDict[astructure.assambly]) {
+          if (astructure.assembly !== "AU" && astructure.object.biomolDict[astructure.assembly]) {
              results = NGL_applyBUtoResultsBeads(astructure,results,[0,0,0]);
            }
           NGL_ShowBeadsCR(results,lod);

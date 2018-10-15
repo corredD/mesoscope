@@ -118,8 +118,8 @@ var ngl_options= ''+
     '<label id="ngl_status"></label>' +
     getSelect("rep_type", "options_elems", "Representation",
                             "NGL_ChangeRepresentation(this)", ngl_styles,"cartoon")+
-    getSelect("ass_type", "options_elems", "Assambly",
-                            "NGL_ChangeBiologicalAssambly(this)", ["AU"],"AU")+
+    getSelect("ass_type", "options_elems", "Assembly",
+                            "NGL_ChangeBiologicalAssembly(this)", ["AU"],"AU")+
     getSelect("mod_type", "options_elems", "Model",
                             "NGL_ChangeModel(this)", ["0"],"0")+
     getSelect("color_type", "options_elems", "Color",

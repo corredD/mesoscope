@@ -2,7 +2,7 @@ var stage;
 var pathList_ = {};
 var folder_elem = document.getElementById("file_input");
 var rep_elem = document.getElementById("rep_type");
-var assambly_elem = document.getElementById("ass_type");
+var assembly_elem = document.getElementById("ass_type");
 var sele_elem = document.getElementById("sel_str");
 var model_elem = document.getElementById("mod_type");
 var color_elem = document.getElementById("color_type");
@@ -476,7 +476,7 @@ function NGL_panShapeDrag (stage, deltaX, deltaY) {
 function NGL_Setup() {
   folder_elem = document.getElementById("file_input");
   rep_elem = document.getElementById("rep_type");
-  assambly_elem = document.getElementById("ass_type");
+  assembly_elem = document.getElementById("ass_type");
   sele_elem = document.getElementById("sel_str");
   model_elem = document.getElementById("mod_type");
   color_elem = document.getElementById("color_type");
@@ -725,11 +725,11 @@ function NGL_updateCurrentBeadsLevelClient() {
   }
   if (asele === "") asele = "polymer";
   var bu = false;
-  if (o.assambly !== "AU" && o.object.biomolDict[o.assambly]) {
+  if (o.assembly !== "AU" && o.object.biomolDict[o.assembly]) {
     //need to apply the matrix to the selection inside the BU selection ?
-    //console.log(o.object.biomolDict[o.assambly].getSelection());
+    //console.log(o.object.biomolDict[o.assembly].getSelection());
     //build using given selection AND biomolDic selection
-    asele = "(" + o.object.biomolDict[o.assambly].getSelection().string + ") AND " + asele;
+    asele = "(" + o.object.biomolDict[o.assembly].getSelection().string + ") AND " + asele;
     bu = true;
   }
   //console.log("selection is ",asele);
@@ -739,9 +739,9 @@ function NGL_updateCurrentBeadsLevelClient() {
   var lod = beads_elem.selectedOptions[0].value;
   var comp = stage.getComponentsByName("beads_" + lod);
   var rep = stage.getRepresentationsByName("beads_" + lod);
-  var assambly = assambly_elem.selectedOptions[0].value;
-  if (!assambly || assambly === "") assambly = "AU";
-  ngl_current_structure.assambly = assambly;
+  var assembly = assembly_elem.selectedOptions[0].value;
+  if (!assembly || assembly === "") assembly = "AU";
+  ngl_current_structure.assembly = assembly;
   //stage.removeComponent(rep);
   //rep.dispose();
   //console.log("found rep beads_"+lod);
@@ -825,9 +825,9 @@ function NGL_updateCurrentBeadsLevelServer() {
   var lod = beads_elem.selectedOptions[0].value;
   var comp = stage.getComponentsByName("beads_" + lod);
   var rep = stage.getRepresentationsByName("beads_" + lod);
-  var assambly = assambly_elem.selectedOptions[0].value;
-  if (!assambly || assambly === "") assambly = "AU";
-  ngl_current_structure.assambly = assambly;
+  var assembly = assembly_elem.selectedOptions[0].value;
+  if (!assembly || assembly === "") assembly = "AU";
+  ngl_current_structure.assembly = assembly;
 
   document.getElementById('stopkmeans').setAttribute("class", "spinner");
   document.getElementById("stopkmeans_lbl").setAttribute("class", "show");
@@ -958,13 +958,13 @@ function NGL_showBeadsLevel(e) {
   NGL_showBeadsLevel_cb(e.value);
 }
 
-function NGL_UpdateAssamblyList(ngl_ob) {
-  assambly_elem.options.length = 0;
-  assambly_elem.options[0] = new Option("Assambly:", "Assambly:");
-  assambly_elem.options[1] = new Option("AU", "AU");
+function NGL_UpdateassemblyList(ngl_ob) {
+  assembly_elem.options.length = 0;
+  assembly_elem.options[0] = new Option("assembly:", "assembly:");
+  assembly_elem.options[1] = new Option("AU", "AU");
   Object.keys(ngl_ob.structure.biomolDict).forEach(function(k) {
     console.log(k);
-    assambly_elem.options[assambly_elem.options.length] = new Option(k, k);
+    assembly_elem.options[assembly_elem.options.length] = new Option(k, k);
   });
 }
 
@@ -1059,13 +1059,13 @@ function NGL_setSymmetryOptions(ngl_ob) {
 
 function NGL_ChangeSymmetry(select0) {}
 
-function NGL_ChangeBiologicalAssambly(selected0) {
+function NGL_ChangeBiologicalassembly(selected0) {
   NGL_ChangeRepresentation(rep_elem.selectedOptions[0]);
   //also change the geometric center
   var center_bu= NGL_GetBUCenter(ngl_current_structure,selected0.value);
   ngl_current_structure.setPosition([-center_bu.x,-center_bu.y,-center_bu.z]);
   //updatTheTable
-  console.log("NGL_ChangeBiologicalAssambly",center_bu,assambly_elem.selectedOptions[0].value);
+  console.log("NGL_ChangeBiologicalassembly",center_bu,assembly_elem.selectedOptions[0].value);
   if (ngl_current_item_id) {
     updateDataGridRowElem(0, ngl_current_item_id, "bu", selected0.value);
     //update the grid according the multimeric state automatically ?
@@ -1103,7 +1103,7 @@ function NGL_Changelabel(select0) {
 }
 
 function NGL_ChangeRepresentation(selectedO) {
-  console.log(assambly_elem.selectedOptions[0].value);
+  console.log(assembly_elem.selectedOptions[0].value);
   stage.getRepresentationsByName("polymer").dispose();
   stage.getRepresentationsByName("axes").dispose();
   stage.eachComponent(function(o) {
@@ -1112,7 +1112,7 @@ function NGL_ChangeRepresentation(selectedO) {
         colorScheme: color_elem.selectedOptions[0].value,
         sele: sele_elem.value,
         name: "polymer",
-        assembly: assambly_elem.selectedOptions[0].value,
+        assembly: assembly_elem.selectedOptions[0].value,
         surfaceType: "edt",
         smooth: 2,
         probeRadius: 1.0,
@@ -1127,16 +1127,16 @@ function NGL_ChangeRepresentation(selectedO) {
         colorScheme: color_elem.selectedOptions[0].value,
         sele: sele_elem.value,
         name: "polymer",
-        assembly: assambly_elem.selectedOptions[0].value
+        assembly: assembly_elem.selectedOptions[0].value
       });
     }
-    //doesnt work with biological assambly
+    //doesnt work with biological assembly
     o.addRepresentation("axes", {
       sele: sele_elem.value,
       showAxes: true,
       showBox: true,
       radius: 0.2,
-      assembly: assambly_elem.selectedOptions[0].value
+      assembly: assembly_elem.selectedOptions[0].value
     });
   });
 
@@ -1160,7 +1160,7 @@ function NGL_ChangeSelection(astr_elem) {
       	colorScheme: color_elem.selectedOptions[0].value,
         sele: astr_elem.value,
         name: "polymer",
-        assembly:assambly_elem.selectedOptions[0].value
+        assembly:assembly_elem.selectedOptions[0].value
         });
       //0 or current grid ? mode /
   updateDataGridRowElem(0,ngl_current_item_id,"selection",(astr_elem.value === "polymer")?"":astr_elem.value);
@@ -1172,7 +1172,7 @@ function NGL_ChangeSelection(astr_elem) {
       	colorScheme: color_elem.selectedOptions[0].value,
         sele: astr_elem.value,
         name: "polymer",
-        assembly:assambly_elem.selectedOptions[0].value
+        assembly:assembly_elem.selectedOptions[0].value
       })
   });	*/
 }
@@ -1228,7 +1228,7 @@ function NGL_ChangeModel(model_elem) {
   //    	{colorScheme: color_elem.selectedOptions[0].value,
   //      sele: curr_sel + "/" + model_elem.value,
   //      name: "polymer",
-  //      assembly:assambly_elem.selectedOptions[0].value});
+  //      assembly:assembly_elem.selectedOptions[0].value});
   /*
 	stage.getRepresentationsByName("polymer").dispose();
 	stage.eachComponent(function (o) {
@@ -1236,7 +1236,7 @@ function NGL_ChangeModel(model_elem) {
       	colorScheme: color_elem.selectedOptions[0].value,
         sele: curr_sel + "/" + model_elem.value,
         name: "polymer",
-        assembly:assambly_elem.selectedOptions[0].value
+        assembly:assembly_elem.selectedOptions[0].value
       })
     });	*/
   if (ngl_current_item_id) updateDataGridRowElem(0, ngl_current_item_id, "selection", curr_sel + "/" + model_elem.value);
@@ -1258,7 +1258,7 @@ function NGL_ChangeColorScheme(col_e) {
     colorScheme: col_e.value,
     sele: sele_elem.value,
     name: "polymer",
-    assembly: assambly_elem.selectedOptions[0].value
+    assembly: assembly_elem.selectedOptions[0].value
   });
 }
 
@@ -1279,7 +1279,7 @@ function NGL_ChangeHighlightResidue(resnum,chainId)
         sele: sele,
         color: color,
         radius: radius,
-        assembly: assambly_elem.selectedOptions[0].value,
+        assembly: assembly_elem.selectedOptions[0].value,
 				name:"highlightRes"
       });
 
@@ -1289,7 +1289,7 @@ function NGL_ChangeHighlightResidue(resnum,chainId)
 														scale: 3.0,
 														zOffset: 6.0,
 														name:"hLabelRes",
-                            assembly: assambly_elem.selectedOptions[0].value
+                            assembly: assembly_elem.selectedOptions[0].value
 												});
     //stage.centerView(false, sele);
 
@@ -1322,7 +1322,7 @@ function NGL_ChangeHighlight(pdbStart, pdbEnd, color, chainId)
         color: color,
         radius: 1,
 				name:"highlight",
-        assembly: assambly_elem.selectedOptions[0].value
+        assembly: assembly_elem.selectedOptions[0].value
       });
 
 		comp.addRepresentation("label", {
@@ -1331,7 +1331,7 @@ function NGL_ChangeHighlight(pdbStart, pdbEnd, color, chainId)
 														scale: 2.0,
 														zOffset: 4.0,
 														name:"hLabel",
-                            assembly: assambly_elem.selectedOptions[0].value
+                            assembly: assembly_elem.selectedOptions[0].value
 												});
     //stage.centerView(false, sele);
 
@@ -1474,7 +1474,7 @@ function NGL_ShowMeshVFN(mesh) {
 }
 
 function NGL_applyBUtoMesh(nglobj,meshobj){
-  var ass=assambly_elem.selectedOptions[0].value;
+  var ass=assembly_elem.selectedOptions[0].value;
   console.log(nglobj.object.biomolDict[ass].partList.length);
   console.log(nglobj.object.biomolDict[ass]);
   var newpos=[]
@@ -1528,7 +1528,7 @@ function NGL_buildCMS_cb(nglobject){
       //colorScheme: color_elem.selectedOptions[0].value,
       sele: nglobject.sele_elem,
       name: "cms_surface",
-      assembly: nglobject.assambly,
+      assembly: nglobject.assembly,
       surfaceType: "edt",
       smooth: 2,
       probeRadius: 1.0,
@@ -1563,10 +1563,10 @@ function NGL_buildCMS_cb(nglobject){
                     "faces":(surf.index)?Array.from(surf.index):null,
                     "normals":(surf.normal)?Array.from(surf.normal):null }
         console.log("MESH:", mesh);
-        if (nglobject.assambly==="SUPERCELL" || nglobject.node.data.buildtype === "supercell") {
+        if (nglobject.assembly==="SUPERCELL" || nglobject.node.data.buildtype === "supercell") {
             //do nothing
         }
-        else if (nglobject.assambly!=="AU") {
+        else if (nglobject.assembly!=="AU") {
           mesh = NGL_applyBUtoMesh(nglobject,mesh);
         }
         else {
@@ -1601,7 +1601,7 @@ function NGL_buildCMS(){
       //colorScheme: color_elem.selectedOptions[0].value,
       sele: sele_elem.value,
       name: "cms_surface",
-      assembly: assambly_elem.selectedOptions[0].value,
+      assembly: assembly_elem.selectedOptions[0].value,
       surfaceType: "edt",
       smooth: 2,
       probeRadius: 1.0,
@@ -1635,10 +1635,10 @@ function NGL_buildCMS(){
                     "faces":(surf.index)?Array.from(surf.index):null,
                     "normals":(surf.normal)?Array.from(surf.normal):null }
         console.log("MESH:", mesh);
-        if (assambly_elem.selectedOptions[0].value==="SUPERCELL" || node_selected.data.buildtype === "supercell") {
+        if (assembly_elem.selectedOptions[0].value==="SUPERCELL" || node_selected.data.buildtype === "supercell") {
             //do nothing
         }
-        else if (assambly_elem.selectedOptions[0].value!=="AU") {
+        else if (assembly_elem.selectedOptions[0].value!=="AU") {
           mesh = NGL_applyBUtoMesh(ngl_current_structure,mesh);
         }
         else {
@@ -1754,7 +1754,7 @@ function NGL_LoadShapeFile(afile) {
         name: "polymer"
       });
       ngl_current_structure = o;
-      NGL_UpdateAssamblyList(o);
+      NGL_UpdateassemblyList(o);
       stage.autoView();
       buildFromServer("",true,false,o);//or build from file
       //buildFromServerPDB(thefile);
@@ -1854,7 +1854,7 @@ function NGL_LoadAShapeObj(d,gpath) {
           NGL_ShowOrigin();
           stage.autoView(1000);
           ngl_current_structure = o;
-          NGL_UpdateAssamblyList(o);
+          NGL_UpdateassemblyList(o);
           buildFromServer(gname,true,false,o);//or build from file
           //buildFromServerPDB(gname);
         });
@@ -1986,7 +1986,7 @@ function NGL_LoadSpheres(pos, rad) {
 use
 ngl_current_structure = o;
 ngl_current_structure.sele = sele;
-ngl_current_structure.assambly = assambly;
+ngl_current_structure.assembly = assembly;
 */
 
 function NGL_GetCurrentSelection(){
@@ -2004,12 +2004,12 @@ function NGL_GetCurrentSelection(){
 
 }
 /*
-console.log(o.object.biomolDict[o.assambly].partList.length);
-console.log(o.object.biomolDict[o.assambly]);
-for (var j = 0; j < o.object.biomolDict[o.assambly].partList.length; j++) {
-  console.log(o.object.biomolDict[o.assambly].partList[j].matrixList.length);
-  for (var k = 0; k < o.object.biomolDict[o.assambly].partList[j].matrixList.length; k++) {
-    var mat = o.object.biomolDict[o.assambly].partList[j].matrixList[k];
+console.log(o.object.biomolDict[o.assembly].partList.length);
+console.log(o.object.biomolDict[o.assembly]);
+for (var j = 0; j < o.object.biomolDict[o.assembly].partList.length; j++) {
+  console.log(o.object.biomolDict[o.assembly].partList[j].matrixList.length);
+  for (var k = 0; k < o.object.biomolDict[o.assembly].partList[j].matrixList.length; k++) {
+    var mat = o.object.biomolDict[o.assembly].partList[j].matrixList[k];
     var new_pos = new NGL.Vector3(sph.center.x, sph.center.y, sph.center.z);
     //console.log(new_pos);
     new_pos.applyMatrix4(mat);
@@ -2076,11 +2076,11 @@ function NGL_GetAtomDataSet(pdb,struture_object){
   }
   if (asele === "") asele = "polymer";
   var bu = false;
-  if (o.assambly !== "AU" && o.object.biomolDict[o.assambly]) {
+  if (o.assembly !== "AU" && o.object.biomolDict[o.assembly]) {
     //need to apply the matrix to the selection inside the BU selection ?
-    //console.log(o.object.biomolDict[o.assambly].getSelection());
+    //console.log(o.object.biomolDict[o.assembly].getSelection());
     //build using given selection AND biomolDic selection
-    asele = "(" + o.object.biomolDict[o.assambly].getSelection().string + ") AND " + asele;
+    asele = "(" + o.object.biomolDict[o.assembly].getSelection().string + ") AND " + asele;
     bu = true;
   }
   console.log("selection is ",asele);
@@ -2294,12 +2294,12 @@ function buildWithKmeans(o, center, ncluster) {
   if (asele === "") asele = "polymer";
   //console.log("kmeans sele",asele); //current sele undefined
   var bu = false;
-  console.log(o.assambly); //current assambly
-  if (o.assambly !== "AU" && o.object.biomolDict[o.assambly]) {
+  console.log(o.assembly); //current assembly
+  if (o.assembly !== "AU" && o.object.biomolDict[o.assembly]) {
     //need to apply the matrix to the selection inside the BU selection ?
-    //console.log(o.object.biomolDict[o.assambly].getSelection());
+    //console.log(o.object.biomolDict[o.assembly].getSelection());
     //build using given selection AND biomolDic selection
-    asele = "(" + o.object.biomolDict[o.assambly].getSelection().string + ") AND " + asele;
+    asele = "(" + o.object.biomolDict[o.assembly].getSelection().string + ") AND " + asele;
     bu = true;
   }
   console.log("Kmeans selection", asele);
@@ -2325,12 +2325,12 @@ function buildWithKmeans(o, center, ncluster) {
     return NGL_ClusterToBeads(clusters, o, center,dataset);
   }
   else {
-    if (assambly_elem.selectedOptions[0].value==="SUPERCELL" || node_selected.data.buildtype === "supercell") {
+    if (assembly_elem.selectedOptions[0].value==="SUPERCELL" || node_selected.data.buildtype === "supercell") {
       //should we use litemol here?
       return NGL_ClusterToBeads(clusters, o, new NGL.Vector3(0),dataset);
     }
     else {
-      center = NGL_GetBUCenter(o,o.assambly);
+      center = NGL_GetBUCenter(o,o.assembly);
       return NGL_applybuToclusters(o,clusters,center,dataset);
     }
   }
@@ -2347,9 +2347,9 @@ function NGL_applyBUtoResultsBeads(o,beads,center){
     var radius = beads.radii[i];
     var sph = cl.centers; //atom in cluster
 
-    for (var j = 0; j < o.object.biomolDict[o.assambly].partList.length; j++) {
-      for (var k = 0; k < o.object.biomolDict[o.assambly].partList[j].matrixList.length; k++) {
-        var mat = o.object.biomolDict[o.assambly].partList[j].matrixList[k];
+    for (var j = 0; j < o.object.biomolDict[o.assembly].partList.length; j++) {
+      for (var k = 0; k < o.object.biomolDict[o.assembly].partList[j].matrixList.length; k++) {
+        var mat = o.object.biomolDict[o.assembly].partList[j].matrixList[k];
         var new_pos = new NGL.Vector3(beads.centers[j], beads.centers[j+1], beads.centers[j+2]);
         //console.log(new_pos);
         new_pos.applyMatrix4(mat);
@@ -2383,12 +2383,12 @@ function NGL_applybuToclusters(o,clusters,center,dataset){
     //pos[pos.length] = sph.center.z-center.z;
     //rad[rad.length] = sph.radius;
     //add as many as matrixList.
-    console.log(o.object.biomolDict[o.assambly].partList.length);
-    console.log(o.object.biomolDict[o.assambly]);
-    for (var j = 0; j < o.object.biomolDict[o.assambly].partList.length; j++) {
-      console.log(o.object.biomolDict[o.assambly].partList[j].matrixList.length);
-      for (var k = 0; k < o.object.biomolDict[o.assambly].partList[j].matrixList.length; k++) {
-        var mat = o.object.biomolDict[o.assambly].partList[j].matrixList[k];
+    console.log(o.object.biomolDict[o.assembly].partList.length);
+    console.log(o.object.biomolDict[o.assembly]);
+    for (var j = 0; j < o.object.biomolDict[o.assembly].partList.length; j++) {
+      console.log(o.object.biomolDict[o.assembly].partList[j].matrixList.length);
+      for (var k = 0; k < o.object.biomolDict[o.assembly].partList[j].matrixList.length; k++) {
+        var mat = o.object.biomolDict[o.assembly].partList[j].matrixList[k];
         var new_pos = new NGL.Vector3(sph.center.x, sph.center.y, sph.center.z);
         //console.log(new_pos);
         new_pos.applyMatrix4(mat);
@@ -2553,12 +2553,12 @@ function NGL_ReprensentOne(o,anode){
     defaultRepresentation: false,
     name: o.name
   };
-  var assambly = "AU";
+  var assembly = "AU";
   var bu = anode.data.source.bu;
   if (bu !== -1 && bu !== null && bu !== "") {
     if (!bu.startsWith("BU") && bu !== "AU" && bu != "UNICELL" && bu !== "SUPERCELL") bu = "BU" + bu;
     params.assembly = bu;
-    assambly = bu;
+    assembly = bu;
   }
   var sele = "";
   var sel_str = anode.data.source.selection;
@@ -2570,7 +2570,7 @@ function NGL_ReprensentOne(o,anode){
 
   var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
   o.gcenter = center;
-  if (assambly !== "AU") center = NGL_GetBUCenter(o,assambly);
+  if (assembly !== "AU") center = NGL_GetBUCenter(o,assembly);
   console.log("setPosition");
   o.setPosition([-center.x, -center.y, -center.z]); //center molecule
   if (anode.data.surface){
@@ -2604,7 +2604,7 @@ function NGL_ReprensentOne(o,anode){
       //colorScheme: color_elem.selectedOptions[0].value,
       sele: sele,
       name: "polymer",
-      assembly: assambly,
+      assembly: assembly,
       surfaceType: "edt",
       smooth: 2,
       probeRadius: 1.0,
@@ -2619,7 +2619,7 @@ function NGL_ReprensentOne(o,anode){
       //colorScheme: color_elem.selectedOptions[0].value,
       sele: sele,
       name: "polymer",
-      assembly: assambly
+      assembly: assembly
     });
   }
   console.log("show geom");
@@ -2631,17 +2631,17 @@ function NGL_ReprensentOne(o,anode){
 }
 
 function NGL_ReprensentOnePost(o,anode){
-    NGL_UpdateAssamblyList(o);
+    NGL_UpdateassemblyList(o);
     NGL_setModelOptions(o);
     NGL_setChainSelectionOptions(o);
     var bu = anode.data.source.bu;
-    var assambly = "AU";
+    var assembly = "AU";
     if (bu !== -1 && bu !== null && bu !== "") {
       if (!bu.startsWith("BU") && bu !== "AU" && bu != "UNICELL" && bu !== "SUPERCELL") bu = "BU" + bu;
-      assambly = bu;
+      assembly = bu;
     }
-    if (bu !== -1) $('#ass_type').val(assambly); //assambly_elem.selectedIndex = assambly;//$('#ass_type').val(assambly);//.change();
-    else $('#ass_type').val("AU"); //assambly_elem.selectedIndex = "AU";//$('#ass_type').val("AU");//.change();
+    if (bu !== -1) $('#ass_type').val(assembly); //assembly_elem.selectedIndex = assembly;//$('#ass_type').val(assembly);//.change();
+    else $('#ass_type').val("AU"); //assembly_elem.selectedIndex = "AU";//$('#ass_type').val("AU");//.change();
     NGL_LoadSpheres(anode.data.pos, anode.data.radii);
     ngl_load_params.beads.pos = anode.data.pos;
     ngl_load_params.beads.rad = anode.data.radii;
@@ -2721,11 +2721,11 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
     //update html input string
   }
   sele_elem.value = sele;
-  var assambly = "AU";
+  var assembly = "AU";
   if (bu !== -1 && bu !== null && bu !== "") {
     if (!bu.startsWith("BU") && bu !== "AU" && bu != "UNICELL" && bu !== "SUPERCELL") bu = "BU" + bu;
     params.assembly = bu;
-    assambly = bu;
+    assembly = bu;
   }
   if (bu ==="SUPERCELL" || ngl_current_node.data.buildtype === "supercell") {
     var pdburl = LM_getUrlStructure(ngl_current_node, ngl_current_node.data.source.pdb);
@@ -2744,13 +2744,13 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
   stage.loadFile(purl, params)
     .then(function(o) {
       ngl_current_structure = o;
-      console.log("loading "+sele+" "+bu+" "+assambly);
-      if (sele === ""  && assambly !== "AU"){
+      console.log("loading "+sele+" "+bu+" "+assembly);
+      if (sele === ""  && assembly !== "AU"){
         //take the chain selection from the bu
-        sele = ngl_current_structure.object.biomolDict[assambly].getSelection().string;
+        sele = ngl_current_structure.object.biomolDict[assembly].getSelection().string;
       }
       ngl_current_structure.sele = sele;
-      ngl_current_structure.assambly = assambly;
+      ngl_current_structure.assembly = assembly;
       //const symmetryData = NGL_processSymmetry(o.symmetry)
       console.log("finished loading ");
       console.log(o.structure);
@@ -2759,7 +2759,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       //if (o.object.biomolDict.BU1) console.log(o.object.biomolDict.BU1);
       var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
       ngl_current_structure.gcenter = center;
-      if (assambly !== "AU") center = NGL_GetBUCenter(ngl_current_structure,assambly);
+      if (assembly !== "AU") center = NGL_GetBUCenter(ngl_current_structure,assembly);
       console.log("gcenter", center, ngl_force_build_beads);
       o.setPosition([-center.x, -center.y, -center.z]); //center molecule
       //ngl_force_build_beads
@@ -2787,14 +2787,14 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
         showAxes: true,
         showBox: true,
         radius: 0.2,
-        assembly: assambly
+        assembly: assembly
       })
       if (rep_elem.selectedOptions[0].value==="cms"){
         o.addRepresentation("surface", {
           //colorScheme: color_elem.selectedOptions[0].value,
           sele: sele,
           name: "polymer",
-          assembly: assambly,
+          assembly: assembly,
           surfaceType: "edt",
           smooth: 2,
           probeRadius: 1.0,
@@ -2809,7 +2809,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
           //colorScheme: color_elem.selectedOptions[0].value,
           sele: sele,
           name: "polymer",
-          assembly: assambly
+          assembly: assembly
         });
       }
       console.log("done ?");
@@ -2819,14 +2819,14 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       //console.log(o);
       //o.symmetryData=symmetryData;
       //console.log(symmetryData);
-      NGL_UpdateAssamblyList(o);
-      console.log("assambly is", assambly);
+      NGL_UpdateassemblyList(o);
+      console.log("assembly is", assembly);
       NGL_setModelOptions(o); //redundant with selection ?
       NGL_setChainSelectionOptions(o);
       //setSymmetryOptions(o);
-      //assambly_elem.selectedOptions[0].value = "BU"+bu;
-      if (bu !== -1) $('#ass_type').val(assambly); //assambly_elem.selectedIndex = assambly;//$('#ass_type').val(assambly);//.change();
-      else $('#ass_type').val("AU"); //assambly_elem.selectedIndex = "AU";//$('#ass_type').val("AU");//.change();
+      //assembly_elem.selectedOptions[0].value = "BU"+bu;
+      if (bu !== -1) $('#ass_type').val(assembly); //assembly_elem.selectedIndex = assembly;//$('#ass_type').val(assembly);//.change();
+      else $('#ass_type').val("AU"); //assembly_elem.selectedIndex = "AU";//$('#ass_type').val("AU");//.change();
 
       var align_axis = false;
 
@@ -3178,11 +3178,11 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
       defaultRepresentation: false,
       name: aname
     };
-    var assambly = "AU";
+    var assembly = "AU";
     if (bu !== -1 && bu !== null && bu !== "") {
       if (!bu.startsWith("BU") && bu !== "AU" && bu != "UNICELL" && bu !== "SUPERCELL") bu = "BU" + bu;
       params.assembly = bu;
-      assambly = bu;
+      assembly = bu;
     }
     var sele = "";
     if (sel_str && sel_str != "") {
@@ -3205,18 +3205,18 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
     }
     console.log("before stage load ?",sele, purl, params);
     stage.loadFile(purl, params).then(function(o) {
-      console.log("then stage load ?",sele,assambly);
-      if (sele === ""  && assambly !== "AU"){
+      console.log("then stage load ?",sele,assembly);
+      if (sele === ""  && assembly !== "AU"){
         //take the chain selection from the bu
-        sele = o.structure.biomolDict[assambly].getSelection().string;
+        sele = o.structure.biomolDict[assembly].getSelection().string;
       }
       o.node = anode;
       o.sele = sele;
-      o.assambly = assambly;
+      o.assembly = assembly;
       console.log("NGL_GetGeometricCenter",sele);
       var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
       o.gcenter = center;
-      if (assambly !== "AU") center = NGL_GetBUCenter(o,assambly);
+      if (assembly !== "AU") center = NGL_GetBUCenter(o,assembly);
       console.log("gcenter", center, ngl_force_build_beads);
       //center molecule
       o.setPosition([-center.x, -center.y, -center.z]);
