@@ -3501,7 +3501,8 @@ function NGL_Load(pdbname, bu, sel_str) {
 
   if (pdbname.length === 4) {
     NGL_LoadOneProtein("rcsb://" + pdbname + ".mmtf", pdbname, bu, sel_str);
-  } else {
+  }
+  else {
     var ext = pdbname.slice(-4, pdbname.length);
     if (pdbname.startsWith("EMD") || pdbname.startsWith("EMDB") || pdbname.slice(-4, pdbname.length) === ".map") {
       var params = {
@@ -3510,7 +3511,7 @@ function NGL_Load(pdbname, bu, sel_str) {
       //this is async!
       console.log("try to load ", pdbname, ext);
       if (ext !== ".map") pdbname = pdbname + ".map";
-      if (folder_elem && folder_elem.files.length != "") {
+      if (folder_elem && folder_elem.files.length != "" && pdbname in pathList_ ) {
         console.log("try to load ", folder_elem.files.length);
         //ftp://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-5239/map/emd_5239.map.gz
         stage.loadFile(pathList_[pdbname], params);
@@ -3522,13 +3523,16 @@ function NGL_Load(pdbname, bu, sel_str) {
       {
         pdb_id_elem.innerHTML = '<a href="https://www.ebi.ac.uk/pdbe/entry/emdb/' + pdbname.split(".")[0] + '" target="_blank">' + pdbname + '</a>';
       }
-    } else {
+    }
+    else {
       //what about emdb
-      if (folder_elem && folder_elem.files.length != "") {
+      if (folder_elem && folder_elem.files.length != "" && pdbname in pathList_) {
         //alert(pathList_[d.data.source]),
         NGL_LoadOneProtein(pathList_[pdbname], pdbname, bu, sel_str);
-      } else {
+      }
+      else {
         var purl = cellpack_repo+"other/" + pdbname;
+        console.log("load purl ",purl);
         NGL_LoadOneProtein(purl, pdbname, bu, sel_str);
       }
     }

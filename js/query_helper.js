@@ -842,9 +842,12 @@ function OneCPIngredient(node, surface) {
   if (node.data.color) aing_dic["color"] = node.data.color;
   if (node.data.ingtype === "fiber"){
     //support dna, rna peptide, actine etc...
+    //this should be available in the ingredient properties panel
     aing_dic = helper_getFiberIngredientDescription(aing_dic);
     console.log(aing_dic);
   }
+  aing_dic["uniprot"] = node.data.uniprot;
+  aing_dic["confidence"] = node.data.confidence;
   //description=label,organism,score,
   return aing_dic;
 }

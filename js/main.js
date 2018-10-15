@@ -981,7 +981,6 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
         var molarity = (molarity_index!==-1)?idata[molarity_index]:0.0;
 				if (!molarity || molarity ==="") molarity = 0.0;
 
-
         var bu = (biological_unit_index!==-1)? ParseBU(idata[biological_unit_index]):-1;//get bu
         var sele = (string_selection_index!==-1)?idata[string_selection_index]:"";//chain:residues?
 				var uniprot = (uniprot_index!==-1) ? idata[uniprot_index]:"";

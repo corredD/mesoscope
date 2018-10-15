@@ -107,6 +107,9 @@ function oneIngredientSerialized(singr, node) {
   singr["buildtype"] = node.data.buildtype;
   singr["comments"] = node.data.comments;
   singr["color"] = node.data.color;
+  singr["uniprot"] = node.data.uniprot;
+  singr["confidence"] = node.data.confidence;
+  singr["molecularweight"] = node.data.molecularweight;
   //parse
   //description=label,organism,score,
   //partners_properties
