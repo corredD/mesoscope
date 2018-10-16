@@ -1059,7 +1059,7 @@ function NGL_setSymmetryOptions(ngl_ob) {
 
 function NGL_ChangeSymmetry(select0) {}
 
-function NGL_ChangeBiologicalassembly(selected0) {
+function NGL_ChangeBiologicalAssembly(selected0) {
   NGL_ChangeRepresentation(rep_elem.selectedOptions[0]);
   //also change the geometric center
   var center_bu= NGL_GetBUCenter(ngl_current_structure,selected0.value);
