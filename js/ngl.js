@@ -670,6 +670,7 @@ function NGL_addBB(){
 //stage.signals.clicked.add(function (pickingProxy) {...});
 
 function NGL_GetSelection(sel_str, model) {
+  //doesnt work with model onmly?
   var ngl_sele = "";
   if (sel_str && sel_str !== "") {
     //convert to ngl selection string
@@ -681,7 +682,8 @@ function NGL_GetSelection(sel_str, model) {
       if (el[0] === "") {
         ch_sel += " not ";
         if (/^[a-zA-Z]/.test(el[1])) ch_sel += ":" + el[1] + " and ";
-      } else if (/^[a-zA-Z]/.test(el[0])) ch_sel += ":" + el[0] + "  or ";
+      }
+      else if (/^[a-zA-Z]/.test(el[0])) ch_sel += ":" + el[0] + "  or ";
     }
     ngl_sele = ch_sel.slice(0, -5) + ")";
     console.log(ngl_sele);
@@ -973,7 +975,7 @@ function NGL_setModelOptions(ngl_ob) {
   const modelStore = ngl_ob.structure.modelStore;
   var model = "0";
   if (node_selected) {
-    model = model_elem.value;
+    model = (node_selected.data.source.model!=="")?node_selected.data.source.model:"0";//model_elem.value;
   }
   if (modelStore.count > 1) {
     model_elem.options[model_elem.options.length] = new Option('Show model:', 'Show model:');
@@ -1030,7 +1032,7 @@ function NGL_setChainSelectionOptions(ngl_ob)
    var model = "0";
    if (modelStore.count > 1) {
      if (node_selected) {
-       model = node_selected.data.source.model;
+       model = (node_selected.data.source.model!=="")?node_selected.data.source.model:"0";//model_elem.value;
      }
    }
    var aselection = (modelStore.count > 1) ? NGL_GetSelection("", model):"polymer";
@@ -1145,14 +1147,14 @@ function NGL_ChangeRepresentation(selectedO) {
 }
 
 //overwrite model ?
-function NGL_ChangeSelection(astr_elem) {
-  console.log(astr_elem.value);
+function NGL_ChangeSelection() {
+  //use sele_elem.value
   NGL_ChangeRepresentation(rep_elem.selectedOptions[0]);
-  if (ngl_current_item_id) updateDataGridRowElem(0, ngl_current_item_id, "selection", (astr_elem.value === "polymer") ? "" : astr_elem.value);
+  if (ngl_current_item_id) updateDataGridRowElem(0, ngl_current_item_id, "selection", (sele_elem.value === "polymer") ? "" : astr_elem.value);
   stage.autoView(1000);
   if (node_selected) {
-    node_selected.data.selection = astr_elem.value;
-    node_selected.data.source.selection = astr_elem.value;
+    node_selected.data.selection = sele_elem.value;
+    node_selected.data.source.selection = sele_elem.value;
   }
   /*var rep = stage.getRepresentationsByName( "polymer" );
 	rep.setParameters(
@@ -1208,7 +1210,7 @@ function NGL_ChangeChainsSelection(an_elem) {
     }
   }
   sele_elem.value = aselection;
-  NGL_ChangeSelection(sele_elem);
+  NGL_ChangeSelection();
 }
 
 //overwrite model selection
@@ -2716,13 +2718,16 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
     name: aname
   };
   var sele = "";
+  var model = "";
   if (sel_str && sel_str != "") {
+    if (node_selected.data.source.model !== "") model = node_selected.data.source.model;
     sele = NGL_GetSelection(sel_str,"");
     //update html input string
   }
   sele_elem.value = sele;
   var assembly = "AU";
-  if (bu !== -1 && bu !== null && bu !== "") {
+  params.assembly = assembly;
+  if (bu !== -1 && bu !== "-1" && bu !== null && bu !== "") {
     if (!bu.startsWith("BU") && bu !== "AU" && bu != "UNICELL" && bu !== "SUPERCELL") bu = "BU" + bu;
     params.assembly = bu;
     assembly = bu;
@@ -2752,7 +2757,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       ngl_current_structure.sele = sele;
       ngl_current_structure.assembly = assembly;
       //const symmetryData = NGL_processSymmetry(o.symmetry)
-      console.log("finished loading ");
+      console.log("finished loading ",sele_elem.value);
       console.log(o.structure);
       //var sc = o.getView(new NGL.Selection(sele));
       //console.log("atomcenter",sc.atomCenter());
@@ -2828,6 +2833,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       if (bu !== -1) $('#ass_type').val(assembly); //assembly_elem.selectedIndex = assembly;//$('#ass_type').val(assembly);//.change();
       else $('#ass_type').val("AU"); //assembly_elem.selectedIndex = "AU";//$('#ass_type').val("AU");//.change();
 
+      //
       var align_axis = false;
 
       if (ngl_load_params.dobeads) {
