@@ -1150,7 +1150,7 @@ function NGL_ChangeRepresentation(selectedO) {
 function NGL_ChangeSelection() {
   //use sele_elem.value
   NGL_ChangeRepresentation(rep_elem.selectedOptions[0]);
-  if (ngl_current_item_id) updateDataGridRowElem(0, ngl_current_item_id, "selection", (sele_elem.value === "polymer") ? "" : astr_elem.value);
+  if (ngl_current_item_id) updateDataGridRowElem(0, ngl_current_item_id, "selection", (sele_elem.value === "polymer") ? "" : sele_elem.value);
   stage.autoView(1000);
   if (node_selected) {
     node_selected.data.selection = sele_elem.value;
@@ -1181,6 +1181,7 @@ function NGL_ChangeSelection() {
 
 function NGL_ChangeChainsSelection(an_elem) {
   var aselection = "";
+  //check the model
   var checkboxes = document.getElementById("selection_ch_checkboxes");
   console.log(checkboxes);
   console.log(sele_elem.value);
@@ -1193,9 +1194,10 @@ function NGL_ChangeChainsSelection(an_elem) {
   {
       if (allcheck[i].checked) countchecked++;
   }
-  var diff = all-countchecked;
-  console.log(diff,(diff<countchecked));
-  if (diff<countchecked) {
+  var diff = all-countchecked;//1-1 or 1-0 when only one entry
+  var test = (diff<countchecked);
+  //if (all === 1 ) test = countchecked === 0;
+  if (test) {
     //aselection+="not :"+allcheck[0].id
     for (var i=0;i<all;i++)
     {
@@ -1209,6 +1211,10 @@ function NGL_ChangeChainsSelection(an_elem) {
         if (allcheck[i].checked) aselection+=" or :"+allcheck[i].id;
     }
   }
+  //add the model
+  if (node_selected.data.source.model !== "")
+    aselection += NGL_GetSelection("",node_selected.data.source.model);
+  console.log(aselection);
   sele_elem.value = aselection;
   NGL_ChangeSelection();
 }
@@ -2709,7 +2715,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
   if (!purl) return;
   var isseq = document.getElementById("sequence_mapping").checked;
   if (isseq) querySequenceMapping(aname);//async call
-  if (!bu) bu="";
+  if (!bu) bu="";//default bu will be BU1? if exist
   console.log("load url " + purl + " " + bu + " " + sel_str);
 
   //if its a surface protein show the modal for the pcpalAxis and the offset
@@ -2720,8 +2726,9 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
   var sele = "";
   var model = "";
   if (sel_str && sel_str != "") {
-    if (node_selected.data.source.model !== "") model = node_selected.data.source.model;
-    sele = NGL_GetSelection(sel_str,"");
+    //if (node_selected.data.source.model !== "") model = node_selected.data.source.model;
+    //sele = NGL_GetSelection(sel_str,model);
+    sele = sel_str
     //update html input string
   }
   sele_elem.value = sele;
@@ -2750,8 +2757,17 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
     .then(function(o) {
       ngl_current_structure = o;
       console.log("loading "+sele+" "+bu+" "+assembly);
+      if (!(assembly in ngl_current_structure.object.biomolDict)) {
+        assembly = "AU";
+        //change the node and the grid ?
+        if (ngl_current_item_id) updateDataGridRowElem(0, ngl_current_item_id, "bu", "AU");
+        if (node_selected) {
+          node_selected.data.source.bu = "AU";
+        }
+      }
       if (sele === ""  && assembly !== "AU"){
         //take the chain selection from the bu
+
         sele = ngl_current_structure.object.biomolDict[assembly].getSelection().string;
       }
       ngl_current_structure.sele = sele;

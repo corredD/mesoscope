@@ -277,14 +277,15 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
   var offset = [0, 0, 0];
   var source = {
     "pdb": pdb,
-    "bu": "",
+    "bu": "BU1",
     "model": "",
     "selection": ""
   };
   if ("source" in ing_dic) { //} && pdb === "None") {
     source = ing_dic["source"];
     if (!("pdb" in source)) source.pdb = "None";
-    if (!("bu" in source)) source.bu = "";
+    if (!("bu" in source)) source.bu = "BU1";
+    if (source.bu ==="")source.bu ="BU1";
     if (!("model" in source)) source.model = "";
     if (!("selection" in source)) source.selection = "";
     if ('emdb' in source) source.pdb = "EMD-" + source.emdb + ".map"; //"EMD-5241.map"
@@ -582,14 +583,15 @@ function OneIngredient(ing_dic, surface) {
   var pdb = ("pdb" in ing_dic) ? ing_dic["pdb"] : "None";
   var source = {
     "pdb": pdb,
-    "bu": "",
+    "bu": "BU1",
     "model": "",
     "selection": ""
   }; //should be id,type,model,chain,bu
   if ("source" in ing_dic) { //} && pdb === "None") {
     source = ing_dic["source"];
     if (!("pdb" in source)) source.pdb = "None";
-    if (!("bu" in source)) source.bu = "";
+    if (!("bu" in source)) source.bu = "BU1";
+    if (source.bu === "") source.bu = "BU1";//default
     if (!("model" in source)) source.model = "";
     if (!("selection" in source)) source.selection = "";
   }

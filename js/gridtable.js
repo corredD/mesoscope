@@ -758,8 +758,10 @@ function CreateDataColumnFromD3Nodes(agraph) {
     if (!agraph[i].children && "source" in agraph[i].data && "nodetype" in agraph[i].data && agraph[i].data.nodetype === "ingredient") {
       var elem = JSON.parse(JSON.stringify(agraph[i].data));
       if ("source" in elem) {
+        var model =""
+        if ("model" in elem.source) model = (elem.source.mode !=="")? elem.source.model : "";
         elem.bu = ("bu" in elem.source) ? elem.source.bu : "";
-        elem.selection = ("selection" in elem.source) ? elem.source.selection : "";
+        elem.selection = ("selection" in elem.source) ? sele = NGL_GetSelection(elem.source.selection,model) : "";
         elem.pdb = elem.source.pdb;
         delete elem.source;
       }

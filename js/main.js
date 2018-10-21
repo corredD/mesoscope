@@ -781,7 +781,7 @@ function ParseBU(cellvalue)
 		//can be a numbers
 		//cab a string:number
 		//has to be a numbers
-		if (!cellvalue || cellvalue ==="") return -1;
+		if (!cellvalue || cellvalue ==="") return "BU1";
 		let elem = cellvalue.split(":");
 		if (elem.length===1) {
 			//is it with //
@@ -981,7 +981,7 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
         var molarity = (molarity_index!==-1)?idata[molarity_index]:0.0;
 				if (!molarity || molarity ==="") molarity = 0.0;
 
-        var bu = (biological_unit_index!==-1)? ParseBU(idata[biological_unit_index]):-1;//get bu
+        var bu = (biological_unit_index!==-1)? ParseBU(idata[biological_unit_index]):"BU1";//get bu
         var sele = (string_selection_index!==-1)?idata[string_selection_index]:"";//chain:residues?
 				var uniprot = (uniprot_index!==-1) ? idata[uniprot_index]:"";
 
@@ -2521,7 +2521,7 @@ function sortNodeByDepth(objects){
       context.fill();
       */
 		//draw the traffic light
-		drawTrafficLight();
+		//drawTrafficLight();
     context.restore();
   }
 

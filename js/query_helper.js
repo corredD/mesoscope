@@ -1650,6 +1650,7 @@ function SaveRecipeCellPACK_serialized() {
   console.log("save recipe serialized",current_ready_state,totalNbInclude,
           current_ready_state_details.beads,current_ready_state_details.sources);
   //only check for beads ?
+  /*
   if ( current_ready_state_details.beads < 1 || current_ready_state_details.sources < 1)
   {
     //if (current_ready_state === 0 || totalNbInclude === 0 ) {
@@ -1660,6 +1661,7 @@ function SaveRecipeCellPACK_serialized() {
             + "\nmissing pdb " + JSON.stringify(list_missing_pdb));
     return;
   }
+  */
   var jdata = serializedRecipe(graph.nodes, graph.links);
   console.log(jdata);
   console.log(JSON.stringify(jdata));
