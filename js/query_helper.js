@@ -822,7 +822,7 @@ function OneCPIngredient(node, surface) {
   node.data.source.model = (node.data.model) ? node.data.model : "";
 
   aing_dic["source"] = node.data.source; //var source = ("pdb" in ing_dic)? ing_dic["pdb"] : "None";
-  aing_dic["nbMol"] = node.data.count;
+  aing_dic["nbMol"] = (node.data.count!=="")? parseInt(node.data.count):0;//shouldnt be a string
   aing_dic["molarity"] = node.data.molarity;
   aing_dic["molecularweight"] = node.data.molecularweight;
   //need meshname meshName
