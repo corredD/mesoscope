@@ -3536,10 +3536,12 @@ function NGL_Load(pdbname, bu, sel_str) {
       if (folder_elem && folder_elem.files.length != "" && pdbname in pathList_ ) {
         console.log("try to load ", folder_elem.files.length);
         //ftp://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-5239/map/emd_5239.map.gz
-        stage.loadFile(pathList_[pdbname], params);
+        stage.loadFile(pathList_[pdbname], params).then(function(o) {
+          ngl_current_structure = o;});
       } else {
         var purl = cellpack_repo+"other/" + pdbname;
-        stage.loadFile(purl, params);
+        stage.loadFile(purl, params).then(function(o) {
+          ngl_current_structure = o;});
       }
       if (pdbname.startsWith("EMD-"))
       {
