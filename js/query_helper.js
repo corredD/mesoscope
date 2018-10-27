@@ -792,7 +792,7 @@ function helper_getFiberIngredientDescription(ingrdic){
     for (var key in cp_fiber_description) {
       comon = findLongestCommonSubstring(key,query);
       console.log(key,query,comon);
-      if (comon && comon!=="" ) {//comon!=="" &&
+      if (comon && comon!=="" && comon.length > 2) {//comon!=="" &&
           var newDic = Object.assign(cp_fiber_description[key],ingrdic);
           console.log(newDic);
           return newDic;
