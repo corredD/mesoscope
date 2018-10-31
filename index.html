@@ -456,23 +456,40 @@
    <div id='cssmenu'>
    <img id="logo_image" src="images/Logo@2xc.png" height="90%">
    <ul>
-      <li class='has-sub'><a href='#'><span>Setup From</span></a>
+      <li class='has-sub'><a href='#'><span>Start Recipe</span></a>
         <ul>
-          <li><a href="#" onclick="selectDB()">Current database</a></li>
-          <li class='has-sub'><a href="#">Examples</a>
+          <li class='has-sub'><a href="#">New</span></a>
+            <ul>
+<li>          <li><a href='#'  onclick="CreateNew();"><span>Empty Recipe</span></a></li>
+              <li><a href="#" onclick="selectDB()">From Current database</a></li>
+              <li class='has-sub'><a href="#">From Examples</a>
               <ul>
                   <li><a href="#" onclick="LoadExampleBloodHIV()">HIV and Blood Plasma</a>
                   <li><a href="#" onclick="LoadExampleBlood()">Blood Plasma</a>
                   <!--li><a href="#" onclick="LoadExampleHIV()">HIV</a-->
                   <li><a href="#" onclick="LoadExampleMpn()">Mycoplasma Pneumonia</a>
               </ul>
+              </li>
+              <li><a href="#" for="jsfile_input" onclick="$('#jsfile_input').trigger('click');">From File (.json, _serialized.json,.xlsx,.csv)</a></li>
+          </ul>
           </li>
-          <li><a href="#" for="jsfile_input" onclick="$('#jsfile_input').trigger('click');">File (.json, _serialized.json,.xlsx,.csv)</a></li>
+          <li class='has-sub'><a href="#">Append From</span></a>
+            <ul>
+              <li class='has-sub'><a href="#">Examples</a>
+              <ul>
+                  <li><a href="#" onclick="MergeExampleBloodHIV()">HIV and Blood Plasma</a>
+                  <li><a href="#" onclick="MergeExampleBlood()">Blood Plasma</a>
+                  <!--li><a href="#" onclick="LoadExampleHIV()">HIV</a-->
+                  <li><a href="#" onclick="MergeExampleMpn()">Mycoplasma Pneumonia</a>
+              </ul>
+              </li>
+              <li><a href="#" for="jsfile_input_merge" onclick="$('#jsfile_input_merge').trigger('click');">File (.json, _serialized.json,.xlsx,.csv)</a></li>
+            </ul>
+          </li>
           <li class='last'><a href="#" for="file_input" onclick="$('#file_input').trigger('click');">Setup Data Directory (PDB,geoms)</a></li>
         </ul>
-      </li>
-      <li><a href='#'  onclick="CreateNew();"><span>Create New</span></a></li>
-      <li class='has-sub'><a href='#'><span>Export</span></a>
+        </li>
+      <li class='has-sub'><a href='#'><span>Export Recipe</span></a>
         <ul>
           <li><a href="#" onclick="SaveRecipeCellPACK()">cellPACK recipe</a></li>
           <li><a href="#" onclick="SaveRecipeCellPACK_serialized()">cellPACK-gpu recipe</a></li>
@@ -497,6 +514,7 @@
 
   <!--/div<input class="togglePFV" id="togglePFV" type="checkbox">-->
   <input class="hidden" type="file" id="jsfile_input" accept=".csv,.json,.xlsx" type="file" onclick="forceSelect(this)" onchange="selectFile(event)" />
+  <input class="hidden" type="file" id="jsfile_input_merge" accept=".csv,.json,.xlsx" type="file" onclick="forceSelect(this)" onchange="selectMergeFile(event)" />
   <input class="hidden" type="file" id="file_input" onchange="Util_selectFolder(event)" webkitdirectory mozdirectory msdirectory odirectory directory multiple />
 
 
@@ -522,6 +540,26 @@
         <div>
           <button id="saveDetail" style="color:black;">Save</button>
           <button id="cancelDetail" style="color:black;">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class='slickform modal' id="mergemodal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="close" id="closemergemodal">&times;</span>
+        <h2>Column Merging</h2>
+      </div>
+      <div class="modal-body" id="mergemodalitems">
+        <div class="modal-form" id="mergemodalform"></div>
+        <div id="mergemodallistholder"  class="modal-list"></div>
+      </div>
+      <hr/>
+      <div class="modal-footer">
+        <div>
+          <button id="mergemodal_save" style="color:black;">Merge</button>
+          <button id="mergemodal_cancel" style="color:black;">Cancel</button>
         </div>
       </div>
     </div>
@@ -1004,7 +1042,7 @@ void main() {
     <script src="extras/gpuphysics/main_physics.js"></script>
     <script src="js/main.js"></script>
     <script src="js/layout_mg.js"></script>
-
+    <script src="js/modal_merge.js"></script>
     <!-- Protein Feature View from rcsb-->
     <!--script src="extras/jquery.svg.js"></script>
     <script src="extras/bootstrap-slider.min.js"></script>

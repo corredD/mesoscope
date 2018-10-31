@@ -125,7 +125,6 @@ function SetupCompartmentModalCanvas(parentdiv, loc_comp) {
   //setup simulation->ticked function
   setupModalD3();
   setupModalSimulation();
-
 }
 
 function UpdateCompartmentModalCanvas(loc_comp){
@@ -178,7 +177,7 @@ function updateModalForce(){
       modal_sim.alpha(1).alphaTarget(0).restart();
 	}
 
-  function modal_isolate(force, filter) {
+function modal_isolate(force, filter) {
     var initialize = force.initialize;
     force.initialize = function() { initialize.call(force, modal_nodes.filter(filter)); };
     return force;

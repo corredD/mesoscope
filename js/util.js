@@ -4,6 +4,22 @@ var  X_AXIS = new NGL.Vector3(1, 0, 0);
 var  Y_AXIS = new NGL.Vector3(0, 1, 0);
 var  Z_AXIS = new NGL.Vector3(0, 0, 1);
 
+function Util_parseParams(){
+  return location.search
+    .substr(1)
+    .split("&")
+    .map(function(pair){
+      var a = pair.split("=");
+      var o = {};
+      o[a[0]] = a[1];
+      return o;
+    })
+    .reduce(function(a,b){
+      for(var key in b) a[key] = b[key];
+      return a;
+    });
+}
+
 function componentToHex(c) {
     var hex = c.toString(16);
     return hex.length == 1 ? "0" + hex : hex;

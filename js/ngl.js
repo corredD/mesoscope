@@ -668,28 +668,33 @@ function NGL_addBB(){
 }
 //change the picking!
 //stage.signals.clicked.add(function (pickingProxy) {...});
-
+//assume it doesnt use the ngl system
 function NGL_GetSelection(sel_str, model) {
   //doesnt work with model onmly?
   var ngl_sele = "";
-  if (sel_str && sel_str !== "") {
+  sel_str = sel_str.replace("(","").replace(")","")
+  if ( sel_str.includes(":") || sel_str.includes("or") || sel_str.includes("and") ) {ngl_sele = sel_str;}
+  else {
+    if (sel_str && sel_str !== "") {
     //convert to ngl selection string
     var ch_sel = "(";
     var sp = sel_str.split(",");
     for (var i = 0; i < sp.length; i++) {
       var el = sp[i].split("!");
-      console.log(el);
+      console.log("el ",el);
+      if (el.includes("/")) continue;
       if (el[0] === "") {
         ch_sel += " not ";
-        if (/^[a-zA-Z]/.test(el[1])) ch_sel += ":" + el[1] + " and ";
+        if (/[0-9a-zA-Z]/.test(el[1])) ch_sel += ":" + el[1].replace(":","") + " and ";
       }
-      else if (/^[a-zA-Z]/.test(el[0])) ch_sel += ":" + el[0] + "  or ";
+      else if (/[0-9a-zA-Z]/.test(el[0])) ch_sel += ":" + el[0].replace(":","") + "  or ";
     }
     ngl_sele = ch_sel.slice(0, -5) + ")";
-    console.log(ngl_sele);
+    console.log("ngl_sele ",ngl_sele);
   }
-  if (model && model !== "") {
-    ngl_sele += " and /" + model;
+    if (model && model !== "") {
+      ngl_sele += " and /" + model;
+    }
   }
   return ngl_sele;
 }
@@ -1195,7 +1200,7 @@ function NGL_ChangeChainsSelection(an_elem) {
       if (allcheck[i].checked) countchecked++;
   }
   var diff = all-countchecked;//1-1 or 1-0 when only one entry
-  var test = (diff<countchecked);
+  var test = false;//(diff<countchecked);
   //if (all === 1 ) test = countchecked === 0;
   if (test) {
     //aselection+="not :"+allcheck[0].id

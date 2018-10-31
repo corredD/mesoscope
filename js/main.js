@@ -2,6 +2,7 @@
 //TOO MANY Global variable...
 var DEBUGLOG = false;
 var DEBUGGPU = true;
+var MERGE = false;
 
 var recipe_changed = false; //toggle when change occurs, and autosave/save occurs.
 //how to efficiently save work ?
@@ -303,7 +304,28 @@ var allfield={
 			label_index:-1,
 	    compartments:-1//special case where one column per comnpartment
 	    };
-
+//key in graph.nodes
+var allfield_key={
+  		name_index:"name",
+	    source_index:"source",
+	    count_index:"count",
+	    compartment_index:"compartment",
+	    biological_unit_index:"bu",
+	    string_selection_index:"selection",
+	    location_index:"surface",
+	    model_index:"model",
+	    molarity_index:"molarity",
+	    uniprot_index:"uniprot",
+	    offset_index:"offset",
+	    pcpalvector_index:"pcpalAxis",
+			molecularweight_index:"molecularweight",
+			confidence_index:"confidence",
+			include_index:"include",
+			color_index:"color",
+			comment_index:"comment",
+			label_index:"label",
+	    compartments:"compartments"//special case where one column per comnpartment
+	    };
 var allfield_labels={
   		name_index:"protein name",
 	    source_index:"protein structure (PDB,EMD)",
@@ -325,7 +347,6 @@ var allfield_labels={
 			label_index:"label for the ingredient",
 	    compartments:""//special case where one column per comnpartment
 	    };
-
 var allfield_query={
   		name_index:["protein","name"],
 	    source_index:["structure","source","pdb"],
@@ -454,8 +475,18 @@ function GuessColumnSingle(field1name,allfield2){
 
 function createOneColumnSelect(field1name,allfield2,divparent) {
 		//Create and append select list
-    var elem =  addToModalDiv( divparent, 'modal-content-elem', allfield_labels[field1name]);
-		var selectList = document.createElement("select");
+    var elem =  grid_addToModalDiv( divparent, 'modal-content-elem', allfield_labels[field1name]);
+    if (MERGE){
+      var checkbox = document.createElement('input');
+      checkbox.type = "checkbox";
+      checkbox.name = field1name;
+      //checkbox.value = true;
+      checkbox.checked = true;
+      checkbox.id = field1name+"_include";
+      elem.prepend(checkbox);
+      merge_field[field1name] = checkbox;
+    }
+    var selectList = document.createElement("select");
 		//onchange="myCallback();" onfocus="this.selectedIndex=-1;this.blur();"
 		selectList.id = field1name;
 		elem.appendChild(selectList);
@@ -677,7 +708,7 @@ function getModalMapping(data_header,jsondic,rootName) {
 		//for (var co in loc_comp) {
 		//	astr +="<br>"+co+" "+loc_comp[co];
 		//}
-		var textelem =  addToModalDiv( item_cont, 'modal-content-elem', astr);
+		var textelem =  grid_addToModalDiv( item_cont, 'modal-content-elem', astr);
 		//textelem.innerHTML+=astr;
 
     modal_cont.style.display = "block";
@@ -1017,7 +1048,7 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 				}
 				var label = (allfield.label_index!==-1)?idata[allfield.label_index]:"";
 				var comments = (allfield.comment_index!==-1)?idata[allfield.comment_index]:"";
-        //sele = NGL_GetSelection(sele,model);
+        sele = NGL_GetSelection(sele,model);
         var elem = {
 					"name":name,"size":25,"molecularweight":mw,"confidence":confidence,"color":color,
         	"source":{"pdb":source,"bu":bu,"selection":sele,"model":model},"count":acount,
@@ -1131,7 +1162,8 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 	//console.log("afterModal");
 	//console.log(graph);
 	//console.log(agraph_links);
-	update_graph(newgraph,agraph_links);
+	if (MERGE) merge_graph(newgraph,agraph_links);
+  else update_graph(newgraph,agraph_links);
   //return {"graph":graph,"link":graph_links};
 }
 
@@ -1158,32 +1190,12 @@ var to_json = function to_json(workbook) {
 function displayAsTable(){}
 
 function process_wb(wb) {
-		/* get data */
-		//alert(wb.SheetNames[0]);
-		//var ws = wb.Sheets[wb.SheetNames[0]];
-		//ask for the header row?, and starting data row ?
-		//var jdata = XLSX.utils.sheet_to_json(ws,{header:1});
-    //alert(JSON.stringify(data));
     header_index = prompt("Please enter the Header row number", "0");
     //start_index = prompt("Please enter the Data first row number", "1");
     header_index = parseInt(header_index);
     start_index = 1;
     //start_index = parseInt(start_index);
-
     var jsdata = to_json(wb);//stringified json ?
-    //var jdata = jsdata[wb.SheetNames[0]];
-    //alert(jdata);
-		/* update canvas-datagrid */
-		//updateDataGrid(jdata);
-		/* create schema (for A,B,C column headings) */
-		 //var range = XLSX.utils.decode_range(ws['!ref']);
-
-		 //for(var i = range.s.c; i <= range.e.c; ++i)
-		 //    cDg.schema[i - range.s.c].title = XLSX.utils.encode_col(i);
-
-		//HTMLOUT.style.height = (window.innerHeight - 400) + "px";
-		//HTMLOUT.style.width = (window.innerWidth - 50) + "px";
-
 		if(typeof console !== 'undefined') console.log("output", new Date());
 		var result = mainParsingSpreadshit(JSON.parse(jsdata),"root");//wb.Props.Title);//parseSpreadSheetRecipe(JSON.parse(jsdata),wb.Props.Title);
 		return result;
@@ -1205,6 +1217,7 @@ function selectCompFile (e) {
 function forceSelect(e) {
 	e.value = '';
 }
+
 
 //first/second sheet is the current graph/link, next is the original data -> up to 4 Grid
 function selectFile(e){
@@ -1236,35 +1249,27 @@ function selectFile(e){
     	  //console.log("serialzized ?",comon);
     	  if (comon.length >= 9) {//full string found
     	  	//console.log("serialized recipe type",thefile.name,comon);
-    	  	//read and pasrse
     	  	reader.onload = function(event) {
-	        var data = reader.result;
-	        data = data.replace(/\\n\\r/gm,'newChar');
-	        	//alert(data);
-	        var ad = JSON.parse(data);
-	        //console.log(ad);
-	        //alert(JSON.stringify(ad));
-	        var adata = parseCellPackRecipeSerialized(ad);
-	        //console.log("parsed the graph",adata);
-	        //var alink =[]
-	        //alert("worked??");
-	        //alert(JSON.stringify(adata));
-	        update_graph(adata.nodes,adata.links);
-     	 }
-    	  	}
+  	        var data = reader.result;
+  	        data = data.replace(/\\n\\r/gm,'newChar');
+  	        var ad = JSON.parse(data);
+  	        var adata = parseCellPackRecipeSerialized(ad);
+  	        if (MERGE) {
+              merge_getModal(adata.nodes,adata.links)
+              //merge_graph(adata.nodes,adata.links);
+            }
+            else update_graph(adata.nodes,adata.links);
+       	 }
+  	  	}
     	  else {
 	    	  reader.onload = function(event) {
-	        var data = reader.result;
-	        data = data.replace(/\\n\\r/gm,'newChar');
-	        //alert(data);
-	        var ad = JSON.parse(data);
-	        //alert(JSON.stringify(ad));
-	        var adata = parseCellPackRecipe(ad)
-	        //var alink =[]
-	        //alert("worked??");
-	        //alert(JSON.stringify(adata));
-	        update_graph(adata.nodes,adata.links);
-     	 }
+  	        var data = reader.result;
+  	        data = data.replace(/\\n\\r/gm,'newChar');
+  	        var ad = JSON.parse(data);
+  	        var adata = parseCellPackRecipe(ad)
+            if (MERGE) merge_getModal(adata.nodes,adata.links)
+            else update_graph(adata.nodes,adata.links);
+       	 }
     	}
     }
     else if (ext === "xlsx"){
@@ -1275,7 +1280,7 @@ function selectFile(e){
 						var workbook = XLSX.read(data, {type:  'binary'});
 						if(!workbook.Props) workbook.Props = {};
             workbook.Props.Title = thefile.name;
-						var adata =process_wb(workbook);
+						var adata = process_wb(workbook);
 						//alert(JSON.stringify(adata));
     	    }
     }
@@ -1287,25 +1292,20 @@ function selectFile(e){
 		    header_index = parseInt(header_index);
 		    start_index = header_index+1;
     		var book =  d3v4.csvParseRows(data);//this is not working with tab
-    		//console.log(book.length);
-    		//for (var i=0;i<book.length;i++) {
-    		//	console.log(i,book[i]);
-    		//}
-    		//console.log(book[1]);
-    		//var book =  d3v4.csvParse(data);
     		csv_mapping=true;
-   			//start_index = prompt("Please enter the Data first row number", "1");
-    		//var data_header = Object.keys(book[header_index]);//first raw
     		var data_header = book[header_index];//first raw
     		console.log(data_header);
     		getModalMapping(data_header,book,thefile.name.split(".")[0]);
-    		//var adata = mainParsingSpreadshit(book,thefile.name);//parseSpreadSheetRecipe(JSON.parse(jsdata),wb.Props.Title);
-    		//console.log(adta);
     		}
     	}
     if (ext === "xlsx") reader.readAsBinaryString(thefile);
     else reader.readAsText(thefile, 'UTF-8');
 	}
+
+function selectMergeFile(e){
+    MERGE = true;
+    selectFile(e);
+}
 
 function selectDBcallback (response,query) {
 	var adata = JSON.parse(response);
@@ -1420,6 +1420,57 @@ function LoadExampleBloodHIV(){
 						//alert("worked??");
 						//alert(JSON.stringify(adata));
 						update_graph(adata.nodes,adata.links);
+						})
+}
+
+function MergeExampleBlood(){
+  stage.removeAllComponents();
+  var url = "data/BloodPlasma_serialized.json";
+  csv_mapping= false;
+  comp_column = false;
+  d3v4.json(url, function (json) {
+          if (DEBUGLOG) {
+            console.log("json",json);
+          }
+          var adata = parseCellPackRecipeSerialized(json)
+          merge_getModal(adata.nodes,adata.links);
+          })
+}
+
+function MergeExampleMpn(){
+  stage.removeAllComponents();
+  var url = "data/Mpn_1.0_2.json";
+  csv_mapping= false;
+  comp_column = false;
+  d3v4.json(url, function (json) {
+          if (DEBUGLOG) console.log(json);
+          var adata = parseCellPackRecipe(json)
+          //var alink =[]
+          //alert("worked??");
+          //alert(JSON.stringify(adata));
+          merge_getModal(adata.nodes,adata.links);
+          })
+}
+
+function MergeExampleBloodHIV(){
+		//file is in data
+		//https://raw.githubusercontent.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json
+		stage.removeAllComponents();
+		var url = "data/BloodPlasmaHIV_serialized.json";//cellpack_repo+"recipes/BloodPlasmaHIV_serialized.json";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/recipes/BloodPlasmaHIV_serialized.json";
+		//var url = "./data/BloodPlasmaHIV_serialzed.json";
+		csv_mapping= false;
+		comp_column = false;
+		console.log(url);
+		d3v4.json(url, function (error,json) {
+						if (DEBUGLOG) {
+							console.log("error",error)
+							console.log("json",json);
+						}
+						var adata = parseCellPackRecipeSerialized(json)
+						//var alink =[]
+						//alert("worked??");
+						//alert(JSON.stringify(adata));
+						merge_getModal(adata.nodes,adata.links);
 						})
 }
 
@@ -2799,7 +2850,6 @@ function AddANode(some_data){
    graph.nodes.push(newNode);
    console.log(newNode);
    updateForce();
-
    return;
    /*
    //by default  add to root
@@ -3602,6 +3652,97 @@ function update_graph(agraph,alink){
   graph={};
   graph.nodes = nodes;
   graph.links = alink;
+  users = d3v4.nest()
+      .key(function(d) { return d.name; })
+      .entries(graph.nodes)
+      .sort(function(a, b) { return b.size - a.size; });
+  //alert(nodes[0].data.name);
+  clearHighLight();
+  //simulation.stop();
+  //simulation
+  //    .nodes(graph.nodes)
+  //    .on("tick", ticked);
+  //update the size to reflect the table size
+
+  simulation.stop();
+  simulation.nodes(graph.nodes);
+  simulation.force("link").links(graph.links);
+
+	//mapRadiusToProperty(document.getElementById("canvas_map_r"));
+
+  simulation.restart();
+  //simulation.alpha(1).alphaTarget(0).restart();
+  simulation.alpha(1);
+  //ticked();
+  //saveCurrentState();
+}
+
+function merge_node(cnode,newnode){
+    Object.keys(merge_field).forEach(function(akey,index) {
+        // key: the name of the object key
+        // index: the ordinal position of the key within the object
+        if (merge_field[akey].checked){
+            var key = allfield_key[akey];
+            cnode.data[key] = newnode.data[key];
+            if (cnode.data.nodetype!=="compartment"){
+              if (key === "bu") {
+                cnode.data.source.bu = newnode.data.bu;
+              }
+              if (key === "selection") {
+                cnode.data.source.selection = newnode.data.selection;
+              }
+              if (key === "model") {
+                cnode.data.source.model = newnode.data.model;
+              }
+            }
+            //update compartment?
+        }
+    });
+}
+
+function merge_graph(agraph,alink){
+  //options to what to merge. e.g. what field are going to be overwritten when already Loaded
+  //use a modal view like the modal_canvas_comp.
+  //use merge_field to help overwrite when name is the name and also
+  var mapping = d3v4.scaleLinear()
+    .domain([Math.min(0,property_mapping["size"].min), property_mapping["size"].max])
+    .range([0, 25]);
+
+  var new_root = d3v4.hierarchy(agraph)
+    .sum(function(d) { return d.size; })
+    .sort(function(a, b) { return b.value - a.value; });
+
+  if (DEBUGLOG) console.log("root",new_root);
+  var new_nodes = pack(new_root).descendants();//flatten--error ?
+	alink = MapLinkToNode(new_nodes,alink);
+
+  new_nodes = checkAttributes(new_nodes);
+  new_nodes = resetAllNodePos(new_nodes);
+  new_nodes = centerAllNodePos(new_nodes);
+
+  merge_nodes = new_nodes;
+  merge_links = alink;
+  //merge with current graph
+  new_nodes.forEach(function(n){
+      var cnode = getNodeByName(n.data.name);
+      if (cnode !==null){
+          merge_node(cnode,n);
+      }
+      else
+      {
+        n.data.id = "id_"+graph.nodes.length;
+        graph.nodes.push(n);
+      }
+  });
+
+  // Returns array of link objects between nodes.
+  //links = root.links();//nodes.slice(1);
+  console.log("update with "+nodes.length);
+  UpdateGridFromD3Nodes(nodes,0);
+  UpdateGridFromD3Links(alink,1);
+
+  if (DEBUGLOG) console.log( nodes );
+
   users = d3v4.nest()
       .key(function(d) { return d.name; })
       .entries(graph.nodes)

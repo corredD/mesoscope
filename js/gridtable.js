@@ -761,7 +761,7 @@ function CreateDataColumnFromD3Nodes(agraph) {
         var model =""
         if ("model" in elem.source) model = (elem.source.mode !=="")? elem.source.model : "";
         elem.bu = ("bu" in elem.source) ? elem.source.bu : "";
-        elem.selection = ("selection" in elem.source) ? sele = NGL_GetSelection(elem.source.selection,model) : "";
+        elem.selection = ("selection" in elem.source) ? sele = elem.source.selection : "";//NGL_GetSelection(elem.source.selection,model) : "";
         elem.pdb = elem.source.pdb;
         delete elem.source;
       }
@@ -2130,7 +2130,7 @@ function openDetailsOld(newone) {
   grid.editActiveCell(compositeEditor); //thats where the editor comes from
 }
 
-function addToModalDiv(parentContainer, divclass, innerHtml) {
+function grid_addToModalDiv(parentContainer, divclass, innerHtml) {
   var div = document.createElement("div");
   div.setAttribute("class", divclass);
   var label = document.createElement("label");
@@ -2202,8 +2202,8 @@ function openDetails(newone) {
   var containers = [];
   console.log(row_to_edit);
   for (var i = 0; i < columns.length; i++) {
-    var elem = addToModalDiv(item_cont, 'item-details-label', columns[i].name);
-    var editor = addToModalDiv(item_cont, 'item-details-editor-container', "");
+    var elem = grid_addToModalDiv(item_cont, 'item-details-label', columns[i].name);
+    var editor = grid_addToModalDiv(item_cont, 'item-details-editor-container', "");
     editor.setAttribute("data-editorid", columns[i].id);
     //class='item-details-editor-container' data-editorid='${id}'
     //console.log(i,columns[i].name,editor);
