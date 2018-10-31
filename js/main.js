@@ -3725,13 +3725,15 @@ function merge_graph(agraph,alink){
   //merge with current graph
   new_nodes.forEach(function(n){
       var cnode = getNodeByName(n.data.name);
-      if (cnode !==null){
-          merge_node(cnode,n);
-      }
-      else
-      {
-        n.data.id = "id_"+graph.nodes.length;
-        graph.nodes.push(n);
+      if (n !== new_root) {
+        if (cnode !==null){
+            merge_node(cnode,n);
+        }
+        else
+        {
+          n.data.id = "id_"+graph.nodes.length;
+          graph.nodes.push(n);
+        }
       }
   });
 
