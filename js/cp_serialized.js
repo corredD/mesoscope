@@ -136,6 +136,23 @@ function OneIngredientSerializedPartner(singr, link_node) {
   return linkdata;
 }
 
+//properties?
+function AddSerializedPartner(ingdic, node, some_links) {
+  ingdic["partners_name"] = [];
+  for (var i = 0; i < some_links.length; i++) {
+    //partner_name from the link table/graph_links
+    if (some_links[i].source === node)
+      if (ingdic["partners_name"].indexOf(some_links[i].target.data.name) == -1)
+        //if (!(some_links[i].target.data.name in ingdic["partners_name"]))
+        ingdic["partners_name"].push(some_links[i].target.data.name);
+    if (some_links[i].target === node)
+      if (ingdic["partners_name"].indexOf(some_links[i].source.data.name) == -1)
+        ingdic["partners_name"].push(some_links[i].source.data.name);
+  }
+  return ingdic;
+}
+
+
 function oneCompartment(scomp, node) {
   var gtype = (node.data.geom_type) ? node.data.geom_type : "None";
   var geom = (node.data.geom) ? node.data.geom : "";
@@ -217,6 +234,10 @@ function serializedRecipe(some_data, some_links) {
       var sing = new sIngredient(node.data.name, 0, sIngredient_static_id);
       sIngredient_static_id += 1;
       sing = oneIngredientSerialized(sing, node); //assign the attributes
+      if (some_links.length) {
+        console.log("check links", some_links.length)
+        //ingdic = AddPartner(ingdic, node, some_links);
+      }
       if (node.parent === aroot) {
         var pgroup;
         if (root.IngredientGroups.length === 0) {
@@ -669,7 +690,6 @@ function GetIngredientTypeAndBuildType(an_ing_dic) {
     "build": buildType
   };
 }
-
 
 function parseCellPackRecipe(jsondic) {
   var graph = {}; //the main graph

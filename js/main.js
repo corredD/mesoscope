@@ -3700,6 +3700,32 @@ function merge_node(cnode,newnode){
     });
 }
 
+function merge_one_node(new_node){
+   //check if parent name is the same and exist
+   //var newNode = Object.assign({}, new_node);//this doesnt assign the function from the hierarchy
+   var anode = JSON.parse(JSON.stringify(new_node.data));
+   console.log(anode);
+   var newNode = d3v4.hierarchy(anode);
+   console.log(newNode);
+   var parent = getNodeByName(new_node.parent.data.name);
+   parent = (parent)? parent : graph.nodes[0];
+   newNode.nodetype = "ingredient";
+   console.log("add node to parent "+new_node.parent.data.name);
+   console.log(parent);
+   //find the parent
+   newNode.parent = parent;//should be root
+   newNode.depth = parent.depth+1;
+   //newNode.x = canvas.width/2;
+   //newNode.y = canvas.height/2;
+   newNode.r = new_node.r;
+   //newNode.data.source = {"pdb":some_data.pdb,"bu":some_data.bu,"selection":some_data.selection,"model":""};
+	 newNode.data.opm = 0;
+   newNode.data.id = "id_"+graph.nodes.length;
+	 parent.children.push(newNode);
+   graph.nodes.push(newNode);
+   return;
+}
+
 function merge_graph(agraph,alink){
   //options to what to merge. e.g. what field are going to be overwritten when already Loaded
   //use a modal view like the modal_canvas_comp.
@@ -3731,8 +3757,9 @@ function merge_graph(agraph,alink){
         }
         else
         {
-          n.data.id = "id_"+graph.nodes.length;
-          graph.nodes.push(n);
+          console.log(n.data.name);
+          merge_one_node(n);
+          //graph.nodes.push(n);
         }
       }
   });
@@ -3758,16 +3785,16 @@ function merge_graph(agraph,alink){
   //update the size to reflect the table size
 
   simulation.stop();
-  simulation.nodes(graph.nodes);
-  simulation.force("link").links(graph.links);
-
+  updateForce();
+  //simulation.nodes(graph.nodes);
+  //simulation.force("link").links(graph.links);
 	//mapRadiusToProperty(document.getElementById("canvas_map_r"));
-
   simulation.restart();
   //simulation.alpha(1).alphaTarget(0).restart();
   simulation.alpha(1);
   //ticked();
   //saveCurrentState();
+  MERGE = false;
 }
 
 function PreviousIgredient(){
@@ -3996,7 +4023,8 @@ $(document).bind("contextmenu", function (event) {
     node_over_to_use = node_over || line_over;
     console.log("use over ",node_over_to_use)
 		var rgb = ("color" in node_over_to_use.data && node_over_to_use.data.color !== null)? node_over_to_use.data.color: [1,0,0];
-		node_over_to_use.data.color = rgb;
+    if (rgb === null || !rgb) rgb = [1,0,0];
+    node_over_to_use.data.color = rgb;
 		var hx = Util_rgbToHex(rgb[0]*255,rgb[1]*255,rgb[2]*255);
 		document.getElementById("node_color").value = hx;
 		//var x = document.getElementById("node_color").value;
