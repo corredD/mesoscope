@@ -1048,7 +1048,7 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 				}
 				var label = (allfield.label_index!==-1)?idata[allfield.label_index]:"";
 				var comments = (allfield.comment_index!==-1)?idata[allfield.comment_index]:"";
-        sele = NGL_GetSelection(sele,model);
+        if (sele && sele !== null && sele !== "") sele = NGL_GetSelection(sele,model);
         var elem = {
 					"name":name,"size":25,"molecularweight":mw,"confidence":confidence,"color":color,
         	"source":{"pdb":source,"bu":bu,"selection":sele,"model":model},"count":acount,
