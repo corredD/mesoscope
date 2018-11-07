@@ -1336,7 +1336,7 @@ function BuildDefaultCompartmentsRep() {
   console.log
 }
 
-function BuildAll() {
+function query_BuildAll() {
   //show the stop button
   stop_current_compute = false;
   document.getElementById('stopbeads').setAttribute("class", "spinner");
@@ -1345,6 +1345,35 @@ function BuildAll() {
   //use getItem(index)
   //for all compartment get a geom. default sphere of 500A
   BuildDefaultCompartmentsRep();
+  current_compute_index = -1;
+  NextComputeIgredient();
+  NGL_buildLoopAsync();
+  //build geom for compartment by default
+  //build beads
+}
+
+function as_clearNode(anode){
+    if (anode.data.ingtype === "protein")
+    {
+      anode.data.pos=[];
+      anode.data.radii=[]
+    }
+}
+
+async function as_clearNodes(){
+  const promises = graph.nodes.map(as_clearNode);
+  await Promise.all(promises);
+  console.log('Done');
+}
+
+function query_ClearAll() {
+  //show the stop button
+  stop_current_compute = false;
+  document.getElementById('stopbeads').setAttribute("class", "spinner");
+  document.getElementById("stopbeads_lbl").setAttribute("class", "show");
+  document.getElementById("stopbeads_lbl").innerHTML = "building " + current_compute_index + " / " + graph.nodes.length;
+  //use getItem(index)
+  //for all compartment get a geom. default sphere of 500A
   current_compute_index = -1;
   NextComputeIgredient();
   NGL_buildLoopAsync();
