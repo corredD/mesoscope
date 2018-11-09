@@ -1132,17 +1132,17 @@ function NextComputeIgredient() {
           d.data.pos === "null" || d.data.pos.length === 0 ||
           d.data.pos === ""))) {
       //if (!graph.nodes[i].children){
-      if ("pdb" in d.data.source ) {
-      var fileExt = d.data.source.pdb.split('.').pop();
-      if (fileExt !== "map") {
-        found = true;
-        current_compute_index = i;
-        current_compute_node = graph.nodes[i];
-      }
-      else {
-        d.data.geom_type = "file";
-        d.data.geom = d.data.source.pdb;
-      }
+      if ("pdb" in d.data.source && d.data.source.pdb !== null & d.data.source.pdb !== "") {
+        var fileExt = d.data.source.pdb.split('.').pop();
+        if (fileExt !== "map") {
+          found = true;
+          current_compute_index = i;
+          current_compute_node = graph.nodes[i];
+        }
+        else {
+          d.data.geom_type = "file";
+          d.data.geom = d.data.source.pdb;
+        }
     }
     }
   }
@@ -1353,10 +1353,13 @@ function query_BuildAll() {
 }
 
 function as_clearNode(anode){
-    if (anode.data.ingtype === "protein")
+    if (anode.data.ingtype !== "compartment")
     {
       anode.data.pos=[];
       anode.data.radii=[]
+      anode.data.geom_type = null;
+      anode.data.geom = null;
+      //console.log(anode);
     }
 }
 
@@ -1366,19 +1369,27 @@ async function as_clearNodes(){
   console.log('Done');
 }
 
+function sync_clearAll(){
+  graph.nodes.forEach(function(d){
+    if (d.data.ingtype !== "compartment")
+    {
+      d.data.pos=[];
+      d.data.radii=[]
+      console.log(d);
+    }
+  });
+}
+
 function query_ClearAll() {
   //show the stop button
-  stop_current_compute = false;
-  document.getElementById('stopbeads').setAttribute("class", "spinner");
-  document.getElementById("stopbeads_lbl").setAttribute("class", "show");
-  document.getElementById("stopbeads_lbl").innerHTML = "building " + current_compute_index + " / " + graph.nodes.length;
-  //use getItem(index)
-  //for all compartment get a geom. default sphere of 500A
-  current_compute_index = -1;
-  NextComputeIgredient();
-  NGL_buildLoopAsync();
-  //build geom for compartment by default
-  //build beads
+  as_clearNodes();
+  //remove the current one in the viewer
+  if (ngl_current_structure) {
+    stage.getRepresentationsByName("geom_surface").dispose();
+    for (var i = 0; i < 3; i++) {
+      stage.getRepresentationsByName("beads_" + i).dispose();
+    }
+  }
 }
 
 function getCurrentNodesAsCP_JSON(some_data, some_links) {

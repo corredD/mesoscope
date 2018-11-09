@@ -673,24 +673,23 @@ function NGL_GetSelection(sel_str, model) {
   //doesnt work with model onmly?
   var ngl_sele = "";
   sel_str = sel_str.replace("(","").replace(")","")
-  if ( sel_str.includes(":") || sel_str.includes("or") || sel_str.includes("and") ) {ngl_sele = sel_str;}
+  if ( sel_str.includes(":") || sel_str.includes("or") || sel_str.includes("and") || sel_str.includes("/")) {ngl_sele = sel_str;}
   else {
     if (sel_str && sel_str !== "") {
-    //convert to ngl selection string
-    var ch_sel = "(";
-    var sp = sel_str.split(",");
-    for (var i = 0; i < sp.length; i++) {
-      var el = sp[i].split("!");
-      console.log("el ",el);
-      if (el.includes("/")) continue;
-      if (el[0] === "") {
-        ch_sel += " not ";
-        if (/[0-9a-zA-Z]/.test(el[1])) ch_sel += ":" + el[1].replace(":","") + " and ";
+    //convert to ngl selection string.
+      var ch_sel = "(";
+      var sp = sel_str.split(",");
+      for (var i = 0; i < sp.length; i++) {
+        var el = sp[i].split("!");
+        console.log("el ",el);
+        if (el[0] === "") {
+          ch_sel += " not ";
+          if (/[0-9a-zA-Z]/.test(el[1])) ch_sel += ":" + el[1].replace(":","") + " and ";
+        }
+        else if (/[0-9a-zA-Z]/.test(el[0])) ch_sel += ":" + el[0].replace(":","") + "  or ";
       }
-      else if (/[0-9a-zA-Z]/.test(el[0])) ch_sel += ":" + el[0].replace(":","") + "  or ";
-    }
-    ngl_sele = ch_sel.slice(0, -5) + ")";
-    console.log("ngl_sele ",ngl_sele);
+      ngl_sele = ch_sel.slice(0, -5) + ")";
+      console.log("ngl_sele ",ngl_sele);
   }
     if (model && model !== "") {
       ngl_sele += " and /" + model;
@@ -1487,9 +1486,10 @@ function NGL_ShowMeshVFN(mesh) {
 }
 
 function NGL_applyBUtoMesh(nglobj,meshobj){
-  var ass=assembly_elem.selectedOptions[0].value;
-  console.log(nglobj.object.biomolDict[ass].partList.length);
-  console.log(nglobj.object.biomolDict[ass]);
+  var ass=nglobj.assembly;
+  //console.log(nglobj.object.biomolDict[ass].partList.length);
+  //console.log(nglobj.object.biomolDict[ass]);
+  if (!(ass in nglobj.object.biomolDict)) return meshobj;
   var newpos=[]
   var newindices=[]
   var newnormals=[]
@@ -1555,65 +1555,121 @@ function NGL_buildCMS_cb(nglobject){
   function myStopFunction() {
       clearInterval(myVar);
   }
+}
 
-  function myTimerToGetTHeBuffer() {
-      var arep = stage.getRepresentationsByName("cms_surface").list[0];
-      var surf;
-      console.log(arep)
-      if (arep) {
-        surf = arep.repr.surface;
-        console.log(surf)
+function myTimerToGetTHeBuffer(o,aStopFunction,clean) {
+    console.log("cms_surface_"+o.name);
+    var arep = stage.getRepresentationsByName("cms_surface_"+o.name).list[0];
+    var surf;
+    console.log(arep)
+    if (!arep) return;
+    if (arep) surf = arep.repr.surface;
+    if (!surf) {
+      if (arep.repr.dataList.length)
+        {
+          surf = arep.repr.dataList[0].info.surface;
+        }
+    }
+    if (surf) {
+      //change the position according the bu ? append indexes
+      var mesh = {"verts":(surf.position)?Array.from(surf.position):null,
+                  "faces":(surf.index)?Array.from(surf.index):null,
+                  "normals":(surf.normal)?Array.from(surf.normal):null }
+      console.log("MESH:", mesh);
+      if (o.assembly==="SUPERCELL" || o.node.data.buildtype === "supercell") {
+          //do nothing
       }
-      if (!surf) {
-        if (arep.repr.dataList.length)
-          {
-            surf = arep.repr.dataList[0].info.surface;
-          }
+      else if (o.assembly!=="AU") {
+        mesh = NGL_applyBUtoMesh(o,mesh);
       }
-      if (surf) {
-        //change the position according the bu ? append indexes
-        var mesh = {"verts":(surf.position)?Array.from(surf.position):null,
-                    "faces":(surf.index)?Array.from(surf.index):null,
-                    "normals":(surf.normal)?Array.from(surf.normal):null }
-        console.log("MESH:", mesh);
-        if (nglobject.assembly==="SUPERCELL" || nglobject.node.data.buildtype === "supercell") {
-            //do nothing
+      else {
+        //recenter the verts
+        var center = o.position;
+        for (var v = 0;v<mesh.verts.length/3;v++){
+              mesh.verts[v*3]=mesh.verts[v*3]+center.x;
+              mesh.verts[v*3+1]=mesh.verts[v*3+1]+center.y;
+              mesh.verts[v*3+2]=mesh.verts[v*3+2]+center.z;
+              //mesh.normals[v*3]=-mesh.normals[v*3];
+              //mesh.normals[v*3+1]=-mesh.normals[v*3+1];
+              //mesh.normals[v*3+2]=-mesh.normals[v*3+2];
         }
-        else if (nglobject.assembly!=="AU") {
-          mesh = NGL_applyBUtoMesh(nglobject,mesh);
-        }
-        else {
-          //recenter the verts
-          var center = nglobject.position;
-          for (var v = 0;v<mesh.verts.length/3;v++){
-                mesh.verts[v*3]=mesh.verts[v*3]+center.x;
-                mesh.verts[v*3+1]=mesh.verts[v*3+1]+center.y;
-                mesh.verts[v*3+2]=mesh.verts[v*3+2]+center.z;
-                //mesh.normals[v*3]=-mesh.normals[v*3];
-                //mesh.normals[v*3+1]=-mesh.normals[v*3+1];
-                //mesh.normals[v*3+2]=-mesh.normals[v*3+2];
-          }
-        }
-        console.log("MESH:", mesh);
-        //NGL_ShowMeshVFN(mesh);
-        if (nglobject.node) {
-          nglobject.node.data.geom = mesh; //v,f,n directly
-          nglobject.node.data.geom_type = "raw"; //mean that it provide the v,f,n directly
-        }
-        //hide or destroy?
-        stage.getRepresentationsByName("cms_surface").dispose();
-        myStopFunction();
       }
+      console.log("MESH:", mesh);
+      if (!clean) NGL_ShowMeshVFN(mesh);
+      if (o.node) {
+        o.node.data.geom = mesh; //v,f,n directly
+        o.node.data.geom_type = "raw"; //mean that it provide the v,f,n directly
+      }
+      //hide or destroy?
+      stage.getRepresentationsByName("cms_surface_"+o.name).dispose();
+      if (clean) stage.removeComponent(o);
+      aStopFunction();
+    }
+}
+
+function NGL_setCMSBufferGeom(o){
+  var arep = stage.getRepresentationsByName("cms_surface_"+o.name).list[0];
+  console.log("arep:", arep);
+  console.log("surf:", arep.repr.surface);
+  if (arep.repr.dataList.length) console.log("data surf:", arep.repr.dataList[0].info.surface);
+  var surf;
+  if (!arep) return;
+  if (arep) surf = arep.repr.surface;
+  if (!surf) {
+    if (arep.repr.dataList.length)
+      {
+        surf = arep.repr.dataList[0].info.surface;
+      }
+  }
+  console.log("surf:", surf);
+  if (surf) {
+    //change the position according the bu ? append indexes
+    var mesh = {"verts":(surf.position)?Array.from(surf.position):null,
+                "faces":(surf.index)?Array.from(surf.index):null,
+                "normals":(surf.normal)?Array.from(surf.normal):null }
+    console.log("MESH:", mesh);
+    if (o.assembly ==="SUPERCELL" || o.node.data.buildtype === "supercell") {
+        //do nothing
+    }
+    else if (o.assembly!=="AU") {
+      mesh = NGL_applyBUtoMesh(o, mesh);
+    }
+    else {
+      //recenter the verts
+      var center = o.position;
+      for (var v = 0;v<mesh.verts.length/3;v++){
+            mesh.verts[v*3]=mesh.verts[v*3]+center.x;
+            mesh.verts[v*3+1]=mesh.verts[v*3+1]+center.y;
+            mesh.verts[v*3+2]=mesh.verts[v*3+2]+center.z;
+      }
+    }
+    console.log("MESH:", mesh);
+    //NGL_ShowMeshVFN(mesh);
+    if (o.node) {
+      o.node.data.geom = mesh; //v,f,n directly
+      o.node.data.geom_type = "raw"; //mean that it provide the v,f,n directly
+    }
+    //hide or destroy?
+    stage.getRepresentationsByName("cms_surface").dispose();
   }
 }
 
+function NGL_setCMSBufferGeomTimer(o)
+{
+  var myVar = null;
+  function myStopFunction() {
+      clearInterval(myVar);
+  }
+  myVar = setInterval( function() { myTimerToGetTHeBuffer(o,myStopFunction,true); }, 1000 );
+}
+
 function NGL_buildCMS(){
-  stage.getRepresentationsByName("cms_surface").dispose();
+  stage.getRepresentationsByName("cms_surface_"+ngl_current_structure.name).dispose();
   //return RepresentationComponent
   var rep = ngl_current_structure.addRepresentation("surface", {
       //colorScheme: color_elem.selectedOptions[0].value,
       sele: sele_elem.value,
-      name: "cms_surface",
+      name: "cms_surface_"+ngl_current_structure.name,
       assembly: assembly_elem.selectedOptions[0].value,
       surfaceType: "edt",
       smooth: 2,
@@ -1625,58 +1681,12 @@ function NGL_buildCMS(){
       lowResolution: true,
     });
   ngl_current_structure.autoView();
-  var myVar = setInterval(myTimerToGetTHeBuffer, 1000);
+  var myVar = null;
   function myStopFunction() {
       clearInterval(myVar);
   }
-
-  function myTimerToGetTHeBuffer() {
-      var arep = stage.getRepresentationsByName("cms_surface").list[0];
-      var surf;
-      console.log(arep)
-      if (!arep) return;
-      if (arep) surf = arep.repr.surface;
-      if (!surf) {
-        if (arep.repr.dataList.length)
-          {
-            surf = arep.repr.dataList[0].info.surface;
-          }
-      }
-      if (surf) {
-        //change the position according the bu ? append indexes
-        var mesh = {"verts":(surf.position)?Array.from(surf.position):null,
-                    "faces":(surf.index)?Array.from(surf.index):null,
-                    "normals":(surf.normal)?Array.from(surf.normal):null }
-        console.log("MESH:", mesh);
-        if (assembly_elem.selectedOptions[0].value==="SUPERCELL" || node_selected.data.buildtype === "supercell") {
-            //do nothing
-        }
-        else if (assembly_elem.selectedOptions[0].value!=="AU") {
-          mesh = NGL_applyBUtoMesh(ngl_current_structure,mesh);
-        }
-        else {
-          //recenter the verts
-          var center = ngl_current_structure.position;
-          for (var v = 0;v<mesh.verts.length/3;v++){
-                mesh.verts[v*3]=mesh.verts[v*3]+center.x;
-                mesh.verts[v*3+1]=mesh.verts[v*3+1]+center.y;
-                mesh.verts[v*3+2]=mesh.verts[v*3+2]+center.z;
-                //mesh.normals[v*3]=-mesh.normals[v*3];
-                //mesh.normals[v*3+1]=-mesh.normals[v*3+1];
-                //mesh.normals[v*3+2]=-mesh.normals[v*3+2];
-          }
-        }
-        console.log("MESH:", mesh);
-        NGL_ShowMeshVFN(mesh);
-        if (node_selected) {
-          node_selected.data.geom = mesh; //v,f,n directly
-          node_selected.data.geom_type = "raw"; //mean that it provide the v,f,n directly
-        }
-        //hide or destroy?
-        stage.getRepresentationsByName("cms_surface").dispose();
-        myStopFunction();
-      }
-  }
+  myVar = setInterval( function() { myTimerToGetTHeBuffer(ngl_current_structure,myStopFunction,false); }, 1000 );
+  //var myVar = setInterval(myTimerToGetTHeBuffer, 1000);
 }
 
 function NGL_getCollada_cb(scene) {
@@ -2333,12 +2343,12 @@ function buildWithKmeans(o, center, ncluster) {
   //center the selection?
   var clusters = kmeans.run(dataset, ncluster);
   //center = o.position;//negatif?
-  console.log(bu, clusters);
+  console.log(bu, clusters,o.assembly,o.node.data.buildtype);
   if (!bu) {
     return NGL_ClusterToBeads(clusters, o, center,dataset);
   }
   else {
-    if (assembly_elem.selectedOptions[0].value==="SUPERCELL" || node_selected.data.buildtype === "supercell") {
+    if (o.assembly==="SUPERCELL" || o.node.data.buildtype === "supercell") {
       //should we use litemol here?
       return NGL_ClusterToBeads(clusters, o, new NGL.Vector3(0),dataset);
     }
@@ -2396,10 +2406,10 @@ function NGL_applybuToclusters(o,clusters,center,dataset){
     //pos[pos.length] = sph.center.z-center.z;
     //rad[rad.length] = sph.radius;
     //add as many as matrixList.
-    console.log(o.object.biomolDict[o.assembly].partList.length);
-    console.log(o.object.biomolDict[o.assembly]);
+    //console.log(o.object.biomolDict[o.assembly].partList.length);
+    //console.log(o.object.biomolDict[o.assembly]);
     for (var j = 0; j < o.object.biomolDict[o.assembly].partList.length; j++) {
-      console.log(o.object.biomolDict[o.assembly].partList[j].matrixList.length);
+      //console.log(o.object.biomolDict[o.assembly].partList[j].matrixList.length);
       for (var k = 0; k < o.object.biomolDict[o.assembly].partList[j].matrixList.length; k++) {
         var mat = o.object.biomolDict[o.assembly].partList[j].matrixList[k];
         var new_pos = new NGL.Vector3(sph.center.x, sph.center.y, sph.center.z);
@@ -2667,6 +2677,7 @@ function NGL_GetBUCenter(nglobj,ass){
   var center_bu=new NGL.Vector3();
   var center=new NGL.Vector3();
   var bucount=0;
+  if (!(ass in nglobj.structure.biomolDict)) return chain_center;
   if (ass==="AU") return chain_center;
   for (var j = 0; j < nglobj.object.biomolDict[ass].partList.length; j++) {
     console.log(nglobj.object.biomolDict[ass].partList[j].matrixList.length);
@@ -2775,6 +2786,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
 
         sele = ngl_current_structure.object.biomolDict[assembly].getSelection().string;
       }
+      ngl_current_structure.node = ngl_current_node;
       ngl_current_structure.sele = sele;
       ngl_current_structure.assembly = assembly;
       //const symmetryData = NGL_processSymmetry(o.symmetry)
@@ -3178,7 +3190,7 @@ function NGL_getUrlStructure(anode,pdbname){
 }
 
 function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
-    console.log("headless load ?");
+    console.log("headless load ?",purl,aname,sel_str);
     if (anode.data.surface) {
       if (aname.length === 4){
         if (anode.data.opm === 1){
@@ -3213,7 +3225,7 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
     }
     var sele = "";
     if (sel_str && sel_str != "") {
-      sele = NGL_GetSelection(sel_str,"");
+      sele = NGL_GetSelection(sel_str,anode.data.source.model);
       //get NGL string selection
     }
     //selection and supercell?
@@ -3233,6 +3245,7 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
     console.log("before stage load ?",sele, purl, params);
     stage.loadFile(purl, params).then(function(o) {
       console.log("then stage load ?",sele,assembly);
+      if (!(assembly in o.structure.biomolDict)) assembly = "AU";
       if (sele === ""  && assembly !== "AU"){
         //take the chain selection from the bu
         sele = o.structure.biomolDict[assembly].getSelection().string;
@@ -3240,7 +3253,7 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
       o.node = anode;
       o.sele = sele;
       o.assembly = assembly;
-      console.log("NGL_GetGeometricCenter",sele);
+      console.log("NGL_GetGeometricCenter",sele,assembly);
       var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
       o.gcenter = center;
       if (assembly !== "AU") center = NGL_GetBUCenter(o,assembly);
@@ -3264,10 +3277,27 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
       anode.data.pos[0] = JSON.parse(JSON.stringify(_pos));
       anode.data.radii[0] = JSON.parse(JSON.stringify(_rad));
       console.log("kmeans done with 10 cluster ",anode.data.pos);
+      //build the CMS Representation
+      var rep = o.addRepresentation("surface", {
+          //colorScheme: color_elem.selectedOptions[0].value,
+          sele: sele,
+          name: "cms_surface_"+aname,
+          assembly: assembly,
+          surfaceType: "edt",
+          smooth: 2,
+          probeRadius: 1.0,
+          scaleFactor: cms_scale,
+          flatShaded: false,
+          opacity: 1.0,
+          useWorker: false,
+          lowResolution: true,
+        });
     }).then(function(){
+        console.log(aname);
         var o = stage.getComponentsByName(aname).list[0];
-        //NGL_buildCMS_cb(o);
-        stage.removeComponent(o);
+        console.log(o);
+        NGL_setCMSBufferGeomTimer(o);//wait ?
+        //stage.removeComponent(o);
         //do next
         document.getElementById("stopbeads_lbl").innerHTML = "building " + current_compute_index + " / " + graph.nodes.length;
         if (NextComputeIgredient() && (!(stop_current_compute))) {
@@ -3322,7 +3352,7 @@ function NGL_buildLoopAsync() {
     (!d.data.geom || d.data.geom === "None" ||
       d.data.geom === "null" || d.data.geom === "")) {
     //formData.append("cms", true);
-    //docms = true;
+     docms = true;
   }
 
   if (!d.children && "data" in d &&

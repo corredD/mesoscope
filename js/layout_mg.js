@@ -226,11 +226,14 @@ var gridoptions = ''
   '<button style="width:20%;" id="QueryBtn_3" onclick="refineQuery(this)">search</button></div>'+
   '<div style="display:flex"><input type="text""  style="width:100%;" placeholder="PDB_Query" id="Query_4" onchange="refineQuery(this)"/>' +
   '<button style="width:20%;" id="QueryBtn_4" onclick="refineQuery(this)">search</button></div>'+
-  '<div style="display:flex">'+
-  '<label for="sequence_search"> Use Sequence Blast PDB Search </label><input type="checkbox" name="sequence_search" id="sequence_search">' +
-  '<label for="sequence_mapping"> Setup mapping uniprot-PDB resnum </label><input type="checkbox" name="sequence_mapping" id="sequence_mapping" checked>' +
-  '<label for="pdb_component_enable"> Update PDB component library </label><input type="checkbox" name="pdb_component_enable" id="pdb_component_enable" checked>' +
-  '<button style="width:20%;" id="UpdatePDBcomponent" onclick="NGL_UpdatePDBComponent(this)">Update Component</button>'+
+  '<div style="display:list-item">'+
+    //'<label for="sequence_search"> Use Sequence Blast PDB Search </label>' +
+    '<div><input type="checkbox" name="sequence_search" id="sequence_search">Use Sequence Blast PDB Search</input></div>' +
+    //'<label for="sequence_mapping"> Setup mapping uniprot-PDB resnum </label>' +
+    '<div><input type="checkbox" name="sequence_mapping" id="sequence_mapping" checked>Setup mapping uniprot-PDB resnum</input></div>' +
+    //'<label for="pdb_component_enable"> Update PDB component library </label>' +
+    '<div><input type="checkbox" name="pdb_component_enable" id="pdb_component_enable" checked> Update PDB component library</input></div>' +
+    '<div><button id="UpdatePDBcomponent" onclick="NGL_UpdatePDBComponent(this)">Update Component</button></div>'+
   '</div>'+
   '</div>'+
   '<label id="LoaderTxt" class="hidden" for="aloader"></label>' +
@@ -243,8 +246,8 @@ var gridoptions = ''
   '   <button onclick="stopAll()">Stop query search</button>' +
   '	</div>'+
   ' <img wicth="250" height="250" class="hidden" id="imagepdbclone" src=""/>'+
-  ' <button style="display:block;" onclick="query_BuildAll()">AutoFix Recipe (geometry, beads, ...) </button>' + getSpinner("stopbeads","stopBeads()")+
-  ' <button style="display:block;" onclick="query_ClearAll()">Reset Geometry and Beads</button>' + getSpinner("stopbeads","stopBeads()")
+  ' <button style="display:block;" onclick="query_ClearAll()">Reset Geometry and Beads</button>' + getSpinner("stopbeads","stopBeads()")+
+  ' <button style="display:block;" onclick="query_BuildAll()">AutoFix Recipe (geometry, beads, ...) </button>' + getSpinner("stopbeads","stopBeads()")
 
 
 //	+'</div>'
@@ -465,7 +468,7 @@ var myLayout,
 var usesavedState = true;
 var usesavedSession = true;
 var savedRecipe = localStorage.getItem('savedRecipe');
-var current_version = {"version":1.007};
+var current_version = {"version":1.008};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()
