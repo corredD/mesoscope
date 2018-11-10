@@ -438,6 +438,38 @@ function Util_halton(index, base) {
     }
     return result;
 };
+/*z = RNG.rand(1, N) * (1 - cos(coneAngle)) + cos(coneAngle);
+phi = RNG.rand(1, N) * 2 * pi;
+x = sqrt(1-z.^2).*cos(phi);
+y = sqrt(1-z.^2).*sin(phi);
+*/
+function Util_coneSample_uniform(coneAngleDegree, coneDir, N){
+  if (!coneDir) {
+    coneDir = new THREE.Vector3(0,0,1);
+  }
+  if (!N) N = 1;
+  //rng Math.random();
+  var coneAngle = coneAngleDegree * Math.PI/180.0;
+  var z = Math.random() * (1 - Math.cos(coneAngle)) + Math.cos(coneAngle);
+  var phi = Math.random() * 2 * Math.PI; //theta
+  var x = Math.sqrt(1.0-z*z)*Math.cos(phi);
+  var y = Math.sqrt(1.0-z*z)*Math.sin(phi);
+  var new_points = new NGL.Vector3(x,y,z);
+  //get  the rotation from [0;0;1] to coneDir
+  //var rotation = Util_computeOrientation(new THREE.Vector3(0,0,1),coneDir);
+  var rotation = new THREE.Quaternion().setFromUnitVectors (new THREE.Vector3(0,0,1),coneDir);
+  new_points.applyQuaternion( rotation );
+  return new_points;
+}
+
+function Util_sphereSample_uniform(u, v) {
+    var theta = 2 * Math.PI * u;
+    var phi = Math.acos(1 - 2 * v);
+    var x = Math.sin(phi) * Math.cos(theta);
+    var y = Math.sin(phi) * Math.sin(theta);
+    var z = Math.cos(phi);
+    return new NGL.Vector3(x,y,z);
+ }
 
 //from http://stackoverflow.com/questions/1171849/finding-quaternion-representing-the-rotation-from-one-vector-to-another
 function Util_orthogonal(v)
