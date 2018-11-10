@@ -28,6 +28,10 @@ var copy_number=20;
 var num_instances=0;
 var num_beads_total=0;
 var scene, ambientLight, light, camera, controls, renderer;
+var hemiLight;
+var hemiLightHelper;
+var dirLight;
+var dirLightHeper;
 var effect;
 var amesh;
 var clipPlane;
@@ -125,6 +129,7 @@ var imposter_vertex="precision highp float;\n\
     gl_Position = VP  * vec4( billboardVertexWorldPos.xyz , 1.0 );\n\
     vPosition = billboardVertexWorldPos;\n\
   }\n";
+
 var imposter_fragment="#include <logdepthbuf_pars_fragment>\n\
   #include <packing>\n\
   precision highp float;\n\
@@ -229,6 +234,8 @@ var points_vertex=" uniform float psize;\n\
     vViewPosition = - mvPosition.xyz;\n\
     gl_Position = projectionMatrix * mvPosition;\n\
 }";
+
+
 var points_fragment="#include <common>\n\
  varying vec3 vColor;\n\
  varying vec3 vViewPosition;\n\
@@ -889,7 +896,11 @@ function distributesMesh(){
   if (!inited) initDebugGrid();
   for (var i=0;i<n;i++){//nodes.length
     console.log(i,nodes[i].data.name);
-    if (nodes[i].data.ingtype == "fiber") continue;
+    if (nodes[i].data.ingtype == "fiber") {
+      //random walk in the grid ?
+      GP_walk(i,nodes[i],start,count,5.0,1000);
+      continue;
+    }
     if (nodes[i].children!== null && nodes[i].parent === null) continue;
     if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
         //use NGL to load the object?
@@ -1032,6 +1043,13 @@ function updateOneMesh(meshGeometry,anode,start,count) {
     console.log("ok update mesh instances");
 }
 
+//we should be able to setup preplaced objects as well.
+function GP_setupCurve(){
+  //https://github.com/mrdoob/three.js/blob/master/examples/webgl_geometry_extrude_splines.html
+  //or instance instance buffer ? with https://github.com/mattdesl/parametric-curves/
+  //start with Curve->Geometry and see how it goes. Could use instancebuffer system
+}
+
 function createOneMesh(anode,start,count) {
   //this assume the geom_type is raw
   var color = [1,0,0];
@@ -1146,6 +1164,81 @@ function addAtoms(anode,pid,start,o){
   }, new NGL.Selection(asele));
   return count;
 }
+
+//scale ?
+//need to add the beads as single beads ? attached beads
+//thjis ispurely random no constraiunts!
+function GP_walk(pid,anode,start,count,angle,totalLength){
+      //should we used set of rigid-body attached or uniq-beads
+      //start with beads
+      var array_points =[];
+      var inside = false;
+      var w = world.broadphase.resolution.x * world.radius * 2;
+      var h = world.broadphase.resolution.y * world.radius * 2;
+      var d = world.broadphase.resolution.z * world.radius * 2;
+      var radius = 34.0/2.0*ascale;
+      var ulength = 34.0*ascale;
+      //var angle = 25.0;
+      //coneAngle = coneAngleDegree * pi/180;
+      //var totalLength = 1000;//1000*uLength
+      var x = -boxSize.x + Util_halton(start,2)*w;
+      var y =  Util_halton(start,3)*h;
+      var z = -boxSize.z + Util_halton(start,5)*d;
+      var starting_point = new THREE.Vector3(x,y,z);
+      //var previous_point = new THREE.Vector3(x,y,z);//new THREE.Vector3(0,0,ulength);
+      var next_point = new THREE.Vector3(0,0,0);
+      var rnd = Util_sphereSample_uniform(Math.random(), Math.random());
+      rnd.normalize()
+      rnd.multiplyScalar(ulength);
+      next_point.addVectors(starting_point, rnd);
+      previous_point = next_point.clone();
+      console.log("starting_point",starting_point);
+      console.log("next_point",next_point);
+      if (anode.parent.data.insides && anode.parent.data.insides.length !==0 ){
+          inside=true;
+          var h = Math.random() * anode.parent.data.insides.length;//Util_halton(bodyId,2)*anode.parent.data.insides.length+1;
+          var qi = anode.parent.data.insides[Math.round(h)];//bodyId-start];//Math.round(h)];//master_grid_id[
+          //qi to XYZ
+          var xyz = GP_uToWorldCoordinate(qi);
+          //jitter
+          var jitter = [Math.random()*ascale,Math.random()*ascale,Math.random()*ascale];
+          x = xyz[0]*ascale+jitter[0];
+          y = xyz[1]*ascale+jitter[1];
+          z = xyz[2]*ascale+jitter[2];
+          starting_point = new THREE.Vector3(x,y,z);
+      }
+      console.log(starting_point);
+      var direction = rnd.clone();
+      direction.normalize ();
+      for (var i = 0;i < totalLength;i++) {
+        //console.log("direction",direction);
+        var new_point = Util_coneSample_uniform(angle,direction,1);
+        //console.log("new_point",new_point);
+        new_point.normalize();
+        new_point.multiplyScalar(ulength);
+        //console.log("new_point scaled",new_point);
+        next_point.addVectors(previous_point,new_point);
+        //console.log("next_point",next_point);
+        previous_point = next_point.clone();
+        array_points.push(next_point.clone());
+        direction = new_point.clone();
+        direction.normalize ();
+      }
+      //pass the array point to viewer
+      var spline = new THREE.CatmullRomCurve3( array_points );
+      if (!anode.data.curves) anode.data.curves = [];
+      var amaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+      var tubeGeometry = new THREE.TubeBufferGeometry( spline, 100, radius, 4, false );
+      var mesh = new THREE.Mesh( tubeGeometry, amaterial );
+      scene.add(mesh);
+      //var points = curve.getPoints( 50 );
+      var lgeometry = new THREE.BufferGeometry().setFromPoints( array_points );
+      var lmaterial = new THREE.LineBasicMaterial( { color : 0xff0000 } );
+      var curveObject = new THREE.Line( lgeometry, lmaterial );
+      scene.add(curveObject);
+      anode.data.curves.push({"points":array_points,"spline":spline,"mesh":mesh,"line":curveObject});
+}//
+//scene.remove(nodes[1].data.curves[0].line);scene.remove(nodes[1].data.curves[0].mesh);nodes[1].data.curves = [];GP_walk(1,nodes[1],0,1,5000)
 
 function GP_getInertiaOneSphere(x,y,z){
   var r = radius;
@@ -1610,6 +1703,54 @@ function setupSSAOGui(agui){
   */
 }
 
+function GP_defaultLight(){
+  light = new THREE.DirectionalLight();
+  light.castShadow = true;
+  light.shadow.mapSize.width = light.shadow.mapSize.height = 1024;
+  var d = 0.5;
+  light.shadow.camera.left = - d;
+  light.shadow.camera.right = d;
+  light.shadow.camera.top = d;
+  light.shadow.camera.bottom = - d;
+  light.shadow.camera.far = 100;
+  light.position.set(1,1,1);
+  scene.add(light);
+
+  ambientLight = new THREE.AmbientLight( 0xa6a4a4 );
+  //scene.add( ambientLight );
+  //white ?
+}
+
+function GP_setupLight(){
+  // LIGHTS
+	hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.7 );
+	hemiLight.color.setHSL( 0.6, 1, 0.6 );
+	hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
+	hemiLight.position.set( 0, 2, 0 );
+	scene.add( hemiLight );
+	//hemiLightHelper = new THREE.HemisphereLightHelper( hemiLight, 10 );
+	//scene.add( hemiLightHelper );
+	//
+	//dirLight = new THREE.DirectionalLight( 0xffffff, 1 );
+	light.color.setHSL( 0.1, 1, 0.95 );
+	light.position.set( - 1, 1.75, 1 );
+	light.position.multiplyScalar( 30 );
+	//scene.add( dirLight );
+	light.castShadow = true;
+	light.shadow.mapSize.width = 2048;
+	light.shadow.mapSize.height = 2048;
+	/*var d = 50;
+	dirLight.shadow.camera.left = - d;
+	dirLight.shadow.camera.right = d;
+	dirLight.shadow.camera.top = d;
+	dirLight.shadow.camera.bottom = - d;
+	dirLight.shadow.camera.far = 3500;
+	dirLight.shadow.bias = - 0.0001;
+  */
+	//dirLightHeper = new THREE.DirectionalLightHelper( light, 10 );
+	//scene.add( dirLightHeper );
+}
+
 function GP_initRenderer(){
   if (!stage) {
     stage = new NGL.Stage("container");
@@ -1632,11 +1773,12 @@ function GP_initRenderer(){
   console.log("renderer",dm);
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio || 1 );
-  renderer.setSize( dm.width, dm.height );
+  renderer.setSize( 2048, 2048 );//full size ?
   renderer.shadowMap.enabled = true;
+  renderer.shadowMapEnabled = true;
   renderer.gammaInput = true;
   renderer.gammaOutput = true;
-  renderer.physicallyBasedShading = true;
+  renderer.physicallyBasedShading = false;
   renderer.localClippingEnabled = true;
   clipPlanes = [
     new THREE.Plane( new THREE.Vector3( 0, 0, 1 ), 0 )
@@ -1663,21 +1805,9 @@ function GP_initRenderer(){
   //renderer.setClearColor(0x050505, 1.0);
   //renderer.setClearColor(0xffffff, 1.0);//ambientLight.color,
 
-  light = new THREE.DirectionalLight();
-  light.castShadow = true;
-  light.shadow.mapSize.width = light.shadow.mapSize.height = 1024;
-  var d = 0.5;
-  light.shadow.camera.left = - d;
-  light.shadow.camera.right = d;
-  light.shadow.camera.top = d;
-  light.shadow.camera.bottom = - d;
-  light.shadow.camera.far = 100;
-  light.position.set(1,1,1);
-  scene.add(light);
-
-  ambientLight = new THREE.AmbientLight( 0xa6a4a4 );
-  scene.add( ambientLight );
-  //white ?
+  //Lighting
+  GP_defaultLight();
+  GP_setupLight();
 
   camera = new THREE.PerspectiveCamera( 30, dm.width / dm.height, 0.01, 100 );
   camera.position.set(0,0.6,1.4);
@@ -1709,6 +1839,7 @@ function GP_initRenderer(){
   if (!gp_mouse) gp_mouse = new THREE.Vector2();
   //THREEx.FullScreen.bindKey({ charCode : 'm'.charCodeAt(0) });
   //effect = new THREE.OutlineEffect( renderer );
+  GP_onWindowResize();
 }
 
 //1024,1024,128
@@ -1933,7 +2064,7 @@ function init(){
 			dottedMaterial = createShaderMaterial( "dotted", light, ambientLight );
       //toonMaterial1 = createMeshIngrMaterial(amaterial, light, ambientLight),
 			//dottedMaterial2 = createShaderMaterial( "dotted", light, ambientLight );
-      //toonMaterial1.uniforms.uBaseColor.value.setHSL( 0.4, 1, 0.75 );
+      toonMaterial1.uniforms.uBaseColor.value.setHSL( 0.4, 1, 0.75 );
 			hatchingMaterial2.uniforms.uBaseColor.value.setRGB( 0, 0, 0 );
 			hatchingMaterial2.uniforms.uLineColor1.value.setHSL( 0, 0.8, 0.5 );
 			hatchingMaterial2.uniforms.uLineColor2.value.setHSL( 0, 0.8, 0.5 );
@@ -2001,6 +2132,7 @@ function init(){
 		//					} );
 
     all_materials["default"] = {m:meshMaterial,h: 0.1, s: 1, l: 0.5};
+    //all_materials["meshtoon"] = {m:amaterial,h: 0.1, s: 1, l: 0.5};
     current_material = "default";//"toon2";
 
     customDepthMaterial = new THREE.ShaderMaterial({
@@ -2121,6 +2253,7 @@ function GP_onWindowResize() {
   camera.aspect = dm.width/dm.height;
   camera.updateProjectionMatrix();
   renderer.setSize( dm.width, dm.height );
+  renderer.setPixelRatio( window.devicePixelRatio );
 }
 
 function animate( time ) {
@@ -2416,6 +2549,13 @@ function initGUI(){
       var nMeshs = keys.length;
       for (var i=0;i<nMeshs;i++) {
         meshMeshs[i].material = mat.m;
+        /*if (!(meshMeshs[i].eHelper))
+        {
+          //THREE.EdgesGeometry
+          meshMeshs[i].eHelper = new THREE.EdgesHelper( meshMeshs[i], 0xffffff );
+          meshMeshs[i].eHelper.material.linewidth = 2;
+          scene.add( meshMeshs[i].eHelper );
+        }*/
         //meshMeshs[i].material.uniform.uBaseColor = new THREE.Color(nodes[keys[i]].data.color[0],nodes[keys[i]].data.color[1],nodes[keys[i]].data.color[2]);
       }
     };
@@ -2462,7 +2602,9 @@ function initGUI(){
     // Shadow rendering
     renderer.shadowMap.autoUpdate = controller.renderShadows;
     if(!controller.renderShadows){
-      renderer.clearTarget(light.shadow.map);
+      renderer.setRenderTarget(light.shadow.map);
+      renderer.clear();
+    //  renderer.clearTarget(light.shadow.map);
     }
 
     // Interaction

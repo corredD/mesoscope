@@ -1670,7 +1670,9 @@ var shared = "float Epsilon = 1e-10;\n\
 				//clear the render target ?
 				for (var texture in this.textures) {
     			if (this.textures.hasOwnProperty(texture)) {
-        			this.renderer.clearTarget( this.textures[texture], true, true, true );
+							this.renderer.setRenderTarget(this.textures[texture]);
+							this.renderer.clear(true, true, true);
+        		//	this.renderer.clearTarget( this.textures[texture], true, true, true );
 			    }
 				}
 				//this.particleCount current particle count
@@ -2001,7 +2003,9 @@ var shared = "float Epsilon = 1e-10;\n\
 	        var renderer = this.renderer;
 	        var buffers = renderer.state.buffers;
 	        var gl = renderer.context;
-	        renderer.clearTarget( gridTexture, true, false, true );
+					renderer.setRenderTarget(gridTexture);
+					renderer.clear(true, false, true);
+	        //renderer.clearTarget( gridTexture, true, false, true );
 	        buffers.depth.setTest( false );
 	        buffers.depth.setMask( false ); // dont draw depth
 	        buffers.color.setMask( false ); // dont draw color
@@ -2050,7 +2054,9 @@ var shared = "float Epsilon = 1e-10;\n\
 
 	        var renderer = this.renderer;
 	        renderer.setClearColor(0x000000, 1.0);
-	        renderer.clearTarget( this.textures.grid, true, false, true ); // color, depth, stencil
+					renderer.setRenderTarget(this.textures.grid);
+					renderer.clear(true, false, true);
+	        //renderer.clearTarget( this.textures.grid, true, false, true ); // color, depth, stencil
 	        var buffers = renderer.state.buffers;
 	        var gl = renderer.context;
 	        buffers.depth.setTest( false );
@@ -2325,7 +2331,9 @@ var shared = "float Epsilon = 1e-10;\n\
 	        // Add force to bodies
 	        buffers.depth.setTest( false );
 	        buffers.stencil.setTest( false );
-	        renderer.clearTarget(this.textures.bodyForce, true, true, true ); // clear the color only?
+					renderer.setRenderTarget(this.textures.bodyForce);
+					renderer.clear(true, true, true);
+	        //renderer.clearTarget(this.textures.bodyForce, true, true, true ); // clear the color only?
 	        this.mapParticleToBodyMesh.material = this.materials.addForceToBody;
 	        addForceToBodyMaterial.uniforms.relativeParticlePosTex.value = this.textures.particlePosRelative.texture;
 	        addForceToBodyMaterial.uniforms.particleForceTex.value = this.textures.particleForce.texture;
@@ -2356,7 +2364,9 @@ var shared = "float Epsilon = 1e-10;\n\
 	        }
 
 	        // Add torque to bodies
-	        renderer.clearTarget(this.textures.bodyTorque, true, true, true ); // clear the color only?
+					renderer.setRenderTarget(this.textures.bodyTorque);
+					renderer.clear(true, true, true);
+	        //renderer.clearTarget(this.textures.bodyTorque, true, true, true ); // clear the color only?
 	        this.mapParticleToBodyMesh.material = addTorqueToBodyMaterial;
 	        addTorqueToBodyMaterial.uniforms.relativeParticlePosTex.value = this.textures.particlePosRelative.texture;
 	        addTorqueToBodyMaterial.uniforms.particleForceTex.value = this.textures.particleForce.texture;
