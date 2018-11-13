@@ -408,8 +408,8 @@ li {
 }
 
 .NGLOptions {
-  width:30%;
-  min-width: 30%;
+  width:100%;
+  //min-width: 30%;
   height: 100%;
   flex-flow: column;
   flex: 0 0 auto;

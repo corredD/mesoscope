@@ -1876,7 +1876,7 @@ function SetObjectsOptionsDiv(anode) {
 	}
 	var container_ = document.getElementById("objectOptions");
 	if (container_) {
-		container_.previousSibling.innerHTML = title + " properties";
+		//container_.previousSibling.innerHTML = title + " properties";
 		container_.innerHTML = htmlStr;
 	}
 }

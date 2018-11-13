@@ -99,6 +99,67 @@ var canvasOption = '' +
     '</div>'+
   '</div>'
 
+var ngl_widget_options = ''+
+ '<div class="NGLOptions">'+
+  '<div class="clusterBtn">' +
+    '<button onclick="NGL_CenterView()" style="">Center Camera</button>' +
+  '</div>' +
+  '<label id="ProteinId">protein name</label>' +
+  '<label id="pdb_id">pdb id</label>' +
+  '<div>'+
+    '<label for="rep_type">Selection</label>'+
+    '<input type="text" id="sel_str" style="width:55%" placeholder="Selection" onchange="NGL_ChangeSelection(this)"/>'+
+    layout_getMultiSelect("selection_ch_checkboxes") +
+  '</div>'+
+  '<label id="ngl_status"></label>' +
+  getSelect("rep_type", "options_elems", "Representation",
+                          "NGL_ChangeRepresentation(this)", ngl_styles,"cartoon")+
+  getSelect("ass_type", "options_elems", "Assembly",
+                          "NGL_ChangeBiologicalAssembly(this)", ["AU"],"AU")+
+  getSelect("mod_type", "options_elems", "Model",
+                          "NGL_ChangeModel(this)", ["0"],"0")+
+  getSelect("color_type", "options_elems", "Color",
+                          "NGL_ChangeColorScheme(this)", ngl_available_color_schem,"atomindex")+
+  getSelect("label_elem", "options_elems", "Label",
+                          "NGL_Changelabel(this)", ["None","Chain"],"None")+
+  '<div>'+
+    '<input type="checkbox"  id="showgeom" onclick="NGL_showGeomNode(this)" checked>' +
+    '<label for="showgeom"> Show Geometry used </label> '+
+    '<button onclick="NGL_buildCMS()">Rebuild Geometry</button>'+getSpinner("stopbuildgeom","stopGeom()")+
+  '</div>' +
+  getSelect("beads_elem", "options_elems", "Show Beads",
+                        "NGL_showBeadsLevel(this)", ["All","0","1","2","None"],"None")+
+  '<div>'+
+    '<label> number of cluster</label>' +
+    '<input id="slidercl_params1" style="width:70%;display:inline" type="range" min="1" max="100"" step="1" value="10" /> ' +
+    '<label id="cl_params1" for="slidercl_params1">10</label>' +  getSpinner("stopkmeans","stopKmeans()")+
+  '</div>'+
+  '<label id="nbBeads">0 beads</label>' +
+  '<div id="query_search">' +
+    '<label id="heading"></label>' +
+  '</div> ' +
+  '<div class="hidden" id="surface">' +
+    '<label id="pcpLabel">Principal Axis (shift+control left click)</label>' +
+    '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpX" type="range" min="-100" max="100" step="1" style="width:70%" />' +
+    '<input class="inputNumber" id="num1" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
+    '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpY" type="range" min="-100" max="100" step="1" style="width:70%" />' +
+    '<input class="inputNumber" id="num2" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
+    '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpZ" type="range" min="-100" max="100" step="1" style="width:70%"/>' +
+    '<input class="inputNumber" id="num3" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
+    '<label id="offsetLabel">Offset (shift+control right click)</label>' +
+    '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetX" type="range" min="-450" max="450" step="1" style="width:70%" />' +
+    '<input class="inputNumber" id="num4" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
+    '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetY" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
+    '<input class="inputNumber" id="num5" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
+    '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetZ" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
+    '<input class="inputNumber" id="num6" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
+    '</div>' +
+    //'<button onclick="NGL_applyPcp()">Apply To Ingredient</button>' +
+    '<button onclick="NGL_resetPcp()">Reset</button>' +
+  '</div>' +
+  '<label id="pdb_title">pdb TITLE</label>' +
+'</div>';
+
 var ngl_options= ''+
   '<div class="NGLOptions">'+
   '<button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
@@ -175,7 +236,7 @@ var ngl_options= ''+
   '</div>' +
   '</div>'
 
-
+var object_properties = '<div class="NGLOptions" id="objectOptions"></div>';
 
 var ngl_viewport='' +
   '<div class="NGL" id="NGL">'+
@@ -191,8 +252,10 @@ var gpu_phy_viewport='' +
 
 var ngloptions = '' +
   '<div class="NGLpan">'+
-      ngl_options+
-      getSplitter()+
+    '<div style="position:absolute;top:0px;z-index:999"><button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
+    '<button onclick="NextIgredient()" style="">Next Ingredient</button></div>' +
+      //ngl_options+
+      //getSplitter()+
       ngl_viewport+
   '</div>';
 
@@ -427,7 +490,14 @@ var config = {
     content: [{
         type: 'row',
         content: [get_comp_definition_d3(),
-                  {type:'stack', content:[get_comp_defintion_ngl(),get_comp_defintion_gpgpu()]},
+                  {type:'column',content:[
+                    get_new_single_component("NGL Options","ngl viewer options","ngl_options",{label: 'C'}),
+                    get_new_single_component("Object Properties","change object properties","object_properties",{label: 'C'})
+                  ]},
+                  {type:'stack', content:[
+                    get_comp_defintion_ngl(),
+                    get_comp_defintion_gpgpu()
+                  ]},
                   {
 										type:'stack',
 										content:[
@@ -468,7 +538,7 @@ var myLayout,
 var usesavedState = true;
 var usesavedSession = true;
 var savedRecipe = localStorage.getItem('savedRecipe');
-var current_version = {"version":1.008};
+var current_version = {"version":1.011};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()
@@ -640,10 +710,10 @@ nglComponent.prototype._Setup = function() {
   this._Resize();
   all_intialized[1] = true;
   //setup the splitter ?
-  $(".NGLOptions").resizable({
+  /*$(".NGLOptions").resizable({
     handleSelector: ".splitter",
     resizeHeight: false
-  });
+  });*/
 }
 
 nglComponent.prototype._Resize = function() {
@@ -811,6 +881,16 @@ myLayout.registerComponent('slickgridoptions', function(container, state) {
   container.getElement().html(gridoptions);
   setupSlickGrid();
 })
+
+
+myLayout.registerComponent('ngl_options', function(container, state) {
+  container.getElement().html(ngl_widget_options);
+})
+
+myLayout.registerComponent('object_properties', function(container, state) {
+  container.getElement().html(object_properties);
+})
+
 
 //topologyViewerWrapper
 myLayout.registerComponent('topology_viewer', function(container, state) {

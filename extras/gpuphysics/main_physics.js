@@ -896,11 +896,6 @@ function distributesMesh(){
   if (!inited) initDebugGrid();
   for (var i=0;i<n;i++){//nodes.length
     console.log(i,nodes[i].data.name);
-    if (nodes[i].data.ingtype == "fiber") {
-      //random walk in the grid ?
-      GP_walk(i,nodes[i],start,count,5.0,1000);
-      continue;
-    }
     if (nodes[i].children!== null && nodes[i].parent === null) continue;
     if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
         //use NGL to load the object?
@@ -921,6 +916,12 @@ function distributesMesh(){
     count = GP_GetCount(nodes[i]);
     console.log(i, nodes[i].data.name, count);
     //count = Util_getRandomInt( copy_number )+1;//remove root
+    if (nodes[i].data.ingtype == "fiber") {
+      //random walk in the grid ?
+      //should do this for count number of fiber
+      GP_walk_lattice(i,nodes[i],start,count,15.0,2000);
+      count = 2000;
+    }
     createInstancesMesh(i,nodes[i],start,count);
     start = start + count;
     total = total + count;
@@ -956,7 +957,7 @@ function distributesMesh(){
         //already updated
       }
   }
-  if (inited)GP_updateDebugBeadsSpheres();
+  if (inited) GP_updateDebugBeadsSpheres();
   else GP_debugBeadsSpheres();
 }
 
@@ -1168,6 +1169,139 @@ function addAtoms(anode,pid,start,o){
 //scale ?
 //need to add the beads as single beads ? attached beads
 //thjis ispurely random no constraiunts!
+//make a walk on a lattice
+function GP_foundNextPoint(current_point, a_direction, angle, ulength){
+    var next_point = new THRE.Vector3();
+    var new_point = Util_coneSample_uniform(angle,direction,1);
+    new_point.normalize();
+    new_point.multiplyScalar(ulength);
+    next_point.addVectors(current_point,new_point);
+    return next_point;
+}
+
+//make a walk on lattice constraints
+//GP_walk_lattice(1,nodes[1],0,1,500)
+function GP_walk_lattice(pid,anode,start,count,angle,totalLength){
+      //should we used set of rigid-body attached or uniq-beads
+      //start with beads
+      var array_points =[];
+      var inside = false;
+      var w = world.broadphase.resolution.x * world.radius * 2;
+      var h = world.broadphase.resolution.y * world.radius * 2;
+      var d = world.broadphase.resolution.z * world.radius * 2;
+      var radius = 34.0/2.0*ascale;
+      var ulength = 34.0*ascale;
+      //var angle = 25.0;
+      //coneAngle = coneAngleDegree * pi/180;
+      //var totalLength = 1000;//1000*uLength
+      var x = -boxSize.x + Util_halton(start,2)*w;
+      var y =  Util_halton(start,3)*h;
+      var z = -boxSize.z + Util_halton(start,5)*d;
+      var starting_point = new THREE.Vector3(x,y,z);
+      if (anode.parent.data.insides && anode.parent.data.insides.length !==0 ){
+          inside=true;
+          var h = Math.random() * anode.parent.data.insides.length;//Util_halton(bodyId,2)*anode.parent.data.insides.length+1;
+          var qi = anode.parent.data.insides[Math.round(h)];//bodyId-start];//Math.round(h)];//master_grid_id[
+          //qi to XYZ
+          var xyz = GP_uToWorldCoordinate(qi);
+          //jitter
+          var jitter = [Math.random()*ascale,Math.random()*ascale,Math.random()*ascale];
+          x = xyz[0]*ascale+jitter[0];
+          y = xyz[1]*ascale+jitter[1];
+          z = xyz[2]*ascale+jitter[2];
+          starting_point = new THREE.Vector3(x,y,z);
+      }
+      //safety ?
+      var the_angle = angle;
+      var next_point = new THREE.Vector3(0,0,0);
+      var rnd = Util_sphereSample_uniform(Math.random(), Math.random());
+      rnd.normalize()
+      rnd.multiplyScalar(ulength);
+      next_point.addVectors(starting_point, rnd);
+      previous_point = next_point.clone();
+      console.log("starting_point",starting_point);
+      console.log("next_point",next_point);
+      console.log(starting_point);
+      var direction = rnd.clone();
+      direction.normalize ();
+      var found = false;
+      var notfound = false;
+      var safety = 150;
+      var safety_count = 0;
+      for (var i = 0;i < totalLength;i++) {
+        //console.log("direction",direction);
+        while (!found) {
+          var new_point = Util_coneSample_uniform(angle,direction,1);
+          //console.log("new_point",new_point);
+          new_point.normalize();
+          new_point.multiplyScalar(ulength);
+          //console.log("new_point scaled",new_point);
+          //console.log("previous_point",previous_point);
+          next_point.addVectors(previous_point,new_point);
+          //console.log("next_point",next_point);
+          //test the points
+          var q = anode.parent.data.mc.getUfromXYZ(next_point.x/ascale,next_point.y/ascale,next_point.z/ascale );
+          //console.log("next_point",next_point,q,safety_count,anode.parent.data.mc.field[q]);//13965
+          if (q<0) {
+            safety_count++;
+            angle  = angle +1.10;
+            //increase angle or go back
+            //previous_point = array_points[array_points.length-1];
+            if (safety_count > 25) angle  = angle +1.0;
+            if (safety_count > safety) {notfound=true;found=true;};
+          }
+          else {
+            var e = anode.parent.data.mc.field[q];
+            if (e < anode.parent.data.mc.isolation){//q in anode.parent.data.insides) {
+              found = true;
+              notfound = false;
+            }
+            else {
+              safety_count ++;
+              angle  = angle +1.10;
+              //increase angle or go back
+              //previous_point = array_points[array_points.length-5];
+              if (safety_count > 25) angle  = angle +1.0;
+              if (safety_count > safety) {notfound=true;found=true;}
+              //console.log("outside ??");
+            }
+          }
+          if (safety_count > safety) {
+            //console.log(safety_count,safety,(safety_count > safety));
+            notfound=true;
+            found=true;
+          }
+        }
+        if (notfound) {console.log("not found ??",safety_count,safety,(safety_count > safety));break;}
+        else {
+            console.log("found!");
+            angle = the_angle;
+            safety_count = 0;
+            found = false;
+            previous_point = next_point.clone();
+            array_points.push(next_point.clone());
+            direction = new_point.clone();
+            direction.normalize ();
+        }
+      }
+      console.log(array_points);
+      if (array_points.length < 1) return;
+      //pass the array point to viewer
+      //SplineCurve3
+      var spline = new THREE.CatmullRomCurve3( array_points );
+      if (!anode.data.curves) anode.data.curves = [];
+      var amaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+      var tubeGeometry = new THREE.TubeBufferGeometry( spline, 100, radius, 4, false );
+      var mesh = new THREE.Mesh( tubeGeometry, amaterial );
+      //scene.add(mesh);
+      //var points = curve.getPoints( 50 );
+      var lgeometry = new THREE.BufferGeometry().setFromPoints( array_points );
+      var lmaterial = new THREE.LineBasicMaterial( { color : 0xff0000 } );
+      var curveObject = new THREE.Line( lgeometry, lmaterial );
+      scene.add(curveObject);
+      anode.data.curves.push({"points":array_points,"spline":spline,"mesh":mesh,"line":curveObject});
+}
+
 function GP_walk(pid,anode,start,count,angle,totalLength){
       //should we used set of rigid-body attached or uniq-beads
       //start with beads
@@ -1225,18 +1359,26 @@ function GP_walk(pid,anode,start,count,angle,totalLength){
         direction.normalize ();
       }
       //pass the array point to viewer
+      //SplineCurve3
       var spline = new THREE.CatmullRomCurve3( array_points );
       if (!anode.data.curves) anode.data.curves = [];
       var amaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
       var tubeGeometry = new THREE.TubeBufferGeometry( spline, 100, radius, 4, false );
       var mesh = new THREE.Mesh( tubeGeometry, amaterial );
-      scene.add(mesh);
+      //scene.add(mesh);
       //var points = curve.getPoints( 50 );
       var lgeometry = new THREE.BufferGeometry().setFromPoints( array_points );
       var lmaterial = new THREE.LineBasicMaterial( { color : 0xff0000 } );
       var curveObject = new THREE.Line( lgeometry, lmaterial );
       scene.add(curveObject);
       anode.data.curves.push({"points":array_points,"spline":spline,"mesh":mesh,"line":curveObject});
+      //use this curve for mesh instancing!
+    /*  for(var i = 0; i < amountOfPoints; i += 0.5){
+    var t = spline.getUtoTmapping(i / amountOfPoints);
+    var position = spline.getPoint(t);
+    var rotation = spline.getTangent(t);
+  }*/
+
 }//
 //scene.remove(nodes[1].data.curves[0].line);scene.remove(nodes[1].data.curves[0].mesh);nodes[1].data.curves = [];GP_walk(1,nodes[1],0,1,5000)
 
@@ -1286,7 +1428,7 @@ function createInstancesMesh(pid,anode,start,count) {
   var w = world.broadphase.resolution.x * world.radius * 2;
   var h = world.broadphase.resolution.y * world.radius * 2;
   var d = world.broadphase.resolution.z * world.radius * 2;
-  var up = new THREE.Vector3();
+  var up = new THREE.Vector3(0,0,1);
   var offset = new THREE.Vector3();
   if (anode.data.surface && anode.parent.data.mesh){
     offset.set(anode.data.offset[0]*ascale,anode.data.offset[1]*ascale,anode.data.offset[2]*ascale);
@@ -1352,8 +1494,27 @@ function createInstancesMesh(pid,anode,start,count) {
     );
     axis.normalize();
     q.setFromAxisAngle(axis, Math.random() * Math.PI * 2);
-    //per compartments?
-    if (anode.data.buildtype === "supercell") {
+    if (anode.data.ingtype == "fiber" && anode.data.curves) {
+      var pos = anode.data.curves[0].spline.getPoint(parseFloat(counter)/parseFloat(count));
+      //.getUtoTmapping ( u : Float, distance : Float )
+      //.getSpacedPoints ( divisions : Integer )
+      up.set(0.0,0.0,1.0);
+      //var up = new THREE.Vector3( 0, 1, 0 );
+      var axis = new THREE.Vector3( );
+      var ni = anode.data.curves[0].spline.getTangent(parseFloat(counter)/parseFloat(count)).normalize();//vector
+      axis.crossVectors( up, ni ).normalize();
+      var radians = Math.acos( up.dot( ni ) );
+      q.setFromAxisAngle( axis, radians );
+      var r = new THREE.Quaternion().setFromUnitVectors (new THREE.Vector3(0.0,1.0,0.0),ni);
+      //whats the up vector ?
+      //multiply by going from
+      x = pos.x;
+      y = pos.y;
+      z = pos.z;
+      //q = new THREE.Quaternion(r.x,r.y,r.z,r.w);
+      counter+=1;
+    }
+    else if (anode.data.buildtype === "supercell") {
       //need x,y,z qx,qy,qz,qw
       //offset to the center of the parent node ?
       if (counter >= anode.data.litemol.crystal_mat.operators.length) continue;
@@ -1369,7 +1530,8 @@ function createInstancesMesh(pid,anode,start,count) {
       z=(pos.z+comp_offset.z)*ascale;
       q.copy(rotation);
     }
-    else if (anode.data.surface && anode.parent.data.mesh){
+    else if (anode.data.surface && anode.parent.data.mesh)
+    {
       //should random in random triangle ?
       //q should align the object to the surface, and pos should put on a vertices/faces
       var v = anode.parent.data.mesh.geometry.attributes.position.array;
@@ -1406,7 +1568,6 @@ function createInstancesMesh(pid,anode,start,count) {
       var jitter = [Math.random()*ascale,Math.random()*ascale,Math.random()*ascale]
       x = xyz[0]*ascale+jitter[0]; y = xyz[1]*ascale+jitter[1]; z = xyz[2]*ascale+jitter[2];
     }
-
     //calculateBoxInertia(inertia, mass, new THREE.Vector3(radius*4,radius*4,radius*2));
     //calculate inertia from the beads
     mass = 1;
@@ -2276,7 +2437,7 @@ function animate( time ) {
 function GP_WarmUp(){
   console.log("Warm Up");
   //update the metaball using gpu
-  for (var i=0;i<3;i++)
+  for (var i=0;i<1;i++)
   {
     console.log("Warm Up",i);
     world.step(0.01);
