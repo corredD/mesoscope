@@ -520,15 +520,16 @@ function NGL_Setup() {
     NGL_updateCurrentBeadsLevel();
   });
 
-  /* slidercluster_elem2 = document.getElementById("slidercl_params2");
-   slidercluster_label_elem2 = document.getElementById("cl_params2");
-   slidercluster_elem2.addEventListener('input', function(e) {
+  slidercluster_elem2 = document.getElementById("slidercl_params2");
+  slidercluster_label_elem2 = document.getElementById("cl_params2");
+  slidercluster_elem2.addEventListener('input', function(e) {
       slidercluster_label_elem2.textContent = slidercluster_elem2.value;
-   });
-   slidercluster_elem2.addEventListener('mouseup', function(e) {
-      NGL_updateCurrentBeadsLevel();
-   });
-  */
+  });
+  slidercluster_elem2.addEventListener('mouseup', function(e) {
+      cms_scale = slidercluster_elem2.value;
+      NGL_buildCMS();
+  });
+
   heading = document.getElementById("heading");
   grid_viewport = document.getElementById("viewport"); //createElement( "div" );
 
@@ -711,6 +712,16 @@ function NGL_toggleAxisVisibility(e) {
 function NGL_toggleOriginVisibility(e) {
   stage.getRepresentationsByName("beads_0")
     .setVisibility(e.target.checked);
+}
+
+function NGL_toggleOrigin(e) {
+  stage.getRepresentationsByName("ori")
+    .setVisibility(e.checked);
+}
+
+function NGL_showBox(e) {
+  stage.getRepresentationsByName("axes")
+    .setVisibility(e.checked);
 }
 
 function NGL_updateCurrentBeadsLevelClient() {
@@ -1120,7 +1131,7 @@ function NGL_ChangeRepresentation(selectedO) {
         name: "polymer",
         assembly: assembly_elem.selectedOptions[0].value,
         surfaceType: "edt",
-        smooth: 2,
+        smooth: 2,//use some slider ?
         probeRadius: 1.0,
         scaleFactor: cms_scale,
         flatShaded: false,
@@ -1904,7 +1915,7 @@ function NGL_ShowOrigin() //StructureView
     shape.addArrow([0, 0, 0], [0, 0, 10], [0, 0, 1], 1.0);
     //compare to the structure getPrincipalAxes?
     var shapeComp = stage.addComponentFromObject(shape)
-    shapeComp.addRepresentation("Origin");
+    shapeComp.addRepresentation("ori");
   }
 
 function NGL_ShowAxisOffset(axis, offset, anode) //StructureView

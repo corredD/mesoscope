@@ -772,8 +772,10 @@ function GP_SetBodyType(anode, pid, start, count){
                       up.x, up.y, up.z,
                       offset.x, offset.y, offset.z,
                       mass, inertia.x, inertia.y, inertia.z);
-    var mid = type_meshs[pid]._idmesh;
-    updateOneMesh(meshMeshs[mid].geometry,anode,start,count);//should flag if mesh has changed
+    if (type_meshs[pid].idmesh) {
+      var mid = type_meshs[pid].idmesh;
+      updateOneMesh(meshMeshs[mid].geometry,anode,start,count);//should flag if mesh has changed
+    }
   }
 }
 
@@ -919,12 +921,24 @@ function distributesMesh(){
     if (nodes[i].data.ingtype == "fiber") {
       //random walk in the grid ?
       //should do this for count number of fiber
-      GP_walk_lattice(i,nodes[i],start,count,15.0,2000);
-      count = 2000;
+      var nfiber = count;
+      for (var cp =0; cp < nfiber; cp++){
+        var tlength = nodes[i].data.tlength;//segment number not angstrom
+        var angle = nodes[i].data.angle;//authorise angle
+        var ulength = nodes[i].data.ulength*ascale;//unit length
+        GP_walk_lattice(i,nodes[i],start,count,angle,ulength,tlength);
+        createInstancesMesh(i,nodes[i],start,tlength);
+        //setup the constraint to stay in chain. need closed option
+        start = start + tlength;
+        total = total + tlength;
+      //count = 2000;
+      }
     }
-    createInstancesMesh(i,nodes[i],start,count);
-    start = start + count;
-    total = total + count;
+    else {
+      createInstancesMesh(i,nodes[i],start,count);
+      start = start + count;
+      total = total + count;
+    }
   }
   if (atomData_do) createCellVIEW();
   console.log ( "there is n instances ",total);
@@ -948,7 +962,7 @@ function distributesMesh(){
         amesh.customDepthMaterial = customDepthMaterial;
         amesh.castShadow = true;
         amesh.receiveShadow = true;
-        type_meshs[keys[i]]._idmesh = meshMeshs.length;
+        type_meshs[keys[i]].idmesh = meshMeshs.length;
         meshMeshs.push(amesh);
         scene.add( amesh );
         console.log("mesh builded",keys[i]);
@@ -1181,7 +1195,7 @@ function GP_foundNextPoint(current_point, a_direction, angle, ulength){
 
 //make a walk on lattice constraints
 //GP_walk_lattice(1,nodes[1],0,1,500)
-function GP_walk_lattice(pid,anode,start,count,angle,totalLength){
+function GP_walk_lattice(pid,anode,start,count,angle,ulength,totalLength){
       //should we used set of rigid-body attached or uniq-beads
       //start with beads
       var array_points =[];
@@ -1189,8 +1203,8 @@ function GP_walk_lattice(pid,anode,start,count,angle,totalLength){
       var w = world.broadphase.resolution.x * world.radius * 2;
       var h = world.broadphase.resolution.y * world.radius * 2;
       var d = world.broadphase.resolution.z * world.radius * 2;
-      var radius = 34.0/2.0*ascale;
-      var ulength = 34.0*ascale;
+      var aradius = ulength/2.0*ascale;
+      //var ulength = 34.0*ascale;
       //var angle = 25.0;
       //coneAngle = coneAngleDegree * pi/180;
       //var totalLength = 1000;//1000*uLength
@@ -1291,7 +1305,7 @@ function GP_walk_lattice(pid,anode,start,count,angle,totalLength){
       var spline = new THREE.CatmullRomCurve3( array_points );
       if (!anode.data.curves) anode.data.curves = [];
       var amaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-      var tubeGeometry = new THREE.TubeBufferGeometry( spline, 100, radius, 4, false );
+      var tubeGeometry = new THREE.TubeBufferGeometry( spline, 100, aradius, 4, false );
       var mesh = new THREE.Mesh( tubeGeometry, amaterial );
       //scene.add(mesh);
       //var points = curve.getPoints( 50 );

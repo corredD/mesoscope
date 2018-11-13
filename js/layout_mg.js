@@ -122,10 +122,20 @@ var ngl_widget_options = ''+
                           "NGL_ChangeColorScheme(this)", ngl_available_color_schem,"atomindex")+
   getSelect("label_elem", "options_elems", "Label",
                           "NGL_Changelabel(this)", ["None","Chain"],"None")+
+
+  '<div><input type="checkbox"  id="showbox" onclick="NGL_showBox(this)" checked>' +
+  '<label for="showbox"> Show Bounding Box </label></div>'+
+  '<div><input type="checkbox"  id="showorigin" onclick="NGL_toggleOrigin(this)" checked>' +
+  '<label for="showorigin"> Show Origin </label></div>'+
   '<div>'+
     '<input type="checkbox"  id="showgeom" onclick="NGL_showGeomNode(this)" checked>' +
     '<label for="showgeom"> Show Geometry used </label> '+
     '<button onclick="NGL_buildCMS()">Rebuild Geometry</button>'+getSpinner("stopbuildgeom","stopGeom()")+
+    '<div>'+
+      '<label>Geometry details</label>' +
+      '<input id="slidercl_params2" style="width:70%;display:inline" type="range" min="0.01" max="1.00"" step="0.01" value="0.2" /> ' +
+      '<label id="cl_params2" for="slidercl_params2">0.2</label>' +
+    '</div>'+
   '</div>' +
   getSelect("beads_elem", "options_elems", "Show Beads",
                         "NGL_showBeadsLevel(this)", ["All","0","1","2","None"],"None")+
@@ -236,7 +246,7 @@ var ngl_options= ''+
   '</div>' +
   '</div>'
 
-var object_properties = '<div class="NGLOptions" id="objectOptions"></div>';
+var object_properties = '<div style="display:flex;flex-flow:column;" id="objectOptions"></div>';
 
 var ngl_viewport='' +
   '<div class="NGL" id="NGL">'+
@@ -882,15 +892,17 @@ myLayout.registerComponent('slickgridoptions', function(container, state) {
   setupSlickGrid();
 })
 
-
 myLayout.registerComponent('ngl_options', function(container, state) {
-  container.getElement().html(ngl_widget_options);
+  var el = container.getElement();
+  el[0].style.overflow="scroll";
+  el.html(ngl_widget_options);
 })
 
 myLayout.registerComponent('object_properties', function(container, state) {
-  container.getElement().html(object_properties);
+  var el = container.getElement();
+  el[0].style.overflow="scroll";
+  el.html(object_properties);
 })
-
 
 //topologyViewerWrapper
 myLayout.registerComponent('topology_viewer', function(container, state) {

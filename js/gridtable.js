@@ -2140,6 +2140,52 @@ function grid_addToModalDiv(parentContainer, divclass, innerHtml) {
   return div;
 }
 
+function getEditorDetails() {
+  //if (grid.getEditorLock().isActive() && !grid.getEditorLock().commitCurrentEdit()) {
+  //  return;
+  //}
+  var container_ = document.getElementById("objectOptions");
+  var grid = gridArray[0];
+  var columns = grid.getColumns();
+  var $modal = $("<div class='item-details-form'></div>");
+  $modal = $("#itemDetailsTemplate")
+      .tmpl({
+        context: grid.getDataItem(grid.getActiveCell().row),
+        columns: columns
+      })
+      .appendTo(container_);
+  $modal.keydown(function (e) {
+    if (e.which == $.ui.keyCode.ENTER) {
+      grid.getEditController().commitCurrentEdit();
+      e.stopPropagation();
+      e.preventDefault();
+    } else if (e.which == $.ui.keyCode.ESCAPE) {
+      grid.getEditController().cancelCurrentEdit();
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  });
+  $modal.find("[data-action=save]").click(function () {
+    grid.getEditController().commitCurrentEdit();
+  });
+  $modal.find("[data-action=cancel]").click(function () {
+    grid.getEditController().cancelCurrentEdit();
+  });
+  var containers = $.map(columns, function (c) {
+    return $modal.find("[data-editorid=" + c.id + "]");
+  });
+  var compositeEditor = new Slick.CompositeEditor(
+      columns,
+      containers,
+      {
+        destroy: function () {
+          //$modal.remove();
+        }
+      }
+  );
+  grid.editActiveCell(compositeEditor);
+}
+
 function openDetails(newone) {
 
   var grid = gridArray[current_grid];
@@ -2192,6 +2238,7 @@ function openDetails(newone) {
     console.log(grid.getActiveCell().row);
     row_to_edit = grid.dataView.getItem(item_id);
   }
+
   var modal_cont = document.getElementById("slickdetail");
   var item_cont = document.getElementById("slickitems");
   var span = document.getElementById("closeslickdetail");

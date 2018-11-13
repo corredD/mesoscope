@@ -1518,6 +1518,10 @@ function checkAttributes(agraph){
 		if (!("visited" in agraph[i].data)) agraph[i].data.visited = false;
 		if (!("include" in agraph[i].data)) agraph[i].data.include = true;
 		if (!("opm" in agraph[i].data)) agraph[i].data.opm = 0;//is it an opm model
+
+    if (!("angle" in agraph[i].data)) agraph[i].data.angle = 5.0;//is it an opm model
+    if (!("ulength" in agraph[i].data)) agraph[i].data.ulength = 34.0;//is it an opm model
+    if (!("tlength" in agraph[i].data)) agraph[i].data.tlength = 1000;//is it an opm model
 		}
 		else {
  			agraph[i].data.nodetype = "compartment";
@@ -1840,6 +1844,7 @@ function SetObjectsOptionsDiv(anode) {
 	else if (!anode.parent) {
 		//root
 		for (var e in anode.data){
+      //replace by editor?
 			if (e !== "children") htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>';
 		}
 		//htmlStr+=-'<label> Parent Name '+anode.parent.name+'</label>'
@@ -1868,7 +1873,9 @@ function SetObjectsOptionsDiv(anode) {
 		//	document.getElementById( 'viewport' ).setAttribute("class", "show");
 		  //list all property ? use the grid editor ?
 			for (var e in anode.data)
-				htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>'
+			{
+        	htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>';
+      }
 			//htmlStr+=-'<label> Parent Name '+anode.parent.name+'</label>'
 			var cname = anode.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/');
 			htmlStr+='<label> path: '+cname+'</label>'

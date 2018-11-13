@@ -120,6 +120,7 @@
   </style>
   <link type="text/css" rel="stylesheet" href="https://golden-layout.com/files/latest/css/goldenlayout-base.css" />
   <link type="text/css" rel="stylesheet" href="https://golden-layout.com/files/latest/css/goldenlayout-light-theme.css" />
+  <!--link type="text/css" rel="stylesheet" href="//golden-layout.com/assets/css/goldenlayout-dark-theme.css" /-->
   <!-- GPU STUFF -->
   <script src="https://cdn.rawgit.com/mrdoob/three.js/master/build/three.min.js"></script>
   <!--script src="extras/gpuphysics/lib/three.min.js"></script-->
@@ -580,6 +581,22 @@
   <div id="seqv" class="seqv"  height="100%" width="100%"></div>
   <div id="puv" class="puv"  height="100%" width="100%"></div>
   </div>
+
+  <script id="itemDetailsTemplate" type="text/x-jquery-tmpl">
+    <div class='item-details-form'>
+      {{each columns}}
+      <div class='item-details-label'>
+        ${name}
+      </div>
+      <div class='item-details-editor-container' data-editorid='${id}'></div>
+      {{/each}}
+      <hr/>
+      <div class='item-details-form-buttons'>
+        <button data-action='save'>Save</button>
+        <button data-action='cancel'>Cancel</button>
+      </div>
+    </div>
+  </script>
 
   <script type="x-shader/x-vertex" id="tri_vertexShader">
   	varying vec3 vNormal;
