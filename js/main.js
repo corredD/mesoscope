@@ -369,6 +369,39 @@ var allfield_query={
 	    compartments:""//special case where one column per comnpartment
 	    };
 
+//need type, editable, min,max, callback
+//default callback take key name, and replace with value
+var allattributes_type={
+  "name": {"type":"string","editable":true},
+  "size": {"type":"number","editable":true,"min":1,"max":500},
+  "molecularweight": {"type":"number","editable":true,"min":0.0,"max":500000.0},
+  "confidence":{"type":"number","editable":true,"min":0.0,"max":1.0},
+  "source": {"type":"object","editable":true},
+  "count": {"type":"number","editable":true,"min":0,"max":100000},
+  "molarity": {"type":"number","editable":true,"min":0,"max":0.1},
+  "surface": {"type":"bool","editable":true},
+  "geom": {"type":"button","editable":false},//use build geom input button
+  "geom_type": {"type":"string","editable":false},
+  "label": {"type":"string","editable":true},
+  "uniprot":{"type":"string","editable":true},
+  "pcpalAxis": {"type":"vector3","editable":false},
+  "offset": {"type":"vector3","editable":false},
+  "pos": {"type":"object","editable":false},
+  "radii": {"type":"object","editable":false},
+  "ingtype": {"type":"select","editable":true},
+  "buildtype": {"type":"select","editable":true},
+  "comments":{"type":"string","editable":true},
+  "color": {"type":"color","editable":true},
+  "nodetype":  {"type":"select","editable":true},
+  "visited": {"type":"bool","editable":false},
+  "include": {"type":"bool","editable":true},
+  "opm": {"type":"number","editable":true},
+  "angle": {"type":"number","editable":true,"min":0.0,"max":360.0},
+  "ulength": {"type":"number","editable":true,"min":0,"max":250},
+  "tlength": {"type":"number","editable":true,"min":0,"max":100000},
+  "id": {"type":"string","editable":false}
+}
+
 //should use csv->SQL->json
 function changeColumnMapping(aselect) {
 	  //console.log(aselect);
@@ -1823,6 +1856,17 @@ function drawCompRec(anode) {
 //	}
 }
 
+function defaultNodeCB(e){
+  console.log(e);
+  var key = e.id.split("_")[1];
+  console.log(key);
+  //this hsould apply to the current selected node Only
+  if (node_selected) {
+    node_selected.data[key] = e.value;
+    //TODO update the graph dataView as well!!!!
+  }
+}
+
 function SetObjectsOptionsDiv(anode) {
 	//ues the node objects
 	var title='';
@@ -1874,7 +1918,13 @@ function SetObjectsOptionsDiv(anode) {
 		  //list all property ? use the grid editor ?
 			for (var e in anode.data)
 			{
-        	htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>';
+          //e is the key
+          var specificiations = allattributes_type[e];
+          if (specificiations.editable){
+            if (!(specificiations.callback)) specificiations.callback = "defaultNodeCB";
+            htmlStr+=layout_getInputNode(anode,e,specificiations);
+          }
+        	else htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>';
       }
 			//htmlStr+=-'<label> Parent Name '+anode.parent.name+'</label>'
 			var cname = anode.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/');

@@ -43,6 +43,40 @@ function getSelect(select_id, div_class, label, onchange_cb, list_options, defau
   return astr;
 }
 
+function layout_getInputButton(select_id, div_class, label, onchange_cb, list_options, default_options){}
+function layout_getInputCheckbox(select_id, div_class, label, onchange_cb, list_options, default_options){}
+function layout_getInputSlider(select_id, div_class, label, onchange_cb, list_options, default_options){}
+function layout_getInputString(select_id, div_class, label, onchange_cb, list_options, default_options){}
+
+function layout_getInputNode(anode,key,spec){
+    var aHtml = "";
+    var atype=spec.type;
+    aHtml = '<label for="input_'+key+'">'+key+'</label>';
+    switch(atype) {
+      case "string":
+          aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+          break;
+      case "number":
+          aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+          break;
+      case "object":
+          aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+          break;
+      case "bool":
+          aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+          break;
+      case "button":
+          aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+          break;
+      case "color":
+          aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+          break;
+      default:
+          aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+          break;
+    }
+    return aHtml;
+}
 
 
 function layout_addOptionsForMultiSelect(select_id,options){
