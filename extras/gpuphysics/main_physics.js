@@ -1464,18 +1464,19 @@ function createInstancesMeshCurves(pid,anode,start,count) {
   //should do it constrained inside the given compartments
   //var comp = anode.parent;
   //check the buildtype? anode.data.buildtype
-  for (var cp =0; cp < anode.data.curves.length; cp++){
+  var nfiber = anode.data.curves.length;
+  for (var cp =0; cp < nfiber; cp++){
     var counter = 0;
     var curve = anode.data.curves[cp];
     for (var bodyId=start;bodyId<start+count;bodyId++) {
-      var pos = curve.spline.getPoint(parseFloat(counter)/parseFloat(count));
+      var pos = curve.spline.getPoint(parseFloat(counter)/parseFloat(count/nfiber));
       //.getUtoTmapping ( u : Float, distance : Float )
       //.getSpacedPoints ( divisions : Integer )
       up.set(0.0,0.0,1.0);
       //var up = new THREE.Vector3( 0, 1, 0 );
       var axis = new THREE.Vector3( );
       var q = new THREE.Quaternion();
-      var ni = curve.spline.getTangent(parseFloat(counter)/parseFloat(count)).normalize();//vector
+      var ni = curve.spline.getTangent(parseFloat(counter)/parseFloat(count/nfiber)).normalize();//vector
       axis.crossVectors( up, ni ).normalize();
       var radians = Math.acos( up.dot( ni ) );
       q.setFromAxisAngle( axis, radians );
@@ -2097,7 +2098,7 @@ function GP_initWorld(){
     //numParticles = nparticles ? nparticles : 64;
     //copy_number = ncopy ? ncopy : 10;
     //atomData_do = doatom ? doatom : false;
-    var r = 30.0 ;// (radius in angstrom)
+    var r = 11.0 ;// (radius in angstrom)
     var gridResolution = new THREE.Vector3();
     gridResolution.set(numParticles/2, numParticles/2, numParticles/2);
     var numBodies = 512;//numParticles / 2;
