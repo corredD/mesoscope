@@ -291,30 +291,13 @@ var updateForceFrag = "uniform vec4 params1;\n\
 	uniform float scaleSurfaceAttraction;\n\
 	uniform sampler2D gridTex;\n"+
 	densityShader+
-	"vec3 gpugem_particleForce(float STIFFNESS, float DAMPING, float DAMPING_T, \n\
-		//force = sum of fis,fid,fit (spring,damping,torq)\n\
-		float distance, float minDistance, vec3 xi, vec3 xj, vec3 vi, vec3 vj){\n\
-			//distance is the particle diameter\n\
-			vec3 rij = xj - xi;\n\
-	    vec3 rij_unit = normalize(rij);\n\
-			vec3 vij = vj - vi;\n\
-			vec3 vij_t = vij - dot(vij, rij_unit) * rij_unit;//relative tangential velocity\n\
-	    vec3 fis = -STIFFNESS * (distance-length(rij))*rij_unit;//spring force\n\
-			vec3 fid = DAMPING * vij;//damping force with velocity of particle j with respect to particle i\n\
-			vec3 fit = DAMPING_T * vijt;\n\
-	    //vec3 springForce = - STIFFNESS * (distance - max(length(rij), minDistance)) * rij_unit;\n\
-	    //vec3 dampingForce = DAMPING * dot(vij,rij_unit) * rij_unit;\n\
-	    //vec3 tangentForce = DAMPING_T * vij_t;\n\
-	    return fis + fid + fit;\n\
-	}\n\
-	vec3 particleForce(float STIFFNESS, float DAMPING, float DAMPING_T, \n\
+	"vec3 particleForce(float STIFFNESS, float DAMPING, float DAMPING_T, \n\
 		float distance, float minDistance, vec3 xi, vec3 xj, vec3 vi, vec3 vj){\n\
 	    vec3 rij = xj - xi;\n\
 	    vec3 rij_unit = normalize(rij);\n\
 	    vec3 vij = vj - vi;\n\
 	    vec3 vij_t = vij - dot(vij, rij_unit) * rij_unit;\n\
-			vec3 springForce = -STIFFNESS * (distance-length(rij))*rij_unit;//spring force\n\
-			//vec3 springForce = - STIFFNESS * (distance - max(length(rij), minDistance)) * rij_unit;\n\
+	    vec3 springForce = - STIFFNESS * (distance - max(length(rij), minDistance)) * rij_unit;\n\
 	    vec3 dampingForce = DAMPING * dot(vij,rij_unit) * rij_unit;\n\
 	    vec3 tangentForce = DAMPING_T * vij_t;\n\
 	    return springForce + dampingForce + tangentForce;\n\
@@ -433,7 +416,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 				if ( distance < 0.0 && bodyType_infos1.w == 0.0) force = force -f;\n\
 				if ( bodyType_infos1.w > 0.0)\n\
 				{\n\
-					f=f*0.0;\n\
+					//force =force*10.0-f*10.0;\n\
 				}\n\
 			}\n\
 			if (bodyType_infos1.w > 0.0)\n\
@@ -450,7 +433,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 			  vec3 r_relativePosition = vec3_applyQuat(relativePosition,arotation);\n\
 				float L = dot(off,up);//length(off);//dot(off,up);//-0.02361;//length(off);//0.023617652535438873\n\
 				float D = dot(relativePosition,rup);//dot(r_relativePosition,rup);\n\
-				float ltoS = D+L;//ideal distance from surface along normal\n\
+				float ltoS = D+L*2.0;//ideal distance from surface along normal\n\
 				//need to check why the *5.0 fix the offset ??\n\
 				//compare ltos and distance\n\
 				//vec3 r_off = vec3_applyQuat(off,arotation);\n\
@@ -458,7 +441,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 				//sfnormal = normalize(CalculateSurfaceNormal(body_pos));\n\
 				//distance = trilinearInterpolation(body_pos);\n\
 				vij_t = velocity - dot(velocity, sfnormal) * sfnormal;\n\
-				springForce = - stiffness * (ltoS - distance) * 2.0 * sfnormal;\n\
+				springForce = - stiffness * (ltoS - distance) * sfnormal;\n\
 				dampingForce = damping * dot(velocity, sfnormal) * sfnormal;\n\
 				tangentForce = friction * vij_t;\n\
 				f = springForce + dampingForce + tangentForce;\n\

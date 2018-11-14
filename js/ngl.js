@@ -715,8 +715,8 @@ function NGL_toggleOriginVisibility(e) {
 }
 
 function NGL_toggleOrigin(e) {
-  stage.getRepresentationsByName("ori")
-    .setVisibility(e.checked);
+  var o = stage.getComponentsByName("ori");
+  if (o.list && o.list.length !=0) o.list[0].setVisibility(e.checked);
 }
 
 function NGL_showBox(e) {

@@ -399,7 +399,8 @@ var allattributes_type={
   "angle": {"type":"number","editable":true,"min":0.0,"max":360.0},
   "ulength": {"type":"number","editable":true,"min":0,"max":250},
   "tlength": {"type":"number","editable":true,"min":0,"max":100000},
-  "id": {"type":"string","editable":false}
+  "id": {"type":"string","editable":false},
+  "curves" : {"type":"object","editable":false}
 }
 
 //should use csv->SQL->json
@@ -1920,6 +1921,11 @@ function SetObjectsOptionsDiv(anode) {
 			{
           //e is the key
           var specificiations = allattributes_type[e];
+          if (!specificiations) {
+            console.log(e);
+            htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>';
+            continue;
+          }
           if (specificiations.editable){
             if (!(specificiations.callback)) specificiations.callback = "defaultNodeCB";
             htmlStr+=layout_getInputNode(anode,e,specificiations);

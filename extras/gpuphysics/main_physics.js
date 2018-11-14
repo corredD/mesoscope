@@ -795,7 +795,7 @@ function GP_GetCount(anode){
       count = Util_getCountFromMolarity(anode.data.molarity, V);
     }
   }
-  else if (anode.data.count !== 0) count = anode.data.count;
+  else if (anode.data.count !== -1) count = anode.data.count;
   else {
     count = Util_getRandomInt( copy_number )+1;//remove root
   }
@@ -922,16 +922,24 @@ function distributesMesh(){
       //random walk in the grid ?
       //should do this for count number of fiber
       var nfiber = count;
-      for (var cp =0; cp < nfiber; cp++){
-        var tlength = nodes[i].data.tlength;//segment number not angstrom
-        var angle = nodes[i].data.angle;//authorise angle
-        var ulength = nodes[i].data.ulength*ascale;//unit length
-        GP_walk_lattice(i,nodes[i],start,count,angle,ulength,tlength);
-        createInstancesMesh(i,nodes[i],start,tlength);
-        //setup the constraint to stay in chain. need closed option
-        start = start + tlength;
-        total = total + tlength;
-      //count = 2000;
+      var tlength = nodes[i].data.tlength;//segment number not angstrom
+      var angle = nodes[i].data.angle;//authorise angle
+      var ulength = nodes[i].data.ulength*ascale;//unit length
+      if (inited && nodes[i].data.curves) {
+        for (var cp =0; cp < nodes[i].data.curves.length; cp++){
+          if (nodes[i].data.curves[cp].line) scene.remove(nodes[i].data.curves[cp].line);
+          nodes[i].data.curves[cp] = null;
+        }
+        nodes[i].data.curves = [];
+      }//
+      if (nfiber !==0) {
+        for (var cp =0; cp < nfiber; cp++){
+          GP_walk_lattice(i,nodes[i],start,count,angle,ulength,tlength);
+          //createInstancesMesh(i,nodes[i],start,tlength);
+        }
+        createInstancesMeshCurves(i,nodes[i],start,tlength*nfiber);
+        start = start + tlength*nfiber;
+        total = total + tlength*nfiber;
       }
     }
     else {
@@ -1304,16 +1312,16 @@ function GP_walk_lattice(pid,anode,start,count,angle,ulength,totalLength){
       //SplineCurve3
       var spline = new THREE.CatmullRomCurve3( array_points );
       if (!anode.data.curves) anode.data.curves = [];
-      var amaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-      var tubeGeometry = new THREE.TubeBufferGeometry( spline, 100, aradius, 4, false );
-      var mesh = new THREE.Mesh( tubeGeometry, amaterial );
+      //var amaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+      //var tubeGeometry = new THREE.TubeBufferGeometry( spline, 100, aradius, 4, false );
+      //var mesh = new THREE.Mesh( tubeGeometry, amaterial );
       //scene.add(mesh);
       //var points = curve.getPoints( 50 );
       var lgeometry = new THREE.BufferGeometry().setFromPoints( array_points );
       var lmaterial = new THREE.LineBasicMaterial( { color : 0xff0000 } );
       var curveObject = new THREE.Line( lgeometry, lmaterial );
       scene.add(curveObject);
-      anode.data.curves.push({"points":array_points,"spline":spline,"mesh":mesh,"line":curveObject});
+      anode.data.curves.push({"points":array_points,"spline":spline,"mesh":null,"line":curveObject});
 }
 
 function GP_walk(pid,anode,start,count,angle,totalLength){
@@ -1438,6 +1446,93 @@ function GP_getInertiaMassBeads(anode) {
   return {"inertia":inertia,"mass":mass,"nbeads":nbeads};
 }
 
+function createInstancesMeshCurves(pid,anode,start,count) {
+  var w = world.broadphase.resolution.x * world.radius * 2;
+  var h = world.broadphase.resolution.y * world.radius * 2;
+  var d = world.broadphase.resolution.z * world.radius * 2;
+  var up = new THREE.Vector3(0,0,1);
+  var offset = new THREE.Vector3();
+  if (anode.data.surface && anode.parent.data.mesh){
+    offset.set(anode.data.offset[0]*ascale,anode.data.offset[1]*ascale,anode.data.offset[2]*ascale);
+    up.set(anode.data.pcpalAxis[0],anode.data.pcpalAxis[1],anode.data.pcpalAxis[2]);
+  }
+  var inertia = new THREE.Vector3();
+  var mass = 0;
+  var nbeads = 0;
+  GP_SetBodyType(anode, pid, start, count);
+  //position should use the halton sequence and the grid size
+  //should do it constrained inside the given compartments
+  //var comp = anode.parent;
+  //check the buildtype? anode.data.buildtype
+  for (var cp =0; cp < anode.data.curves.length; cp++){
+    var counter = 0;
+    var curve = anode.data.curves[cp];
+    for (var bodyId=start;bodyId<start+count;bodyId++) {
+      var pos = curve.spline.getPoint(parseFloat(counter)/parseFloat(count));
+      //.getUtoTmapping ( u : Float, distance : Float )
+      //.getSpacedPoints ( divisions : Integer )
+      up.set(0.0,0.0,1.0);
+      //var up = new THREE.Vector3( 0, 1, 0 );
+      var axis = new THREE.Vector3( );
+      var q = new THREE.Quaternion();
+      var ni = curve.spline.getTangent(parseFloat(counter)/parseFloat(count)).normalize();//vector
+      axis.crossVectors( up, ni ).normalize();
+      var radians = Math.acos( up.dot( ni ) );
+      q.setFromAxisAngle( axis, radians );
+      //var r = new THREE.Quaternion().setFromUnitVectors (new THREE.Vector3(0.0,1.0,0.0),ni);
+      //whats the up vector ?
+      //multiply by going from
+      var x = pos.x;
+      var y = pos.y;
+      var z = pos.z;
+      //q = new THREE.Quaternion(r.x,r.y,r.z,r.w);
+      counter+=1;
+      mass = 1;
+      calculateBoxInertia(inertia, mass, new THREE.Vector3(radius*2,radius*2,radius*2));
+      world.addBody(x,y,z, q.x, q.y, q.z, q.w,
+                    mass, inertia.x, inertia.y, inertia.z,
+                    anode.data.bodyid);
+      if (anode.data.radii) {
+        if (anode.data.radii && "radii" in anode.data.radii[0]) {
+          for (var i=0;i<anode.data.radii[0].radii.length;i++){
+              //transform beads
+              var x=anode.data.pos[0].coords[i*3]*ascale,
+                  y=anode.data.pos[0].coords[i*3+1]*ascale,
+                  z=anode.data.pos[0].coords[i*3+2]*ascale;
+              world.addParticle(bodyId, x,y,z);
+              /*if ( particle_id_Count >= world.particleCount )
+              {    world.addParticle(bodyId, x,y,z);}
+              else
+              {    world.setParticle(particle_id_Count,bodyId,x,y,z);}*/
+              particle_id_Count++;
+          }
+        }
+        else
+        {
+          for (var i=0;i< anode.data.pos[0].length;i++){
+            var p = anode.data.pos[0][i];
+            world.addParticle(bodyId, p[0],p[1],p[2]);
+            /*if ( particle_id_Count >= world.particleCount )
+            {    world.addParticle(bodyId, p[0],p[1],p[2]);}
+            else
+            {    world.setParticle(particle_id_Count,bodyId,p[0],p[1],p[2]);}*/
+            particle_id_Count++;
+          }
+        }
+      }
+      if (instance_infos.indexOf(pid) === -1) instance_infos.push(pid);
+      if (atomData_do) {
+        atomData_mapping[pid]["instances_start"]=start;
+        atomData_mapping[pid]["instances_count"]=count;
+        for (var j=0;j < atomData_mapping[pid].count ; j++){
+              atomData_mapping_instance.push(bodyId,atomData_mapping[pid].start+j);
+        }
+        num_beads_total = num_beads_total + atomData_mapping[pid].count;
+      }
+  }
+  }
+}
+
 function createInstancesMesh(pid,anode,start,count) {
   var w = world.broadphase.resolution.x * world.radius * 2;
   var h = world.broadphase.resolution.y * world.radius * 2;
@@ -1508,27 +1603,7 @@ function createInstancesMesh(pid,anode,start,count) {
     );
     axis.normalize();
     q.setFromAxisAngle(axis, Math.random() * Math.PI * 2);
-    if (anode.data.ingtype == "fiber" && anode.data.curves) {
-      var pos = anode.data.curves[0].spline.getPoint(parseFloat(counter)/parseFloat(count));
-      //.getUtoTmapping ( u : Float, distance : Float )
-      //.getSpacedPoints ( divisions : Integer )
-      up.set(0.0,0.0,1.0);
-      //var up = new THREE.Vector3( 0, 1, 0 );
-      var axis = new THREE.Vector3( );
-      var ni = anode.data.curves[0].spline.getTangent(parseFloat(counter)/parseFloat(count)).normalize();//vector
-      axis.crossVectors( up, ni ).normalize();
-      var radians = Math.acos( up.dot( ni ) );
-      q.setFromAxisAngle( axis, radians );
-      var r = new THREE.Quaternion().setFromUnitVectors (new THREE.Vector3(0.0,1.0,0.0),ni);
-      //whats the up vector ?
-      //multiply by going from
-      x = pos.x;
-      y = pos.y;
-      z = pos.z;
-      //q = new THREE.Quaternion(r.x,r.y,r.z,r.w);
-      counter+=1;
-    }
-    else if (anode.data.buildtype === "supercell") {
+    if (anode.data.buildtype === "supercell") {
       //need x,y,z qx,qy,qz,qw
       //offset to the center of the parent node ?
       if (counter >= anode.data.litemol.crystal_mat.operators.length) continue;
@@ -2971,6 +3046,8 @@ function GP_initFromNodes(some_nodes,numpart,copy,doatom){
   else {
     init();
     inited = true;
+    var pbutton = document.getElementById("preview_button");
+    pbutton.innerHTML = "Update Preview"
   }
 }
 
