@@ -1595,6 +1595,7 @@ function myTimerToGetTHeBuffer(o,aStopFunction,clean) {
       }
       else {
         //recenter the verts
+        //scale here ?
         var center = o.position;
         for (var v = 0;v<mesh.verts.length/3;v++){
               mesh.verts[v*3]=mesh.verts[v*3]+center.x;
@@ -1610,6 +1611,7 @@ function myTimerToGetTHeBuffer(o,aStopFunction,clean) {
       if (o.node) {
         o.node.data.geom = mesh; //v,f,n directly
         o.node.data.geom_type = "raw"; //mean that it provide the v,f,n directly
+        GP_updateMeshGeometry(o.node);
       }
       //hide or destroy?
       stage.getRepresentationsByName("cms_surface_"+o.name).dispose();

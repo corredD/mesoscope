@@ -783,7 +783,9 @@ function GP_GetCount(anode){
   var count = 0;
   if (anode.data.molarity && anode.data.molarity !== 0) {
     //compute volume..?
-    if (anode.data.surface && anode.parent.data.mesh) {
+    var V = anode.parent.data.vol;// ComputeVolume(nodes[i].parent);
+    count = Util_getCountFromMolarity(anode.data.molarity, V);
+    /*if (anode.data.surface && anode.parent.data.mesh) {
       //%surface ?
       //surface of the protein? 30?
       var A = ComputeArea(anode.parent)/100.0;
@@ -793,7 +795,7 @@ function GP_GetCount(anode){
     else {
       var V = anode.parent.data.vol;// ComputeVolume(nodes[i].parent);
       count = Util_getCountFromMolarity(anode.data.molarity, V);
-    }
+    }*/
   }
   else if (anode.data.count !== -1) count = anode.data.count;
   else {
@@ -922,9 +924,9 @@ function distributesMesh(){
       //random walk in the grid ?
       //should do this for count number of fiber
       var nfiber = count;
-      var tlength = nodes[i].data.tlength;//segment number not angstrom
-      var angle = nodes[i].data.angle;//authorise angle
-      var ulength = nodes[i].data.ulength*ascale;//unit length
+      var tlength = parseFloat(nodes[i].data.tlength);//segment number not angstrom
+      var angle = parseFloat(nodes[i].data.angle);//authorise angle
+      var ulength = parseFloat(nodes[i].data.ulength)*ascale;//unit length
       if (inited && nodes[i].data.curves) {
         for (var cp =0; cp < nodes[i].data.curves.length; cp++){
           if (nodes[i].data.curves[cp].line) scene.remove(nodes[i].data.curves[cp].line);
@@ -937,8 +939,8 @@ function distributesMesh(){
           GP_walk_lattice(i,nodes[i],start,count,angle,ulength,tlength);
           //createInstancesMesh(i,nodes[i],start,tlength);
         }
-        createInstancesMeshCurves(i,nodes[i],start,tlength*nfiber);
-        start = start + tlength*nfiber;
+        start = createInstancesMeshCurves(i,nodes[i],start,tlength*nfiber);
+        //start = start + tlength*nfiber;
         total = total + tlength*nfiber;
       }
     }
@@ -1040,6 +1042,49 @@ function createCellVIEW(){
   cv_Mesh.frustumCulled = false;
 	scene.add( cv_Mesh );
   scene.remove(cv_Mesh);
+}
+
+function GP_updateMeshGeometry(anode){
+  if (!inited) return;
+  var pid = nodes.indexOf(anode);
+  var mid = type_meshs[pid].idmesh;
+  var bufferGeometry = new THREE.BufferGeometry();
+  var positions = new Float32Array(anode.data.geom.verts);
+  bufferGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+  if (anode.data.geom.normals!==null)
+  {
+      var normals = new Float32Array(anode.data.geom.normals);
+      bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+  }
+  bufferGeometry.scale(ascale,ascale,ascale);
+  var meshGeometry = meshMeshs[mid].geometry;
+  meshGeometry.attributes.position.copy(bufferGeometry.attributes.position);
+  meshGeometry.attributes.normal.copy(bufferGeometry.attributes.normal);
+  meshGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(anode.data.geom.faces), 1));
+  meshGeometry.attributes.position.needsUpdate = true;
+  meshGeometry.attributes.normal.needsUpdate = true;
+  meshGeometry.index.needsUpdate = true;
+  //meshGeometry.scale(ascale,ascale,ascale);
+}
+
+function GP_updateMeshColorGeometry(anode){
+  if (!inited) return;
+  var pid = nodes.indexOf(anode);
+  var mid = type_meshs[pid].idmesh;
+  var meshGeometry = meshMeshs[mid].geometry;
+  var color = [1,0,0];
+  if (("color" in anode.data)&&(anode.data.color!==null)) color = anode.data.color;
+  else {
+    color = [Math.random(), Math.random(), Math.random()];;//(anode.data.surface) ? [1,0,0]:[0,1,0];//Math.random(), Math.random(), Math.random()];
+    anode.data.color = [color[0],color[1],color[2]];
+  }
+  var count = meshGeometry.maxInstancedCount;
+  var bodyColors = new THREE.InstancedBufferAttribute( new Float32Array( count * 3 ), 3, true, 1  );
+  for ( var i = 0, ul = count; i < ul; i++ ) {
+      bodyColors.setXYZ(i, color[0],color[1],color[2]);// color[0],color[1],color[2]);//rgb of the current anode
+  }
+  meshGeometry.attributes.bodyColor.copy(bodyColors);
+  meshGeometry.attributes.bodyColor.needsUpdate = true;
 }
 
 function updateOneMesh(meshGeometry,anode,start,count) {
@@ -1465,18 +1510,21 @@ function createInstancesMeshCurves(pid,anode,start,count) {
   //var comp = anode.parent;
   //check the buildtype? anode.data.buildtype
   var nfiber = anode.data.curves.length;
+  console.log("setup x fiber",nfiber);
   for (var cp =0; cp < nfiber; cp++){
     var counter = 0;
     var curve = anode.data.curves[cp];
-    for (var bodyId=start;bodyId<start+count;bodyId++) {
-      var pos = curve.spline.getPoint(parseFloat(counter)/parseFloat(count/nfiber));
+    var npoints = parseFloat(anode.data.tlength);//curve.points.length;//or nodes[i].data.tlength
+    console.log("start x count",start,start+npoints);
+    for (var bodyId=start;bodyId<start+npoints;bodyId++) {
+      var pos = curve.spline.getPoint(parseFloat(counter)/parseFloat(npoints));
       //.getUtoTmapping ( u : Float, distance : Float )
       //.getSpacedPoints ( divisions : Integer )
       up.set(0.0,0.0,1.0);
       //var up = new THREE.Vector3( 0, 1, 0 );
       var axis = new THREE.Vector3( );
       var q = new THREE.Quaternion();
-      var ni = curve.spline.getTangent(parseFloat(counter)/parseFloat(count/nfiber)).normalize();//vector
+      var ni = curve.spline.getTangent(parseFloat(counter)/parseFloat(npoints)).normalize();//vector
       axis.crossVectors( up, ni ).normalize();
       var radians = Math.acos( up.dot( ni ) );
       q.setFromAxisAngle( axis, radians );
@@ -1530,8 +1578,11 @@ function createInstancesMeshCurves(pid,anode,start,count) {
         }
         num_beads_total = num_beads_total + atomData_mapping[pid].count;
       }
+    }
+    start = start + npoints;
+    //total = total + npoints;
   }
-  }
+  return start;
 }
 
 function createInstancesMesh(pid,anode,start,count) {
@@ -2098,7 +2149,7 @@ function GP_initWorld(){
     //numParticles = nparticles ? nparticles : 64;
     //copy_number = ncopy ? ncopy : 10;
     //atomData_do = doatom ? doatom : false;
-    var r = 11.0 ;// (radius in angstrom)
+    var r = 30.0 ;// (radius in angstrom)
     var gridResolution = new THREE.Vector3();
     gridResolution.set(numParticles/2, numParticles/2, numParticles/2);
     var numBodies = 512;//numParticles / 2;
@@ -2844,9 +2895,9 @@ function initGUI(){
         }
       if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
           //use NGL to load the object?
-          if (controller.renderSMB) scene.add(nodes[i].data.comp_geom);
+          if (controller.renderSMB && nodes[i].data.comp_geom) scene.add(nodes[i].data.comp_geom);
           else scene.remove(nodes[i].data.comp_geom);
-          if (controller.renderIsoMB) scene.add(nodes[i].data.mesh);
+          if (controller.renderIsoMB && nodes[i].data.mesh) scene.add(nodes[i].data.mesh);
           else scene.remove(nodes[i].data.mesh);
       };
     }
@@ -3013,7 +3064,7 @@ function GP_initFromData(data){
     .sort(function(a, b) { return b.value - a.value; });
   nodes = pack(root).descendants();//flatten--error ?
   console.log(nodes);
-  numParticles = query.n ? parseInt(query.n,10) : 64;
+  numParticles = query.n ? parseInt(query.n,10) : 128;
   copy_number = query.c ? parseInt(query.c,10) : 10;
   atomData_do = query.atom ? query.atom === 'true' : false;
   init();

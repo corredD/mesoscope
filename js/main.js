@@ -2966,15 +2966,18 @@ function ChangeColorNodeOver(){
 	//var hx = Util_rgbToHex(rgb[0]*255,rgb[1]*255,rgb[2]*255);
 	var color = Util_getRGB(document.getElementById("node_color").value);
 	node_over_to_use.data.color =[color.arr[0]/255.0,color.arr[1]/255.0,color.arr[2]/255.0];
-	/*
-	var new_size = prompt("Please enter new size", node_over_to_use.r);
-	if (new_size!=null) {
-		node_over_to_use.data.size = parseFloat(new_size);
-		node_over_to_use.r = parseFloat(new_size);
-		if (node_over_to_use.data.nodetype!=="compartment")
-				updateCellValue(gridArray[0],"size",node_over_to_use.data.id,parseFloat(new_size));
-	}
-	*/
+  var acolor = node_over_to_use.data.color;
+  GP_updateMeshColorGeometry(node_over_to_use);
+  //change also in ngl view if geometry is toggled
+  if (node_over_to_use === node_selected) {
+    if  (document.getElementById("showgeom").checked ) {
+      var comp = stage.getComponentsByName("geom_surface");
+      if (comp.list.length)
+        if (comp.list[0].reprList.length)
+          comp.list[0].reprList[0].repr.diffuse = new THREE.Color( acolor[0], acolor[1], acolor[2] );
+          comp.list[0].reprList[0].repr.update();
+    }
+  }
 }
 
 function ResizeNodeOver(){
