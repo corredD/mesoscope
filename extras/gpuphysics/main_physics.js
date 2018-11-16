@@ -1051,6 +1051,7 @@ function createCellVIEW(){
 function GP_updateMeshGeometry(anode){
   if (!inited) return;
   var pid = nodes.indexOf(anode);
+  if (!(pid in type_meshs)) return;
   var mid = type_meshs[pid].idmesh;
   var bufferGeometry = new THREE.BufferGeometry();
   var positions = new Float32Array(anode.data.geom.verts);
@@ -1311,9 +1312,11 @@ function GP_walk_lattice(pid,anode,start,count,angle,ulength,totalLength){
           next_point.addVectors(previous_point,new_point);
           //console.log("next_point",next_point);
           //test the points
-          var q = anode.parent.data.mc.getUfromXYZ(next_point.x/ascale,next_point.y/ascale,next_point.z/ascale );
-          //console.log("next_point",next_point,q,safety_count,anode.parent.data.mc.field[q]);//13965
-          if (q<0) {
+          if (anode.parent === root) found = true;
+          else {
+            var q = anode.parent.data.mc.getUfromXYZ(next_point.x/ascale,next_point.y/ascale,next_point.z/ascale );
+            //console.log("next_point",next_point,q,safety_count,anode.parent.data.mc.field[q]);//13965
+            if (q<0) {
             safety_count++;
             angle  = angle +1.10;
             //increase angle or go back
@@ -1321,7 +1324,7 @@ function GP_walk_lattice(pid,anode,start,count,angle,ulength,totalLength){
             if (safety_count > 25) angle  = angle +1.0;
             if (safety_count > safety) {notfound=true;found=true;};
           }
-          else {
+            else {
             var e = anode.parent.data.mc.field[q];
             if (e < anode.parent.data.mc.isolation){//q in anode.parent.data.insides) {
               found = true;
@@ -1337,10 +1340,11 @@ function GP_walk_lattice(pid,anode,start,count,angle,ulength,totalLength){
               //console.log("outside ??");
             }
           }
-          if (safety_count > safety) {
+            if (safety_count > safety) {
             //console.log(safety_count,safety,(safety_count > safety));
             notfound=true;
             found=true;
+            }
           }
         }
         if (notfound) {console.log("not found ??",safety_count,safety,(safety_count > safety));break;}
@@ -2032,7 +2036,7 @@ function GP_defaultLight(){
   light.shadow.camera.right = d;
   light.shadow.camera.top = d;
   light.shadow.camera.bottom = - d;
-  light.shadow.camera.far = 100;
+  light.shadow.camera.far = 1000;
   light.position.set(1,1,1);
   scene.add(light);
 
@@ -2120,8 +2124,8 @@ function GP_initRenderer(){
   container.appendChild( stats.domElement );
 
   scene = window.mainScene = new THREE.Scene();
-  scene.background = new THREE.Color( 0x050505 );
-  scene.fog = new THREE.Fog( 0x050505, 2000, 3500 );
+  scene.background = new THREE.Color("rgb(255, 255, 255)");//new THREE.Color( 0x050505 );
+  scene.fog = new THREE.Fog( "rgb(255, 255, 255)", 2000, 3500 );
   //renderer.setClearColor(0x050505, 1.0);
   //renderer.setClearColor(0xffffff, 1.0);//ambientLight.color,
 
@@ -2185,9 +2189,9 @@ function GP_initWorld(){
         maxParticles: 1024  *  1024 ,
         radius: radius,
         stiffness: 1700,
-        damping: 3,//6,
+        damping: 30,//6,
         fixedTimeStep: 0.001,//1/120,
-        friction: 0,//2,
+        friction: 3,//2,
         drag: 0.3,
         boxSize: boxSize,
         gridPosition: new THREE.Vector3(-boxSize.x,-0.5,-boxSize.z),//-boxSize.x,-boxSize.y,-boxSize.z),(-0.5,0.0,-0.5)

@@ -1555,9 +1555,9 @@ function checkAttributes(agraph){
 		if (!("include" in agraph[i].data)) agraph[i].data.include = true;
 		if (!("opm" in agraph[i].data)) agraph[i].data.opm = 0;//is it an opm model
 
-    if (!("angle" in agraph[i].data)) agraph[i].data.angle = 5.0;//is it an opm model
+    if (!("angle" in agraph[i].data)) agraph[i].data.angle = 25.0;//is it an opm model
     if (!("ulength" in agraph[i].data)) agraph[i].data.ulength = 34.0;//is it an opm model
-    if (!("tlength" in agraph[i].data)) agraph[i].data.tlength = 1000;//is it an opm model
+    if (!("tlength" in agraph[i].data)) agraph[i].data.tlength = 100;//is it an opm model
 		}
 		else {
  			agraph[i].data.nodetype = "compartment";
@@ -2887,7 +2887,7 @@ function addIngredient(){
 	row_to_edit.confidence = 0.0;
 	row_to_edit.label = "protein_label";
   //row_to_edit.geom = "x";
-  row_to_edit.bu="AU";
+  row_to_edit.bu="BU1";//default
   row_to_edit.selection = "";
   row_to_edit.pdb = "";
   row_to_edit.offset = [0,0,0];
@@ -2935,7 +2935,10 @@ function AddANode(some_data){
    newNode.r = 30;
    newNode.data.source = {"pdb":some_data.pdb,"bu":some_data.bu,"selection":some_data.selection,"model":""};
 	 newNode.data.opm = 0;
-	 graph.nodes[0].children.push(newNode);
+   newNode.data.angle = 25.0;//is it an opm model
+   newNode.data.ulength = 34.0;//is it an opm model
+   newNode.data.tlength = 100;//is it an opm model
+   graph.nodes[0].children.push(newNode);
    graph.nodes.push(newNode);
    console.log(newNode);
    updateForce();

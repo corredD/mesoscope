@@ -1119,9 +1119,9 @@ var shared = "float Epsilon = 1e-10;\n\
 	    this.interpolationValue = 0;
 			this.callback=[];
 			this.callback_toggle=[];
-			this.scalePartCollision=5.0;
-			this.scaleCompCollision=5.0;
-			this.scaleSurfaceAttraction=5.0;
+			this.scalePartCollision=1.0;
+			this.scaleCompCollision=1.0;
+			this.scaleSurfaceAttraction=1.0;
 	    var that = this;
 	    function updateMaxVelocity(){
 	        // Set max velocity so that we don't get too much overlap
