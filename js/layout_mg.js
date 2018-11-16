@@ -71,6 +71,15 @@ function layout_getInputNode(anode,key,spec){
       case "color":
           aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
           break;
+      case "select":
+          aHtml+='<select id="input_'+key+'" name="input_'+key+'" onchange="'+spec.callback+'(this)">';
+          for (var i=0;i<spec.options.length;i++)
+          {
+            var selected = (anode.data[key] === spec.options[i])? ' selected':'';
+            aHtml+=' <option value="'+spec.options[i]+'"'+selected+'> '+spec.options[i]+'</option>';
+          }
+          aHtml+='</select>';
+          break;
       default:
           aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
           break;

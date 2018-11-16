@@ -934,6 +934,10 @@ function distributesMesh(){
         }
         nodes[i].data.curves = [];
       }//
+      //check the packing method random or file or supercell
+      if (nodes[i].data.buildtype === "file") {
+        //if not already loaded , load the file-> get positions
+      }
       if (nfiber !==0) {
         for (var cp =0; cp < nfiber; cp++){
           GP_walk_lattice(i,nodes[i],start,count,angle,ulength,tlength);
@@ -1504,6 +1508,7 @@ function createInstancesMeshCurves(pid,anode,start,count) {
   var inertia = new THREE.Vector3();
   var mass = 0;
   var nbeads = 0;
+  var spring_r = world.radius;//world.radius;//anode.data.ulength/2.0*ascale;
   GP_SetBodyType(anode, pid, start, count);
   //position should use the halton sequence and the grid size
   //should do it constrained inside the given compartments
@@ -1535,20 +1540,32 @@ function createInstancesMeshCurves(pid,anode,start,count) {
       var y = pos.y;
       var z = pos.z;
       //q = new THREE.Quaternion(r.x,r.y,r.z,r.w);
-      counter+=1;
       mass = 1;
       calculateBoxInertia(inertia, mass, new THREE.Vector3(radius*2,radius*2,radius*2));
       world.addBody(x,y,z, q.x, q.y, q.z, q.w,
                     mass, inertia.x, inertia.y, inertia.z,
                     anode.data.bodyid);
+      //attach two body or two particles
       if (anode.data.radii) {
         if (anode.data.radii && "radii" in anode.data.radii[0]) {
+          var id1 = -1;//world.particleCount;
+          var id2 = -1;
+          //this assume only one, what if more ? should provide the beads that interact?
           for (var i=0;i<anode.data.radii[0].radii.length;i++){
               //transform beads
+              id1 = world.particleCount;
               var x=anode.data.pos[0].coords[i*3]*ascale,
                   y=anode.data.pos[0].coords[i*3+1]*ascale,
                   z=anode.data.pos[0].coords[i*3+2]*ascale;
               world.addParticle(bodyId, x,y,z);
+              id2 = world.particleCount;
+              //create a i,i+1 constraints for starter with assuming one beads?
+              //or enable only 4 possible interaction per beads
+              //distance need to be scaled *ascale
+              if (world.particleCount-1>=0 && counter-1 >= 0)
+                  world.addParticlePairInteraction(id1-1,id1,2.0*spring_r);
+              if (world.particleCount-2>=0 && counter-2 >= 0)
+                  world.addParticlePairInteraction(id1-2,id1,4.0*spring_r);
               /*if ( particle_id_Count >= world.particleCount )
               {    world.addParticle(bodyId, x,y,z);}
               else
@@ -1578,6 +1595,7 @@ function createInstancesMeshCurves(pid,anode,start,count) {
         }
         num_beads_total = num_beads_total + atomData_mapping[pid].count;
       }
+      counter+=1;
     }
     start = start + npoints;
     //total = total + npoints;
@@ -2582,9 +2600,9 @@ function GP_WarmUp(){
   {
     console.log("Warm Up",i);
     world.step(0.01);
-    world.resetGridCompartmentMB();
-    world.flushGridData();
-    GP_gpuCombineGrid();
+    //world.resetGridCompartmentMB();
+    //world.flushGridData();
+    //GP_gpuCombineGrid();
   }
 }
 

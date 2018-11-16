@@ -388,11 +388,12 @@ var allattributes_type={
   "offset": {"type":"vector3","editable":false},
   "pos": {"type":"object","editable":false},
   "radii": {"type":"object","editable":false},
-  "ingtype": {"type":"select","editable":true},
-  "buildtype": {"type":"select","editable":true},
+  "ingtype": {"type":"select","editable":true,"options":["protein","fiber"]},
+  "buildtype": {"type":"select","editable":true,"options":["random","file","supercell"],"callback":"switchBuildType_cb"},
+  "buildfilename":{"type":"string","editable":true},
   "comments":{"type":"string","editable":true},
   "color": {"type":"color","editable":true},
-  "nodetype":  {"type":"select","editable":true},
+  "nodetype":  {"type":"select","editable":true,"options":["ingredient","compartment"]},
   "visited": {"type":"bool","editable":false},
   "include": {"type":"bool","editable":true},
   "opm": {"type":"number","editable":true},
@@ -1532,6 +1533,7 @@ function checkAttributes(agraph){
 		if (!("color" in agraph[i].data)) agraph[i].data.color = [0,0,0];
 		if (!("ingtype" in agraph[i].data)) agraph[i].data.ingtype = "protein";
 		if (!("buildtype" in agraph[i].data)) agraph[i].data.buildtype = "random";
+    if (!("buildfilename" in agraph[i].data)) agraph[i].data.buildfilename = "";
 		if (!("comments" in agraph[i].data)) agraph[i].data.comments = "";
 		//if (!("color" in agraph[i].data)) agraph[i].data.color = [];
 		if (agraph[i].data.molecularweight > property_mapping.molecularweight.max) property_mapping.molecularweight.max = agraph[i].data.molecularweight;
@@ -1857,7 +1859,7 @@ function drawCompRec(anode) {
 //	}
 }
 
-function defaultNodeCB(e){
+function defaultNode_cb(e){
   console.log(e);
   var key = e.id.split("_")[1];
   console.log(key);
@@ -1867,6 +1869,29 @@ function defaultNodeCB(e){
     //TODO update the graph dataView as well!!!!
   }
 }
+
+function switchBuildType_cb(e){
+  console.log(e);
+  node_selected.data["buildtype"] = e.value;
+  if (e.value === "file") {
+    //change the div and specify a filename
+    if (node_selected.data.buildfilename==="" && !node_selected.data.buildfile){
+      console.log("need a file");
+
+    }
+  }
+}
+
+/*if (comptype === "file") {
+  //add input file
+    htmlStr+='<input  class="hidden" type="file" id="comp_source_file" accept=".dae,.obj,.map,.pdb,.mmtf" type="file" onchange="selectCompFile(event)" />';
+    //onclick="$('#jsfile_input').trigger('click');"
+    var elem = "'comp_source_file'";
+    htmlStr+='<input type="button" id="load_comp_source_file" value="Browse..." onclick="document.getElementById('+elem+').click();" />';
+    var current_file = (anode.data.geom) ? anode.data.geom :"No file selected";
+    htmlStr+='<label id="label_comp_source_file">'+current_file+'</label>';
+}
+*/
 
 function SetObjectsOptionsDiv(anode) {
 	//ues the node objects
@@ -1927,7 +1952,8 @@ function SetObjectsOptionsDiv(anode) {
             continue;
           }
           if (specificiations.editable){
-            if (!(specificiations.callback)) specificiations.callback = "defaultNodeCB";
+            if (!(specificiations.callback)) specificiations.callback = "defaultNode_cb";
+            if (e=="buildfilename" && anode.data.buildtype!=="file") continue;
             htmlStr+=layout_getInputNode(anode,e,specificiations);
           }
         	else htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>';

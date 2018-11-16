@@ -284,6 +284,8 @@ var updateForceFrag = "uniform vec4 params1;\n\
 	uniform sampler2D velTex;\n\
 	uniform sampler2D bodyAngularVelTex;\n\
 	uniform sampler2D particlePosRelative;\n\
+	uniform sampler2D particlePairs;\n\
+	uniform sampler2D particlePairsDistances;\n\
 	uniform sampler2D bodyQuatTex;\n\
 	uniform sampler2D bodyInfosTex1;\n\
 	uniform float scalePartCollision;\n\
@@ -306,6 +308,8 @@ var updateForceFrag = "uniform vec4 params1;\n\
 	    vec2 uv = gl_FragCoord.xy / resolution;\n\
 	    int particleIndex = uvToIndex(uv, resolution);\n\
 	    vec4 positionAndBodyId = texture2D(posTex, uv);\n\
+			vec4 pairsIds = texture2D(particlePairs, uv);\n\
+			vec4 pairsDistances = texture2D(particlePairsDistances, uv);\n\
 	    vec3 position = positionAndBodyId.xyz;\n\
 			float bodyId = positionAndBodyId.w;\n\
 			vec2 bodyIduv = indexToUV(bodyId,bodyTextureResolution);\n\
@@ -322,7 +326,34 @@ var updateForceFrag = "uniform vec4 params1;\n\
 	    vec3 relativePosition = relativePositionAndBodyId.xyz;\n\
 	    vec3 force = vec3(0);\n\
 	    ivec3 iGridRes = ivec3(gridResolution);\n\
+			int has_pair = -1;\n\
+			float pids[4];\n\
+			pids[0] = pairsIds.x;pids[1] = pairsIds.y;pids[2] = pairsIds.z;pids[3] = pairsIds.w;\n\
+			float dist[4];\n\
+			dist[0] = pairsDistances.x;dist[1] = pairsDistances.y;dist[2] = pairsDistances.z;dist[3] = pairsDistances.w;\n\
+			for(int i=0; i<4; i++){\n\
+			  if (pids[i]!=-1.0) {\n\
+					has_pair = 1;\n\
+			    vec2 neighborUV = indexToUV(pids[i], resolution);\n\
+					float spring_distance = dist[i];\n\
+			    vec4 neighborPositionAndBodyId = texture2D(posTex, neighborUV);\n\
+					vec3 neighborPosition = neighborPositionAndBodyId.xyz;\n\
+			    float neighborBodyId = neighborPositionAndBodyId.w;\n\
+			    vec3 neighborAngularVelocity = texture2D(bodyAngularVelTex, indexToUV(neighborBodyId,bodyTextureResolution)).xyz;\n\
+			    vec3 neighborVelocity = texture2D(velTex, neighborUV).xyz;\n\
+			    vec3 neighborRelativePosition = texture2D(particlePosRelative, neighborUV).xyz;\n\
+					if (pids[i] >=0.0 && pids[i] != float(particleIndex) && neighborBodyId != bodyId){\n\
+									vec3 rvec = position - neighborPosition;\n\
+									float lenr = length(rvec);\n\
+									if (lenr!=0.0) {\n\
+										force += normalize(rvec) * (lenr - spring_distance) * (-stiffness);\n\
+									}\n\
+									force += -(velocity - neighborVelocity) * friction;\n\
+					}\n\
+			  }\n\
+			}\n\
 			//collision loop\n\
+			//if (has_pair==-1) {\n\
 	    for(int i=-1; i<2; i++){\n\
 	        for(int j=-1; j<2; j++){\n\
 	            for(int k=-1; k<2; k++){\n\
@@ -339,9 +370,16 @@ var updateForceFrag = "uniform vec4 params1;\n\
 	                    vec3 neighborAngularVelocity = texture2D(bodyAngularVelTex, indexToUV(neighborBodyId,bodyTextureResolution)).xyz;\n\
 	                    vec3 neighborVelocity = texture2D(velTex, neighborUV).xyz;\n\
 	                    vec3 neighborRelativePosition = texture2D(particlePosRelative, neighborUV).xyz;\n\
-	                    if(neighborIndex >=0 && neighborIndex != particleIndex && neighborBodyId != bodyId && \n\
-	                          iNeighborCellGridPos.x>=0 && iNeighborCellGridPos.y>=0 && iNeighborCellGridPos.z>=0 && \n\
-	                          iNeighborCellGridPos.x<iGridRes.x && iNeighborCellGridPos.y<iGridRes.y && iNeighborCellGridPos.z<iGridRes.z){\n\
+											if (has_pair==1 && (neighborIndex == particleIndex-1 || neighborIndex == particleIndex+1)){\n\
+												//consectuive beads no collision\n\
+												continue;\n\
+											}\n\
+	                    if(neighborIndex >=0 && neighborIndex != particleIndex &&  \n\
+														neighborBodyId != bodyId && \n\
+	                          iNeighborCellGridPos.x>=0 && iNeighborCellGridPos.y>=0 &&  \n\
+														iNeighborCellGridPos.z>=0 && \n\
+	                          iNeighborCellGridPos.x<iGridRes.x && iNeighborCellGridPos.y<iGridRes.y &&  \n\
+														iNeighborCellGridPos.z<iGridRes.z){\n\
 	                        vec3 r = position - neighborPosition;\n\
 	                        float len = length(r);\n\
 	                        if(len > 0.0 && len < radius * 2.0){\n\
@@ -356,8 +394,9 @@ var updateForceFrag = "uniform vec4 params1;\n\
 	            }\n\
 	        }\n\
 	    }\n\
+		  //}\n\
 			force *= scalePartCollision;\n\
-	    //vec3 boxMin = vec3(-boxSize.x, 0.0, -boxSize.z);//vec3(-boxSize.x, 0.0, -boxSize.z);\n\
+			//vec3 boxMin = vec3(-boxSize.x, 0.0, -boxSize.z);//vec3(-boxSize.x, 0.0, -boxSize.z);\n\
 	    //vec3 boxMax = vec3(boxSize.x, boxSize.y*0.5, boxSize.z);\n\
 			vec3 boxMin = vec3(-boxSize.x, -0.5, -boxSize.z);//vec3(-boxSize.x, 0.0, -boxSize.z);\n\
 	    vec3 boxMax = vec3(boxSize.x, 0.5, boxSize.z);\n\
@@ -411,9 +450,9 @@ var updateForceFrag = "uniform vec4 params1;\n\
 					else force = force+f*scaleCompCollision;\n\
 			}\n\
 			else {\n\
-				if ( distance > 0.0 && bodyType_infos1.w < 0.0) force = force -f;//*10\n\
+				if ( distance > 0.0 && bodyType_infos1.w < 0.0) force = force -f*scaleCompCollision;//*10\n\
 				if ( distance < 0.0 && grid_infos.x != abs(bodyType_infos1.w)) f = -f;//*10\n\
-				if ( distance < 0.0 && bodyType_infos1.w == 0.0) force = force -f;\n\
+				if ( distance < 0.0 && bodyType_infos1.w == 0.0) force = force -f*scaleCompCollision;\n\
 				if ( bodyType_infos1.w > 0.0)\n\
 				{\n\
 					//force =force*10.0-f*10.0;\n\
@@ -450,6 +489,7 @@ var updateForceFrag = "uniform vec4 params1;\n\
 			gl_FragColor = vec4(force, 1.0);\n\
 	}\n"
 
+//how to mask
 //step 6 - updateParticleTorque()->this.textures.particleTorque
 var updateTorqueFrag = "uniform vec4 params1;\n\
 	#define stiffness params1.x\n\
@@ -566,13 +606,15 @@ var updateTorqueFrag = "uniform vec4 params1;\n\
 //step 7 - updateBodyForce()
 var addParticleForceToBodyVert = "uniform sampler2D relativeParticlePosTex;\n\
 	uniform sampler2D particleForceTex;\n\
+	//uniform sampler2D particleSpringForceTex;\n\
 	attribute float particleIndex;\n\
 	attribute float bodyIndex;\n\
 	varying vec3 vBodyForce;\n\
 	void main() {\n\
 	    vec2 particleUV = indexToUV( particleIndex, resolution );\n\
 	    vec3 particleForce = texture2D( particleForceTex, particleUV ).xyz;\n\
-	    vBodyForce = particleForce;\n\
+			//vec3 particleSpringForce = texture2D( particleSpringForceTex, particleUV ).xyz;\n\
+	    vBodyForce = particleForce;// + particleSpringForce;\n\
 	    vec2 bodyUV = indexToUV( bodyIndex, bodyTextureResolution );\n\
 	    bodyUV += vec2(0.5) / bodyTextureResolution;\n\
 			gl_PointSize = 1.0;\n\
@@ -1069,6 +1111,7 @@ var shared = "float Epsilon = 1e-10;\n\
 			this.bodyTypeCount = 0;
 	    this.bodyCount = 0;
 	    this.particleCount = 0;
+			this.particlepairsCount = 0;
 	    this.massDirty = true;
 			this.gridDirty = true;
 	    this.maxSubSteps = parameters.maxSubSteps || 5;
@@ -1125,6 +1168,11 @@ var shared = "float Epsilon = 1e-10;\n\
 	                return this.textures.particlePosLocal.width * this.textures.particlePosLocal.height;
 	            }
 	        },
+					maxParticlesPairs: {
+	            get: function(){
+	                return this.textures.particlePairs.width * this.textures.particlePairs.height;
+	            }
+	        },
 	        maxBodies: {
 	            get: function(){
 	                return this.textures.bodyPosRead.width * this.textures.bodyPosRead.height;
@@ -1144,6 +1192,8 @@ var shared = "float Epsilon = 1e-10;\n\
 	        bodyTextureSize: {          get: function(){ return this.textures.bodyPosRead.width; } },
 	        particlePositionTexture: {  get: function(){ return this.textures.particlePosWorld.texture; } },
 	        particleLocalPositionTexture: {  get: function(){ return this.textures.particlePosLocal.texture; } },
+					particlePairsTexture : {  get: function(){ return this.textures.particlePairs.texture; } },
+					particlePairsDistancesTexture: {     get: function(){ return this.textures.particlePairsDistances.texture; } },
 	        particleForceTexture: {     get: function(){ return this.textures.particleForce.texture; } },
 	        particleTextureSize: {      get: function(){ return this.textures.particlePosWorld.width; } },
 	        gridTexture: {              get: function(){ return this.textures.grid.texture; } }
@@ -1395,7 +1445,7 @@ var shared = "float Epsilon = 1e-10;\n\
 					data2[p2 + 0] = copynumber;
 	        data2[p2 + 1] = nbeads;
 					data2[p2 + 2] = this.bodyTypeCount;
-					data2[p2 + 3] = 0;//compparentId ?
+					data2[p2 + 3] = 0;// fiber ?
 					p2 = idToDataIndex(this.bodyTypeCount*2.0+1, w2, h2);
 					data[p2 + 0] = 1/inertiaX;
 	        data[p2 + 1] = 1/inertiaY;
@@ -1442,7 +1492,7 @@ var shared = "float Epsilon = 1e-10;\n\
 					data2[p2 + 0] = copynumber;
 					data2[p2 + 1] = nbeads;
 					data2[p2 + 2] = bodyTypeId;
-					data2[p2 + 3] = 0;//compparentId ?
+					data2[p2 + 3] = 0;//compparentId ? mask ?
 					p2 = idToDataIndex(bodyTypeId*2.0+1, w2, h2);
 					data[p2 + 0] = 1/inertiaX;
 					data[p2 + 1] = 1/inertiaY;
@@ -1544,7 +1594,58 @@ var shared = "float Epsilon = 1e-10;\n\
 	        data[p + 2] = z;
 	        data[p + 3] = bodyId;
 	        //TODO: update point cloud mapping particles -> bodies?
+					//initialize the particlePairs to -1
+					var tex1 = this.dataTextures.particlePairs;
+					tex1.needsUpdate = true;
+	        var data1 = tex1.image.data;
+	        data1[p + 0] = -1;
+	        data1[p + 1] = -1;
+	        data1[p + 2] = -1;
+	        data1[p + 3] = -1;
+					//another for the distance
+					var tex2 = this.dataTextures.particlePairsDistances;
+					tex2.needsUpdate = true;
+	        var data2 = tex2.image.data;
+	        data2[p + 0] = -1;
+	        data2[p + 1] = -1;
+	        data2[p + 2] = -1;
+	        data2[p + 3] = -1;
+					//another for the distance
 	        return this.particleCount++;
+	    },
+			//TODO addBodyPairInteraction?  center to center
+			addParticlePairInteraction: function(id1,id2,distance)
+			{
+					if(this.particlepairsCount >= this.maxParticlesPairs){
+	            console.warn("Too many particles pairs: " + this.particlepairsCount+" max "+this.maxParticlesPairs);
+	            return;
+	        }
+	        // Position
+					//console.log("add spring between",id1,id2);
+	        var tex = this.dataTextures.particlePairs;
+	        tex.needsUpdate = true;
+	        var data = tex.image.data;
+					var tex2 = this.dataTextures.particlePairsDistances;
+					tex2.needUpdate = true;
+					var data2 = tex2.image.data;
+	        var w = tex.image.width;
+	        var h = tex.image.height;
+	        var p1 = idToDataIndex(id1, w, h);
+					var p2 = idToDataIndex(id2, w, h);
+					for (var i=0;i<4;i++){
+						if (data[p1+i]===-1) {
+							data[p1+i] = id2;
+							data2[p1+i] = distance;
+							break;
+						}
+					}
+					for (var i=0;i<4;i++){
+						if (data[p2+i]===-1) {
+							data[p2+i] = id1;
+							data2[p2+i] = distance;
+							break;
+						}
+					}
 	    },
 			setParticle: function(particleId, bodyId, x, y, z){
 					//console.log("set a particle to instance id ",particleId,bodyId);
@@ -1615,11 +1716,14 @@ var shared = "float Epsilon = 1e-10;\n\
 
 	            // Particle textures
 	            particlePosLocal: createRenderTarget(particleTextureSize, particleTextureSize, type),   // (x,y,z,bodyId)
-	            particlePosRelative: createRenderTarget(particleTextureSize, particleTextureSize, type),// (x,y,z,bodyId)
+							particlePosRelative: createRenderTarget(particleTextureSize, particleTextureSize, type),// (x,y,z,bodyId)
 	            particlePosWorld: createRenderTarget(particleTextureSize, particleTextureSize, type),   // (x,y,z,bodyId)
 	            particleVel: createRenderTarget(particleTextureSize, particleTextureSize, type),        // (x,y,z,1)
 	            particleForce: createRenderTarget(particleTextureSize, particleTextureSize, type),      // (x,y,z,1)
 	            particleTorque: createRenderTarget(particleTextureSize, particleTextureSize, type),     // (x,y,z,1)
+							particlePairs: createRenderTarget(particleTextureSize, particleTextureSize, type),   // (id1,id2,distance,?)
+							particlePairsDistances: createRenderTarget(particleTextureSize, particleTextureSize, type),   // (id1,id2,distance,?)
+							//particleSpringForce: createRenderTarget(particleTextureSize, particleTextureSize, type),
 							//main grid
 							gridIdsRead: createRenderTarget(gridIdTextureSize, gridIdTextureSize, type ),
 							gridIdsWrite: createRenderTarget(gridIdTextureSize, gridIdTextureSize, type ),
@@ -1638,7 +1742,9 @@ var shared = "float Epsilon = 1e-10;\n\
 							bodyPositions: new THREE.DataTexture( new Float32Array(4*bodyTextureSize*bodyTextureSize), bodyTextureSize, bodyTextureSize, THREE.RGBAFormat, type ),
 	            bodyQuaternions: new THREE.DataTexture( new Float32Array(4*bodyTextureSize*bodyTextureSize), bodyTextureSize, bodyTextureSize, THREE.RGBAFormat, type ),
 	            particleLocalPositions: new THREE.DataTexture( new Float32Array(4*particleTextureSize*particleTextureSize), particleTextureSize, particleTextureSize, THREE.RGBAFormat, type ),
-	            bodyMass: new THREE.DataTexture( new Float32Array(4*bodyTextureSize*bodyTextureSize), bodyTextureSize, bodyTextureSize, THREE.RGBAFormat, type ),
+							particlePairs: new THREE.DataTexture( new Float32Array(4*particleTextureSize*particleTextureSize), particleTextureSize, particleTextureSize, THREE.RGBAFormat, type ),
+							particlePairsDistances: new THREE.DataTexture( new Float32Array(4*particleTextureSize*particleTextureSize), particleTextureSize, particleTextureSize, THREE.RGBAFormat, type ),
+							bodyMass: new THREE.DataTexture( new Float32Array(4*bodyTextureSize*bodyTextureSize), bodyTextureSize, bodyTextureSize, THREE.RGBAFormat, type ),
 	        });
 	    },
 			resetData: function(){
@@ -1646,6 +1752,7 @@ var shared = "float Epsilon = 1e-10;\n\
 				var particleTextureSize = powerOfTwoCeil(this.maxParticles);
 				var gridIdTextureSize = powerOfTwoCeil(this.broadphase.resolution.x*this.broadphase.resolution.x*this.broadphase.resolution.x);
 				var bodyInfosTextureSize = powerOfTwoCeil(this.maxBodyTypes)*2;
+
 				this.dataTextures.bodyPositions.image.data = new Float32Array(4*bodyTextureSize*bodyTextureSize);
 				this.dataTextures.bodyQuaternions.image.data = new Float32Array(4*bodyTextureSize*bodyTextureSize);
 				this.dataTextures.particleLocalPositions.image.data = new Float32Array(4*particleTextureSize*particleTextureSize);
@@ -1653,6 +1760,9 @@ var shared = "float Epsilon = 1e-10;\n\
 				this.dataTextures.bodyInfos.image.data =new Float32Array(4*bodyInfosTextureSize*bodyInfosTextureSize);
 				this.dataTextures.bodyInfos1.image.data =new Float32Array(4*bodyInfosTextureSize*bodyInfosTextureSize);
 				this.dataTextures.bodyInfos2.image.data = new Float32Array(4*bodyInfosTextureSize*bodyInfosTextureSize);
+				this.dataTextures.particlePairs.image.data = new Float32Array(4*particleTextureSize*particleTextureSize);
+				this.dataTextures.particlePairsDistances.image.data = new Float32Array(4*particleTextureSize*particleTextureSize);
+
 				this.dataTextures.bodyPositions.needsUpdate = true;
 				this.dataTextures.bodyQuaternions.needsUpdate = true;
 				this.dataTextures.particleLocalPositions.needsUpdate = true;
@@ -1660,6 +1770,9 @@ var shared = "float Epsilon = 1e-10;\n\
 				this.dataTextures.bodyInfos.needUpdate = true;
 				this.dataTextures.bodyInfos1.needUpdate = true;
 				this.dataTextures.bodyInfos2.needUpdate = true;
+				this.dataTextures.particlePairs.needsUpdate = true;
+				this.dataTextures.particlePairsDistances.needsUpdate = true;
+
 				this.gridDirty = true;
 				this.time = 0;//force the flush
 				this.accumulator = 0;
@@ -1693,6 +1806,8 @@ var shared = "float Epsilon = 1e-10;\n\
 	        this.flushDataToRenderTarget(this.textures.bodyQuatWrite, this.dataTextures.bodyQuaternions);
 	        this.flushDataToRenderTarget(this.textures.bodyQuatRead, this.dataTextures.bodyQuaternions);
 	        this.flushDataToRenderTarget(this.textures.particlePosLocal, this.dataTextures.particleLocalPositions);
+					this.flushDataToRenderTarget(this.textures.particlePairs, this.dataTextures.particlePairs);
+					this.flushDataToRenderTarget(this.textures.particlePairsDistances, this.dataTextures.particlePairsDistances);
 					//this.flushDataToRenderTarget(this.textures.bodyInfos, this.dataTextures.bodyInfos);
 	    },
 			flushGridData: function(){
@@ -2153,6 +2268,8 @@ var shared = "float Epsilon = 1e-10;\n\
 	                    gridPos: { value: this.broadphase.position },
 	                    posTex:  { value: null },
 	                    particlePosRelative:  { value: null },
+											particlePairs:  { value: null },
+											particlePairsDistances:  { value: null },
 	                    velTex:  { value: null },
 	                    bodyAngularVelTex:  { value: null },
 	                    gridTex:  { value: this.textures.grid.texture },
@@ -2181,7 +2298,9 @@ var shared = "float Epsilon = 1e-10;\n\
 	        this.fullscreenQuad.material = this.materials.force;
 	        forceMaterial.uniforms.posTex.value = this.textures.particlePosWorld.texture;
 	        forceMaterial.uniforms.particlePosRelative.value = this.textures.particlePosRelative.texture;
-	        forceMaterial.uniforms.velTex.value = this.textures.particleVel.texture;
+	        forceMaterial.uniforms.particlePairsDistances.value = this.textures.particlePairsDistances.texture;
+					forceMaterial.uniforms.particlePairs.value = this.textures.particlePairs.texture;
+					forceMaterial.uniforms.velTex.value = this.textures.particleVel.texture;
 	        forceMaterial.uniforms.bodyAngularVelTex.value = this.textures.bodyAngularVelRead.texture;
 					forceMaterial.uniforms.gridIdTex.value = this.textures.gridIdsRead.texture;
 					forceMaterial.uniforms.scalePartCollision.value= this.scalePartCollision;
@@ -2201,6 +2320,8 @@ var shared = "float Epsilon = 1e-10;\n\
 	        renderer.render( this.scenes.fullscreen, this.fullscreenCamera, this.textures.particleForce, false );
 	        forceMaterial.uniforms.posTex.value = null;
 	        forceMaterial.uniforms.particlePosRelative.value = null;
+					forceMaterial.uniforms.particlePairsDistances.value = null;
+					forceMaterial.uniforms.particlePairs.value = null;
 	        forceMaterial.uniforms.velTex.value = null;
 	        forceMaterial.uniforms.bodyAngularVelTex.value = null;
 					forceMaterial.uniforms.bodyPosTex.value = null;
@@ -2301,6 +2422,7 @@ var shared = "float Epsilon = 1e-10;\n\
 	            addForceToBodyMaterial = this.materials.addForceToBody = new THREE.ShaderMaterial({
 	                uniforms: {
 	                    relativeParticlePosTex:  { value: null },
+											//particleSpringForceTex:{value:null},
 	                    particleForceTex:  { value: null }
 	                },
 	                vertexShader: getShader( 'addParticleForceToBodyVert' ),
@@ -2337,6 +2459,7 @@ var shared = "float Epsilon = 1e-10;\n\
 	        this.mapParticleToBodyMesh.material = this.materials.addForceToBody;
 	        addForceToBodyMaterial.uniforms.relativeParticlePosTex.value = this.textures.particlePosRelative.texture;
 	        addForceToBodyMaterial.uniforms.particleForceTex.value = this.textures.particleForce.texture;
+					//addForceToBodyMaterial.uniforms.particleSpringForce.value = this.textures.particleSpringForce.texture;
 	        renderer.render( this.scenes.mapParticlesToBodies, this.fullscreenCamera, this.textures.bodyForce, false );
 	        addForceToBodyMaterial.uniforms.relativeParticlePosTex.value = null;
 	        addForceToBodyMaterial.uniforms.particleForceTex.value = null;
