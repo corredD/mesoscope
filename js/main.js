@@ -1333,6 +1333,17 @@ function selectFile(e){
     		getModalMapping(data_header,book,thefile.name.split(".")[0]);
     		}
     	}
+    else if (ext==="pdb"){
+      //special DAVID GOODSELL format
+      reader.onload = function(event) {
+          var data = reader.result;
+          var adata = cp_LoadGoodsellPDBModel(data);
+          update_graph(adata.nodes,adata.links);
+      }
+    }
+    else {
+      alert('Extension not supported '+ext);
+    }
     if (ext === "xlsx") reader.readAsBinaryString(thefile);
     else reader.readAsText(thefile, 'UTF-8');
 	}

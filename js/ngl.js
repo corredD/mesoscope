@@ -3002,8 +3002,13 @@ function NGL_multiSpheresComp(name,pos, radii) {
   }
 }
 
-function NGL_noPdbProxy(name, radius) {
+function NGL_noPdbProxy(anode,name, radius) {
   var align_axis = false;
+  ngl_load_params.dobeads = true;
+  anode.data.pos = [];
+  anode.data.pos.push({"coords":[0,0,0]});
+  anode.data.radii =[];
+  anode.data.radii.push({"radii":[radius]});
   NGL_ShowOrigin();
   //if (ngl_load_params.dogeom) {
     if (node_selected.data.geom_type && node_selected.data.geom_type !== "None" && node_selected.data.geom_type !== "sphere")
@@ -3455,7 +3460,7 @@ function NGL_UpdateWithNode(d, force = false) {
     if ((ngl_current_item_id !== d.data.id)||(force)) {
       if (!d.data.source.pdb || d.data.source.pdb === "None") {
         //build a sphere of size radius
-        NGL_noPdbProxy(d.data.name, d.data.size);
+        NGL_noPdbProxy(d,d.data.name, d.data.size);
         return;
       }
       stage.removeAllComponents();

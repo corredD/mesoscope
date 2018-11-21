@@ -1,5 +1,6 @@
 var ingr_uniq_id;
-
+var premade_data={};//per ingredient ids or name ?
+var premade_all_data;
 
 class sCompartment {
   constructor(name, static_id) {
@@ -151,7 +152,6 @@ function AddSerializedPartner(ingdic, node, some_links) {
   }
   return ingdic;
 }
-
 
 function oneCompartment(scomp, node) {
   var gtype = (node.data.geom_type) ? node.data.geom_type : "None";
@@ -524,7 +524,6 @@ function parseCellPackRecipeSerialized(jsondic) {
   };
 }
 
-
 /* regular cellpack */
 
 function checkPartners(ing_dic, currentId) {
@@ -835,4 +834,136 @@ function parseCellPackRecipe(jsondic) {
     "nodes": graph,
     "links": interaction
   };
+}
+
+/* David Goodsell PDB format */
+function OneDefaultIngredient(name,isfiber,isfile){
+  var elem = {
+    "name": name,
+    "size": 30,
+    "molecularweight": 0.0,
+    "confidence": 0.0,
+    "source": {"pdb":"","bu":"BU1","selection":"","model":0},
+    "count": 0,
+    "ingtype": (isfiber)?"fiber":"protein",
+    "buildtype": (isfile)?"file":"random",
+    "molarity": 0.0,
+    "surface": false,
+    "geom": null,
+    "geom_type": null,
+    "label": name,
+    "comments": "",
+    "uniprot": "",
+    "pcpalAxis": [1,0,0],
+    "offset": [0,0,0],
+    "pos": [],
+    "radii": [],
+    "nodetype": "ingredient",
+    "color": [1,0,0],
+  };
+  //check if in the known ingredient ? would require species
+  if (isfiber){
+    if (name.includes("DNA")) {
+      elem.source.pdb = "DNA_oneTurn.pdb";
+      elem.angle = 15.0;
+      elem.ulength = 34.0;
+      elem.tlength = 100.0;
+    }
+    else if (name.includes("RNA")) {
+      elem.source.pdb = "DNA_oneTurn.pdb";
+      elem.source.selection = ":A";
+      elem.angle = 15.0;
+      elem.ulength = 34.0;
+      elem.tlength = 100.0;
+    }
+  }
+  return elem;
+}
+
+function cp_LoadGoodsellPDBModel(textdata)
+{
+    //compartments->none or a default compartment?
+    premade_data = {};
+    premade_all_data = [];
+    var graph = {};
+    var rootName = "root";
+    graph["name"] = rootName;
+    graph["children"] = [];
+    graph["nodetype"] = "compartment";
+    var comp = {
+      "name": "default_comp",
+      "children": [],
+      "nodetype": "compartment",
+      "geom": null,
+      "geom_type": "None",
+      "thickness": 0.0
+    };
+    var links = [];
+    var unique_names = {};
+    var ingredients_names = [];//instance type name
+    var ingredients_data = [];//instance coord start, end, constraints-> help rebuild the rotation
+    var lines = textdata.split('\n');
+    var isfiber = false;
+    lines.forEach(function(line){
+       isfiber = false;
+       if (line.startsWith("DEFINE")){
+            var elems = line.split(/[ ]+/);
+            ingredients_names.push(elems[1]);
+            var start = parseInt(elems[2]) - 1;
+            var end = parseInt(elems[3]) - 1;
+            var cstr = parseInt(elems[4]) - 1;
+            if (end-start > 1) isfiber = true;
+            ingredients_data.push(new THREE.Vector3(start, end, cstr));
+            if (!(elems[1] in unique_names)) unique_names[elems[1]] = {"name":elems[1],"fiber":isfiber};
+        }
+       if (line.startsWith("ATOM")){
+          //scale ?
+            var x = parseFloat(line.substring(30, 30+8))*ascale;
+            var y = parseFloat(line.substring(38, 38+8))*ascale;
+            var z = parseFloat(line.substring(46, 46+8))*ascale;
+            premade_all_data.push(new THREE.Vector3(x, y, z));//use the scale ?
+        }
+    });
+    //loop through the ingredient_names and generate the pos/rot/info
+    for (var key in unique_names){
+      var anode = OneDefaultIngredient(key,unique_names[key].fiber,true);
+      comp["children"].push(anode);
+      unique_names[key].node = comp["children"][comp["children"].length-1];
+    }
+    graph["children"].push(comp);
+    for (var i=0;i < ingredients_names.length; i++) {
+        var name = ingredients_names[i];
+        var data = ingredients_data[i];
+        var anode = unique_names[name].node
+        if (anode.ingtype === "fiber")
+        {
+            var pos = premade_all_data.slice(parseInt(data.x),parseInt(data.y));//Skip((int)data.x).Take((int)(data.y - data.x)).ToList();
+            var D = pos[0].distanceTo( pos[1] )/(ascale);//this is scale
+            anode.tlength = pos.length;
+            anode.ulength = D;
+            var spline = new THREE.CatmullRomCurve3( pos );
+            if (!anode.curves) anode.curves = [];
+            //var lgeometry = new THREE.BufferGeometry().setFromPoints( array_points );
+            //var lmaterial = new THREE.LineBasicMaterial( { color : 0xff0000 } );
+            //var curveObject = new THREE.Line( lgeometry, lmaterial );
+            //scene.add(curveObject);
+            anode.curves.push({"points":pos,"spline":spline,"mesh":null,"line":null});
+        }
+        else {
+            if (!anode.results) anode.results = {"positions":[],"rotations":[]};
+            var pos = premade_all_data[parseInt(data.x)];
+            anode.results.positions.push(new THREE.Vector3(pos.x, pos.y, pos.z));
+            //rotation for now is random
+            var q = new THREE.Quaternion();
+            var axis = new THREE.Vector3(
+                Math.random()-0.5,
+                Math.random()-0.5,
+                Math.random()-0.5
+            );
+            axis.normalize();
+            q.setFromAxisAngle(axis, Math.random() * Math.PI * 2);
+            anode.results.rotations.push(q);
+        }
+    }
+    return {"nodes":graph,"links":links};
 }

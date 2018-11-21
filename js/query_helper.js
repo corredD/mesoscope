@@ -38,7 +38,8 @@ if (location.hostname === "localhost" || location.hostname === "127.0.0.1" || lo
     pmv_server = "https://mesoscope.scripps.edu/beta/cgi-bin/get_geom_dev.cgi"; //(local_host_dev)?"cgi-bin/get_geom_dev.cgi":
     sql_server = "https://mesoscope.scripps.edu/beta/cgi-bin/cellpack_db_dev.cgi"; //(local_host_dev)?"cgi-bin/cellpack_db_dev.cgi":
   }
-  cellpack_repo = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/";
+  //cellpack_repo = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/";
+  cellpack_repo = "https://raw.githubusercontent.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/";
 }
 
 

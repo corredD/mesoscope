@@ -924,31 +924,42 @@ function distributesMesh(){
       //random walk in the grid ?
       //should do this for count number of fiber
       var nfiber = count;
+      var totalc = 0;
       var tlength = parseFloat(nodes[i].data.tlength);//segment number not angstrom
       var angle = parseFloat(nodes[i].data.angle);//authorise angle
       var ulength = parseFloat(nodes[i].data.ulength)*ascale;//unit length
-      if (inited && nodes[i].data.curves) {
-        for (var cp =0; cp < nodes[i].data.curves.length; cp++){
-          if (nodes[i].data.curves[cp].line) scene.remove(nodes[i].data.curves[cp].line);
-          nodes[i].data.curves[cp] = null;
-        }
-        nodes[i].data.curves = [];
-      }//
       //check the packing method random or file or supercell
-      if (nodes[i].data.buildtype === "file") {
+      if (nodes[i].data.buildtype === "file")
+      {
         //if not already loaded , load the file-> get positions
-      }
-      if (nfiber !==0) {
+        nfiber = nodes[i].data.curves.length;
         for (var cp =0; cp < nfiber; cp++){
-          GP_walk_lattice(i,nodes[i],start,count,angle,ulength,tlength);
-          //createInstancesMesh(i,nodes[i],start,tlength);
+          totalc+=nodes[i].data.curves[cp].points.length;
         }
-        start = createInstancesMeshCurves(i,nodes[i],start,tlength*nfiber);
-        //start = start + tlength*nfiber;
-        total = total + tlength*nfiber;
       }
+      else {
+        if (inited && nodes[i].data.curves)
+        {
+          for (var cp =0; cp < nodes[i].data.curves.length; cp++){
+            if (nodes[i].data.curves[cp].line) scene.remove(nodes[i].data.curves[cp].line);
+            nodes[i].data.curves[cp] = null;
+          }
+          nodes[i].data.curves = [];
+        }
+        if (nfiber !==0) {
+          for (var cp =0; cp < nfiber; cp++){
+            GP_walk_lattice(i,nodes[i],start,count,angle,ulength,tlength);
+            //createInstancesMesh(i,nodes[i],start,tlength);
+          }
+        }
+        totalc = tlength*nfiber;
+      }
+      start = createInstancesMeshCurves(i,nodes[i],start,totalc);
+      //start = start + tlength*nfiber;
+      total = total + totalc;
     }
     else {
+      if (nodes[i].data.buildtype === "file") count = nodes[i].data.results.positions.length;
       createInstancesMesh(i,nodes[i],start,count);
       start = start + count;
       total = total + count;
@@ -1474,7 +1485,7 @@ function GP_getInertiaMassBeads(anode) {
   var mass = 0;
   var nbeads = 0;
   if (anode.data.radii) {
-    if (anode.data.radii && "radii" in anode.data.radii[0]) {
+    if (anode.data.radii && anode.data.radii.length && "radii" in anode.data.radii[0]) {
       nbeads = anode.data.radii[0].radii.length;
       for (var i=0;i<anode.data.radii[0].radii.length;i++){
         var x=anode.data.pos[0].coords[i*3]*ascale,
@@ -1523,7 +1534,7 @@ function createInstancesMeshCurves(pid,anode,start,count) {
   for (var cp =0; cp < nfiber; cp++){
     var counter = 0;
     var curve = anode.data.curves[cp];
-    var npoints = parseFloat(anode.data.tlength);//curve.points.length;//or nodes[i].data.tlength
+    var npoints = parseFloat(anode.data.tlength);//anode.data.tlength);//curve.points.length;//or nodes[i].data.tlength
     console.log("start x count",start,start+npoints);
     for (var bodyId=start;bodyId<start+npoints;bodyId++) {
       var pos = curve.spline.getPoint(parseFloat(counter)/parseFloat(npoints));
@@ -1660,6 +1671,11 @@ function createInstancesMesh(pid,anode,start,count) {
         if (s>=safety) break;
       }
   }
+  else if (anode.data.buildtype === "file")
+  {
+    if (anode.data.results)
+        count = anode.data.results.positions.length;
+  }
   var counter = 0;
   for (var bodyId=start;bodyId<start+count;bodyId++) {
     //if (loading_bar) loading_bar.set(bodyId/start+count);
@@ -1692,6 +1708,13 @@ function createInstancesMesh(pid,anode,start,count) {
       y=(pos.y+comp_offset.y)*ascale;
       z=(pos.z+comp_offset.z)*ascale;
       q.copy(rotation);
+    }
+    else if (anode.data.buildtype === "file") {
+      x = anode.data.results.positions[counter].x;
+      y = anode.data.results.positions[counter].y;
+      z = anode.data.results.positions[counter].z;
+      q.copy(anode.data.results.rotations[counter]);
+      counter+=1;
     }
     else if (anode.data.surface && anode.parent.data.mesh)
     {
