@@ -3030,6 +3030,7 @@ function ResizeNodeOver(){
 		node_over_to_use.r = parseFloat(new_size);
 		if (node_over_to_use.data.nodetype!=="compartment")
 				updateCellValue(gridArray[0],"size",node_over_to_use.data.id,parseFloat(new_size));
+    updateForce();
 	}
 }
 
