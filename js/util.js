@@ -20,6 +20,11 @@ function Util_parseParams(){
     });
 }
 
+function Util_getRadiusFromMW(mw){
+    var V = mw * 1.21;
+    return Math.pow((3.0*V)/(4.0*Math.PI),1.0/3.0)
+}
+
 function componentToHex(c) {
     var hex = c.toString(16);
     return hex.length == 1 ? "0" + hex : hex;

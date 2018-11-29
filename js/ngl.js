@@ -1573,6 +1573,10 @@ function myTimerToGetTHeBuffer(o,aStopFunction,clean) {
     var arep = stage.getRepresentationsByName("cms_surface_"+o.name).list[0];
     var surf;
     console.log(arep)
+    var comp = stage.getComponentsByName("geom_surface");
+    if (comp.list) {
+      aStopFunction();
+    }
     if (!arep) return;
     if (arep) surf = arep.repr.surface;
     if (!surf) {

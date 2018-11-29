@@ -22,7 +22,16 @@ var canvas_label_options = ["name", "None", "pdb", "uniprot", "label"];
 var canvas_color = document.getElementById("canvas_color");
 var canvas_color_options = ["pdb", "pcpalAxis", "offset", "count_molarity", "Beads",
                             "geom", "confidence", "color", "viewed", "size", "count",
-                            "molarity", "mw"];
+                            "molarity", "molecularweight","default"];
+var canvas_mincolor="hsl(0, 100%, 50%)";
+var canvas_maxcolor="hsl(165, 100%, 50%)";
+var property_mapping = {};
+property_mapping.size = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
+property_mapping.molecularweight = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
+property_mapping.molarity = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
+property_mapping.count = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
+property_mapping.confidence = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
+
 var current_scale = 1;
 //extracellular
 var localisation_tag = ["cytosol", "periplasm", "inner_membrane", "outer_membrane", "membrane", "cytoplasm", "lumen"];
@@ -83,12 +92,7 @@ var temp_link;
 
 var header_index;
 var start_index;
-var property_mapping = {};
-property_mapping.size = {"min": 999999, "max": 0};
-property_mapping.molecularweight = {"min": 999999, "max": 0};
-property_mapping.molarity = {"min": 999999, "max": 0};
-property_mapping.count = {"min": 999999, "max": 0};
-property_mapping.confidence = {"min": 999999, "max": 0};
+
 
 var comp_highligh;
 var comp_highligh_surface;
@@ -1521,11 +1525,18 @@ function MergeExampleBloodHIV(){
 }
 
 function checkAttributes(agraph){
-	property_mapping.molecularweight = {"min":999999,"max":0};
-	property_mapping.size = {"min":999999,"max":0};
-	property_mapping.molarity = {"min":999999,"max":0};
-	property_mapping.count = {"min":999999,"max":0};
-	property_mapping.confidence = {"min":999999,"max":0};
+  console.log("checkAttributes ",agraph);
+  if ( !agraph || agraph.length < 2 ) return;
+  property_mapping.molecularweight.min=0;
+  property_mapping.molecularweight.max=0;
+	property_mapping.size.min = 999999;
+  property_mapping.size.max = 0;
+	property_mapping.molarity.min =0;
+  property_mapping.molarity.max =0;
+	property_mapping.count.min = 0;
+  property_mapping.count.max = 0;
+	property_mapping.confidence.min = 0.0;
+  property_mapping.confidence.max = 1.0;
 	for (var i=0;i<agraph.length;i++){
 		if (!agraph[i].children) {
 		agraph[i].data.nodetype = "ingredient";
@@ -1540,13 +1551,27 @@ function checkAttributes(agraph){
 		if (!("pos" in agraph[i].data)) agraph[i].data.pos = [];
 		if (!("radii" in agraph[i].data)) agraph[i].data.radii = [];
 		if (!("molecularweight" in agraph[i].data)) agraph[i].data.molecularweight = 0.0;
-		if (!("confidence" in agraph[i].data)) agraph[i].data.confidence = 0.0;
+    else agraph[i].data.molecularweight = parseFloat(agraph[i].data.molecularweight);
+		if (!("confidence" in agraph[i].data) || isNaN(agraph[i].data.confidence) || agraph[i].data.confidence == null ) {
+      if ("source" in agraph[i].data && "pdb" in agraph[i].data.source && agraph[i].data.source.pdb && (agraph[i].data.source.pdb.length === 4)||agraph[i].data.source.pdb.split("_")[0].length ===4)
+      {
+        agraph[i].data.confidence = 1.0;
+      }
+      else agraph[i].data.confidence = -1.0;
+    }
+    else agraph[i].data.confidence = parseFloat(agraph[i].data.confidence);
+    if (!("count" in agraph[i].data)) agraph[i].data.count = 0;
+    else agraph[i].data.count = parseInt(agraph[i].data.count);
+    if (!("molarity" in agraph[i].data)) agraph[i].data.molarity = 0.0;
+    else agraph[i].data.molarity = parseFloat(agraph[i].data.molarity);
 		if (!("color" in agraph[i].data)) agraph[i].data.color = [0,0,0];
 		if (!("ingtype" in agraph[i].data)) agraph[i].data.ingtype = "protein";
 		if (!("buildtype" in agraph[i].data)) agraph[i].data.buildtype = "random";
     if (!("buildfilename" in agraph[i].data)) agraph[i].data.buildfilename = "";
 		if (!("comments" in agraph[i].data)) agraph[i].data.comments = "";
 		//if (!("color" in agraph[i].data)) agraph[i].data.color = [];
+
+    //they have to be number not string
 		if (agraph[i].data.molecularweight > property_mapping.molecularweight.max) property_mapping.molecularweight.max = agraph[i].data.molecularweight;
 		if (agraph[i].data.molecularweight < property_mapping.molecularweight.min) property_mapping.molecularweight.min = agraph[i].data.molecularweight;
 
@@ -1557,10 +1582,10 @@ function checkAttributes(agraph){
 		if (agraph[i].data.molarity < property_mapping.molarity.min) property_mapping.molarity.min = agraph[i].data.molarity;
 
 		if (agraph[i].data.count > property_mapping.count.max) property_mapping.count.max = agraph[i].data.count;
-		if (agraph[i].data.count < property_mapping.count.min) property_mapping.count.min = agraph[i].data.count;
+		//if (agraph[i].data.count < property_mapping.count.min) property_mapping.count.min = agraph[i].data.count;
 
-		if (agraph[i].data.confidence > property_mapping.confidence.max) property_mapping.confidence.max = agraph[i].data.confidence;
-		if (agraph[i].data.confidence < property_mapping.confidence.min) property_mapping.confidence.min = agraph[i].data.confidence;
+		//if (agraph[i].data.confidence > property_mapping.confidence.max) property_mapping.confidence.max = agraph[i].data.confidence;
+		//if (agraph[i].data.confidence < property_mapping.confidence.min) property_mapping.confidence.min = agraph[i].data.confidence;
 
 		if (!("visited" in agraph[i].data)) agraph[i].data.visited = false;
 		if (!("include" in agraph[i].data)) agraph[i].data.include = true;
@@ -1982,6 +2007,7 @@ function SetObjectsOptionsDiv(anode) {
 }
 
 function resetAllNodePos(agraph){
+  if (!agraph || agraph.length <2) return;
   var rect = canvas.getBoundingClientRect();
   //console.log(rect);
   //console.log(canvas.parentNode.offsetHeight);//1278
@@ -1996,6 +2022,7 @@ function resetAllNodePos(agraph){
 }
 
 function centerAllNodePos(agraph){
+  if (!agraph || agraph.length <2) return;
   var rect = canvas.getBoundingClientRect();
   //console.log(rect);
   //console.log(canvas.parentNode.offsetWidth);//1138
@@ -2088,11 +2115,11 @@ function setupD3(){
 	  // Returns array of link objects between nodes.
 	  var links = [];//root.links();//nodes.slice(1);
 
-  	nodes = checkAttributes(nodes);
+  	//nodes = checkAttributes(nodes);
     offx = canvas.parentNode.offsetWidth;
 		offy = canvas.parentNode.offsetHeight;
 
-	  nodes = resetAllNodePos(nodes);
+	  //nodes = resetAllNodePos(nodes);
  	  graph.nodes = nodes;
 	  graph.links = links;
 
@@ -2317,6 +2344,45 @@ function drawPalette()
 
 	}
 
+function ChangeCanvasColor(e){
+  var colorby = canvas_color.selectedOptions[0].value;
+  if (!(colorby in property_mapping)) return;
+  var cmin = d3v4.color(property_mapping[colorby].cmin).rgb();
+  var cmax = d3v4.color(property_mapping[colorby].cmax).rgb();
+  var hmin = Util_rgbToHex(parseInt(cmin.r),parseInt(cmin.g),parseInt(cmin.b));
+  var hmax = Util_rgbToHex(parseInt(cmax.r),parseInt(cmax.g),parseInt(cmax.b));
+  document.getElementById("min_color").value = hmin;
+  document.getElementById("max_color").value = hmax;
+}
+
+function ChangeMinColor(e){
+  var colorby = canvas_color.selectedOptions[0].value;
+  var min_color = Util_getRGB(e.value);
+  //var dmcolor = d3v4.color(min_color);
+  //canvas_mincolor=min_color.rgb;
+  property_mapping[colorby].cmin = min_color.rgb;
+}
+
+function ChangeMaxColor(e){
+  var colorby = canvas_color.selectedOptions[0].value;
+  var max_color = Util_getRGB(e.value);
+  //var dmcolor = d3v4.color(max_color);
+  //canvas_maxcolor = max_color.rgb;
+  property_mapping[colorby].cmax = max_color.rgb;
+}
+
+function applyColorModeToIngredient(){
+  //for all node apply the current color to data.color
+  graph.nodes.forEach(function(d){
+    var color = colorNode(d);//return "rbg()"
+    var dcolor = d3v4.color(color);
+    if (!d.children && "data" in d ){
+      if (!( "color" in d.data )) d.data.color=[1,0,0];
+      if (!("_color" in d.data)) d.data._color=[d.data.color[0],d.data.color[1],d.data.color[2]];
+      d.data.color=[dcolor.r/255.0,dcolor.g/255.0,dcolor.b/255.0];
+    }
+  })
+}
 //
 function colorNode(d) {
 	var colorby = canvas_color.selectedOptions[0].value;
@@ -2364,10 +2430,10 @@ function colorNode(d) {
 	else if (colorby === "confidence") {
 		var color_mapping = d3v4.scaleLinear()
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
-			.range(["hsl(0,100%,100%)", "hsl(228,30%,40%)"])
+			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax])//red to green
 			.interpolate(d3v4.interpolateHcl);
 		return (!d.children && "data" in d && "confidence" in d.data
-			&& d.data.confidence )? color_mapping(d.data[colorby]):color(d.depth);//rgb list ?
+			&& d.data.confidence && d.data.confidence >= 0.0)? color_mapping(d.data[colorby]):color(d.depth);//rgb list ?
 	}
 	else if (colorby === "viewed") {
 		return (!d.children && "data" in d && "visited" in d.data
@@ -2378,31 +2444,43 @@ function colorNode(d) {
 	else if (colorby === "count") {
 		var color_mapping = d3v4.scaleLinear()
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
-			.range(["hsl(0,100%,100%)", "hsl(228,30%,40%)"])
+			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax])//blue to red
 			.interpolate(d3v4.interpolateHcl);
-			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby])?color_mapping(d.data[colorby]):color(d.depth);
+			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby] && d.data.count >= 0.0)?color_mapping(d.data[colorby]):color(d.depth);
 	}
 	else if (colorby === "size") {
 		var color_mapping = d3v4.scaleLinear()
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
-			.range(["hsl(0,100%,100%)", "hsl(228,30%,40%)"])
+			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax])
 			.interpolate(d3v4.interpolateHcl);
 			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby])?color_mapping(d.data[colorby]):color(d.depth);
 	}
 	else if (colorby === "molarity") {
 		var color_mapping = d3v4.scaleLinear()
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
-			.range(["hsl(0,100%,100%)", "hsl(228,30%,40%)"])
+			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax])
 			.interpolate(d3v4.interpolateHcl);
 			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby])?color_mapping(d.data[colorby]):color(d.depth);
 	}
 	else if (colorby === "molecularweight") {
 		var color_mapping = d3v4.scaleLinear()
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
-			.range(["hsl(0,100%,100%)", "hsl(228,30%,40%)"])
+			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax])
 			.interpolate(d3v4.interpolateHcl);
 		return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]) ? color_mapping(d.data[colorby]):color(d.depth);
 	}
+  else if (colorby === "default") {
+    if (!d.children && "data" in d && "_color" in d.data)
+      return (d.data._color !== null)? 'rgb('+ Math.floor(d.data._color[0]*255)+","
+                                 + Math.floor(d.data._color[1]*255)+","
+                                 + Math.floor(d.data._color[2]*255)+')' : color(d.depth);//rgb list ?
+    else {
+      return (!d.children && "data" in d && "color" in d.data
+        && d.data.color !== null)? 'rgb('+ Math.floor(d.data.color[0]*255)+","
+                                 + Math.floor(d.data.color[1]*255)+","
+                                 + Math.floor(d.data.color[2]*255)+')' : color(d.depth);//rgb list ?
+    }
+  }
 	else {
 						return ( !d.children && "data" in d && "source" in d.data
 				&& "pdb" in d.data.source
@@ -2416,13 +2494,14 @@ function mapRadiusToProperty(eproperty) {
 	console.log(property_mapping[property]);
 	var mapping = d3v4.scaleLinear()
     .domain([Math.min(0,property_mapping[property].min), property_mapping[property].max])
-    .range([0, 25]);
+    .range([1, 35]);
   //should we increase the size of the parent node ?
 
 	graph.nodes.forEach(function(d){
 		if (!d.children) {
-			d.r = mapping(d.data[property]);//or linearmapping
-			if (d.r === 0) d.r = mapping(d.data.size);
+      if (property==="molecularweight"){ d.r = Util_getRadiusFromMW(d.data.molecularweight); }
+			else d.r = mapping(d.data[property]);//or linearmapping
+			if (d.r <= 0) d.r = mapping(d.data.size);
 			if (isNaN(d.r)) d.r = 10;
 			}
 		});
@@ -2472,7 +2551,7 @@ function sortNodeByDepth(objects){
 }
 
 //the tick also draw in the canvas!
-  function ticked(e) {
+function ticked(e) {
     //$('#canvas').focus();
     //nodes = pack(root).descendants();
 		if (context===null)
@@ -3727,6 +3806,8 @@ function MapLinkToNode(some_nodes,some_links) {
 }
 
 function update_graph(agraph,alink){
+  var isempty= false;
+  if ( agraph.length < 1 ) isempty=true;
 	if (DEBUGLOG) console.log("agraph",agraph);
 	var mapping = d3v4.scaleLinear()
     .domain([Math.min(0,property_mapping["size"].min), property_mapping["size"].max])
@@ -3744,10 +3825,10 @@ function update_graph(agraph,alink){
   }
 	alink = MapLinkToNode(nodes,alink);
 
-  nodes = checkAttributes(nodes);
-  nodes = resetAllNodePos(nodes);
-  nodes = centerAllNodePos(nodes);
-
+  if (!isempty)nodes = checkAttributes(nodes);
+  if (!isempty)nodes = resetAllNodePos(nodes);
+  if (!isempty)nodes = centerAllNodePos(nodes);
+  if (!nodes) nodes =[];
   // Returns array of link objects between nodes.
   //links = root.links();//nodes.slice(1);
   console.log("update with "+nodes.length);
