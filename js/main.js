@@ -23,6 +23,9 @@ var canvas_color = document.getElementById("canvas_color");
 var canvas_color_options = ["pdb", "pcpalAxis", "offset", "count_molarity", "Beads",
                             "geom", "confidence", "color", "viewed", "size", "count",
                             "molarity", "molecularweight","default"];
+var canvas_node_clusters = ["none","pdb", "pcpalAxis", "offset", "count_molarity", "Beads",
+                          "geom", "confidence", "color", "viewed", "size", "count",
+                            "molarity", "molecularweight","default"];
 var canvas_mincolor="hsl(0, 100%, 50%)";
 var canvas_maxcolor="hsl(165, 100%, 50%)";
 var property_mapping = {};
@@ -99,7 +102,6 @@ var comp_highligh_surface;
 
 var draggin_d_node = false;
 
-
 var cDg;
 var mouse_mooving = false;
 
@@ -141,6 +143,8 @@ var nodes;
 
 var offx;
 var offy;
+
+var clusterBy=0;
 
 var graph = {};
 var users;
@@ -282,7 +286,7 @@ function CreateNew(){
 	UpdatePDBcomponent(null);
 	}
 
-
+//we need Stoichiometry=>change of molarity
 //need to add
 //geom name field
 //molecularweight
@@ -1540,6 +1544,7 @@ function checkAttributes(agraph){
 	for (var i=0;i<agraph.length;i++){
 		if (!agraph[i].children) {
 		agraph[i].data.nodetype = "ingredient";
+    if (!"cluster" in agraph[i]) agraph[i].cluster=null;
 		if (!("label" in agraph[i].data)) agraph[i].data.label = agraph[i].data.name;
 		if (!("geom" in agraph[i].data)) agraph[i].data.geom = "X";
 		if (!("geom_type" in agraph[i].data)) agraph[i].data.geom_type = "None";
@@ -2489,6 +2494,19 @@ function colorNode(d) {
 	}
 }
 
+function ClusterNodeBy(eproperty) {
+    //loop through node and assign cluster center
+    //cluster by properties value range?
+    var property = eproperty.value;
+    console.log(property_mapping[property]);
+    var clusters ={};//one cluster by category for this property
+    graph.nodes.forEach(function(d){
+      if (!d.children) {
+
+      }
+    });
+}
+
 function mapRadiusToProperty(eproperty) {
 	var property = eproperty.value;
 	console.log(property_mapping[property]);
@@ -2505,7 +2523,7 @@ function mapRadiusToProperty(eproperty) {
 			if (isNaN(d.r)) d.r = 10;
 			}
 		});
-		//pack the circle
+	//pack the circle
 	graph.nodes.forEach(function(d){
 		if (d.children) {
 			//d3v4.packSiblings(d.children.filter(ad =>!ad.data.surface));
@@ -3703,13 +3721,54 @@ function drawLinkTwoNode(d1,d2) {
    context.lineTo(aoffset.tx, aoffset.ty);
 }
 
+
+// Move d to be adjacent to the cluster node.
+function cluster(alpha) {
+  return function(d) {
+    var cluster = clusters[d.cluster];
+    if (cluster === d) return;
+    var x = d.x - cluster.x,
+        y = d.y - cluster.y,
+        l = Math.sqrt(x * x + y * y),
+        r = d.radius + cluster.radius;
+    if (l != r) {
+      l = (l - r) / l * alpha;
+      d.x -= x *= l;
+      d.y -= y *= l;
+      cluster.x += x;
+      cluster.y += y;
+    }
+  };
+}
+//use cluster
 function drawNode(d) {
-  //if (!d.parent) return;
-  context.moveTo(d.x, d.y);//why +3?
+  //adapt velocity and draw the node
+  var alpha = 0.1;
+  context.moveTo(d.x, d.y);
   var ndx = d.x;
   var ndy = d.y;
   var surface = false;
+  if (clusterBy!==0){
+    var cluster = d.cluster;
+    if (cluster && cluster !== d) {
+      var dx = d.x - cluster.x,
+          dy = d.y - cluster.y,
+          l = Math.sqrt(dx * dx + dy * dy),
+          k = (d.parent.r - r) * 2 * 1 / r;
+          r = d.r + cluster.r;
+      if (l != r) {
+        l = (l - r) / l * alpha;
+        d.x -= x *= l;
+        d.y -= y *= l;
+        cluster.x += x;
+        cluster.y += y;
+        d.vx -= dx * l;
+        d.vy -= dy * l;
+      }
+    }
+  }
   if (d.parent && !d.children && d.data.surface) {
+    //cluster ?
     surface = true;
     //go to the circle parent contour
     var dx = d.x - d.parent.x,

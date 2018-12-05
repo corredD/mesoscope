@@ -135,6 +135,8 @@ var canvasOption = '' +
       '<button id="applycolor" onclick="applyColorModeToIngredient()">Apply to ingredient color</button>' +
       getSelect("canvas_map_r", "options_elems", "Node size",
                             "mapRadiusToProperty(this)", Object.keys(property_mapping),"size")+
+      getSelect("canvas_group", "options_elems", "Node group by",
+                            "ClusterNodeBy(this)", Object.keys(property_mapping),"size")+
     '</div>' +
     '<button id="addingr" class="hidden" onclick="addIngredient()">Add ingredient</button>' +
     '<button id="addcomp" class="hidden" onclick="addCompartment()">Add compartment</button>' +

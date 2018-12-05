@@ -989,6 +989,7 @@ function cp_SerializedColorSchem(){
         }
       }
       else name_path = name_path+".proteins."+d.data.name;
+      if (!d.data.color) d.data.color = [1,0,0];
       var node_color = {"x":parseInt(d.data.color[0]*255.0),
                    "y":parseInt(d.data.color[1]*255.0),
                    "z":parseInt(d.data.color[2]*255.0)};
