@@ -310,6 +310,7 @@ var allfield={
 			color_index:-1,
 			comment_index:-1,
 			label_index:-1,
+      image_index:-1,//filnename?
 	    compartments:-1//special case where one column per comnpartment
 	    };
 //key in graph.nodes
@@ -332,6 +333,7 @@ var allfield_key={
 			color_index:"color",
 			comment_index:"comment",
 			label_index:"label",
+      image_index:"thumbnail",
 	    compartments:"compartments"//special case where one column per comnpartment
 	    };
 var allfield_labels={
@@ -353,6 +355,7 @@ var allfield_labels={
 			color_index:"predefined color for ingredient (r,g,b)",
 			comment_index:"notes and comments for the ingredient",
 			label_index:"label for the ingredient",
+      image_index:"filename for thumbnail/image",
 	    compartments:""//special case where one column per comnpartment
 	    };
 var allfield_query={
@@ -374,6 +377,7 @@ var allfield_query={
 			color_index:["color","rgb"],
 			comment_index:["note","comment"],
 			label_index:["label","description"],
+      image_index:["image","thumbnail","sprite"],
 	    compartments:""//special case where one column per comnpartment
 	    };
 
@@ -409,7 +413,8 @@ var allattributes_type={
   "ulength": {"type":"number","editable":true,"min":0,"max":250},
   "tlength": {"type":"number","editable":true,"min":0,"max":100000},
   "id": {"type":"string","editable":false},
-  "curves" : {"type":"object","editable":false}
+  "curves" : {"type":"object","editable":false},
+  "image":{"type":"string","editable":true}
 }
 
 //should use csv->SQL->json
@@ -1092,11 +1097,13 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 				var label = (allfield.label_index!==-1)?idata[allfield.label_index]:"";
 				var comments = (allfield.comment_index!==-1)?idata[allfield.comment_index]:"";
         if (sele && sele !== null && sele !== "") sele = NGL_GetSelection(sele,model);
+        var image = (allfield.image_index!==-1)?idata[allfield.image_index]:"";
         var elem = {
 					"name":name,"size":25,"molecularweight":mw,"confidence":confidence,"color":color,
         	"source":{"pdb":source,"bu":bu,"selection":sele,"model":model},"count":acount,
         	"molarity":molarity, "surface":false,"label":label,"geom":geom,"geom_type":"file","include":include,
-        	"uniprot":uniprot,"pcpalAxis":axis,"offset":offset,  "nodetype":"ingredient","comments":comments};
+        	"uniprot":uniprot,"pcpalAxis":axis,"offset":offset,  "nodetype":"ingredient","comments":comments,
+          "image":image};
         //alert(elem.name);
 				var loc_comp = (location_index!==-1)?idata[location_index]:"";
 				var surface = IsSurface(loc_comp);

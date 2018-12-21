@@ -388,9 +388,12 @@ function Util_selectFolder(e) {
      var sp = file.webkitRelativePath.split("/");
      pathList_[sp[1]] = file;
    }
+   gridArray[0].invalidate();
+   gridArray[0].render();
+   gridArray[0].dataView.refresh();
  }
 
- function Util_stringToArray(bufferString) {
+function Util_stringToArray(bufferString) {
  	let uint8Array = new TextEncoder("utf-8").encode(bufferString);
  	return uint8Array;
  }

@@ -15,6 +15,7 @@ var gridIds = ["grid_recipe", "grid_interaction", "grid_uniprot", "grid_pdb"];
 var sortcol = "name";
 var current_grid = 0;
 var current_grid_row;
+var current_row;
 var grid_column_elem;
 var grid_column_elem;
 
@@ -65,6 +66,38 @@ function loadView2(itemDetail) {
 }
 */
 
+function grid_readImgFile(thefile){
+  if (window.FileReader) {
+    // FileReader is supported.
+  } else {
+    alert('FileReader is not supported in this browser.');
+  }
+  var ext = thefile.name.split('.').pop();
+  var reader = new FileReader();
+  if (!(thefile.name in pathList_)) pathList_[thefile.name]=thefile;
+  pathList_[thefile.name].block = true;
+  reader.onload = function(event) {
+    pathList_[thefile.name].data = reader.result;
+    pathList_[thefile.name].block = false;
+    var grid = gridArray[0];
+    grid.invalidate();
+    grid.render();
+    grid.dataView.refresh();
+  }
+  reader.readAsDataURL(thefile);
+}
+
+function grid_selectImgFile(e){
+  //use the current row
+  var theFiles = e.target.files;
+  //alert(theFiles.length);
+  //alert(theFiles[0].size);
+  var thefile = theFiles[0];
+  if (node_selected) node_selected.data.image = thefile.name;
+  if (current_row) current_row.image = thefile.name;
+  grid_readImgFile(thefile);
+}
+
 function simulateServerCall(item) {
   // let's add some property to our item for a better simulation
   var itemDetail = item;
@@ -86,6 +119,34 @@ function renderImageCell(row, cell, value, columnDef, dataContext) {
   return getImageHtmlPDB(dataContext.structureId);
 }
 
+function renderImageRecipeCell(row, cell, value, columnDef, dataContext) {
+  //either image is defined or ise the PDB id
+  if (value && value in pathList_){
+      var data = pathList_[value];
+      //test if file or dataspathList_["Capsid_2.png"].type
+      //if (data && data.type) {
+      //  grid_readImgFile(data);
+      //}
+      if (data && !("data" in data ))
+      {
+        if ("block" in  pathList_[value] )
+        {
+          if (!(pathList_[value].block))
+          {
+            grid_readImgFile(data);
+          }
+        }
+        else grid_readImgFile(data);
+      }
+      else {
+        data = pathList_[value].data;
+      }
+      return "<img id='imagepdb' src ='"+data+"' onmouseenter='showClone(this)' onmouseleave='hideClone(this)'/>"
+    }
+  else {
+    return getImageHtmlPDB(dataContext.pdb.split("_")[0]);
+  }
+}
 
 // create the row detail plugin
 var uniprot_detailView = new Slick.Plugins.RowDetailView({
@@ -314,8 +375,6 @@ function MultiSelectDropdownEditor(args) {
 
   this.init();
 }
-
-
 
 var SelectCellEditor = function(args) {
     var $select;
@@ -1066,6 +1125,15 @@ function CreateNodeColumns() {
       field: "comments",
       minWidth: 120,
       editor: Slick.Editors.Text
+    },
+    {
+      id: "image",
+      name: "image",
+      sortable: true,
+      field: "image",
+      minWidth: 120,
+      formatter: renderImageRecipeCell,
+      //editor: ImgCellEditor
     }
   ];
   return columns;
@@ -1376,6 +1444,12 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
     var cid = grid.getColumns()[cell.cell].id;
     var arow = grid.dataView.getItem(args.row);
     console.log(grid.gname);
+    current_row = arow;
+    if (cid === "image" && grid.gname === "grid_recipe") {
+      //set the current row current_grid_row and node_selected
+      //browse
+      $('#img_file_input').trigger('click');
+    }
   });
   grid.onClick.subscribe(function(e, args) {
     //check if multiple row selected

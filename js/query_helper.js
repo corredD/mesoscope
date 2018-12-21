@@ -849,6 +849,7 @@ function OneCPIngredient(node, surface) {
   }
   aing_dic["uniprot"] = node.data.uniprot;
   aing_dic["confidence"] = node.data.confidence;
+  aing_dic["image"] = node.data.image;
   //description=label,organism,score,
   return aing_dic;
 }
