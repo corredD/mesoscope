@@ -2851,7 +2851,7 @@ function drawThumbnailInCanvas(aNode,x,y,w,h){
         aNode.data.thumbnail.src = url;
     }
   }
-  context.drawImage(  aNode.data.thumbnail, x,y,w,h);
+  if (aNode.data.thumbnail.complete == true) context.drawImage(  aNode.data.thumbnail, x,y,w,h);
 }
 
 function ColorLuminance(hex, lum) {
