@@ -1568,17 +1568,35 @@ function NGL_buildCMS_cb(nglobject){
   }
 }
 
-function NGL_makeImage( node ){
+function NGL_makeImage(  ){
 		var gwidth = 256;
 		var gheight = 256;
+    var w = viewport.style.width;
+    var h = viewport.style.height;
 		viewport.setAttribute("style","width: "+gwidth+"px; height:"+gheight+"px; display:inline-block");
 		stage.handleResize();
     //stage.autoView();
-    return stage.makeImage().then( function( imgBlob ){
-        node.imgBlob = imgBlob;
-        node.data.thumbnail = URL.createObjectURL( imgBlob );
-        return data;
+    return stage.makeImage({
+    factor: 1,
+    antialias: true,
+    trim: false,
+    transparent: true
+} ).then( function( imgBlob ){
+        node_selected.imgBlob = imgBlob;
+        node_selected.data.thumbnail.src = URL.createObjectURL( imgBlob );
+        viewport.setAttribute("style","width:100%; height:100%;");
+        stage.handleResize();
+        //download
+        NGL.download( imgBlob, node_selected.data.name+".png" );
+        node_selected.data.image = node_selected.data.name+".png";
     } );
+}
+
+function UpdateThumbnailCurrent(){
+  var result = NGL_makeImage(  ).then(function(value) {
+  console.log("success");
+  // expected output: "Success!"
+});
 }
 
 function myTimerToGetTHeBuffer(o,aStopFunction,clean) {

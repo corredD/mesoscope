@@ -229,6 +229,7 @@ var ngl_options= ''+
   '<div class="NGLOptions">'+
   '<button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
   '<button onclick="NextIgredient()" style="">Next Ingredient</button>' +
+  '<button onclick="UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite</button>' +
   '<button class="accordion">NGL options</button>'+
   '<div class="accordion_panel">'+
     '<div class="clusterBtn">' +
@@ -318,7 +319,8 @@ var gpu_phy_viewport='' +
 var ngloptions = '' +
   '<div class="NGLpan">'+
     '<div style="position:absolute;top:0px;z-index:999"><button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
-    '<button onclick="NextIgredient()" style="">Next Ingredient</button></div>' +
+    '<button onclick="NextIgredient()" style="">Next Ingredient</button>' +
+    '<button onclick="UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite</button></div>' +
       //ngl_options+
       //getSplitter()+
       ngl_viewport+
@@ -603,7 +605,7 @@ var myLayout,
 var usesavedState = true;
 var usesavedSession = true;
 var savedRecipe = localStorage.getItem('savedRecipe');
-var current_version = {"version":1.011};
+var current_version = {"version":1.012};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()

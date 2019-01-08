@@ -148,7 +148,8 @@ function renderImageRecipeCell(row, cell, value, columnDef, dataContext) {
       return "<img id='imagepdb' src ='"+data+"' onmouseenter='showClone(this)' onmouseleave='hideClone(this)'/>"
     }
   else {
-    return getImageHtmlPDB(dataContext.pdb.split("_")[0]);
+    var apdb = (dataContext.pdb)?dataContext.pdb.split("_")[0]:"";
+    return getImageHtmlPDB(apdb);
   }
 }
 

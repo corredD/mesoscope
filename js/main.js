@@ -2683,7 +2683,7 @@ function ticked(e) {
       	context.fillStyle = colorNode(d);
       	context.fill();
       	}
-      if (d.data.image !=null) {
+      if (!d.children && ( d.data.image !=null || d.data.thumbnail !==null) ) {
         var s = Math.sqrt(((d.r*2.0)*(d.r*2.0))/2.0);
         drawThumbnailInCanvas(d,d.x-s/2.0,d.y-s/2.0,s,s)
       }
@@ -2844,7 +2844,7 @@ function drawThumbnailInCanvas(aNode,x,y,w,h){
           aNode.data.thumbnail.src = URL.createObjectURL(data);
     }
     else {
-      var ipdb = ("source" in aNode.data) ? aNode.data.source.pdb.split("_")[0].toLowerCase():"";
+      var ipdb = ("source" in aNode.data && aNode.data.source.pdb) ? aNode.data.source.pdb.split("_")[0].toLowerCase():"";
       var twoletters = ipdb[1] + ipdb[2];
       var url = "https://cdn.rcsb.org/images/rutgers/" + twoletters + "/" + ipdb + "/" + ipdb + ".pdb1-250.jpg";
       //console.log(html);
