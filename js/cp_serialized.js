@@ -369,6 +369,8 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
   var id = "id_" + ingr_uniq_id; //ing_dic.ingredient_id;//unique ingredient id
   ingr_uniq_id += 1;
   var color = ("color" in ing_dic) ? ing_dic["color"] : null;
+  var image = ("image" in ing_dic) ? ing_dic["image"] : null;
+  var offsety = ("offsety" in ing_dic) ? ing_dic["offsety"] : 0;
   var elem = {
     "name": name,
     "size": size,
@@ -390,6 +392,8 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
     "buildtype": buildtype,
     "comments": comments,
     "color": color,
+    "image":image,
+    "offsety":offsety,
     "nodetype": "ingredient"
   }; //,"id":id};
   return elem;
@@ -648,6 +652,8 @@ function OneIngredient(ing_dic, surface) {
   var packingMode = ("packingMode" in ing_dic) ? ing_dic["packingMode"] : ""; //random,close,etc...
   var btype = GetIngredientTypeAndBuildType(ing_dic); //"ingtype":btype.type,"buildtype":btype.build,
   var color = ("color" in ing_dic) ? ing_dic["color"] : null;
+  var image = ("image" in ing_dic) ? ing_dic["image"] : null;
+  var offsety = ("offsety" in ing_dic) ? ing_dic["offsety"] : 0;
   var elem = {
     "name": name,
     "size": size,
@@ -669,6 +675,8 @@ function OneIngredient(ing_dic, surface) {
     "pos": p,
     "radii": r,
     "nodetype": "ingredient",
+    "image":image,
+    "offsety":offsety,
     "color": color
   };
   //console.log(JSON.stringify(elem));

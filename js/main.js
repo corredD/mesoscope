@@ -124,6 +124,7 @@ var ctrlKey = false;
 var canvas,
     context,
     transform,
+    thumbnail = new Image(),
     searchRadius = 140;
 
 var container,
@@ -311,6 +312,7 @@ var allfield={
 			comment_index:-1,
 			label_index:-1,
       image_index:-1,//filnename?
+      offsety_index:-1,
 	    compartments:-1//special case where one column per comnpartment
 	    };
 //key in graph.nodes
@@ -334,6 +336,7 @@ var allfield_key={
 			comment_index:"comment",
 			label_index:"label",
       image_index:"thumbnail",
+      offsety_index:"offsety",
 	    compartments:"compartments"//special case where one column per comnpartment
 	    };
 var allfield_labels={
@@ -356,6 +359,7 @@ var allfield_labels={
 			comment_index:"notes and comments for the ingredient",
 			label_index:"label for the ingredient",
       image_index:"filename for thumbnail/image",
+      offsety_index:"2d surface protein membrane offset",
 	    compartments:""//special case where one column per comnpartment
 	    };
 var allfield_query={
@@ -378,6 +382,7 @@ var allfield_query={
 			comment_index:["note","comment"],
 			label_index:["label","description"],
       image_index:["image","thumbnail","sprite"],
+      offsety_index:["2dy"],
 	    compartments:""//special case where one column per comnpartment
 	    };
 
@@ -408,15 +413,18 @@ var allattributes_type={
   "nodetype":  {"type":"select","editable":true,"options":["ingredient","compartment"]},
   "visited": {"type":"bool","editable":false},
   "include": {"type":"bool","editable":true},
-  "opm": {"type":"number","editable":true},
+  "opm": {"type":"bool","editable":true},
   "angle": {"type":"number","editable":true,"min":0.0,"max":360.0},
   "ulength": {"type":"number","editable":true,"min":0,"max":250},
   "tlength": {"type":"number","editable":true,"min":0,"max":100000},
-  "id": {"type":"string","editable":false},
+  "id": {"type":"number","editable":false},
   "curves" : {"type":"object","editable":false},
-  "image":{"type":"string","editable":true}
+  "image":{"type":"string","editable":true},
+  "offsety":{"type":"number","editable":true,"min":-500.0,"max":500.0},//px
+  "thumbnail":{"type":"string","editable":false},
 }
-
+//ordered liste
+var attribute_list_order=[];
 //should use csv->SQL->json
 function changeColumnMapping(aselect) {
 	  //console.log(aselect);
@@ -1098,12 +1106,13 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 				var comments = (allfield.comment_index!==-1)?idata[allfield.comment_index]:"";
         if (sele && sele !== null && sele !== "") sele = NGL_GetSelection(sele,model);
         var image = (allfield.image_index!==-1)?idata[allfield.image_index]:"";
+        var offsety= (allfield.offsety_index!==-1)?idata[allfield.offsety_index]:0;
         var elem = {
 					"name":name,"size":25,"molecularweight":mw,"confidence":confidence,"color":color,
         	"source":{"pdb":source,"bu":bu,"selection":sele,"model":model},"count":acount,
         	"molarity":molarity, "surface":false,"label":label,"geom":geom,"geom_type":"file","include":include,
         	"uniprot":uniprot,"pcpalAxis":axis,"offset":offset,  "nodetype":"ingredient","comments":comments,
-          "image":image};
+          "image":image,"offsety":offsety};
         //alert(elem.name);
 				var loc_comp = (location_index!==-1)?idata[location_index]:"";
 				var surface = IsSurface(loc_comp);
@@ -1912,8 +1921,10 @@ function defaultNode_cb(e){
   var key = e.id.split("_")[1];
   console.log(key);
   //this hsould apply to the current selected node Only
+  //this doesnt take care of the value type
   if (node_selected) {
-    node_selected.data[key] = e.value;
+    if (e.type === "checkbox")  node_selected.data[key] = e.checked;
+    else node_selected.data[key] = e.value;
     //TODO update the graph dataView as well!!!!
   }
 }
@@ -1990,8 +2001,10 @@ function SetObjectsOptionsDiv(anode) {
 		//	document.getElementById( 'container' ).setAttribute("class", "hidden");
 		//	document.getElementById( 'viewport' ).setAttribute("class", "show");
 		  //list all property ? use the grid editor ?
+      //should order it
 			for (var e in anode.data)
 			{
+          htmlStr+='<div>';
           //e is the key
           var specificiations = allattributes_type[e];
           if (!specificiations) {
@@ -2004,7 +2017,11 @@ function SetObjectsOptionsDiv(anode) {
             if (e=="buildfilename" && anode.data.buildtype!=="file") continue;
             htmlStr+=layout_getInputNode(anode,e,specificiations);
           }
-        	else htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>';
+        	else {
+            if (e == "thumbnail" && anode.data.thumbnail !==null) htmlStr+= anode.data.thumbnail.outerHTML;//resize ?
+            else htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>';//should we show the image
+          }
+          htmlStr+='</div>';
       }
 			//htmlStr+=-'<label> Parent Name '+anode.parent.name+'</label>'
 			var cname = anode.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/');
@@ -2626,9 +2643,9 @@ function ticked(e) {
         context.stroke();
         context.fillStyle = "yellow";
         context.fill();
-        return;
+        //return;
       }
-      if (d.highlight && d !== node_selected && d!== comp_highligh && d!==comp_highligh_surface) {
+      else if (d.highlight && d !== node_selected && d!== comp_highligh && d!==comp_highligh_surface) {
         context.fillStyle = colorNode(d);
         context.fill();
         context.strokeStyle = "black";
@@ -2666,8 +2683,12 @@ function ticked(e) {
       	context.fillStyle = colorNode(d);
       	context.fill();
       	}
+      if (d.data.image !=null) {
+        var s = Math.sqrt(((d.r*2.0)*(d.r*2.0))/2.0);
+        drawThumbnailInCanvas(d,d.x-s/2.0,d.y-s/2.0,s,s)
+      }
     });
-
+    FOLDER_UPDATED = false;
     //draw all the links
     if (graph.links.length) {
        graph.links.forEach(function(d){
@@ -2761,6 +2782,7 @@ function ticked(e) {
        context.fillText(txt,d.x-d.r/2.0,d.y+d.r/2.0);
      }
     }
+
     //draw a sphere for the mouse
     if (mousein && draw_debug_mouse) {
     	context.beginPath();
@@ -2768,8 +2790,35 @@ function ticked(e) {
     	context.arc(mousexy.x,mousexy.y,15,0,10);//0?
     	context.fillStyle = "green";
       context.fill();
+    }    //thumbnail with special case for surface
+    var snode = node_selected;
+    if (snode == null || snode.children) snode = node_over;
+    if (snode !=null) {
+      //scale from image size to 150 ?
+      context.save();
+      context.resetTransform();
+      var ratio = (snode.data.thumbnail)? snode.data.thumbnail.width/snode.data.thumbnail.height:1.0;// 0.5;
+      var w = 150;//(snode.data.thumbnail)?snode.data.thumbnail.width:150;
+      var h = w/ratio;//(snode.data.thumbnail)?snode.data.thumbnail.height:150;
+      var x = canvas.width-w-10;
+      var y = canvas.height-h-10;
+      context.rect(x,y, w,h);
+      context.stroke();
+      context.fillText(snode.data["name"].replace(/,? and /g, ' & '),x+w/2,y);
+      drawThumbnailInCanvas(snode,x,y, w,h);//scale sized ?
+      //if surface draw a line representing the membrane
+      if (snode.data.surface) {
+        context.beginPath();
+        context.lineWidth=2;
+        context.moveTo(x,y+h/2.0-parseFloat(snode.data.offsety));
+        context.lineTo(x+w,y+h/2.0-parseFloat(snode.data.offsety));
+        context.strokeStyle = "green";
+        context.stroke();
+      }
+      // Restore the default state
+      context.restore();
     }
-      /*context.beginPath();
+    /*context.beginPath();
     	context.moveTo(width/2,height/2);//why +3?
     	context.arc(width/2,height/2,15,0,10);//0?
     	context.fillStyle = "green";
@@ -2779,6 +2828,31 @@ function ticked(e) {
 		//drawTrafficLight();
     context.restore();
   }
+
+function drawThumbnailInCanvas(aNode,x,y,w,h){
+  //first get the image
+  var value = aNode.data.image;
+  //var img = new Image();
+  //either image is defined or ise the PDB id
+  if (aNode.data.thumbnail == null || FOLDER_UPDATED) {
+    if (aNode.data.thumbnail == null) aNode.data.thumbnail = new Image();
+    aNode.data.thumbnail.onerror = function () {
+      this.src = 'images/Warning_icon.png';
+    };
+    if (value && value in pathList_){
+        var data = pathList_[value];//the file
+          aNode.data.thumbnail.src = URL.createObjectURL(data);
+    }
+    else {
+      var ipdb = ("source" in aNode.data) ? aNode.data.source.pdb.split("_")[0].toLowerCase():"";
+      var twoletters = ipdb[1] + ipdb[2];
+      var url = "https://cdn.rcsb.org/images/rutgers/" + twoletters + "/" + ipdb + "/" + ipdb + ".pdb1-250.jpg";
+      //console.log(html);
+        aNode.data.thumbnail.src = url;
+    }
+  }
+  context.drawImage(  aNode.data.thumbnail, x,y,w,h);
+}
 
 function ColorLuminance(hex, lum) {
 

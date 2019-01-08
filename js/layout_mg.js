@@ -56,14 +56,20 @@ function layout_getInputNode(anode,key,spec){
       case "string":
           aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
           break;
-      case "number":
-          aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+      case "number"://use a slider ?
+          aHtml+='<input type="number" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+          break;
+      case "range"://use a slider ?
+          //aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+          aHtml+='<input type="range" id="input_'+key+'" value="'+anode.data[key]+'" min="'+spec.min+'" max="'+spec.max+'" style="" oninput="output_'+key+'.value=parseFloat(this.value)" onchange="'+spec.callback+'(this)"/>'
+          aHtml+='<output for="input_'+key+'" id="output_'+key+'">'+anode.data[key]+'</output>'
           break;
       case "object":
           aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
           break;
       case "bool":
-          aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+        //should use a checkbox
+          aHtml+='<input type="checkbox" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
           break;
       case "button":
           aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'

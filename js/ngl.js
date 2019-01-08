@@ -1568,6 +1568,19 @@ function NGL_buildCMS_cb(nglobject){
   }
 }
 
+function NGL_makeImage( node ){
+		var gwidth = 256;
+		var gheight = 256;
+		viewport.setAttribute("style","width: "+gwidth+"px; height:"+gheight+"px; display:inline-block");
+		stage.handleResize();
+    //stage.autoView();
+    return stage.makeImage().then( function( imgBlob ){
+        node.imgBlob = imgBlob;
+        node.data.thumbnail = URL.createObjectURL( imgBlob );
+        return data;
+    } );
+}
+
 function myTimerToGetTHeBuffer(o,aStopFunction,clean) {
     console.log("cms_surface_"+o.name);
     var arep = stage.getRepresentationsByName("cms_surface_"+o.name).list[0];

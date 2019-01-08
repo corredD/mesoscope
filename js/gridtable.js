@@ -93,7 +93,11 @@ function grid_selectImgFile(e){
   //alert(theFiles.length);
   //alert(theFiles[0].size);
   var thefile = theFiles[0];
-  if (node_selected) node_selected.data.image = thefile.name;
+  if (node_selected) {
+    node_selected.data.image = thefile.name;
+    if (node_selected.data.thumbnail == null) node_selected.data.thumbnail = new Image();
+    node_selected.data.thumbnail.src = URL.createObjectURL(thefile);
+  }
   if (current_row) current_row.image = thefile.name;
   grid_readImgFile(thefile);
 }

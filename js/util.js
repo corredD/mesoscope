@@ -3,6 +3,7 @@ var Epsilon = 1e-10;
 var  X_AXIS = new NGL.Vector3(1, 0, 0);
 var  Y_AXIS = new NGL.Vector3(0, 1, 0);
 var  Z_AXIS = new NGL.Vector3(0, 0, 1);
+var FOLDER_UPDATED = false;
 
 function Util_parseParams(){
   return location.search
@@ -391,6 +392,7 @@ function Util_selectFolder(e) {
    gridArray[0].invalidate();
    gridArray[0].render();
    gridArray[0].dataView.refresh();
+   FOLDER_UPDATED = true;
  }
 
 function Util_stringToArray(bufferString) {

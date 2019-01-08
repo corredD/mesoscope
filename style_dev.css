@@ -1,6 +1,17 @@
 @import url("reset.css");
 /* Novos elementos HTML5 */
 
+#logo_image{
+  flex-shrink: 1;
+}
+
+
+img {
+width:100%;
+//height:100%;
+object-fit:contain;
+}
+
 article, aside, figure, footer, header, hgroup, nav, section {
   display: block;
 }
@@ -119,9 +130,6 @@ li {
   background-color: paleturquoise;
 }
 
-#logo_image{
-  flex-shrink: 1;
-}
 
 .aheader{
 	width: 100%;
