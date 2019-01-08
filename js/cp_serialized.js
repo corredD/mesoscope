@@ -111,6 +111,7 @@ function oneIngredientSerialized(singr, node) {
   singr["uniprot"] = node.data.uniprot;
   singr["confidence"] = node.data.confidence;
   singr["molecularweight"] = node.data.molecularweight;
+  singr["sprite"] = node.data.sprite;
   //parse
   //description=label,organism,score,
   //partners_properties
@@ -369,8 +370,16 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
   var id = "id_" + ingr_uniq_id; //ing_dic.ingredient_id;//unique ingredient id
   ingr_uniq_id += 1;
   var color = ("color" in ing_dic) ? ing_dic["color"] : null;
-  var image = ("image" in ing_dic) ? ing_dic["image"] : null;
-  var offsety = ("offsety" in ing_dic) ? ing_dic["offsety"] : 0;
+  var sprite = {
+    "image": "",
+    "offsety": 0,
+    "scale2d": 1
+  };
+  if ("sprite" in ing_dic) {
+    sprite.image = ("image" in ing_dic["sprite"]) ? ing_dic["sprite"]["image"] : null;
+    sprite.offsety = ("offsety" in ing_dic["sprite"]) ? ing_dic["sprite"]["offsety"] : 0;
+    sprite.scale2d = ("scale2d" in ing_dic["sprite"]) ? ing_dic["sprite"]["scale2d"] : 1;
+  }
   var elem = {
     "name": name,
     "size": size,
@@ -392,8 +401,7 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
     "buildtype": buildtype,
     "comments": comments,
     "color": color,
-    "image":image,
-    "offsety":offsety,
+    "sprite":sprite,
     "nodetype": "ingredient"
   }; //,"id":id};
   return elem;
@@ -652,8 +660,19 @@ function OneIngredient(ing_dic, surface) {
   var packingMode = ("packingMode" in ing_dic) ? ing_dic["packingMode"] : ""; //random,close,etc...
   var btype = GetIngredientTypeAndBuildType(ing_dic); //"ingtype":btype.type,"buildtype":btype.build,
   var color = ("color" in ing_dic) ? ing_dic["color"] : null;
-  var image = ("image" in ing_dic) ? ing_dic["image"] : null;
-  var offsety = ("offsety" in ing_dic) ? ing_dic["offsety"] : 0;
+  var sprite = {
+    "image": "",
+    "offsety": 0,
+    "scale2d": 1
+  };
+  if ("sprite" in ing_dic) {
+    sprite.image = ("image" in ing_dic["sprite"]) ? ing_dic["sprite"]["image"] : null;
+    sprite.offsety = ("offsety" in ing_dic["sprite"]) ? ing_dic["sprite"]["offsety"] : 0;
+    sprite.scale2d = ("scale2d" in ing_dic["sprite"]) ? ing_dic["sprite"]["scale2d"] : 1;
+  }
+  else {
+    if ("image" in ing_dic) sprite.image = ing_dic["image"];
+  }
   var elem = {
     "name": name,
     "size": size,
@@ -675,8 +694,7 @@ function OneIngredient(ing_dic, surface) {
     "pos": p,
     "radii": r,
     "nodetype": "ingredient",
-    "image":image,
-    "offsety":offsety,
+    "sprite":sprite,
     "color": color
   };
   //console.log(JSON.stringify(elem));

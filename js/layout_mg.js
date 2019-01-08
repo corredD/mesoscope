@@ -48,46 +48,46 @@ function layout_getInputCheckbox(select_id, div_class, label, onchange_cb, list_
 function layout_getInputSlider(select_id, div_class, label, onchange_cb, list_options, default_options){}
 function layout_getInputString(select_id, div_class, label, onchange_cb, list_options, default_options){}
 
-function layout_getInputNode(anode,key,spec){
+function layout_getInputNode(value,key,spec){
     var aHtml = "";
     var atype=spec.type;
     aHtml = '<label for="input_'+key+'">'+key+'</label>';
     switch(atype) {
       case "string":
-          aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+          aHtml+='<input type="text" id="input_'+key+'" value="'+value+'" style="" onchange="'+spec.callback+'(this)"/>'
           break;
       case "number"://use a slider ?
-          aHtml+='<input type="number" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+          aHtml+='<input type="number" id="input_'+key+'" value="'+value+'" style="" onchange="'+spec.callback+'(this)"/>'
           break;
       case "range"://use a slider ?
           //aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
-          aHtml+='<input type="range" id="input_'+key+'" value="'+anode.data[key]+'" min="'+spec.min+'" max="'+spec.max+'" style="" oninput="output_'+key+'.value=parseFloat(this.value)" onchange="'+spec.callback+'(this)"/>'
-          aHtml+='<output for="input_'+key+'" id="output_'+key+'">'+anode.data[key]+'</output>'
+          aHtml+='<input type="range" id="input_'+key+'" value="'+value+'" min="'+spec.min+'" max="'+spec.max+'" style="" oninput="output_'+key+'.value=parseFloat(this.value)" onchange="'+spec.callback+'(this)"/>'
+          aHtml+='<output for="input_'+key+'" id="output_'+key+'">'+value+'</output>'
           break;
       case "object":
-          aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+          aHtml+='<input type="text" id="input_'+key+'" value="'+value+'" style="" onchange="'+spec.callback+'(this)"/>'
           break;
       case "bool":
         //should use a checkbox
-          aHtml+='<input type="checkbox" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+          aHtml+='<input type="checkbox" id="input_'+key+'" checked="'+value+'" style="" onchange="'+spec.callback+'(this)"/>'
           break;
       case "button":
-          aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+          aHtml+='<input type="text" id="input_'+key+'" value="'+value+'" style="" onchange="'+spec.callback+'(this)"/>'
           break;
       case "color":
-          aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+          aHtml+='<input type="text" id="input_'+key+'" value="'+value+'" style="" onchange="'+spec.callback+'(this)"/>'
           break;
       case "select":
           aHtml+='<select id="input_'+key+'" name="input_'+key+'" onchange="'+spec.callback+'(this)">';
           for (var i=0;i<spec.options.length;i++)
           {
-            var selected = (anode.data[key] === spec.options[i])? ' selected':'';
+            var selected = (value === spec.options[i])? ' selected':'';
             aHtml+=' <option value="'+spec.options[i]+'"'+selected+'> '+spec.options[i]+'</option>';
           }
           aHtml+='</select>';
           break;
       default:
-          aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
+          aHtml+='<input type="text" id="input_'+key+'" value="'+value+'" style="" onchange="'+spec.callback+'(this)"/>'
           break;
     }
     return aHtml;
@@ -229,7 +229,8 @@ var ngl_options= ''+
   '<div class="NGLOptions">'+
   '<button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
   '<button onclick="NextIgredient()" style="">Next Ingredient</button>' +
-  '<button onclick="UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite</button>' +
+  '<button onclick="NGL_UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite</button>' +
+  '<input type="checkbox" id="savethumbnail" checked="true">Save Thumbnail/Sprite</input>' +
   '<button class="accordion">NGL options</button>'+
   '<div class="accordion_panel">'+
     '<div class="clusterBtn">' +
@@ -320,10 +321,9 @@ var ngloptions = '' +
   '<div class="NGLpan">'+
     '<div style="position:absolute;top:0px;z-index:999"><button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
     '<button onclick="NextIgredient()" style="">Next Ingredient</button>' +
-    '<button onclick="UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite</button></div>' +
-      //ngl_options+
-      //getSplitter()+
-      ngl_viewport+
+    '<button onclick="NGL_UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite</button>' +
+    '<input type="checkbox" id="savethumbnail" checked="true">Save Thumbnail/Sprite</input></div>' +
+    ngl_viewport+
   '</div>';
 
 function getSpinner(spinner_id,callback_close)

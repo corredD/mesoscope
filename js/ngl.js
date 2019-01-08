@@ -1587,16 +1587,32 @@ function NGL_makeImage(  ){
         viewport.setAttribute("style","width:100%; height:100%;");
         stage.handleResize();
         //download
-        NGL.download( imgBlob, node_selected.data.name+".png" );
-        node_selected.data.image = node_selected.data.name+".png";
+        if (document.getElementById("savethumbnail").checked){
+            node_selected.data.sprite.image = node_selected.data.name+".png";
+            NGL.download( imgBlob, node_selected.data.name+".png" );
+        }
     } );
 }
 
-function UpdateThumbnailCurrent(){
-  var result = NGL_makeImage(  ).then(function(value) {
-  console.log("success");
-  // expected output: "Success!"
-});
+function NGL_saveThumbnail(){
+    if (node_selected) {
+        node_selected.data.sprite.image = node_selected.data.name+".png";
+        var blob = node_selected.imgBlob;
+        if ( blob == null)
+        {
+          download(node_selected.data.thumbnail.src, node_selected.data.name+".png");
+        }
+        else {
+          NGL.download( blob, node_selected.data.name+".png" );
+        }
+    }
+}
+
+function NGL_UpdateThumbnailCurrent(){
+    var result = NGL_makeImage(  ).then(function(value) {
+    console.log("success");
+    // expected output: "Success!"
+    });
 }
 
 function myTimerToGetTHeBuffer(o,aStopFunction,clean) {

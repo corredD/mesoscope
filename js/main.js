@@ -313,6 +313,7 @@ var allfield={
 			label_index:-1,
       image_index:-1,//filnename?
       offsety_index:-1,
+      scale2d_index:-1,
 	    compartments:-1//special case where one column per comnpartment
 	    };
 //key in graph.nodes
@@ -337,6 +338,7 @@ var allfield_key={
 			label_index:"label",
       image_index:"thumbnail",
       offsety_index:"offsety",
+      scale2d_index:"scale2d",
 	    compartments:"compartments"//special case where one column per comnpartment
 	    };
 var allfield_labels={
@@ -360,6 +362,7 @@ var allfield_labels={
 			label_index:"label for the ingredient",
       image_index:"filename for thumbnail/image",
       offsety_index:"2d surface protein membrane offset",
+      scale2d_index:"2d surface protein scale (px/A)",
 	    compartments:""//special case where one column per comnpartment
 	    };
 var allfield_query={
@@ -383,6 +386,7 @@ var allfield_query={
 			label_index:["label","description"],
       image_index:["image","thumbnail","sprite"],
       offsety_index:["2dy"],
+      scale2d_index:["scale2d"],
 	    compartments:""//special case where one column per comnpartment
 	    };
 
@@ -419,12 +423,19 @@ var allattributes_type={
   "tlength": {"type":"number","editable":true,"min":0,"max":100000},
   "id": {"type":"number","editable":false},
   "curves" : {"type":"object","editable":false},
+  "sprite":{"type":"object","editable":true},
   "image":{"type":"string","editable":true},
   "offsety":{"type":"number","editable":true,"min":-500.0,"max":500.0},//px
+  "scale2d":{"type":"number","editable":true,"min":-500.0,"max":500.0},//px
   "thumbnail":{"type":"string","editable":false},
 }
 //ordered liste
-var attribute_list_order=[];
+var attribute_list_order=[
+  "include","id","name","size","molecularweight","source","confidence","count","molarity","label",
+  "uniprot","geom","geom_type","surface","opm","pcpalAxis","offset","pos","radii","ingtype",
+  "buildtype","buildfilename","comments","color","nodetype","visited","angle","ulength","tlength",
+  "curves","sprite","thumbnail"
+];
 //should use csv->SQL->json
 function changeColumnMapping(aselect) {
 	  //console.log(aselect);
@@ -1107,12 +1118,14 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
         if (sele && sele !== null && sele !== "") sele = NGL_GetSelection(sele,model);
         var image = (allfield.image_index!==-1)?idata[allfield.image_index]:"";
         var offsety= (allfield.offsety_index!==-1)?idata[allfield.offsety_index]:0;
+        var scale2d= (allfield.scale2d_index!==-1)?idata[allfield.scale2d_index]:0;
+        var sprite = {"image":image,"offsety":offsety,"scale2d":scale2d};
         var elem = {
 					"name":name,"size":25,"molecularweight":mw,"confidence":confidence,"color":color,
         	"source":{"pdb":source,"bu":bu,"selection":sele,"model":model},"count":acount,
         	"molarity":molarity, "surface":false,"label":label,"geom":geom,"geom_type":"file","include":include,
         	"uniprot":uniprot,"pcpalAxis":axis,"offset":offset,  "nodetype":"ingredient","comments":comments,
-          "image":image,"offsety":offsety};
+          "sprite":sprite};
         //alert(elem.name);
 				var loc_comp = (location_index!==-1)?idata[location_index]:"";
 				var surface = IsSurface(loc_comp);
@@ -2002,24 +2015,52 @@ function SetObjectsOptionsDiv(anode) {
 		//	document.getElementById( 'viewport' ).setAttribute("class", "show");
 		  //list all property ? use the grid editor ?
       //should order it
-			for (var e in anode.data)
+			for (var i in attribute_list_order)//anode.data)
 			{
+          var e = attribute_list_order[i];
           htmlStr+='<div>';
           //e is the key
-          var specificiations = allattributes_type[e];
-          if (!specificiations) {
-            console.log(e);
-            htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>';
-            continue;
+          if (e==="source" || e==="sprite") {
+            for (var f in anode.data[e]){
+              htmlStr+='<div>';
+              var specificiations = allattributes_type[f];
+              if (!specificiations) {
+                console.log(e);
+                htmlStr+= '<label>'+ f + ': ' + anode.data[e][f] +'</label>';
+                continue;
+              }
+              if (specificiations.editable){
+                if (!(specificiations.callback)) specificiations.callback = "defaultNode_cb";
+                if (e=="buildfilename" && anode.data.buildtype!=="file") continue;
+                htmlStr+=layout_getInputNode(anode.data[e][f],f,specificiations);
+              }
+            	else {
+                if (e == "thumbnail" && anode.data.thumbnail !==null) htmlStr+= anode.data.thumbnail.outerHTML;//resize ?
+                else htmlStr+= '<label>'+ f + ': ' + anode.data[e][f] +'</label>';//should we show the image
+              }
+              htmlStr+='</div>';
+            }
           }
-          if (specificiations.editable){
-            if (!(specificiations.callback)) specificiations.callback = "defaultNode_cb";
-            if (e=="buildfilename" && anode.data.buildtype!=="file") continue;
-            htmlStr+=layout_getInputNode(anode,e,specificiations);
-          }
-        	else {
-            if (e == "thumbnail" && anode.data.thumbnail !==null) htmlStr+= anode.data.thumbnail.outerHTML;//resize ?
-            else htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>';//should we show the image
+          else {
+            var specificiations = allattributes_type[e];
+            if (!specificiations) {
+              console.log(e);
+              htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>';
+              continue;
+            }
+            if (specificiations.editable){
+              if (!(specificiations.callback)) specificiations.callback = "defaultNode_cb";
+              if (e=="buildfilename" && anode.data.buildtype!=="file") continue;
+              htmlStr+=layout_getInputNode(anode.data[e],e,specificiations);
+            }
+          	else {
+              if (e == "thumbnail" && anode.data.thumbnail !==null)
+              {
+                  htmlStr+= anode.data.thumbnail.outerHTML;//resize ?
+                  htmlStr+='<button onclick="NGL_saveThumbnail()" style="">Save Thumbnail/Sprite</button>';
+              }
+              else htmlStr+= '<label>'+ e + ': ' + anode.data[e] +'</label>';//should we show the image
+            }
           }
           htmlStr+='</div>';
       }
@@ -2793,7 +2834,7 @@ function ticked(e) {
     }    //thumbnail with special case for surface
     var snode = node_selected;
     if (snode == null || snode.children) snode = node_over;
-    if (snode !=null) {
+    if (snode !=null && !snode.children) {
       //scale from image size to 150 ?
       context.save();
       context.resetTransform();
@@ -2810,8 +2851,8 @@ function ticked(e) {
       if (snode.data.surface) {
         context.beginPath();
         context.lineWidth=2;
-        context.moveTo(x,y+h/2.0-parseFloat(snode.data.offsety));
-        context.lineTo(x+w,y+h/2.0-parseFloat(snode.data.offsety));
+        context.moveTo(x,y+h/2.0-parseFloat(snode.data.sprite.offsety));
+        context.lineTo(x+w,y+h/2.0-parseFloat(snode.data.sprite.offsety));
         context.strokeStyle = "green";
         context.stroke();
       }
@@ -2831,7 +2872,9 @@ function ticked(e) {
 
 function drawThumbnailInCanvas(aNode,x,y,w,h){
   //first get the image
-  var value = aNode.data.image;
+  var value = ""
+  if ("sprite" in aNode.data && "image" in aNode.data.sprite)
+    value = aNode.data.sprite.image;
   //var img = new Image();
   //either image is defined or ise the PDB id
   if (aNode.data.thumbnail == null || FOLDER_UPDATED) {
