@@ -396,10 +396,10 @@ var allattributes_type={
   "name": {"type":"string","editable":true},
   "size": {"type":"number","editable":true,"min":1,"max":500},
   "molecularweight": {"type":"number","editable":true,"min":0.0,"max":500000.0},
-  "confidence":{"type":"number","editable":true,"min":0.0,"max":1.0},
+  "confidence":{"type":"number","editable":true,"min":0.0,"max":1.0,"step":0.01},
   "source": {"type":"object","editable":true},
   "count": {"type":"number","editable":true,"min":0,"max":100000},
-  "molarity": {"type":"number","editable":true,"min":0,"max":0.1},
+  "molarity": {"type":"number","editable":true,"min":0,"max":0.1,"step":0.0001},
   "surface": {"type":"bool","editable":true},
   "geom": {"type":"button","editable":false},//use build geom input button
   "geom_type": {"type":"string","editable":false},
@@ -418,15 +418,15 @@ var allattributes_type={
   "visited": {"type":"bool","editable":false},
   "include": {"type":"bool","editable":true},
   "opm": {"type":"bool","editable":true},
-  "angle": {"type":"number","editable":true,"min":0.0,"max":360.0},
+  "angle": {"type":"number","editable":true,"min":0.0,"max":360.0,"step":0.1 },
   "ulength": {"type":"number","editable":true,"min":0,"max":250},
   "tlength": {"type":"number","editable":true,"min":0,"max":100000},
   "id": {"type":"number","editable":false},
   "curves" : {"type":"object","editable":false},
   "sprite":{"type":"object","editable":true},
   "image":{"type":"string","editable":true},
-  "offsety":{"type":"number","editable":true,"min":-500.0,"max":500.0},//px
-  "scale2d":{"type":"number","editable":true,"min":-500.0,"max":500.0},//px
+  "offsety":{"type":"range","editable":true,"min":-50.0,"max":50.0,"step":0.1},//px
+  "scale2d":{"type":"range","editable":true,"min":0.0,"max":500.0,"step":0.01},//px
   "thumbnail":{"type":"string","editable":false},
 }
 //ordered liste
@@ -1947,8 +1947,19 @@ function defaultNode_cb(e){
   //this hsould apply to the current selected node Only
   //this doesnt take care of the value type
   if (node_selected) {
-    if (e.type === "checkbox")  node_selected.data[key] = e.checked;
-    else node_selected.data[key] = e.value;
+    if (key in node_selected.data)
+    {
+      if (e.type === "checkbox")  node_selected.data[key] = e.checked;
+      else node_selected.data[key] = e.value;
+    }
+    else //either source or sprites
+    {
+      var p="source";
+      if (key in node_selected.data.sprite) p = "sprite";
+      if (!(key in node_selected.data[p])) return;
+      if (e.type === "checkbox")  node_selected.data[p][key] = e.checked;
+      else node_selected.data[p][key] = e.value;
+    }
     //TODO update the graph dataView as well!!!!
   }
 }
@@ -2860,11 +2871,32 @@ function ticked(e) {
       drawThumbnailInCanvas(snode,x,y, w,h);//scale sized ?
       //if surface draw a line representing the membrane
       if (snode.data.surface) {
+        var thickness = 40.0;//angstrom
+        var canvas_scale = w/snode.data.thumbnail.width;
+        var sc2d = parseFloat(snode.data.sprite.scale2d)*canvas_scale;
+        var offy = parseFloat(snode.data.sprite.offsety)*sc2d;
+        //aNode.data.thumbnail.oh
+        //scale2d should bring angstrom->pixels
+        //need to take in account original size of images
         context.beginPath();
         context.lineWidth=2;
-        context.moveTo(x,y+h/2.0-parseFloat(snode.data.sprite.offsety));
-        context.lineTo(x+w,y+h/2.0-parseFloat(snode.data.sprite.offsety));
+        context.moveTo(x,y+h/2.0-offy);
+        context.lineTo(x+w,y+h/2.0-offy);
         context.strokeStyle = "green";
+        context.stroke();
+        //top
+        context.beginPath();
+        context.lineWidth=2;
+        context.moveTo(x,y+h/2.0-offy-thickness*sc2d);
+        context.lineTo(x+w,y+h/2.0-offy-thickness*sc2d);
+        context.strokeStyle = "red";
+        context.stroke();
+        //bottom
+        context.beginPath();
+        context.lineWidth=2;
+        context.moveTo(x,y+h/2.0-offy+thickness*sc2d);
+        context.lineTo(x+w,y+h/2.0-offy+thickness*sc2d);
+        context.strokeStyle = "blue";
         context.stroke();
       }
       // Restore the default state
@@ -2890,6 +2922,12 @@ function drawThumbnailInCanvas(aNode,x,y,w,h){
   //either image is defined or ise the PDB id
   if (aNode.data.thumbnail == null || FOLDER_UPDATED) {
     if (aNode.data.thumbnail == null) aNode.data.thumbnail = new Image();
+    aNode.data.thumbnail.onload = function() {
+      var height = aNode.data.thumbnail.height;
+      var width = aNode.data.thumbnail.width;
+      aNode.data.thumbnail.oh = parseFloat(height);
+      aNode.data.thumbnail.ow = parseFloat(width);
+    }
     aNode.data.thumbnail.onerror = function () {
       this.src = 'images/Warning_icon.png';
     };
@@ -2904,7 +2942,7 @@ function drawThumbnailInCanvas(aNode,x,y,w,h){
       var url = "https://www.ebi.ac.uk/pdbe/static/entry/"+ipdb+"_deposited_chain_front_image-400x400.png"
       //var url = "https://cdn.rcsb.org/images/rutgers/" + twoletters + "/" + ipdb + "/" + ipdb + ".pdb1-250.jpg";
       //console.log(html);
-        aNode.data.thumbnail.src = url;
+      aNode.data.thumbnail.src = url;
     }
   }
   if (aNode.data.thumbnail.complete == true) context.drawImage(  aNode.data.thumbnail, x,y,w,h);

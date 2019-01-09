@@ -57,11 +57,13 @@ function layout_getInputNode(value,key,spec){
           aHtml+='<input type="text" id="input_'+key+'" value="'+value+'" style="" onchange="'+spec.callback+'(this)"/>'
           break;
       case "number"://use a slider ?
-          aHtml+='<input type="number" id="input_'+key+'" value="'+value+'" style="" onchange="'+spec.callback+'(this)"/>'
+          var step = ("step" in spec)? spec.step:1;//or any
+          aHtml+='<input type="number" id="input_'+key+'" value="'+value+'" step="'+step+'" style="" onchange="'+spec.callback+'(this)"/>'
           break;
       case "range"://use a slider ?
+          var step = ("step" in spec)? spec.step:1;
           //aHtml+='<input type="text" id="input_'+key+'" value="'+anode.data[key]+'" style="" onchange="'+spec.callback+'(this)"/>'
-          aHtml+='<input type="range" id="input_'+key+'" value="'+value+'" min="'+spec.min+'" max="'+spec.max+'" style="" oninput="output_'+key+'.value=parseFloat(this.value)" onchange="'+spec.callback+'(this)"/>'
+          aHtml+='<input type="range" id="input_'+key+'" value="'+value+'"  step="'+step+'" min="'+spec.min+'" max="'+spec.max+'" style="" oninput="output_'+key+'.value=parseFloat(this.value)" onchange="'+spec.callback+'(this)"/>'
           aHtml+='<output for="input_'+key+'" id="output_'+key+'">'+value+'</output>'
           break;
       case "object":
