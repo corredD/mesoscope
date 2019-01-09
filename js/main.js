@@ -1378,6 +1378,17 @@ function selectFile(e){
           update_graph(adata.nodes,adata.links);
       }
     }
+    else if (ext==="xml"){
+      reader.onload = function(event) {
+        var data = reader.result;
+        data = data.replace(/\\n\\r/gm,'newChar');
+        var parser = new DOMParser();
+        var xmlDoc = parser.parseFromString(data,"text/xml");
+        var adata = parseCellPackRecipeXML(xmlDoc);
+        if (MERGE) merge_getModal(adata.nodes,adata.links)
+        else update_graph(adata.nodes,adata.links);
+      }
+    }
     else {
       alert('Extension not supported '+ext);
     }
@@ -2820,7 +2831,7 @@ function ticked(e) {
 	     else {
 	     			txt = (d && "data" in d && d.data && d.data[txtoption])? d.data[txtoption].replace(/,? and /g, ' & '):"";
 	     		}
-       context.fillText(txt,d.x-d.r/2.0,d.y+d.r/2.0);
+       context.fillText(txt,d.x-d.r,d.y+d.r+fontSizeTitle);
      }
     }
 
@@ -2834,7 +2845,7 @@ function ticked(e) {
     }    //thumbnail with special case for surface
     var snode = node_selected;
     if (snode == null || snode.children) snode = node_over;
-    if (snode !=null && !snode.children) {
+    if (snode !=null && !snode.children && snode.data) {
       //scale from image size to 150 ?
       context.save();
       context.resetTransform();
@@ -2845,7 +2856,7 @@ function ticked(e) {
       var y = canvas.height-h-10;
       context.rect(x,y, w,h);
       context.stroke();
-      context.fillText(snode.data["name"].replace(/,? and /g, ' & '),x+w/2,y);
+      context.fillText(snode.data["name"].replace(/,? and /g, ' & '),x,y);
       drawThumbnailInCanvas(snode,x,y, w,h);//scale sized ?
       //if surface draw a line representing the membrane
       if (snode.data.surface) {
@@ -2889,7 +2900,9 @@ function drawThumbnailInCanvas(aNode,x,y,w,h){
     else {
       var ipdb = ("source" in aNode.data && aNode.data.source.pdb) ? aNode.data.source.pdb.split("_")[0].toLowerCase():"";
       var twoletters = ipdb[1] + ipdb[2];
-      var url = "https://cdn.rcsb.org/images/rutgers/" + twoletters + "/" + ipdb + "/" + ipdb + ".pdb1-250.jpg";
+      //pdbe url is https://www.ebi.ac.uk/pdbe/static/entry/5c6e_deposited_chain_front_image-800x800.png//5c6e_deposited_chain_front_image-200x200.png
+      var url = "https://www.ebi.ac.uk/pdbe/static/entry/"+ipdb+"_deposited_chain_front_image-400x400.png"
+      //var url = "https://cdn.rcsb.org/images/rutgers/" + twoletters + "/" + ipdb + "/" + ipdb + ".pdb1-250.jpg";
       //console.log(html);
         aNode.data.thumbnail.src = url;
     }
@@ -3480,6 +3493,7 @@ function MouseMove(x,y) {
   {
   	clearHighLight();
   }
+  if (!d) {clearHighLight();return;}
   if (!d.parent && !line) clearHighLight();
 //  else {
   	  if (!line)

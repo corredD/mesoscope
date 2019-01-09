@@ -113,7 +113,8 @@ function simulateServerCall(item) {
 function getImageHtmlPDB(pdb) {
   pdb = pdb.toLowerCase();
   var twoletters = pdb[1] + pdb[2];
-  var html = "<img id='imagepdb' src='https://cdn.rcsb.org/images/rutgers/" + twoletters + "/" + pdb + "/" + pdb + ".pdb1-250.jpg' onmouseenter='showClone(this)' onmouseleave='hideClone(this)'/>"; //size
+  //var html = "<img id='imagepdb' src='https://cdn.rcsb.org/images/rutgers/" + twoletters + "/" + pdb + "/" + pdb + ".pdb1-250.jpg' onmouseenter='showClone(this)' onmouseleave='hideClone(this)'/>"; //size
+  var html = "https://www.ebi.ac.uk/pdbe/static/entry/"+pdb+"_deposited_chain_front_image-400x400.png"
   //console.log(html);
   return html;
 }

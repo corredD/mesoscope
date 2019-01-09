@@ -576,7 +576,7 @@ function NGL_Setup() {
     backgroundColor: "white"
   });
   viewport.setAttribute("style", "width:100%; height:100%;");
-
+  stage.setParameters({cameraType: "orthographic"})
   stage.mouseObserver.signals.dragged.add(function (deltaX,deltaY){
     //update
     //console.log(ngl_current_pickingProxy);
@@ -1569,12 +1569,12 @@ function NGL_buildCMS_cb(nglobject){
 }
 
 function NGL_makeImage(  ){
-		var gwidth = 256;
+		/*var gwidth = 256;
 		var gheight = 256;
     var w = viewport.style.width;
     var h = viewport.style.height;
 		viewport.setAttribute("style","width: "+gwidth+"px; height:"+gheight+"px; display:inline-block");
-		stage.handleResize();
+		stage.handleResize();*/
     //stage.autoView();
     return stage.makeImage({
     factor: 1,

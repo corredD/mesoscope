@@ -1,6 +1,7 @@
 var ingr_uniq_id;
 var premade_data={};//per ingredient ids or name ?
 var premade_all_data;
+var debugxmldoc;
 
 class sCompartment {
   constructor(name, static_id) {
@@ -861,6 +862,106 @@ function parseCellPackRecipe(jsondic) {
     "links": interaction
   };
 }
+
+function OneIngredientXML(ing_dic){
+    //.getAttribute("class");
+    var elem = {};
+    var surface = false;
+    var size = ing_dic.getAttribute("encapsulatingRadius");// in ing_dic) ? ing_dic["encapsulatingRadius"] : 40;
+    size = (size !== null && size !=="")? parseFloat(size):0;
+    var name = ing_dic.getAttribute("name");
+    var pdb = ing_dic.getAttribute("pdb");
+    var source = {
+      "pdb": pdb,
+      "bu": "BU1",
+      "model": "",
+      "selection": ""
+    }; //should be id,type,model,chain,bu
+    if (source.pdb && source.pdb.length != 4) {
+      if ((source.pdb.slice(-4, source.pdb.length) !== ".pdb") && (!source.pdb.startsWith("EMD"))) source.pdb = source.pdb + ".pdb";
+    }
+    var label = ing_dic.getAttribute("label");
+    var uniprot = ing_dic.getAttribute("uniprot");
+    var acount = ing_dic.getAttribute("nbMol");
+    if (!acount) acount = 0;
+    else acount = parseInt(acount);
+    var molarity = ing_dic.getAttribute("molarity");
+    if (!molarity) molarity = 0.0;
+    else molarity = parseFloat(molarity);
+    var geom = ing_dic.getAttribute("meshFile");
+    if (typeof geom === 'string') geom = geom.split("\\").pop();
+    var geom_type = (geom !== "") ? "file" : "None";
+    var mw = ing_dic.getAttribute("molecularweight");
+    if (!mw) mw = 0.0;
+    var confidence = ing_dic.getAttribute("confidence" in ing_dic); //overall confidence
+    if (!confidence) confidence = 0.0;
+    var principalVector = ing_dic.getAttribute("principalVector" in ing_dic);
+    var offset = ing_dic.getAttribute("offset" );
+    //var spheres = getSpheres(ing_dic);
+    if ((!principalVector) || principalVector === 0 || principalVector === "" || principalVector === [0] || principalVector.length === 1) principalVector = [0, 0, 1];
+    if ((!offset) || offset === 0 || offset === "" || offset === [0] || offset.length === 1) offset = [0, 0, 0];
+    var p = ing_dic.getAttribute("positions");
+    var r = ing_dic.getAttribute("radii");
+    p = [{"coords":p.replace(/[^a-zA-Z0-9. ]/g, '').split(' ').map(parseFloat)}];
+    r = [{"radii":r.replace(/[^a-zA-Z0-9. ]/g, '').split(' ').map(parseFloat)}];
+    var comments = ing_dic.getAttribute("comments" );
+    var atype = ing_dic.getAttribute("Type"); //Grow,MultiSphere,etc...
+    var packingMode = ing_dic.getAttribute("packingMode"); //random,close,etc...
+    var btype = GetIngredientTypeAndBuildType(ing_dic); //"ingtype":btype.type,"buildtype":btype.build,
+    var color = ing_dic.getAttribute("color");
+    color = color.replace(/[^a-zA-Z0-9. ]/g, '').split(' ').map(parseFloat);
+    var sprite = {
+      "image": "",
+      "offsety": 0,
+      "scale2d": 1
+    };
+    var elem = {
+      "name": name,
+      "size": size,
+      "molecularweight": mw,
+      "confidence": confidence,
+      "source": source,
+      "count": acount,
+      "ingtype": btype.type,
+      "buildtype": btype.build,
+      "molarity": molarity,
+      "surface": surface,
+      "geom": geom,
+      "geom_type": geom_type,
+      "label": label,
+      "comments": comments,
+      "uniprot": uniprot,
+      "pcpalAxis": principalVector,
+      "offset": offset,
+      "pos": p,
+      "radii": r,
+      "nodetype": "ingredient",
+      "sprite":sprite,
+      "color": color
+    };
+    //console.log(JSON.stringify(elem));
+    //console.log(elem);
+    return elem;
+}
+
+function parseCellPackRecipeXML(xmldoc){
+  debugxmldoc = xmldoc;
+  var rootName = "root";
+  var interaction = [];
+  graph["name"] = rootName;
+  graph["children"] = [];
+  graph["nodetype"] = "compartment";
+  var ingredients = xmldoc.getElementsByTagName("ingredient");
+  for (var i = 0; i < ingredients.length ; i++) {
+    var elem = OneIngredientXML(ingredients[i], false);
+    graph["children"].push(elem);
+  }
+  return {
+    "nodes": graph,
+    "links": interaction
+  };
+}
+
 
 /* David Goodsell PDB format */
 function OneDefaultIngredient(name,isfiber,isfile){
