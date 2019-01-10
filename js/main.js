@@ -425,8 +425,8 @@ var allattributes_type={
   "curves" : {"type":"object","editable":false},
   "sprite":{"type":"object","editable":true},
   "image":{"type":"string","editable":true},
-  "offsety":{"type":"range","editable":true,"min":-50.0,"max":50.0,"step":0.1},//px
-  "scale2d":{"type":"range","editable":true,"min":0.0,"max":500.0,"step":0.01},//px
+  "offsety":{"type":"number","editable":true,"min":-50.0,"max":50.0,"step":0.1},//px
+  "scale2d":{"type":"number","editable":true,"min":0.0,"max":500.0,"step":0.01},//px
   "thumbnail":{"type":"string","editable":false},
 }
 //ordered liste
@@ -2871,10 +2871,10 @@ function ticked(e) {
       drawThumbnailInCanvas(snode,x,y, w,h);//scale sized ?
       //if surface draw a line representing the membrane
       if (snode.data.surface) {
-        var thickness = 40.0;//angstrom
+        var thickness = 42.0/2.0;//angstrom
         var canvas_scale = w/snode.data.thumbnail.width;
         var sc2d = parseFloat(snode.data.sprite.scale2d)*canvas_scale;
-        var offy = parseFloat(snode.data.sprite.offsety)*sc2d;
+        var offy = -parseFloat(snode.data.sprite.offsety)*sc2d;//sc2d is angstrom to pixels
         //aNode.data.thumbnail.oh
         //scale2d should bring angstrom->pixels
         //need to take in account original size of images

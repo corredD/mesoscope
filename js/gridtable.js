@@ -94,7 +94,7 @@ function grid_selectImgFile(e){
   //alert(theFiles[0].size);
   var thefile = theFiles[0];
   if (node_selected) {
-    node_selected.data.image = thefile.name;
+    node_selected.data.sprite.image = thefile.name;
     if (node_selected.data.thumbnail == null) node_selected.data.thumbnail = new Image();
     node_selected.data.thumbnail.src = URL.createObjectURL(thefile);
   }
@@ -114,7 +114,7 @@ function getImageHtmlPDB(pdb) {
   pdb = pdb.toLowerCase();
   var twoletters = pdb[1] + pdb[2];
   //var html = "<img id='imagepdb' src='https://cdn.rcsb.org/images/rutgers/" + twoletters + "/" + pdb + "/" + pdb + ".pdb1-250.jpg' onmouseenter='showClone(this)' onmouseleave='hideClone(this)'/>"; //size
-  var html = "https://www.ebi.ac.uk/pdbe/static/entry/"+pdb+"_deposited_chain_front_image-400x400.png"
+  var html = "<img id='imagepdb' src='https://www.ebi.ac.uk/pdbe/static/entry/"+pdb+"_deposited_chain_front_image-400x400.png' onmouseenter='showClone(this)' onmouseleave='hideClone(this)'/>";
   //console.log(html);
   return html;
 }

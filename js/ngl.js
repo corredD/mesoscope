@@ -1583,7 +1583,8 @@ function NGL_makeImage(  ){
     transparent: true
 } ).then( function( imgBlob ){
         node_selected.imgBlob = imgBlob;
-        node_selected.data.thumbnail.src = URL.createObjectURL( imgBlob );
+        if (node_selected.data.thumbnail)
+          node_selected.data.thumbnail.src = URL.createObjectURL( imgBlob );
         viewport.setAttribute("style","width:100%; height:100%;");
         stage.handleResize();
         //download
@@ -1790,6 +1791,22 @@ function NGL_showGeomNode_cb(toggle) {
 function NGL_showGeomNode(e) {
   NGL_showGeomNode_cb(e.checked);
 }
+
+function NGL_showGeomMembrane_cb(toggle) {
+  //toggle the visibility of the geom representation of the current node
+  var rep = stage.getComponentsByName("mb");
+  if (rep.list.length !== 0) {
+    if (rep.list[0].reprList.length !== 0) {
+      rep.list[0].setVisibility(toggle);
+    }
+  }
+}
+
+function NGL_showGeomMembrane(e) {
+  NGL_showGeomMembrane_cb(e.checked);
+}
+
+
 
 function NGL_LoadShapeFile(afile) {
   var thefile = afile;
@@ -2003,7 +2020,7 @@ function NGL_ShowAxisOffset(axis, offset, anode) //StructureView
       //two cylinder one red up, one blue down, center is 0,0,0
       //Sign of Z coordinate is negative at the inner (IN) side and positive at the outer side.
       var radius = 50;
-      var Z = 14;
+      var Z = 42.0/2.0;//angstrom14;//+/-14 shouldnt this be 20?
       var thickness = 1.0;
       //axis = [0,0,1];
       shapemb.addCylinder([0, 0, Z - 1], [0, 0, Z + 1], [1, 0, 0], radius, "OUT");

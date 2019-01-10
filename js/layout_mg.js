@@ -206,6 +206,8 @@ var ngl_widget_options = ''+
     '<label id="heading"></label>' +
   '</div> ' +
   '<div class="hidden" id="surface">' +
+    '<div><input type="checkbox"  id="showgeommb" onclick="NGL_showGeomMembrane(this)" checked>' +
+    '<label for="showgeommb"> Show Membrane used </label></div>'+
     '<label id="pcpLabel">Principal Axis (shift+control left click)</label>' +
     '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpX" type="range" min="-100" max="100" step="1" style="width:70%" />' +
     '<input class="inputNumber" id="num1" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
@@ -279,6 +281,8 @@ var ngl_options= ''+
       '<label id="heading"></label>' +
     '</div> ' +
     '<div class="hidden" id="surface">' +
+      '<div><input type="checkbox"  id="showgeommb" onclick="NGL_showGeomMembrane(this)" checked>' +
+      '<label for="showgeommb"> Show Membrane used </label></div>'+
       '<label id="pcpLabel">Principal Axis (shift+control left click)</label>' +
       '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpX" type="range" min="-100" max="100" step="1" style="width:70%" />' +
       '<input class="inputNumber" id="num1" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
