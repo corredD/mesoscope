@@ -1671,14 +1671,14 @@ function SaveRecipeCellPACK() {
   console.log(current_ready_state);
   console.log(current_ready_state_value);
 
-  if (current_ready_state === 0 || totalNbInclude === 0 ) {
+  /*if (current_ready_state === 0 || totalNbInclude === 0 ) {
     alert(" this is recipe is incomplete, can't export "+totalNbInclude.toString()+" selected entity\n"
             //+ JSON.stringify(current_ready_state_value)
             + "\nmissing beads " + JSON.stringify(list_missing_beads)
             + "\nmissing geoms " + JSON.stringify(list_missing_geom)
             + "\nmissing pdb " + JSON.stringify(list_missing_pdb));
     return;
-  }
+  }*/
   var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links);
   console.log(jsondic.recipe.name);
   console.log(JSON.stringify(jdata));
