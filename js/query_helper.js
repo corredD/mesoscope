@@ -17,7 +17,7 @@ var stop_current_compute = false;
 var pmv_server = "cgi-bin/get_geom_dev.cgi"; //(local_host_dev)?"cgi-bin/get_geom_dev.cgi":
 var sql_server = "cgi-bin/cellpack_db_dev.cgi"; //(local_host_dev)?"cgi-bin/cellpack_db_dev.cgi":
 var cellpack_repo = "http://mgldev.scripps.edu/projects/autoPACK/data/cellPACK_data/cellPACK_database_1.1.0/";
-cellpack_repo = "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/";
+cellpack_repo = "https://raw.githubusercontent.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/";//"https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/";
 //use mgl2
 var local_host_dev = false;
 if (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") {
@@ -1401,7 +1401,7 @@ function getCurrentNodesAsCP_JSON(some_data, some_links) {
       "paths": [
         [
           "autoPACKserver",
-          "https://cdn.rawgit.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0"
+          "https://raw.githubusercontent.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/";
         ]
       ],
       "name": some_data[0].data.name,//root
