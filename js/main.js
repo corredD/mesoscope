@@ -1465,6 +1465,21 @@ function LoadExampleMpn(){
             })
 	}
 
+  function LoadExampleExosome(){
+  	  stage.removeAllComponents();
+  	  var url = "data/exosome_catalase.json";
+  	  csv_mapping= false;
+  	  comp_column = false;
+      d3v4.json(url, function (json) {
+      	      if (DEBUGLOG) console.log(json);
+  			      var adata = parseCellPackRecipe(json)
+  			      //var alink =[]
+  			      //alert("worked??");
+  			      //alert(JSON.stringify(adata));
+  			      update_graph(adata.nodes,adata.links);
+              })
+  	}
+
 function LoadExampleHIV(){
 			stage.removeAllComponents();
 		  var url = cellpack_repo+"recipes/BloodPlasma1.0.json";
