@@ -16,7 +16,7 @@ var ngl_current_pickingProxy;
 var nlg_preview_isosurface = true;
 var pcp_elem = [];
 var offset_elem = [];
-
+var ngl_geom_opacity = 1.0;
 var use_mglserver_beads = false;
 
 var nLod = 3;
@@ -1489,7 +1489,7 @@ function NGL_ShowMeshVFN(mesh) {
   var tcolor = new THREE.Color( color[0], color[1], color[2] );
   var shapeComp = stage.addComponentFromObject(shape);
   var r = shapeComp.addRepresentation("geom_surface", {
-    opacity: 0.5,
+    opacity: ngl_geom_opacity,
     diffuse: tcolor,
     side: "double"
   });
@@ -1568,6 +1568,23 @@ function NGL_buildCMS_cb(nglobject){
   }
 }
 
+function NGL_getCurrentScaleOnScreen(){
+  var width = viewport.offsetWidth;
+  var height = viewport.offsetHeight;
+  //var width = window.innerWidth, height = window.innerHeight;
+  var widthHalf = width / 2, heightHalf = height / 2;
+  var pos1 = new NGL.Vector3(0,0,0);
+  var pos2 = new NGL.Vector3(1,0,0);
+  pos1.project(stage.viewer.camera);
+  pos2.project(stage.viewer.camera);
+  pos1.x = ( pos1.x * widthHalf ) + widthHalf;
+  pos1.y = - ( pos1.y * heightHalf ) + heightHalf;
+  pos2.x = ( pos2.x * widthHalf ) + widthHalf;
+  pos2.y = - ( pos2.y * heightHalf ) + heightHalf;
+  var distance_screen = Math.sqrt((pos1.x-pos2.x)*(pos1.x-pos2.x)+(pos1.y-pos2.y)*(pos1.y-pos2.y));
+  return distance_screen;
+}
+
 function NGL_makeImage(  ){
 		/*var gwidth = 256;
 		var gheight = 256;
@@ -1583,11 +1600,20 @@ function NGL_makeImage(  ){
     transparent: true
 } ).then( function( imgBlob ){
         node_selected.imgBlob = imgBlob;
-        if (node_selected.data.thumbnail)
-          node_selected.data.thumbnail.src = URL.createObjectURL( imgBlob );
-        viewport.setAttribute("style","width:100%; height:100%;");
-        stage.handleResize();
-        //download
+        if (!node_selected.data.thumbnail){
+          node_selected.data.thumbnail = new Image();
+          node_selected.data.thumbnail.onload = function() {
+            var height = node_selected.data.thumbnail.height;
+            var width = node_selected.data.thumbnail.width;
+            node_selected.data.thumbnail.oh = parseFloat(height);
+            node_selected.data.thumbnail.ow = parseFloat(width);
+          }
+          node_selected.data.thumbnail.onerror = function () {
+            this.src = 'images/Warning_icon.png';
+          };
+        }
+        node_selected.data.thumbnail.src = URL.createObjectURL( imgBlob );
+        node_selected.data.sprite.scale2d = NGL_getCurrentScaleOnScreen();
         if (document.getElementById("savethumbnail").checked){
             node_selected.data.sprite.image = node_selected.data.name+".png";
             NGL.download( imgBlob, node_selected.data.name+".png" );

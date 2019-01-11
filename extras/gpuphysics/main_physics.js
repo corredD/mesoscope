@@ -2119,6 +2119,7 @@ function GP_initRenderer(){
   }
   console.log("renderer",dm);
   renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.context.getExtension("EXT_frag_depth");
   renderer.setPixelRatio(window.devicePixelRatio || 1 );
   renderer.setSize( 2048, 2048 );//full size ?
   renderer.shadowMap.enabled = true;
