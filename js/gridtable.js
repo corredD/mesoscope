@@ -95,7 +95,21 @@ function grid_selectImgFile(e){
   var thefile = theFiles[0];
   if (node_selected) {
     node_selected.data.sprite.image = thefile.name;
-    if (node_selected.data.thumbnail == null) node_selected.data.thumbnail = new Image();
+    if (node_selected.data.thumbnail == null) {
+      node_selected.data.thumbnail = new Image();
+      node_selected.data.thumbnail.done = false;
+      node_selected.data.thumbnail.onload = function() {
+        var height = this.height;
+        var width = this.width;
+        this.oh = parseFloat(height);
+        this.ow = parseFloat(width);
+        this.done = true;
+      }
+      node_selected.data.thumbnail.onerror = function () {
+        this.src = 'images/Warning_icon.png';
+        this.done = false;
+      };
+    }
     node_selected.data.thumbnail.src = URL.createObjectURL(thefile);
   }
   if (current_row) current_row.image = thefile.name;
@@ -119,6 +133,13 @@ function getImageHtmlPDB(pdb) {
   return html;
 }
 
+function getImageHtmlPDB_src(pdb) {
+  pdb = pdb.toLowerCase();
+  var twoletters = pdb[1] + pdb[2];
+  //var html = "<img id='imagepdb' src='https://cdn.rcsb.org/images/rutgers/" + twoletters + "/" + pdb + "/" + pdb + ".pdb1-250.jpg' onmouseenter='showClone(this)' onmouseleave='hideClone(this)'/>"; //size
+  return "https://www.ebi.ac.uk/pdbe/static/entry/"+pdb+"_deposited_chain_front_image-400x400.png";
+}
+
 function renderImageCell(row, cell, value, columnDef, dataContext) {
   //first two letter
   return getImageHtmlPDB(dataContext.structureId);
@@ -126,32 +147,55 @@ function renderImageCell(row, cell, value, columnDef, dataContext) {
 
 function renderImageRecipeCell(row, cell, value, columnDef, dataContext) {
   //either image is defined or ise the PDB id
-  if (value && value in pathList_){
-      var data = pathList_[value];
-      //test if file or dataspathList_["Capsid_2.png"].type
-      //if (data && data.type) {
-      //  grid_readImgFile(data);
-      //}
-      if (data && !("data" in data ))
-      {
-        if ("block" in  pathList_[value] )
+  var found = false;
+  console.log(dataContext);
+  console.log(dataContext.id);
+  var anode_indice = parseInt(dataContext.id.split("_")[1]);
+  console.log(anode_indice);
+  var anode = graph.nodes[anode_indice];
+  console.log(anode);
+  var src=(anode && anode.data.thumbnail)?anode.data.thumbnail.src:"";
+  if (src==""){
+    if (value ){
+      if (value in pathList_) {
+        var data = pathList_[value];
+        //test if file or dataspathList_["Capsid_2.png"].type
+        //if (data && data.type) {
+        //  grid_readImgFile(data);
+        //}
+        if (data && !("data" in data ))
         {
-          if (!(pathList_[value].block))
+          if ("block" in  pathList_[value] )
           {
-            grid_readImgFile(data);
+            if (!(pathList_[value].block))
+            {
+              grid_readImgFile(data);
+            }
           }
+          else grid_readImgFile(data);
         }
-        else grid_readImgFile(data);
+        else {
+          data = pathList_[value].data;
+        }
+        src = URL.createObjectURL(data);
       }
-      else {
-        data = pathList_[value].data;
-      }
-      return "<img id='imagepdb' src ='"+data+"' onmouseenter='showClone(this)' onmouseleave='hideClone(this)'/>"
-    }
-  else {
-    var apdb = (dataContext.pdb)?dataContext.pdb.split("_")[0]:"";
-    return getImageHtmlPDB(apdb);
+      /*else {
+        var searchsrc = cellpack_repo+"images/"+value;
+        var results = syncCall(searchsrc);
+        if (results!=="")
+        {
+          found = true;
+          src = searchsrc;
+        }
+      }*/
   }
+    if (!found)
+    {
+    var apdb = (dataContext.pdb)?dataContext.pdb.split("_")[0]:"";
+    src = getImageHtmlPDB_src(apdb);
+    }
+  }
+  return "<img id='imagepdb' src ='"+src+"' onmouseenter='showClone(this)' onmouseleave='hideClone(this)'/>"
 }
 
 // create the row detail plugin

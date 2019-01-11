@@ -71,7 +71,45 @@ function stopAll(){
   toggleHide(document.getElementById("spinner"));
 	}
 
+function async_checkExist(url,callback) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      callback(true);
+    }
+    else {callback(false);}
+  };
+  xhttp.open("GET", url, true);
+  xhttp.send();
+}
+
 //synchronous query
+function checkExist(url) {
+  var request;
+  if (window.XMLHttpRequest) {
+        request = new XMLHttpRequest();
+  } else if (window.ActiveXObject) {
+        request = new ActiveXObject("Microsoft.XMLHttp");
+  }
+
+  if (request) {
+        request.open("GET", url,false);
+        request.send(null);
+        if (request.status == 200) { return true; }
+  }
+  return false;
+}
+
+function urlExists(testUrl) {
+    var http = $.ajax({
+        type:"HEAD",
+        url: testUrl,
+        async: false
+    })
+    return http.status;
+    // this will return 200 on success, and 0 or negative value on error
+}
+
 function syncCall(url)
 {
   var xmlhttp = new XMLHttpRequest();

@@ -133,6 +133,7 @@ function layout_getMultiSelect(select_id)
 var canvasOption = '' +
   '<div class="canvas_head" >' +
     '<div>'+
+     '<input type="checkbox" checked="true" id="sprites">Node image</input>'+
       getSelect("canvas_label", "options_elems", "Node label",
                             "ChangeCanvasLabel(this)", canvas_label_options,"name")+//canvas_label_options)+
       getSelect("canvas_color", "options_elems", "Node color",

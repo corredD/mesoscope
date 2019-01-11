@@ -2748,7 +2748,7 @@ function ticked(e) {
       	}
       if (!d.children && ( d.data.image !=null || d.data.thumbnail !==null) ) {
         var s = Math.sqrt(((d.r*2.0)*(d.r*2.0))/2.0);
-        drawThumbnailInCanvas(d,d.x-s/2.0,d.y-s/2.0,s,s)
+        if (document.getElementById("sprites").checked) drawThumbnailInCanvas(d,d.x-s/2.0,d.y-s/2.0,s,s)
       }
     });
     FOLDER_UPDATED = false;
@@ -2856,7 +2856,7 @@ function ticked(e) {
     }    //thumbnail with special case for surface
     var snode = node_selected;
     if (snode == null || snode.children) snode = node_over;
-    if (snode !=null && !snode.children && snode.data) {
+    if (snode !=null && !snode.children && snode.data && snode.data.thumbnail !==null) {
       //scale from image size to 150 ?
       context.save();
       context.resetTransform();
@@ -2920,32 +2920,76 @@ function drawThumbnailInCanvas(aNode,x,y,w,h){
     value = aNode.data.sprite.image;
   //var img = new Image();
   //either image is defined or ise the PDB id
-  if (aNode.data.thumbnail == null || FOLDER_UPDATED) {
-    if (aNode.data.thumbnail == null) aNode.data.thumbnail = new Image();
-    aNode.data.thumbnail.onload = function() {
-      var height = aNode.data.thumbnail.height;
-      var width = aNode.data.thumbnail.width;
-      aNode.data.thumbnail.oh = parseFloat(height);
-      aNode.data.thumbnail.ow = parseFloat(width);
+  if (aNode.data.repo_check && aNode.data.repo_test) {
+    var search_url = cellpack_repo+"images/"+value;
+    aNode.data.thumbnail.src = search_url;
+    aNode.data.repo_check = false;
+    aNode.data.repo_checking = false;
+  }
+  if (aNode.data.thumbnail == null || FOLDER_UPDATED ) {
+    if (aNode.data.thumbnail == null) {
+      aNode.data.thumbnail = new Image();
+      aNode.data.thumbnail.done = false;
+      aNode.data.repo_check = false;
+      aNode.data.repo_checking = false;
+      aNode.data.thumbnail.onload = function() {
+        var height = this.height;
+        var width = this.width;
+        this.oh = parseFloat(height);
+        this.ow = parseFloat(width);
+        this.done = true;
+      }
+      aNode.data.thumbnail.onerror = function () {
+        this.src = 'images/Warning_icon.png';
+        this.done = false;
+      };
     }
-    aNode.data.thumbnail.onerror = function () {
-      this.src = 'images/Warning_icon.png';
-    };
     if (value && value in pathList_){
+        aNode.data.repo_check = false;
+        aNode.data.repo_test = false;
         var data = pathList_[value];//the file
-          aNode.data.thumbnail.src = URL.createObjectURL(data);
+        aNode.data.thumbnail.src = URL.createObjectURL(data);
     }
     else {
-      var ipdb = ("source" in aNode.data && aNode.data.source.pdb) ? aNode.data.source.pdb.split("_")[0].toLowerCase():"";
-      var twoletters = ipdb[1] + ipdb[2];
-      //pdbe url is https://www.ebi.ac.uk/pdbe/static/entry/5c6e_deposited_chain_front_image-800x800.png//5c6e_deposited_chain_front_image-200x200.png
-      var url = "https://www.ebi.ac.uk/pdbe/static/entry/"+ipdb+"_deposited_chain_front_image-400x400.png"
-      //var url = "https://cdn.rcsb.org/images/rutgers/" + twoletters + "/" + ipdb + "/" + ipdb + ".pdb1-250.jpg";
-      //console.log(html);
-      aNode.data.thumbnail.src = url;
+      //search if exist in
+      var found = false;
+      if (value) {
+        var search_url = cellpack_repo+"images/"+value;
+        if (!aNode.data.repo_checking && !aNode.data.repo_check) {
+          aNode.data.repo_checking = true;
+          var cb = function(exist) {
+            aNode.data.repo_check = true;
+            aNode.data.repo_test = exist;
+          }
+          async_checkExist(search_url,cb);
+        }
+        /*else {
+          aNode.data.repo_checking = false;
+          if (aNode.data.repo_test){
+             found = true;
+             aNode.data.thumbnail.src = search_url;
+          }
+        }*/
+        //async_checkExist
+        //var results = urlExists(search_url);//should be done async..
+        //if (results)
+        //{
+        //  found = true;
+        //  aNode.data.thumbnail.src = search_url;
+        //}
+      }
+      else {
+        var ipdb = ("source" in aNode.data && aNode.data.source.pdb) ? aNode.data.source.pdb.split("_")[0].toLowerCase():"";
+        var twoletters = ipdb[1] + ipdb[2];
+        //pdbe url is https://www.ebi.ac.uk/pdbe/static/entry/5c6e_deposited_chain_front_image-800x800.png//5c6e_deposited_chain_front_image-200x200.png
+        var url = "https://www.ebi.ac.uk/pdbe/static/entry/"+ipdb+"_deposited_chain_front_image-400x400.png"
+        //var url = "https://cdn.rcsb.org/images/rutgers/" + twoletters + "/" + ipdb + "/" + ipdb + ".pdb1-250.jpg";
+        //console.log(html);
+        aNode.data.thumbnail.src = url;
+      }
     }
   }
-  if (aNode.data.thumbnail.complete == true) context.drawImage(  aNode.data.thumbnail, x,y,w,h);
+  if (aNode.data.thumbnail.complete == true && aNode.data.thumbnail.done) context.drawImage(  aNode.data.thumbnail, x,y,w,h);
 }
 
 function ColorLuminance(hex, lum) {
@@ -3970,8 +4014,8 @@ function drawNode(d) {
         r = Math.sqrt(dx * dx + dy * dy);
     if (r + d.r * 1.2 > d.parent.r && !surface && d.parent.parent)//outside parent
     {
-      d.vx += (d.parent.x - d.x) * 0.15 * 1;
-      d.vy += (d.parent.y - d.y) * 0.15 * 1;
+      d.vx += (d.parent.x - d.x) * 0.05 * 1;
+      d.vy += (d.parent.y - d.y) * 0.05 * 1;
     }
     context.arc(ndx, ndy, d.r, 0, 10);//0?
   }

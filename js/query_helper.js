@@ -1401,7 +1401,7 @@ function getCurrentNodesAsCP_JSON(some_data, some_links) {
       "paths": [
         [
           "autoPACKserver",
-          "https://raw.githubusercontent.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/";
+          "https://raw.githubusercontent.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/"
         ]
       ],
       "name": some_data[0].data.name,//root

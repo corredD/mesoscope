@@ -1602,14 +1602,17 @@ function NGL_makeImage(  ){
         node_selected.imgBlob = imgBlob;
         if (!node_selected.data.thumbnail){
           node_selected.data.thumbnail = new Image();
+          node_selected.data.thumbnail.done = false;
           node_selected.data.thumbnail.onload = function() {
-            var height = node_selected.data.thumbnail.height;
-            var width = node_selected.data.thumbnail.width;
-            node_selected.data.thumbnail.oh = parseFloat(height);
-            node_selected.data.thumbnail.ow = parseFloat(width);
+            var height = this.height;
+            var width = this.width;
+            this.oh = parseFloat(height);
+            this.ow = parseFloat(width);
+            this.done = true;
           }
           node_selected.data.thumbnail.onerror = function () {
             this.src = 'images/Warning_icon.png';
+            this.done = false;
           };
         }
         node_selected.data.thumbnail.src = URL.createObjectURL( imgBlob );
