@@ -802,8 +802,8 @@ section#content p {
 
 .modal-body {
   padding: 2px 16px;
-  display: flex;
-  flex-flow: row;
+  //display: flex;
+  //flex-flow: row;
   justify-content: space-around;
   align-items: center;
 }
