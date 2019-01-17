@@ -1095,6 +1095,37 @@ function cp_LoadGoodsellPDBModel(textdata)
     return {"nodes":graph,"links":links};
 }
 
+function cp_SerializedMolarity(){
+  //save in json dictionary current color mapping only
+  var molarity_count_mapping_js={};//
+  //what about compartments
+  graph.nodes.forEach(function(d){
+    if (!d.children)
+    {
+      var name_path = d.ancestors().reverse().map(function(d) {
+        return (d.children) ? d.data.name : "";
+      }).join('.').slice(0, -1);
+      //check if surfaces
+      //is it root or a compartment
+      if (d.parent.data.name !== "root"){
+        if ("surface" in d.data && d.data.surface){
+          name_path = name_path+".surface.proteins."+d.data.name;
+        }
+        else {
+          name_path =  name_path+".interior.proteins."+d.data.name;
+        }
+      }
+      else name_path = name_path+".proteins."+d.data.name;
+      if (!d.data.color) d.data.color = [1,0,0];
+      var molarity = parseFloat(d.data.molarity);
+      var count = parseInt(d.data.count);
+      molarity_count_mapping_js[name_path]={"molarity":molarity,"count":count};
+    }
+  });
+  console.log(JSON.stringify(molarity_count_mapping_js));
+  download(JSON.stringify(molarity_count_mapping_js), 'molarity.json', 'text/plain');
+}
+
 function cp_SerializedColorSchem(){
   //save in json dictionary current color mapping only
   var color_mapping_js={};//
