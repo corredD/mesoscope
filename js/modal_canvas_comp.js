@@ -79,6 +79,7 @@ function getModalCompGraph(rootName) {
     var element = stack.pop();
     var new_elemt = {"name":element.data.name,"children":[],"nodetype":"compartment"};
     console.log("new element is",element.data.name,element);
+    if (!element || !element.data) continue;
     if (element.data.name !== rootName)
     {
       if ("surface" in element.data && element.data.surface) {
@@ -88,6 +89,7 @@ function getModalCompGraph(rootName) {
           }
       }
       else {
+          if (!element.parent) continue;
           console.log("parent is ",element.parent.data.name);
           if (!(element.data.name in float_compartments )) float_compartments[element.data.name] = new_elemt;
           if (element.parent.data.name in float_compartments) float_compartments[element.parent.data.name].children.push(float_compartments[element.data.name]);

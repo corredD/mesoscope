@@ -4,8 +4,6 @@ var DEBUGLOG = false;
 var DEBUGGPU = true;
 var MERGE = false;
 
-var debug_Data_holder;
-
 var recipe_changed = false; //toggle when change occurs, and autosave/save occurs.
 //how to efficiently save work ?
 var current_mode = 0;//0-view/curate mode, 1-create mode
@@ -431,6 +429,7 @@ var allattributes_type={
   "scale2d":{"type":"number","editable":true,"min":0.0,"max":500.0,"step":0.01},//px
   "thumbnail":{"type":"string","editable":false},
 }
+
 //ordered liste
 var attribute_list_order=[
   "include","id","name","size","molecularweight","source","confidence","count","molarity","label",
@@ -781,7 +780,7 @@ function getModalMapping(data_header,jsondic,rootName) {
 		//textelem.innerHTML+=astr;
 
     modal_cont.style.display = "block";
-    modal_cont.style.overflow = "auto";
+
 		SetupCompartmentModalCanvas(canvas_cont,loc_comp);
 
   	span.onclick = function() {
@@ -804,7 +803,6 @@ function getModalMapping(data_header,jsondic,rootName) {
 
 function mainParsingSpreadshit(jsondic,rootName){
 	//why the key are not working properly?
-  debug_Data_holder=jsondic;
 	console.log(jsondic);
 	//console.log(JSON.parse(jsondic));
 	//parse for getting the headr position
@@ -1215,7 +1213,7 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 
 	var agraph_links=[];// { source: 0, target: 1, graph: 0 },
 	//need to check how d3v4.csvParse deal with different sheet
-	/*if (!csv_mapping){
+	if (!csv_mapping){
 		if (sheet_name.length==2){
 		   var data_interact = 	jsondic[sheet_name[1]];
 		   //console.log(JSON.stringify(data_interact));
@@ -1233,7 +1231,7 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 		   	   agraph_links.push(alink);
 		   }
 		}
-	}*/
+	}
 	//console.log("afterModal");
 	//console.log(graph);
 	//console.log(agraph_links);
@@ -1616,7 +1614,7 @@ function checkAttributes(agraph){
 		if (!("molecularweight" in agraph[i].data)) agraph[i].data.molecularweight = 0.0;
     else agraph[i].data.molecularweight = parseFloat(agraph[i].data.molecularweight);
 		if (!("confidence" in agraph[i].data) || isNaN(agraph[i].data.confidence) || agraph[i].data.confidence == null ) {
-      if ("source" in agraph[i].data && "pdb" in agraph[i].data.source && agraph[i].data.source.pdb && (agraph[i].data.source.pdb.length === 4||agraph[i].data.source.pdb.split("_")[0].length ===4))
+      if ("source" in agraph[i].data && "pdb" in agraph[i].data.source && agraph[i].data.source.pdb && (agraph[i].data.source.pdb.length === 4)||agraph[i].data.source.pdb.split("_")[0].length ===4)
       {
         agraph[i].data.confidence = 1.0;
       }

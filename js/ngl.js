@@ -2808,6 +2808,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
     document.getElementById('surface').setAttribute("class", "show");
     //replace the pdb if exist in opm ?
     if (aname.length === 4){
+      aname  = aname.toLowerCase();
       if (ngl_current_node.data.opm === 1){
       //replace purl
           purl = cellpack_repo+"opm/" + aname + ".mmtf";
