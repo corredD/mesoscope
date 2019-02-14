@@ -130,6 +130,14 @@ function NGL_resetPcp()
   acomp.setPosition([0,0,0]);
   var axis = new NGL.Vector3(0, 0, 1);//quat.multiplyVector3(new NGL.Vector3(0, 0, 1));
   var offset = new NGL.Vector3(0, 0, 0);
+  if (node_selected){
+    if (ngl_current_structure && node_selected.data.opm == 1)
+    {
+      var center = ngl_current_structure.gcenter;
+      offset = [center.x,center.y,center.z];
+      axis = [0,0,1];
+    }
+  }
   //offset.applyQuaternion() quat.inverse().multiplyVector3(pos);
   pcp_elem[0].value = axis.x*100;
   pcp_elem[1].value = axis.y*100;
@@ -141,7 +149,7 @@ function NGL_resetPcp()
     $(pcp_elem[i]).siblings('.inputNumber').val(pcp_elem[i].value);
     $(offset_elem[i]).siblings('.inputNumber').val(offset_elem[i].value);
   }
-  NGL_applyPcp();
+  NGL_applyPcp(axis,offset);
 }
 
 function NGL_applyPcp(axis,offset,asyncloop=false) {
@@ -207,6 +215,7 @@ function NGL_updateMetaBalls(anode){
   if (!("pos" in anode.data)||(anode.data.pos === null)||(anode.data.pos.length===0)) {
     anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
     anode.data.radii=[{"radii":[500.0]}];
+    anode.data.types=[{"types":[1]}];
   }
   //iso,padding
   ngl_marching_cube.update(anode.data.pos[0].coords,anode.data.radii[0].radii,0.2,0.0);
@@ -2710,12 +2719,12 @@ function NGL_ReprensentOne(o,anode){
     align_axis = true;
     var offset = anode.data.offset;
     var axis = anode.data.pcpalAxis;
-    if (anode.data.opm === 1) {
+    /*if (anode.data.opm === 1) {
       offset = [center.x,center.y,center.z];
       axis = [0,0,1];
       NGL_updatePcpElem();
       //NGL_applyPcp();
-    }
+    }*/
     console.log("offset?", offset,axis);
     NGL_ShowAxisOffset(axis, offset, anode);
   }
@@ -2803,7 +2812,7 @@ function NGL_GetBUCenter(nglobj,ass){
 }
 
 function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
-
+  var setopm = false;
   if (ngl_current_node && ngl_current_node.data.surface) {
     document.getElementById('surface').setAttribute("class", "show");
     //replace the pdb if exist in opm ?
@@ -2822,6 +2831,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
           {
             purl = cellpack_repo+"opm/" + aname + ".mmtf";
             ngl_current_node.data.opm = 1;
+            setopm = true;
           }
           else {
             ngl_current_node.data.opm = -1;
@@ -2919,7 +2929,8 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
         align_axis = true;
         var offset = ngl_load_params.axis.offset;
         var axis = ngl_load_params.axis.axis;
-        if (ngl_current_node.data.opm === 1) {
+        //this force the opm pcp and offset. it shouldnt
+        if (setopm){//ngl_current_node.data.opm === 1) {
           offset = [center.x,center.y,center.z];
           axis = [0,0,1];
           ngl_load_params.axis.offset = offset;

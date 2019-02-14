@@ -168,11 +168,13 @@ function oneCompartment(scomp, node) {
   } else if (gtype === "mb") {
     scomp["mb"] = {
       "positions": [],
-      "radii": []
+      "radii": [],
+      "types":[]
     };
     if (node.data.pos && node.data.radii) {
       scomp["mb"].positions = node.data.pos[0].coords;
       scomp["mb"].radii = node.data.radii[0].radii;
+      scomp["mb"].types = node.data.types[0].types;
     }
   } else if (gtype === "None") {} else {}
   scomp["thickness"] = ("thickness" in node.data) ? node.data.thickness : 7.5;
@@ -464,6 +466,9 @@ function SetupOneCompartment(acomp, acompdic) {
     }];
     acomp["radii"] = [{
       "radii": acompdic.mb.radii
+    }];
+    acomp["types"] = [{
+      "types": acompdic.mb.types
     }];
   }
   if (acomp.geom_type === "None") {

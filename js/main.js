@@ -417,7 +417,7 @@ var allattributes_type={
   "nodetype":  {"type":"select","editable":true,"options":["ingredient","compartment"]},
   "visited": {"type":"bool","editable":false},
   "include": {"type":"bool","editable":true},
-  "opm": {"type":"bool","editable":true},
+  "opm": {"type":"number","editable":true,"min":-1,"max":1,"step":1},
   "angle": {"type":"number","editable":true,"min":0.0,"max":360.0,"step":0.1 },
   "ulength": {"type":"number","editable":true,"min":0,"max":250},
   "tlength": {"type":"number","editable":true,"min":0,"max":100000},
@@ -1060,8 +1060,11 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
         var name =  (name_index!==-1)?idata[name_index]:"";
 				if (name === "") name = "protein_"+i;
 				//console.log("parse name ",name);
-				if (ingr_names.indexOf(name)!==-1) {console.log("duplicate ",name); continue;}
-				else 	ingr_names.push(name);
+
+        //allow duplicate ?
+        //if (ingr_names.indexOf(name)!==-1) {console.log("duplicate ",name); continue;}
+				//else 	ingr_names.push(name);
+
         //console.log(name_index);
         //console.log(name_index===0);
         //console.log(idata[0]);
@@ -1763,6 +1766,7 @@ function getcomphtml(anode) {
 		else {
 			anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
 			anode.data.radii=[{"radii":[500]}];
+      anode.data.types=[{"types":[0]}];
 			mb_options = [0];
 		}
 		htmlStr += getSelect("metaball_elem", "options_elems", "Choose MB",
@@ -1852,12 +1856,14 @@ function AddMetaball(){
 			if (!("pos" in node_selected.data)||(node_selected.data.pos === null)||(node_selected.data.pos.length===0)) {
 				node_selected.data.pos = [{"coords":[]}];
 				node_selected.data.radii=[{"radii":[]}];
+        node_selected.data.types=[{"types":[]}];
 			}
 			node_selected.data.pos[0].coords.push(0.0);
 			node_selected.data.pos[0].coords.push(0.0);
 			node_selected.data.pos[0].coords.push(0.0);
 			var radius = document.getElementById('comp_slider').value;
 			node_selected.data.radii[0].radii.push(radius);
+      node_selected.data.types[0].types.push(0);
 			//update the select
 			var mbe = document.getElementById('metaball_elem');
 			mbe.options.length = 0;
