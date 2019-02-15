@@ -802,7 +802,7 @@ section#content p {
 
 .modal-body {
   padding: 2px 16px;
-  //display: flex;
+  display: flex;
   //flex-flow: row;
   justify-content: space-around;
   align-items: center;
@@ -838,7 +838,7 @@ section#content p {
 .modal-content-elem
 {
   //padding: 2px 16px;
-  //display: flex;
+  display: flex;
   //flex-flow: row;
   justify-content: space-between;
   align-items: center;
