@@ -4173,7 +4173,7 @@ function merge_node(cnode,newnode){
         // index: the ordinal position of the key within the object
         if (merge_field[akey].checked){
             var key = allfield_key[akey];
-            cnode.data[key] = newnode.data[key];
+            if ( newnode.data[key] ) cnode.data[key] = newnode.data[key];
             if (cnode.data.nodetype!=="compartment"){
               if (key === "bu") {
                 cnode.data.source.bu = newnode.data.bu;
@@ -4232,9 +4232,9 @@ function merge_graph(agraph,alink){
   var new_nodes = pack(new_root).descendants();//flatten--error ?
 	alink = MapLinkToNode(new_nodes,alink);
 
-  new_nodes = checkAttributes(new_nodes);
-  new_nodes = resetAllNodePos(new_nodes);
-  new_nodes = centerAllNodePos(new_nodes);
+  //new_nodes = checkAttributes(new_nodes);
+  //new_nodes = resetAllNodePos(new_nodes);
+  //new_nodes = centerAllNodePos(new_nodes);
 
   merge_nodes = new_nodes;
   merge_links = alink;
@@ -4253,6 +4253,9 @@ function merge_graph(agraph,alink){
         }
       }
   });
+  nodes = checkAttributes(nodes);
+  nodes = resetAllNodePos(nodes);
+  nodes = centerAllNodePos(nodes);
 
   // Returns array of link objects between nodes.
   //links = root.links();//nodes.slice(1);
