@@ -45,6 +45,20 @@ function merge_getModal(newnodes,newlinks) {
   	var btn1 = document.getElementById("mergemodal_save");
   	var btn2 = document.getElementById("mergemodal_cancel");
 		//if its spreadsheet, need the regular modal ?
+    //one checkbox selectAll
+    var checkbox = document.createElement('input');
+    checkbox.type = "checkbox";
+    checkbox.name = "allfieldtoggle";
+    checkbox.checked = true;
+    checkbox.id = "allfieldtoggle_include";
+    checkbox.onclick = function(cb){
+      for(var k in allfield) {
+  				if (k==="compartments") continue;
+          merge_field[k].checked = !merge_field[k].checked;
+      }
+    }
+    var celem =  grid_addToModalDiv( item_cont, 'modal-content-elem', "select all");
+    celem.prepend(checkbox);
 
     for(var k in allfield) {
 				if (k==="compartments") continue;

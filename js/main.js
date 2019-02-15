@@ -758,6 +758,21 @@ function getModalMapping(data_header,jsondic,rootName) {
   		astr +="<br>"+comp_column_names[c].name+" surface "+comp_column_names[c].surface;
   		}
 
+    if (MERGE){
+      var acheckbox = document.createElement('input');
+      acheckbox.type = "checkbox";
+      acheckbox.name = "allfieldtoggle";
+      acheckbox.checked = true;
+      acheckbox.id = "allfieldtoggle_include";
+      acheckbox.onclick = function(cb){
+        for(var k in allfield) {
+            if (k==="compartments") continue;
+            merge_field[k].checked = !merge_field[k].checked;
+        }
+      }
+      var celem =  grid_addToModalDiv( item_cont, 'modal-content-elem', "select all");
+      celem.prepend(acheckbox);
+    }
     for(var k in allfield) {
 				if (k==="compartments") continue;
 				createOneColumnSelect(k,data_header,item_cont)
