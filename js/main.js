@@ -1632,7 +1632,10 @@ function checkAttributes(agraph){
 		if (!("molecularweight" in agraph[i].data)) agraph[i].data.molecularweight = 0.0;
     else agraph[i].data.molecularweight = parseFloat(agraph[i].data.molecularweight);
 		if (!("confidence" in agraph[i].data) || isNaN(agraph[i].data.confidence) || agraph[i].data.confidence == null ) {
-      if ("source" in agraph[i].data && "pdb" in agraph[i].data.source && agraph[i].data.source.pdb && (agraph[i].data.source.pdb.length === 4)||agraph[i].data.source.pdb.split("_")[0].length ===4)
+      if ("source" in agraph[i].data
+      && "pdb" in agraph[i].data.source
+      && agraph[i].data.source.pdb
+      && (agraph[i].data.source.pdb.length === 4))//||agraph[i].data.source.pdb.split("_")[0].length ===4
       {
         agraph[i].data.confidence = 1.0;
       }
