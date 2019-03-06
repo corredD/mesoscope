@@ -1203,6 +1203,7 @@ function LoadAllProteins(o){
       atomData_done=true;
       distributesMesh();
       animate();
+      inited = true;
       return;
     }
     LoadProteinAtoms(nodes[current_node_id],current_node_id,LoadAllProteins)
@@ -1211,6 +1212,7 @@ function LoadAllProteins(o){
 function LoadProteinAtoms(anode,pid,callback){
   if (anode.children) return callback(null);
   var pdbname = anode.data.source.pdb;
+  if (pdbname === null) return callback(null);
   if (pdbname.startsWith("EMD")
   || pdbname.startsWith("EMDB")
   || pdbname.slice(-4, pdbname.length) === ".map") {
@@ -2229,6 +2231,7 @@ function GP_initWorld(){
 }
 
 function GP_updateDebugBeadsSpheres(){
+  if (debugMesh==null) GP_debugBeadsSpheres();
   debugMesh.geometry.maxInstancedCount = (world.particleCount !==0)? world.particleCount : world.maxParticles;
   var instanceInfos = new THREE.InstancedBufferAttribute( new Float32Array( debugMesh.geometry.maxInstancedCount * 1 ), 1, true, 1 );
   //var instancepositions = new THREE.InstancedBufferAttribute( new Float32Array( debugGeometry.maxInstancedCount * 1 ), 1, true, 1 );
@@ -3143,7 +3146,7 @@ function GP_initFromNodes(some_nodes,numpart,copy,doatom){
   }
   else {
     init();
-    inited = true;
+    if (!doatom) inited = true;
     var pbutton = document.getElementById("preview_button");
     pbutton.innerHTML = "Update Preview"
   }

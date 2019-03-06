@@ -1704,7 +1704,8 @@ function SaveRecipeCellPACK_serialized() {
     return;
   }
   */
-  var jdata = serializedRecipe(graph.nodes, graph.links);
+  var jdata = serializedRecipe(graph.nodes[0].descendants(), graph.links);
+  //var jdata = serializedRecipe(graph.nodes, graph.links);
   console.log(jdata);
   console.log(JSON.stringify(jdata));
   download(JSON.stringify(jdata), jdata.name + '_serialized.json', 'text/plain');

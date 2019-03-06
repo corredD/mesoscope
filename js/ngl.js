@@ -2949,6 +2949,8 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
         radius: 0.2,
         assembly: assembly
       })
+      NGL_showBox(document.getElementById('showbox'));
+
       if (rep_elem.selectedOptions[0].value==="cms"){
         o.addRepresentation("surface", {
           //colorScheme: color_elem.selectedOptions[0].value,

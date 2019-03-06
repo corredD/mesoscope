@@ -2116,7 +2116,7 @@ function SetObjectsOptionsDiv(anode) {
               htmlStr+=layout_getInputNode(anode.data[e],e,specificiations);
             }
           	else {
-              if (e == "thumbnail" && anode.data.thumbnail !==null)
+              if (e == "thumbnail" && anode.data.thumbnail != null)
               {
                   htmlStr+= anode.data.thumbnail.outerHTML;//resize ?
                   htmlStr+='<button onclick="NGL_saveThumbnail()" style="">Save Thumbnail/Sprite</button>';
