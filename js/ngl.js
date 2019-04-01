@@ -128,6 +128,9 @@ function NGL_resetPcp()
   var acomp = stage.getComponentsByName("mb").list[0];
   acomp.setRotation([0,0,0,1]);
   acomp.setPosition([0,0,0]);
+  var acomp2 = stage.getComponentsByName("arrowfiber").list[0];
+  acomp2.setRotation([0,0,0,1]);
+  acomp2.setPosition([0,0,0]);
   var axis = new NGL.Vector3(0, 0, 1);//quat.multiplyVector3(new NGL.Vector3(0, 0, 1));
   var offset = new NGL.Vector3(0, 0, 0);
   if (node_selected){
@@ -409,6 +412,27 @@ function NGL_buildMB() {
   var r = shapembComp.addRepresentation("membrane");
 }
 
+function NGL_updateArrowDrag(acomp) {
+    //update arrowfiber
+    if (!acomp) acomp = stage.getComponentsByName("arrowfiber").list[0];
+    var pos = acomp.position; //global position
+    var quat = acomp.quaternion; //local rotation
+    var axis = new NGL.Vector3(0, 0, 1);//quat.multiplyVector3(new NGL.Vector3(0, 0, 1));
+    axis.applyQuaternion(quat);
+    var offset = pos;
+    //offset.applyQuaternion() quat.inverse().multiplyVector3(pos);
+    pcp_elem[0].value = axis.x*100;
+    pcp_elem[1].value = axis.y*100;
+    pcp_elem[2].value = axis.z*100;
+    offset_elem[0].value = offset.x*-1;
+    offset_elem[1].value = offset.y*-1;
+    offset_elem[2].value = offset.z*-1;
+    for (var i = 0; i < 3; i++) {
+      $(pcp_elem[i]).siblings('.inputNumber').val(pcp_elem[i].value);
+      $(offset_elem[i]).siblings('.inputNumber').val(offset_elem[i].value);
+    }
+}
+
 function NGL_updateMBcompDrag(acomp) {
   //update ui elem while dragging
   if (!acomp) acomp = stage.getComponentsByName("mb").list[0];
@@ -435,15 +459,14 @@ function NGL_updateMBcomp() {
   var axis = [pcp_elem[0].value / 100.0, pcp_elem[1].value / 100.0, pcp_elem[2].value / 100.0];
   var offset = [offset_elem[0].value / 1.0, offset_elem[1].value / 1.0, offset_elem[2].value / 1.0];
   var acomp = stage.getComponentsByName("mb").list[0];
-  //
+  if (node_selected.data.ingtype=="fiber") acomp = stage.getComponentsByName("arrowfiber").list[0];;
   var q = new NGL.Quaternion();
   axis = new NGL.Vector3(axis[0], axis[1], axis[2]);//normalize ?
   q.setFromUnitVectors(new NGL.Vector3(0, 0, 1), axis.normalize());
   //console.log(q,new NGL.Vector3(axis[0],axis[1],axis[2]));
-  if (!acomp) NGL_buildMB();
   acomp.setRotation(q);
-  acomp.setPosition([-offset[0], -offset[1], -offset[2]]);
-  console.log("NGL_updateMBcomp axis ?", axis, offset);
+  if (node_selected.data.ingtype!="fiber") acomp.setPosition([-offset[0], -offset[1], -offset[2]]);
+  console.log("NGL_update axis ?", axis, offset);
   //change the grid ? or the data or both ?
 }
 
@@ -598,6 +621,11 @@ function NGL_Setup() {
     if(ngl_current_pickingProxy.component && ngl_current_pickingProxy.component.name==="mb") {
       //update pcpAxis and rotaiton
       NGL_updateMBcompDrag(ngl_current_pickingProxy.component)
+      NGL_applyPcp();
+    }
+    else if(ngl_current_pickingProxy.component && ngl_current_pickingProxy.component.name==="arrowfiber") {
+      //update pcpAxis and rotaiton
+      NGL_updateArrowDrag(ngl_current_pickingProxy.component)
       NGL_applyPcp();
     }
     else if (ngl_current_pickingProxy.sphere) {
@@ -1831,11 +1859,21 @@ function NGL_showGeomNode(e) {
 }
 
 function NGL_showGeomMembrane_cb(toggle) {
-  //toggle the visibility of the geom representation of the current node
-  var rep = stage.getComponentsByName("mb");
-  if (rep.list.length !== 0) {
-    if (rep.list[0].reprList.length !== 0) {
-      rep.list[0].setVisibility(toggle);
+  if (node_selected.data.ingtype == "fiber") {
+    var rep = stage.getComponentsByName("arrowfiber");
+    if (rep.list.length !== 0) {
+      if (rep.list[0].reprList.length !== 0) {
+        rep.list[0].setVisibility(toggle);
+      }
+    }
+  }
+  else {
+    //toggle the visibility of the geom representation of the current node
+    var rep = stage.getComponentsByName("mb");
+    if (rep.list.length !== 0) {
+      if (rep.list[0].reprList.length !== 0) {
+        rep.list[0].setVisibility(toggle);
+      }
     }
   }
 }
@@ -2044,7 +2082,6 @@ function NGL_ShowAxisOffset(axis, offset, anode) //StructureView
   if (anode) {
     if (anode.data.surface) {
       console.log("build membrane along", axis);
-
       var q = new NGL.Quaternion();
       q.setFromUnitVectors(new NGL.Vector3(0, 0, 1), new NGL.Vector3(axis[0], axis[1], axis[2]));
       console.log(q, new NGL.Vector3(axis[0], axis[1], axis[2]));
@@ -2071,6 +2108,24 @@ function NGL_ShowAxisOffset(axis, offset, anode) //StructureView
       shapembComp.setPosition([-offset[0], -offset[1], -offset[2]]);
       console.log("axis ?", axis);
 
+    }
+    if (anode.data.ingtype=="fiber"){
+      //check if exists
+      var rep = stage.getComponentsByName("arrowfiber");
+      if (rep.list.length){
+        rep.list.forEach(function(elem){stage.removeComponent(elem);});
+      }
+      var shapemb = new NGL.Shape("arrowfiber");
+      var q = new NGL.Quaternion();
+      q.setFromUnitVectors(new NGL.Vector3(0, 0, 1), new NGL.Vector3(axis[0], axis[1], axis[2]));
+      //position1: Vector3 | Array, position2: Vector3 | Array, color: Color | Array, radius: Float, name: String
+      shapemb.addArrow([ 0, 0, -50 ], [ 0, 0, 50 ], [ 0, 1, 1 ], 4.0);
+      var shapembComp = stage.addComponentFromObject(shapemb);
+      shapembComp.name = "arrowfiber";
+      var r = shapembComp.addRepresentation("principalVector");
+      shapembComp.setRotation(q);
+      //shapembComp.setRotation(q);
+      //shapembComp.setPosition([-offset[0], -offset[1], -offset[2]]);
     }
   }
 }
@@ -2715,7 +2770,7 @@ function NGL_ReprensentOne(o,anode){
   if (assembly !== "AU") center = NGL_GetBUCenter(o,assembly);
   console.log("setPosition");
   o.setPosition([-center.x, -center.y, -center.z]); //center molecule
-  if (anode.data.surface){
+  if (anode.data.surface || anode.data.ingtype=="fiber"){
     align_axis = true;
     var offset = anode.data.offset;
     var axis = anode.data.pcpalAxis;
@@ -2730,6 +2785,10 @@ function NGL_ReprensentOne(o,anode){
   }
   else {
     var rep = stage.getComponentsByName("mb");
+    if (rep.list.length){
+      rep.list.forEach(function(elem){stage.removeComponent(elem);});
+    }
+    var rep = stage.getComponentsByName("arrowfiber");
     if (rep.list.length){
       rep.list.forEach(function(elem){stage.removeComponent(elem);});
     }
@@ -2848,6 +2907,11 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
     NGL_updatePcpElem();
   } else {
     document.getElementById('surface').setAttribute("class", "hidden");
+  }
+  if (ngl_current_node && ngl_current_node.data.ingtype == "fiber"){
+    //use the axis as principale axis for fiber
+    document.getElementById('surface').setAttribute("class", "show");
+    NGL_updatePcpElem();
   }
   if (!purl) return;
   var isseq = document.getElementById("sequence_mapping").checked;
