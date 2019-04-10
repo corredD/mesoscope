@@ -216,23 +216,11 @@ def displayResult(fName,httpn,htti,valStr):
 if __name__=='__main__':
 ### evaluate CGI request
     if len(sys.argv) > 1 :
-        if sys.argv[1][-3:] == "obj" :
-            coor=[]
-            resi=[]
-            cr,re=getVerticeObj(sys.argv[1])
-            coor.append(cr)
-            resi.append(re)
-            #for i in range(len(cr)):
-             #print str(resi[0][i])+" "+str(cr[i][0])+" "+str(cr[i][1])+" "+str(cr[i][2])+"\n"
-             #print str(resi[0][i])+" "+str(coor[0][i][0])+" "+str(coor[0][i][1])+" "+str(coor[0][i][2])+"\n"
-            WordToPdb("test.pdb",coor,resi,len(coor))
-        else :
-            letter=[]
-            r=sys.argv[1]
-            for i in r: letter.append(i)
-            pdbout=word(letter)
-            PDBout(pdbout,r+".pdb")
-     else :
+        if sys.argv[1].split(".")[1] == "inp" :
+            #execute directly
+            cmd=("./illustrator-2016 < " +sys.argv[1])
+            os.system(cmd)
+    else :
         form = cgi.FieldStorage()
         ## "key" is a hidden form element with an
         ## action command such as "process"
