@@ -64,7 +64,7 @@ def displayFormPreview(PDBID):
     aStr +="var PDBID = \""+PDBID+"\";\n"
     aStr +="""// Create NGL Stage object
 var stage = new NGL.Stage( "viewport" );
-
+stage.setParameters({cameraType: "orthographic"})
 // Handle window resizing
 window.addEventListener( "resize", function( event ){
     stage.handleResize();
@@ -89,6 +89,7 @@ function onClick(){
     formData.append("position", JSON.stringify(new NGL.Vector3(0,0,0)));
     formData.append("rotation", JSON.stringify(rotation));
     formData.append("scale", 12.0);
+    formData.append("_id", -1);
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py');
     xhr.onload = function () {
@@ -102,7 +103,7 @@ function onClick(){
     """
     aStr+="stage.loadFile('rcsb://"+PDBID+"',{ defaultRepresentation: true }).then(function (o) {o.addRepresentation(\"spacefill\")});\n"
     #aStr+="stage.autoView(200);\n"
-    aStr+="</script>\n" 
+    aStr+="</script>\n"
     aStr += htmlTailer()
     print aStr
 #need to gather pos and rot and pass it to cgi
@@ -209,7 +210,7 @@ class processObj:
         return
 
 def prepareInput(pdbId,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0]):
-    astr="read\n"    
+    astr="read\n"
     astr+=pdbId+".pdb\n"
     astr+="""
 1.6,1.5,1.6,1.5,1.6,1.8,1.9,1.5       #radii for atom types 1-16
@@ -217,14 +218,14 @@ def prepareInput(pdbId,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0]):
 HETATM-----HOH-- 0,9999,0,0           #selection strings, dash is wildcard
 ATOM  -H-------- 0,9999,0,0           # first two numbers, residue range
 ATOM  H--------- 0,9999,0,0           # third number, atom type
-ATOM  -C-------A 5,9999,1,1           # final number defines subunits for outlines
-ATOM  ---------A 5,9999,2,1           # selection starts at first record, and stop when it finds something that matches
-ATOM  -C-------C 5,9999,1,2
-ATOM  ---------C 5,9999,2,2
-ATOM  -C-------B 5,9999,3,3
-ATOM  ---------B 5,9999,4,3
-ATOM  -C-------D 5,9999,3,4
-ATOM  ---------D 5,9999,4,4
+ATOM  -C-------A 0,9999,1,1           # final number defines subunits for outlines
+ATOM  ---------A 0,9999,2,1           # selection starts at first record, and stop when it finds something that matches
+ATOM  -C-------C 0,9999,1,2
+ATOM  ---------C 0,9999,2,2
+ATOM  -C-------B 0,9999,3,3
+ATOM  ---------B 0,9999,4,3
+ATOM  -C-------D 0,9999,3,4
+ATOM  ---------D 0,9999,4,4
 HETATM-C---HEM-- 0,9999,5,5
 HETATMFE---HEM-- 0,9999,7,5
 HETATM-----HEM-- 0,9999,6,5
@@ -232,20 +233,23 @@ HETATM---------- 0,9999,0,0
 ATOM  HCCC-RES-A 0,9999,1,1
 END
 """
-    if (center): astr+="center\n"
-    astr+="auto\n"
+    if (center):
+        astr+="center\n"
+        astr+="auto\n"
     astr+="trans\n"
     astr+=str(trans[0])+","+str(trans[1])+","+str(trans[2])+"\n"
     astr+="scale\n"
     astr+=str(scale)+"\n"                                                         # pixels/Angstrom
-    #astr+="zrot\n"
-    #astr+=str(rotation[2])+"\n"    
-    astr+="xrot\n"
-    astr+=str(rotation[0])+"\n"    
-    astr+="yrot\n"
-    astr+=str(rotation[1])+"\n"    
     astr+="zrot\n"
-    astr+=str(rotation[2])+"\n"    
+    astr+="-90.0\n"
+    astr+="xrot\n"
+    astr+="180.0\n"
+    astr+="zrot\n"
+    astr+=str(-rotation[2])+"\n"
+    astr+="yrot\n"
+    astr+=str(rotation[1])+"\n"
+    astr+="xrot\n"
+    astr+=str(-rotation[0])+"\n"
     #astr+="xrot\n"
     #astr+=str(rotation[0])+"\n"
     astr+="""wor
@@ -282,9 +286,9 @@ illustrate
 3.,10.                                                       # subunits
 3.,8.,6.                                                     # outlines defining regions of the chain
 calculate
-1,0                                                          # first "1" specifies pnm outpu  
+1,0                                                          # first "1" specifies pnm outpu
 """
-    astr+=pdbId+".pnm\n"  
+    astr+=pdbId+".pnm\n"
     return astr
 
 def queryForm(form):
@@ -314,10 +318,10 @@ def queryForm(form):
     cmd+= curentD+"/illustrator-2016 < "+queryTXT+".inp>/dev/null;"
     cmd+="/bin/convert "+queryTXT+".pnm -transparent \"rgb(254,254,254)\" "+queryTXT+".png>/dev/null;"
     os.system(cmd)
-    
+
     #httpfile="https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/"+queryTXT+".pdb"
     httpimg="https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/"+queryTXT+".png"
-    print "{'image':'"+httpimg+"'} " 
+    print "{'image':'"+httpimg+"'} "
     #displayResult(tmpPDBName,httpfile,httpimg,queryTXT)
     cleanup(wrkDir, "5 days")
     return
@@ -332,13 +336,20 @@ def processForm(form, returnpage=True, verbose = 0):
     x = processObj(argsDict)
     x.formParse(form,argsDict, verbose)
     queryTXT = string.upper(x.data["PDBID"])
-    id=mkRand()
+    id = 0
+    idprovided = False
+    if form.has_key("_id") and form["_id"].value != -1:
+        id = form["_id"].value
+        idprovided = True
+    else :
+        id=mkRand()
     #prepare input
     redirectURL = "https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/illustrator.html"
     wrkDir = "/var/www/html/data/tmp/ILL/"+id
     #print "<html>Hello World</html>"
     curentD = os.path.abspath(os.curdir)
-    os.mkdir(wrkDir)
+    if not os.path.isdir(wrkDir):
+        os.mkdir(wrkDir)
     scale=12.0
     center=True
     trans=[0,0,0]
@@ -356,34 +367,34 @@ def processForm(form, returnpage=True, verbose = 0):
     f = open(inpfile, "w")
     f.write(inpstring)
     f.close()
-    
+
     tmpPDBName = wrkDir+"/"+queryTXT+".pdb"
     cmd = "cd "+wrkDir+";"
     cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
     cmd+= curentD+"/illustrator-2016 < "+queryTXT+".inp>/dev/null;"
     cmd+="/bin/convert "+queryTXT+".pnm -transparent \"rgb(254,254,254)\" "+queryTXT+".png>/dev/null;"
     os.system(cmd)
-    
+
     httpfile="https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/"+queryTXT+".pdb"
     httpimg="https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/"+queryTXT+".png"
-    
-    aStr = displayResult(queryTXT,httpfile,httpimg,queryTXT)
+
+    aStr = displayResult(queryTXT,httpfile,httpimg,queryTXT,id=id)
     #print aStr
     f = open(wrkDir+"/illustrator.html","w")
     f.write("%s" % aStr)
     f.close()
     #sys.stdout.write("%s" % htmlRedirectToPage("https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/illustrator.html"))
     #sys.stdout.flush()
-    if (returnpage) :
+    if (returnpage and not idprovided) :
         print "Content-type: text/html"
-        print    
+        print
         #print 'Content-Type: text/html\r\n'
         print ''# HTTP says you have to have a blank line between headers and content
         print '<html>\r\n'
         print '  <head>\r\n'
         print '    <meta http-equiv="refresh" content="0;url=%s" />\r\n' % redirectURL
         print '    <title>You are going to be redirected</title>\r\n'
-        print '  </head>\r\n' 
+        print '  </head>\r\n'
         print '  <body>\r\n'
         print '    Redirecting... <a href="%s">Click here if you are not redirected</a>\r\n' % redirectURL
         print '  </body>\r\n'
@@ -391,25 +402,28 @@ def processForm(form, returnpage=True, verbose = 0):
     else :
         print "Access-Control-Allow-Origin: *"
         print 'Content-type: application/json\n'
-        print "{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\"}"   
+        print "{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(id)+"\"}"
     #displayResult(tmpPDBName,httpfile,httpimg,queryTXT)
     cleanup(wrkDir, "5 days")
     return
 
-def displayResult(queryTXT,httpn,htti,valStr):
+def displayResult(queryTXT,httpn,htti,valStr,id=-1):
     aStr = ""
     aStr += htmlHeader("Illustrator",httpHead = 0,other = "<META NAME=\"keywords\" content=\"\">")
     #aStr += "<div align=\"center\"><img src=\"http://bioserv.rpbs.jussieu.fr/~autin/help/ABCgen/ABCgen.png\" width=\"800\" height=\"89\"></a></div>\n"
     aStr += htmlRule()
     aStr += htmlH4Msg("Query text :"+valStr)
+    aStr += htmlMsg("<button onclick='onClick()'>Update</button>")
     aStr +="<a href=\""+htti+"\" target=\"blanck\"><img src=\""+htti+"\"></a>\n"
     aStr +="<div id=\"viewport\" style=\"width:300; height:300;\"></div>\n"
     aStr += "<script src=\"https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js\"></script>\n"
+    aStr +="<script>\n"
+    aStr +="var _id = "+str(id)+";\n"
     aStr +="""
-<script>
 // Create NGL Stage object
+var img = document.getElementById();
 var stage = new NGL.Stage( "viewport" );
-
+stage.setParameters({cameraType: "orthographic"})
 // Handle window resizing
 window.addEventListener( "resize", function( event ){
     stage.handleResize();
@@ -421,7 +435,29 @@ stage.setParameters({
     """
     aStr+="stage.loadFile('rcsb://"+queryTXT+"',{ defaultRepresentation: true }).then(function (o) {o.addRepresentation(\"spacefill\")});\n"
     #aStr+="stage.autoView(200);\n"
-    aStr+="</script>\n" 
+    aStr+="""
+function onClick(){
+    var q = stage.animationControls.controls.rotation;
+    var rotation = new NGL.Euler().setFromQuaternion( q);
+    var formData = new FormData();
+    formData.append("key", "processpreview");//array of x,y,z
+    formData.append("PDBID", PDBID);
+    formData.append("position", JSON.stringify(new NGL.Vector3(0,0,0)));
+    formData.append("rotation", JSON.stringify(rotation));
+    formData.append("scale", 12.0);
+    formData.append("_id", _id);
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py');
+    xhr.onload = function () {
+      // do something to response
+      console.log(this.responseText);
+      var data = JSON.parse(this.responseText)
+      img.src = data.image;
+    };
+    xhr.send(formData);
+}
+"""
+    aStr+="</script>\n"
     aStr += htmlTailer()
     return aStr
 
@@ -443,7 +479,7 @@ if __name__=='__main__':
             statuskey = form["key"].value
         except:
             statuskey = None
-    
+
         if statuskey == "process":
             if (form.has_key("preview")):displayFormPreview(form["PDBID"].value)
             else : processForm(form,True)
