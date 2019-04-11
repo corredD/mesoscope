@@ -34,8 +34,7 @@ def htmlHeader(title = "", other = "", httpHead = 1, bgcolor = "white"):
     aStr = ""
     if httpHead:
         # aStr += "Connection: close\n"
-        aStr += "Content-type: text/html\n"
-        aStr += "Cache-Control: no-cache, must-revalidate\n\n"
+        aStr += "Content-type: text/html\n\n"
     aStr += "<HTML>\n"
     if title != "" or other != "":
         aStr += "<HEAD><TITLE>"+title+"</TITLE>"+other+"</HEAD>\n"

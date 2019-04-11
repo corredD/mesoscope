@@ -240,15 +240,15 @@ END
     astr+="scale\n"
     astr+=str(scale)+"\n"                                                         # pixels/Angstrom
     astr+="zrot\n"
-    astr+="-90.0\n"
+    astr+="0.0\n"
     astr+="xrot\n"
-    astr+="180.0\n"
-    astr+="zrot\n"
-    astr+=str(-rotation[2])+"\n"
-    astr+="yrot\n"
-    astr+=str(rotation[1])+"\n"
+    astr+="0.0\n"
     astr+="xrot\n"
     astr+=str(-rotation[0])+"\n"
+    astr+="yrot\n"
+    astr+=str(rotation[1])+"\n"
+    astr+="zrot\n"
+    astr+=str(rotation[2])+"\n"
     #astr+="xrot\n"
     #astr+=str(rotation[0])+"\n"
     astr+="""wor
@@ -444,7 +444,24 @@ stage.setParameters({
 """
     #aStr+="stage.autoView(200);\n"
     aStr+="""
+function updateImage()
+{
+    var image = document.getElementById("result");
+    if(image.complete) {
+        var new_image = new Image();
+        //set up the new image
+        new_image.id = "result";
+        new_image.src = image.src;
+        // insert new image and remove old
+        image.parentNode.insertBefore(new_image,image);
+        image.parentNode.removeChild(image);
+        clearTimeout();
+    }
+    setTimeout(updateImage, 1000);
+}
+
 function onClick(){
+    clearTimeout();
     var q = stage.animationControls.controls.rotation;
     var rotation = new NGL.Euler().setFromQuaternion( q);
     var formData = new FormData();
@@ -460,7 +477,8 @@ function onClick(){
       // do something to response
       console.log(this.responseText);
       var data = JSON.parse(this.responseText)
-      img.src = data.image;
+      //img.src = data.image;
+      updateImage();
     };
     xhr.send(formData);
 }
