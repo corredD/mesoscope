@@ -89,7 +89,6 @@ function onClick(){
     formData.append("position", JSON.stringify(new NGL.Vector3(0,0,0)));
     formData.append("rotation", JSON.stringify(rotation));
     formData.append("scale", 12.0);
-    formData.append("_id", -1);
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py');
     xhr.onload = function () {
@@ -338,11 +337,11 @@ def processForm(form, returnpage=True, verbose = 0):
     queryTXT = string.upper(x.data["PDBID"])
     id = 0
     idprovided = False
-    if form.has_key("_id") and form["_id"].value != -1:
+    if form.has_key("_id") and int(form["_id"].value) != -1:
         id = form["_id"].value
         idprovided = True
     else :
-        id=mkRand()
+        id = mkRand()
     #prepare input
     redirectURL = "https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/illustrator.html"
     wrkDir = "/var/www/html/data/tmp/ILL/"+id
