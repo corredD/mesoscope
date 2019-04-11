@@ -419,6 +419,7 @@ def displayResult(queryTXT,httpn,htti,valStr,id=-1):
     aStr += "<script src=\"https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js\"></script>\n"
     aStr +="<script>\n"
     aStr +="var _id = "+str(id)+";\n"
+    aStr +="var PDBID = \""+queryTXT+"\";\n"
     aStr +="""
 // Create NGL Stage object
 var img = document.getElementById("result");
@@ -433,7 +434,15 @@ stage.setParameters({
   backgroundColor: "white"
 })
     """
-    aStr+="stage.loadFile('rcsb://"+queryTXT+"',{ defaultRepresentation: true }).then(function (o) {o.addRepresentation(\"spacefill\")});\n"
+    aStr+="stage.loadFile('rcsb://"+queryTXT+"',{ defaultRepresentation: true }).then(function (o) {\n"
+    aStr+="""
+    o.addRepresentation("spacefill", {
+        sele: "polymer",
+        name: "polymer",
+        //assembly: "AU"
+        });
+    });
+"""
     #aStr+="stage.autoView(200);\n"
     aStr+="""
 function onClick(){
