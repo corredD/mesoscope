@@ -34,7 +34,8 @@ def htmlHeader(title = "", other = "", httpHead = 1, bgcolor = "white"):
     aStr = ""
     if httpHead:
         # aStr += "Connection: close\n"
-        aStr += "Content-type: text/html\n\n"
+        aStr += "Content-type: text/html\n"
+        aStr += "Cache-Control: no-cache, must-revalidate\n\n"
     aStr += "<HTML>\n"
     if title != "" or other != "":
         aStr += "<HEAD><TITLE>"+title+"</TITLE>"+other+"</HEAD>\n"
@@ -58,22 +59,22 @@ def htmlTailer():
     aStr += "</BODY>\n"
     aStr += "</HTML>\n"
     return aStr
-                                                                                
+
 def htmlMsg(msg):
     return msg+"\n"
-                                                                                
+
 def htmlH2Msg(msg):
     return "<h2>"+msg+"</h2>\n"
-                                                                                
+
 def htmlH3Msg(msg):
     return "<h3>"+msg+"</h3>\n"
-                                                                                
+
 def htmlH4Msg(msg):
     return "<h4>"+msg+"</h4>\n"
-                                                                                
+
 def htmlH5Msg(msg):
     return "<h5>"+msg+"</h5>\n"
-                                                                                
+
 def htmlBoldMsg(msg):
     return "<b>"+msg+"</b>\n"
 
@@ -142,7 +143,7 @@ def htmlRemoteInfos():
     except:
         REMOTE_USER = ""
     del os
-    
+
     aStr = ""
     aStr += "<b>\n"
     if REMOTE_USER != "":
@@ -253,8 +254,7 @@ def optionString(name, values, labels, selected = "", js=""):
     for i in range(0,len(values)):
         if values[i] == selected:
             aStr += "<OPTION value=\"%s\" selected > %s " % (values[i],labels[i])
-        else: 
+        else:
             aStr += "<OPTION value=\"%s\"> %s " % (values[i],labels[i])
     aStr += "</SELECT>"
     return aStr
-
