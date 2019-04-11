@@ -414,14 +414,14 @@ def displayResult(queryTXT,httpn,htti,valStr,id=-1):
     aStr += htmlRule()
     aStr += htmlH4Msg("Query text :"+valStr)
     aStr += htmlMsg("<button onclick='onClick()'>Update</button>")
-    aStr +="<a href=\""+htti+"\" target=\"blanck\"><img src=\""+htti+"\"></a>\n"
+    aStr +="<a href=\""+htti+"\" target=\"blanck\"><img id=\"result\" src=\""+htti+"\"></a>\n"
     aStr +="<div id=\"viewport\" style=\"width:300; height:300;\"></div>\n"
     aStr += "<script src=\"https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js\"></script>\n"
     aStr +="<script>\n"
     aStr +="var _id = "+str(id)+";\n"
     aStr +="""
 // Create NGL Stage object
-var img = document.getElementById();
+var img = document.getElementById("result");
 var stage = new NGL.Stage( "viewport" );
 stage.setParameters({cameraType: "orthographic"})
 // Handle window resizing
