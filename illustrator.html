@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<HEAD>
+    <TITLE>Illustrator</TITLE>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <style>
+
+    .loader {
+      border: 16px solid #f3f3f3; /* Light grey */
+      border-top: 16px solid #3498db; /* Blue */
+      border-radius: 50%;
+      width: 120px;
+      height: 120px;
+      animation: spin 2s linear infinite;
+      display: none;
+    }
+    .options{
+      display: flex;
+    }
+    .NGLpan {
+      width: 100%;
+      height: 100%; //order:2;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      max-width: 100%; //background: url(images/Pane.png) repeat;
+      //border-radius: 25px 25px 25px 25px;
+      //box-shadow: 5px 5px 20px LightGrey;
+      //box-sizing: border-box;
+      //padding: 25px;
+      outline: 1px solid red;
+      outline-offset: -1px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    </style>
+    <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js"></script>
+  </HEAD>
+  <BODY bgcolor=white>
+  <div class="options">
+    <div>
+        <input type="text" id="pdbinput" value="" style="" onchange="changePDB(this)"/> PDB id <br />
+        <input type="checkbox" id="advanced" name="advanced" onclick="showOptions(this)"> Advanced Options<br>
+        <input type="checkbox" id="shadow" name="shadow" > Shadows<br>
+        <div id="shadow_options" style="display:none">
+          <input type=number id="shadow_params1" step=0.1 value=0.7 /> param 1 <br />
+          <input type=number id="shadow_params2" step=0.1 value=1.1 /> param 2 <br />
+        </div>
+        <input type="checkbox" id="ao" name="ao" checked> Ambient Occlusion<br>
+        <div id="ao_options" style="display:none">
+          <input type=number id="ao_params1" step=0.0001 value=0.0023 /> param 1 <br />
+          <input type=number id="ao_params2" step=0.1 value=2.0 /> param 2 <br />
+          <input type=number id="ao_params3" step=0.1 value=1.0 /> param 3 <br />
+        </div>
+        <input type=number id="scale" step=1 value=12 /> Pixel per Angstrom <br />
+        <button onclick='onClick()'>Illustrate</button>
+    </div>
+    <div id="loader" class="loader"></div>
+  </div>
+  <div id="current_query"></div>
+  <div id="viewport" class="NGLpan" style="width:300px; height:300px;"></div>
+  <div><a id="linkimg" href="" target="blanck"><img id="result" src="" style="display:none"></img></a></div>
+  <script src="js/illustrator.js"></script>
+</body>
+</html>

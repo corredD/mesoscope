@@ -224,6 +224,14 @@ def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0
         shadow = True if form["shadow"].value == 'true' else False
     if form.has_key("ao"):
         ao = True if form["ao"].value == 'true' else False
+    params_shadow = [0.7,1.1]
+    if form.has_key("shadow_params"):
+        params_shadow_obj = json.loads(form["position"].value)
+        params_shadow= [params_shadow_obj['x'],params_shadow_obj['y']]
+    params_ao = [0.0023,2.0,1.0]
+    if form.has_key("ao_params"):
+        params_ao_obj = json.loads(form["position"].value)
+        params_ao= [params_ao_obj['x'],params_ao_obj['y'],params_ao_obj['z']]
     astr="read\n"
     astr+=pdbId+".pdb\n"
     astr+="""
@@ -294,8 +302,11 @@ END
 .2,.2,.2,.2,.2,.0,.0,.0
 255,255,255,255,255,255,1.,1.0                               # background rgb (0-255), fog rgb, fraction fog front and back
 """
-    astr+="%d,0.7,1.1\n" % (1 if (shadow) else 0)# cast shadow parameters
-    astr+="%d,0.0023,2.0,1.0\n" % (1 if (ao) else 0)                                       # fake ambient occlusion parameters
+    astr+="%d,%f,%f\n" % ((1 if (shadow) else 0),params_shadow[0],params_shadow[1])# cast shadow parameters
+    astr+="%d,%f,%f,%f\n" % ((1 if (ao) else 0),
+                                            params_ao[0],
+                                            params_ao[1],
+                                            params_ao[2])# fake ambient occlusion parameters
     astr+="""0.,0                                                         # rotation for stereo pairs
 -30,-30                                                      # image size in pixels, negative numbers pad the molecule by that amount
 illustrate
