@@ -235,27 +235,22 @@ def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0
     astr="read\n"
     astr+=pdbId+".pdb\n"
     astr+="""
-1.6,1.5,1.6,1.5,1.6,1.8,1.9,1.5       #radii for atom types 1-16
-1.5,1.5,1.6,1.5,1.5,1.5,1.6,1.5
-HETATM-----HOH-- 0,9999,0,0           #selection strings, dash is wildcard
-ATOM  -H-------- 0,9999,0,0           # first two numbers, residue range
-ATOM  H--------- 0,9999,0,0           # third number, atom type
-ATOM  -C-------A 0,9999,1,1           # final number defines subunits for outlines
-ATOM  ---------A 0,9999,2,1           # selection starts at first record, and stop when it finds something that matches
-ATOM  -C-------C 0,9999,1,2
-ATOM  ---------C 0,9999,2,2
-ATOM  -C-------B 0,9999,3,3
-ATOM  ---------B 0,9999,4,3
-ATOM  -C-------D 0,9999,3,4
-ATOM  ---------D 0,9999,4,4
-ATOM  -C-------- 0,9999,3,4
-ATOM  ---------- 0,9999,4,4
-HETATM-C---HEM-- 0,9999,5,5
-HETATMFE---HEM-- 0,9999,7,5
-HETATM-----HEM-- 0,9999,6,5
-HETATM---------- 0,9999,0,0
-ATOM  HCCC-RES-A 0,9999,1,1
-END
+HETATM-----HOH-- 0,9999,0,0,.5,.5,.5,1.6
+ATOM  -H-------- 0,9999,0,0,.5,.5,.5,1.6
+ATOM  H--------- 0,9999,0,0,.5,.5,.5,1.6
+ATOM  -C-------A 5,9999,1,1,.9,.4,.4,1.3
+ATOM  ---------A 5,9999,2,1,.9,.3,.3,1.3
+ATOM  -C-------C 5,9999,3,2,.9,.4,.4,1.6
+ATOM  ---------C 5,9999,4,2,.9,.3,.3,1.6
+ATOM  -C-------- 5,9999,3,3,.9,.8,.4,1.6
+ATOM  ---------- 5,9999,4,3,.9,.7,.3,1.6
+HETATM-SG--SNC-- 0,9999,7,5,.5,.5,.5,1.6
+HETATM-ND--SNC-- 0,9999,8,5,.5,.5,.5,1.6
+HETATM-OE--SNC-- 0,9999,9,5,.5,.5,.5,1.6
+HETATM-C---HEM-- 0,9999,5,4,.5,.5,.9,1.9
+HETATM-----HEM-- 0,9999,6,4,.5,.5,.8,1.9
+HETATM---------- 0,9999,0,0,.5,.5,.5,1.6
+ATOM  HCCC-RES-A 0,9999,0,0,1.,1.,1.,1.6
 """
     if (center):
         astr+="center\n"
@@ -276,45 +271,21 @@ END
     astr+=str(-rotation[2])+"\n"
     #astr+="xrot\n"
     #astr+=str(rotation[0])+"\n"
-    astr+="""wor
--0.5,-0.2,1.2                                                #vector pointing at light source
-0.0,0.00,0,0.99, 0.0,0.00,0,0.69, 0.0,0.00,0,0.69            #phong shading parameters for each atom type
-0.0,0.00,0,0.99, 0.0,0.00,0,0.59, 0.0,0.00,0,0.59            #final numbers are flat colors, rgb
-0.0,0.00,0,0.99, 0.0,0.00,0,0.89, 0.0,0.00,0,0.69
-0.0,0.00,0,0.99, 0.0,0.00,0,0.79, 0.0,0.00,0,0.59
-0.0,0.00,0,0.99, 0.0,0.00,0,0.39, 0.0,0.00,0,0.39
-0.0,0.00,0,0.99, 0.0,0.00,0,0.29, 0.0,0.00,0,0.29
-0.0,0.00,0,0.99, 0.0,0.00,0,0.00, 0.0,0.00,0,0.00
-0.0,0.00,0,0.19, 0.0,0.00,0,0.75, 0.0,0.00,0,0.99
-0.0,0.00,0,0.99, 0.0,0.00,0,0.19, 0.0,0.00,0,0.19
-0.0,0.00,0,0.29, 0.0,0.00,0,0.99, 0.0,0.00,0,0.29
-0.0,0.00,0,0.79, 0.0,0.00,0,0.79, 0.0,0.00,0,0.99
-0.0,0.00,0,0.79, 0.0,0.00,0,0.79, 0.0,0.00,0,0.99
-0.0,0.00,0,0.49, 0.0,0.00,0,0.89, 0.0,0.00,0,0.99
-0.0,0.00,0,0.39, 0.0,0.00,0,0.79, 0.0,0.00,0,0.99
-0.0,0.00,0,0.99, 0.0,0.00,0,0.29, 0.0,0.00,0,0.99
-0.0,0.00,0,0.99, 0.0,0.00,0,0.49, 0.0,0.00,0,0.49
-.2,.2,.2,.2,.2,.0,.0,.0                                      #colors for clipped atoms (rarely used)
-.2,.2,.2,.2,.2,.0,.0,.0
-.2,.2,.2,.2,.2,.0,.0,.0
-.2,.2,.2,.2,.2,.0,.0,.0
-.2,.2,.2,.2,.2,.9,.9,.0
-.2,.2,.2,.2,.2,.0,.0,.0
-255,255,255,255,255,255,1.,1.0                               # background rgb (0-255), fog rgb, fraction fog front and back
-"""
-    astr+="%d,%f,%f\n" % ((1 if (shadow) else 0),params_shadow[0],params_shadow[1])# cast shadow parameters
-    astr+="%d,%f,%f,%f\n" % ((1 if (ao) else 0),
+    astr+="wor\n"
+    astr+="55,100,0,255,255,255,1.,1.0\n"
+    astr+="%d,%f,%f,%f,%f\n" % ((1 if (ao) else 0),
                                             params_ao[0],
                                             params_ao[1],
-                                            params_ao[2])# fake ambient occlusion parameters
-    astr+="""0.,0                                                         # rotation for stereo pairs
--30,-30                                                      # image size in pixels, negative numbers pad the molecule by that amount
+                                            params_ao[2],
+                                            params_shadow[0])
+    #astr+="%d,%f,%f," % ((1 if (shadow) else 0),params_shadow[0],params_shadow[1])# cast shadow parameters
+    #fake ambient occlusion parameters
+    astr+="""-30,-30                                                      # image size in pixels, negative numbers pad the molecule by that amount
 illustrate
 3.,10.,3.,8.,4,0.,5.                                         # parameters for outlines, atomic
 3.,10.                                                       # subunits
 3.,8.,6.                                                     # outlines defining regions of the chain
 calculate
-1,0                                                          # first "1" specifies pnm outpu
 """
     astr+=pdbId+".pnm\n"
     return astr
