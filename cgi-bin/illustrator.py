@@ -208,7 +208,22 @@ class processObj:
         # print "queryId: ",self.queryId
         return
 
-def prepareInput(pdbId,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0]):
+#selection is wild card for chain for instance
+def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0]):
+    if (form.has_key("rotation")) :
+        rotobj = json.loads(form["rotation"].value)
+        rotation = [math.degrees(rotobj['_x']),math.degrees(rotobj['_y']),math.degrees(rotobj['_z'])]
+    if (form.has_key("position")) :
+        transobj = json.loads(form["position"].value)
+        trans= [transobj['x'],transobj['y'],transobj['z']]
+    if (form.has_key("scale")) :
+        scale = form["scale"].value
+    shadow = False
+    ao = True
+    if form.has_key("shadow"):
+        shadow = True if form["shadow"].value == 'true' else False
+    if form.has_key("ao"):
+        ao = True if form["ao"].value == 'true' else False
     astr="read\n"
     astr+=pdbId+".pdb\n"
     astr+="""
@@ -225,6 +240,8 @@ ATOM  -C-------B 0,9999,3,3
 ATOM  ---------B 0,9999,4,3
 ATOM  -C-------D 0,9999,3,4
 ATOM  ---------D 0,9999,4,4
+ATOM  -C-------- 0,9999,3,4
+ATOM  ---------- 0,9999,4,4
 HETATM-C---HEM-- 0,9999,5,5
 HETATMFE---HEM-- 0,9999,7,5
 HETATM-----HEM-- 0,9999,6,5
@@ -276,9 +293,10 @@ END
 .2,.2,.2,.2,.2,.9,.9,.0
 .2,.2,.2,.2,.2,.0,.0,.0
 255,255,255,255,255,255,1.,1.0                               # background rgb (0-255), fog rgb, fraction fog front and back
-0,0.7,1.1                                                    # cast shadow parameters
-1,0.0023,2.0,1.                                              # fake ambient occlusion parameters
-0.,0                                                         # rotation for stereo pairs
+"""
+    astr+="%d,0.7,1.1\n" % (1 if (shadow) else 0)# cast shadow parameters
+    astr+="%d,0.0023,2.0,1.0\n" % (1 if (ao) else 0)                                       # fake ambient occlusion parameters
+    astr+="""0.,0                                                         # rotation for stereo pairs
 -30,-30                                                      # image size in pixels, negative numbers pad the molecule by that amount
 illustrate
 3.,10.,3.,8.,4,0.,5.                                         # parameters for outlines, atomic
@@ -306,8 +324,13 @@ def queryForm(form):
     curentD = os.path.abspath(os.curdir)
     if not os.path.isdir(curentD):
         os.mkdir(wrkDir)
-    inpstring = prepareInput(queryTXT)
+    #did the user send in the input file?
     inpfile = wrkDir+"/"+queryTXT+".inp"
+    if form.has_key("input_file"):
+        filename = cgi.escape(form["input_file"].filename)
+        inpstring = form["input_file"].file.readlines()
+    else :
+        inpstring = prepareInput(queryTXT)
     f = open(inpfile, "w")
     f.write(inpstring)
     f.close()
@@ -349,19 +372,13 @@ def processForm(form, returnpage=True, verbose = 0):
     curentD = os.path.abspath(os.curdir)
     if not os.path.isdir(wrkDir):
         os.mkdir(wrkDir)
-    scale=12.0
-    center=True
-    trans=[0,0,0]
-    rotation=[0,0,0]
-    if (form.has_key("rotation")) :
-        rotobj = json.loads(form["rotation"].value)
-        rotation = [math.degrees(rotobj['_x']),math.degrees(rotobj['_y']),math.degrees(rotobj['_z'])]
-    if (form.has_key("position")) :
-        transobj = json.loads(form["position"].value)
-        trans= [transobj['x'],transobj['y'],transobj['z']]
-    if (form.has_key("scale")) :
-        scale = form["scale"].value
-    inpstring = prepareInput(queryTXT,scale,center,trans,rotation)
+    if form.has_key("input_file"):
+        filename = cgi.escape(form["input_file"].filename)
+        inpstring = form["input_file"].file.readlines()
+    elif form.has_key("input_txt"):
+        inpstring = form["input_txt"].value
+    else :
+        inpstring = prepareInput(queryTXT,form)
     inpfile = wrkDir+"/"+queryTXT+".inp"
     f = open(inpfile, "w")
     f.write(inpstring)
@@ -369,7 +386,8 @@ def processForm(form, returnpage=True, verbose = 0):
 
     tmpPDBName = wrkDir+"/"+queryTXT+".pdb"
     cmd = "cd "+wrkDir+";"
-    cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
+    if not os.path.isfile(tmpPDBName):
+        cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
     cmd+= curentD+"/illustrator-2016 < "+queryTXT+".inp>/dev/null;"
     cmd+="/bin/convert "+queryTXT+".pnm -transparent \"rgb(254,254,254)\" "+queryTXT+".png>/dev/null;"
     os.system(cmd)
@@ -430,11 +448,21 @@ def displayResult(queryTXT,httpn,htti,valStr,id=-1):
     #aStr += "<div align=\"center\"><img src=\"http://bioserv.rpbs.jussieu.fr/~autin/help/ABCgen/ABCgen.png\" width=\"800\" height=\"89\"></a></div>\n"
     aStr += htmlRule()
     aStr += htmlH4Msg("Query text :"+valStr)
+    aStr +="""
+<div>
+    <input type="checkbox" id="advanced" name="advanced" > Advanced Options<br>
+    <input type="checkbox" id="shadow" name="shadow" > Shadows<br>
+    <input type="checkbox" id="ao" name="ao" checked> Ambient Occlusion<br>
+    <input type=number id="scale" step=1 value=12 /> Pixel per Angstrom <br />
+</div>
+"""
     aStr += htmlMsg("<button onclick='onClick()'>Update</button>")
+    #need input for all options + selection + advText for david
+    aStr +="<div></div>\n"
     aStr +="<div id=\"loader\" class=\"loader\"></div> \n"
-    aStr +="<a href=\""+htti+"\" target=\"blanck\"><img id=\"result\" src=\""+htti+"\"></img></a>\n"
+    aStr +="<div><a href=\""+htti+"\" target=\"blanck\"><img id=\"result\" src=\""+htti+"\"></img></a></div>\n"
     aStr +="<div id=\"viewport\" style=\"width:300; height:300;\"></div>\n"
-    aStr += "<script src=\"https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js\"></script>\n"
+    aStr +="<script src=\"https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js\"></script>\n"
     aStr +="<script>\n"
     aStr +="var _id = "+str(id)+";\n"
     aStr +="var PDBID = \""+queryTXT+"\";\n"
@@ -442,8 +470,11 @@ def displayResult(queryTXT,httpn,htti,valStr,id=-1):
     aStr +="""
 // Create NGL Stage object
 var i=0;
-
+var shadow = document.getElementById("shadow");
+var ao = document.getElementById("ao");
+var advanced = document.getElementById("advanced");
 var an_img = new Image();
+var scale = document.getElementById("scale");
 // When it is loaded...
 an_img.addEventListener("load", function() {
     // Set the on-screen image to the same source. This should be instant because
@@ -505,8 +536,10 @@ function onClick(){
     formData.append("PDBID", PDBID);
     formData.append("position", JSON.stringify(new NGL.Vector3(0,0,0)));
     formData.append("rotation", JSON.stringify(rotation));
-    formData.append("scale", 12.0);
+    formData.append("scale", parseFloat(scale.value));
     formData.append("_id", _id);
+    formData.append("shadow", shadow.checked);
+    formData.append("ao", ao.checked);
     //show progress bar
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py');
@@ -550,7 +583,11 @@ if __name__=='__main__':
             else : processForm(form,True)
         elif statuskey == "processpreview":
             if (form.has_key("preview")):displayFormPreview(form["PDBID"].value)
-            else : processForm(form,False)
+            else :
+                #print "Content-type: text/html"
+                #print
+                #print True if form["shadow"].value == 'true' else False
+                processForm(form,False)
         elif statuskey == "query":
             queryForm(form)
         else:
