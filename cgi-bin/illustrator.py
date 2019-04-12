@@ -227,7 +227,7 @@ def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0
     params_shadow = [0.7,1.1]
     if form.has_key("shadow_params"):
         params_shadow_obj = json.loads(form["position"].value)
-        params_shadow= [params_shadow_obj['x'],params_shadow_obj['y']]
+        params_shadow= [params_shadow_obj['x'],params_shadow_obj['y']]    
     params_ao = [0.0023,2.0,1.0]
     if form.has_key("ao_params"):
         params_ao_obj = json.loads(form["position"].value)
@@ -251,6 +251,7 @@ HETATM-C---HEM-- 0,9999,5,4,.5,.5,.9,1.9
 HETATM-----HEM-- 0,9999,6,4,.5,.5,.8,1.9
 HETATM---------- 0,9999,0,0,.5,.5,.5,1.6
 ATOM  HCCC-RES-A 0,9999,0,0,1.,1.,1.,1.6
+END
 """
     if (center):
         astr+="center\n"
