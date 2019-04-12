@@ -6,14 +6,12 @@ var img_source = "";//current url on server
 var linkimg = document.getElementById("linkimg");
 var current_query = document.getElementById("current_query");
 var pdbinput = document.getElementById("pdbinput");
-var shadow = document.getElementById("shadow");
 var ao = document.getElementById("ao");
 var advanced = document.getElementById("advanced");
-var shadow_params1 = document.getElementById("shadow_params1");
-var shadow_params2 = document.getElementById("shadow_params2");
 var ao_params1 = document.getElementById("ao_params1");
 var ao_params2 = document.getElementById("ao_params2");
 var ao_params3 = document.getElementById("ao_params3");
+var ao_params4 = document.getElementById("ao_params4");
 var viewport = document.getElementById("viewport");
 var an_img = new Image();
 var scale = document.getElementById("scale");
@@ -62,7 +60,7 @@ function changePDB(e){
 
 function showOptions(e){
     var display = (e.checked)? "block" : "none";
-    document.getElementById("shadow_options").style.display = display;
+    //document.getElementById("shadow_options").style.display = display;
     document.getElementById("ao_options").style.display = display;
 }
 
@@ -94,10 +92,10 @@ function onClick(){
     formData.append("rotation", JSON.stringify(rotation));
     formData.append("scale", parseFloat(scale.value));
     formData.append("_id", _id);
-    formData.append("shadow", shadow.checked);
-    formData.append("shadow_params",  JSON.stringify(new NGL.Vector2(shadow_params1.value,shadow_params2.value)));
+    //formData.append("shadow", shadow.checked);
+    //formData.append("shadow_params",  JSON.stringify(new NGL.Vector2(shadow_params1.value,shadow_params2.value)));
     formData.append("ao", ao.checked);
-    formData.append("ao_params",  JSON.stringify(new NGL.Vector3(ao_params1.value,ao_params2.value,ao_params3.value)));
+    formData.append("ao_params",  JSON.stringify(new NGL.Quaternion(ao_params1.value,ao_params2.value,ao_params3.value,ao_params4.value)));
     //show progress bar
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py');

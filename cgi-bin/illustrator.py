@@ -224,14 +224,13 @@ def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0
         shadow = True if form["shadow"].value == 'true' else False
     if form.has_key("ao"):
         ao = True if form["ao"].value == 'true' else False
-    params_shadow = [0.7,1.1]
-    if form.has_key("shadow_params"):
-        params_shadow_obj = json.loads(form["shadow_params"].value)
-        params_shadow= [float(params_shadow_obj['x']),float(params_shadow_obj['y'])]
-    params_ao = [0.0023,2.0,1.0]
+    params_ao = [0.0023,2.0,1.0,0.7]
     if form.has_key("ao_params"):
         params_ao_obj = json.loads(form["ao_params"].value)
-        params_ao= [float(params_ao_obj['x']),float(params_ao_obj['y']),float(params_ao_obj['z'])]
+        params_ao= [float(params_ao_obj['_x']),
+                    float(params_ao_obj['_y']),
+                    float(params_ao_obj['_z']),
+                    float(params_ao_obj['_w'])]
     astr="read\n"
     astr+=pdbId+".pdb\n"
     astr+="""HETATM-----HOH-- 0,9999,0,0,.5,.5,.5,1.6
@@ -272,12 +271,12 @@ END
     #astr+="xrot\n"
     #astr+=str(rotation[0])+"\n"
     astr+="wor\n"
-    astr+="55,100,0,255,255,255,1.,1.0\n"
+    astr+="254,254,254,255,255,255,1.,1.0\n"
     astr+="%d,%f,%f,%f,%f\n" % ((1 if (ao) else 0),
                                             params_ao[0],
                                             params_ao[1],
                                             params_ao[2],
-                                            params_shadow[0])
+                                            params_ao[3])
     #astr+="%d,%f,%f," % ((1 if (shadow) else 0),params_shadow[0],params_shadow[1])# cast shadow parameters
     #fake ambient occlusion parameters
     astr+="""-30,-30                                                      # image size in pixels, negative numbers pad the molecule by that amount
@@ -319,7 +318,7 @@ def queryForm(form):
     tmpPDBName = wrkDir+"/"+queryTXT+".pdb"
     cmd = "cd "+wrkDir+";"
     cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
-    cmd+= curentD+"/illustrator-2016 < "+queryTXT+".inp>/dev/null;"
+    cmd+= curentD+"/illustrator < "+queryTXT+".inp>/dev/null;"
     cmd+="/bin/convert "+queryTXT+".pnm -transparent \"rgb(254,254,254)\" "+queryTXT+".png>/dev/null;"
     os.system(cmd)
 
@@ -370,7 +369,7 @@ def processForm(form, returnpage=True, verbose = 0):
     cmd = "cd "+wrkDir+";"
     if not os.path.isfile(tmpPDBName):
         cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
-    cmd+= curentD+"/illustrator-2016 < "+queryTXT+".inp>/dev/null;"
+    cmd+= curentD+"/illustrator < "+queryTXT+".inp>/dev/null;"
     cmd+="/bin/convert "+queryTXT+".pnm -transparent \"rgb(254,254,254)\" "+queryTXT+".png>/dev/null;"
     os.system(cmd)
 

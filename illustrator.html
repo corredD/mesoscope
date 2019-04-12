@@ -47,15 +47,12 @@
         <input type="text" id="pdbinput" value="" style="" onchange="changePDB(this)"/> PDB id <br />
         <input type="checkbox" id="advanced" name="advanced" onclick="showOptions(this)"> Advanced Options<br>
         <input type="checkbox" id="shadow" name="shadow" > Shadows<br>
-        <div id="shadow_options" style="display:none">
-          <input type=number id="shadow_params1" step=0.1 value=0.7 /> param 1 <br />
-          <input type=number id="shadow_params2" step=0.1 value=1.1 /> param 2 <br />
-        </div>
         <input type="checkbox" id="ao" name="ao" checked> Ambient Occlusion<br>
         <div id="ao_options" style="display:none">
           <input type=number id="ao_params1" step=0.0001 value=0.0023 /> param 1 <br />
           <input type=number id="ao_params2" step=0.1 value=2.0 /> param 2 <br />
           <input type=number id="ao_params3" step=0.1 value=1.0 /> param 3 <br />
+          <input type=number id="ao_params4" step=0.1 value=0.7 /> param 4 <br />
         </div>
         <input type=number id="scale" step=1 value=12 /> Pixel per Angstrom <br />
         <button onclick='onClick()'>Illustrate</button>
