@@ -240,15 +240,15 @@ END
     astr+="scale\n"
     astr+=str(scale)+"\n"                                                         # pixels/Angstrom
     astr+="zrot\n"
-    astr+="0.0\n"
+    astr+="90.0\n"
     astr+="xrot\n"
-    astr+="0.0\n"
+    astr+="180.0\n"
     astr+="xrot\n"
     astr+=str(-rotation[0])+"\n"
     astr+="yrot\n"
-    astr+=str(rotation[1])+"\n"
+    astr+=str(-rotation[1])+"\n"
     astr+="zrot\n"
-    astr+=str(rotation[2])+"\n"
+    astr+=str(-rotation[2])+"\n"
     #astr+="xrot\n"
     #astr+=str(rotation[0])+"\n"
     astr+="""wor
@@ -407,20 +407,56 @@ def processForm(form, returnpage=True, verbose = 0):
     return
 
 def displayResult(queryTXT,httpn,htti,valStr,id=-1):
+    style = "<style>\n"
+    style +="""
+.loader {
+  border: 16px solid #f3f3f3; /* Light grey */
+  border-top: 16px solid #3498db; /* Blue */
+  border-radius: 50%;
+  width: 120px;
+  height: 120px;
+  animation: spin 2s linear infinite;
+  display: none;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+"""
     aStr = ""
-    aStr += htmlHeader("Illustrator",httpHead = 0,other = "<META NAME=\"keywords\" content=\"\">")
+    aStr += htmlHeader("Illustrator",httpHead = 0,other = "<META NAME=\"keywords\" content=\"\">\n"+style)
     #aStr += "<div align=\"center\"><img src=\"http://bioserv.rpbs.jussieu.fr/~autin/help/ABCgen/ABCgen.png\" width=\"800\" height=\"89\"></a></div>\n"
     aStr += htmlRule()
     aStr += htmlH4Msg("Query text :"+valStr)
     aStr += htmlMsg("<button onclick='onClick()'>Update</button>")
-    aStr +="<a href=\""+htti+"\" target=\"blanck\"><img id=\"result\" src=\""+htti+"\"></a>\n"
+    aStr +="<div id=\"loader\" class=\"loader\"></div> \n"
+    aStr +="<a href=\""+htti+"\" target=\"blanck\"><img id=\"result\" src=\""+htti+"\"></img></a>\n"
     aStr +="<div id=\"viewport\" style=\"width:300; height:300;\"></div>\n"
     aStr += "<script src=\"https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js\"></script>\n"
     aStr +="<script>\n"
     aStr +="var _id = "+str(id)+";\n"
     aStr +="var PDBID = \""+queryTXT+"\";\n"
+    aStr +="var img_source = \""+htti+"\";\n"
     aStr +="""
 // Create NGL Stage object
+var i=0;
+
+var an_img = new Image();
+// When it is loaded...
+an_img.addEventListener("load", function() {
+    // Set the on-screen image to the same source. This should be instant because
+    // it is already loaded.
+    document.getElementById("result").src = an_img.src;
+    // Schedule loading the next frame.
+    setTimeout(function() {
+        an_img.src = img_source+"#" + (new Date).getTime();
+    }, 1000/15); // 15 FPS (more or less)
+})
+
+// Start the loading process.
+an_img.src = img_source+"#" + (new Date).getTime();
 var img = document.getElementById("result");
 var stage = new NGL.Stage( "viewport" );
 stage.setParameters({cameraType: "orthographic"})
@@ -455,12 +491,12 @@ function updateImage()
         // insert new image and remove old
         image.parentNode.insertBefore(new_image,image);
         image.parentNode.removeChild(image);
-        clearTimeout();
     }
     setTimeout(updateImage, 1000);
 }
 
 function onClick(){
+    document.getElementById("loader").style.display = "block";
     clearTimeout();
     var q = stage.animationControls.controls.rotation;
     var rotation = new NGL.Euler().setFromQuaternion( q);
@@ -471,14 +507,17 @@ function onClick(){
     formData.append("rotation", JSON.stringify(rotation));
     formData.append("scale", 12.0);
     formData.append("_id", _id);
+    //show progress bar
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py');
     xhr.onload = function () {
       // do something to response
       console.log(this.responseText);
       var data = JSON.parse(this.responseText)
-      //img.src = data.image;
-      updateImage();
+      an_img.src = data.image+"#"+i;
+      i=i+1;
+      //hide progress bar
+       document.getElementById("loader").style.display = "none";
     };
     xhr.send(formData);
 }
