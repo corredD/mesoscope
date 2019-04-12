@@ -17,7 +17,7 @@
       display: none;
     }
     .options{
-      display: flex;
+      display: block;
     }
     .NGLpan {
       width: 100%;
@@ -42,7 +42,7 @@
     <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js"></script>
   </HEAD>
   <BODY bgcolor=white>
-  <div class="options">
+  <div id="options" class="options">
     <div>
         <input type="text" id="pdbinput" value="" style="" onchange="changePDB(this)"/> PDB id <br />
         <input type="checkbox" id="advanced" name="advanced" onclick="showOptions(this)"> Advanced Options<br>
@@ -54,10 +54,11 @@
           <input type=number id="ao_params4" step=0.1 value=0.7 /> param 4 <br />
         </div>
         <input type=number id="scale" step=1 value=12 /> Pixel per Angstrom <br />
-        <button onclick='onClick()'>Illustrate</button>
     </div>
-    <div id="loader" class="loader"></div>
   </div>
+  <button onclick='resetToDefault()'>Reset to Default</button>
+  <button onclick='onClick()'>Illustrate</button>
+  <div id="loader" class="loader"></div>
   <div id="current_query"></div>
   <div id="viewport" class="NGLpan" style="width:300px; height:300px;"></div>
   <div><a id="linkimg" href="" target="blanck"><img id="result" src="" style="display:none"></img></a></div>

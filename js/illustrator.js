@@ -3,6 +3,7 @@ var _id = -1;//current id on server
 var PDBID = "";//current PDB on server
 var img_source = "";//current url on server
 //get the different elements
+var options_elem = document.getElementById("options");
 var linkimg = document.getElementById("linkimg");
 var current_query = document.getElementById("current_query");
 var pdbinput = document.getElementById("pdbinput");
@@ -13,6 +14,51 @@ var ao_params2 = document.getElementById("ao_params2");
 var ao_params3 = document.getElementById("ao_params3");
 var ao_params4 = document.getElementById("ao_params4");
 var viewport = document.getElementById("viewport");
+
+function createOneElemNumber(id,value,parent){
+  var elem = document.createElement("input");
+  elem.type = "number";
+  elem.step = 0.1; // set the CSS class
+  elem.value = atomic_outlines_params[i];
+  elem.id=id;
+  parent.appendChild(elem);
+  return elem;
+}
+
+var atomic_outlines_paramsDiv = document.createElement("div");
+atomic_outlines_paramsDiv.id = "atomic_outlines_params";
+atomic_outlines_paramsDiv.style="display:none";
+options_elem.appendChild(atomic_outlines_paramsDiv);
+var atomic_outlines_params=[3.,10.,3.,8.,4,0.,5.]
+var atomic_outlines_params_elem=[]
+for (var i=0;i<atomic_outlines_params.length;i++){
+  var elem = createOneElemNumber("atomic_outlines_params"+(i+1),
+              atomic_outlines_params[i],atomic_outlines_paramsDiv)
+  atomic_outlines_params_elem.push(elem);
+}
+subunit_outlines_paramsDiv = document.createElement("div");
+subunit_outlines_paramsDiv.id = "subunit_outlines_params";
+subunit_outlines_paramsDiv.style="display:none";
+options_elem.appendChild(subunit_outlines_paramsDiv);
+var subunit_outlines_params=[3.,10.]
+var subunit_outlines_params_elem=[];
+for (var i=0;i<subunit_outlines_params.length;i++){
+  var elem = createOneElemNumber("subunit_outlines_params"+(i+1),
+              subunit_outlines_params[i],subunit_outlines_paramsDiv)
+  subunit_outlines_params_elem.push(elem)
+}
+chain_outlines_paramsDiv = document.createElement("div");
+chain_outlines_paramsDiv.id = "chain_outlines_params";
+chain_outlines_paramsDiv.style="display:none";
+options_elem.appendChild(chain_outlines_paramsDiv);
+var chain_outlines_params=[3.,8.,6.];
+var chain_outlines_params_elem=[];
+for (var i=0;i<chain_outlines_params.length;i++){
+  var elem = createOneElemNumber("chain_outlines_params"+(i+1),
+              chain_outlines_params[i],chain_outlines_paramsDiv)
+  chain_outlines_params_elem.push(elem)
+}
+
 var an_img = new Image();
 var scale = document.getElementById("scale");
 // When it is loaded...
@@ -43,6 +89,7 @@ stage.setParameters({
   backgroundColor: "white"
 })
 
+
 function changePDB(e){
   viewport.style.display = "block";
   stage.removeAllComponents();
@@ -62,6 +109,9 @@ function showOptions(e){
     var display = (e.checked)? "block" : "none";
     //document.getElementById("shadow_options").style.display = display;
     document.getElementById("ao_options").style.display = display;
+    atomic_outlines_paramsDiv.style.display = display;
+    subunit_outlines_paramsDiv.style.display = display;
+    chain_outlines_paramsDiv.style.display = display;
 }
 
 function updateImage()
@@ -79,6 +129,24 @@ function updateImage()
     setTimeout(updateImage, 1000);
 }
 
+function resetToDefault(){
+  ao.checked = true;
+  ao_params1.value = 0.0023;
+  ao_params2.value = 2.0;
+  ao_params3.value = 1.0;
+  ao_params4.value = 0.7;
+  scale.value = 12;
+  for (var i=0;i<atomic_outlines_params.length;i++){
+    atomic_outlines_params_elem[i].value = atomic_outlines_params[i];
+  }
+  for (var i=0;i<subunit_outlines_params.length;i++){
+    subunit_outlines_params_elem[i].value = subunit_outlines_params[i];
+  }
+  for (var i=0;i<chain_outlines_params.length;i++){
+    chain_outlines_params_elem[i].value = chain_outlines_params[i];
+  }
+}
+
 function onClick(){
     img.style.display = "none";
     document.getElementById("loader").style.display = "block";
@@ -92,6 +160,9 @@ function onClick(){
     formData.append("rotation", JSON.stringify(rotation));
     formData.append("scale", parseFloat(scale.value));
     formData.append("_id", _id);
+    formData.append("contour_params1",JSON.stringify(atomic_outlines_params_elem.map(i=>i.value)));
+    formData.append("contour_params2",JSON.stringify(subunit_outlines_params_elem.map(i=>i.value)));
+    formData.append("contour_params3",JSON.stringify(chain_outlines_params_elem.map(i=>i.value)));
     //formData.append("shadow", shadow.checked);
     //formData.append("shadow_params",  JSON.stringify(new NGL.Vector2(shadow_params1.value,shadow_params2.value)));
     formData.append("ao", ao.checked);

@@ -231,6 +231,22 @@ def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0
                     float(params_ao_obj['_y']),
                     float(params_ao_obj['_z']),
                     float(params_ao_obj['_w'])]
+    contour_params=[]
+    if form.has_key("contour_params1"):
+        at_p_obj = json.loads(form["contour_params1"].value)
+        contour_params.append(at_p_obj)
+    else :
+        contour_params.append(["3.","10.","3.","8.","4","0.","5."])
+    if form.has_key("contour_params2"):
+        sub_p_obj = json.loads(form["contour_params2"].value)
+        contour_params.append(sub_p_obj)
+    else :
+        contour_params.append(["3.","10."])
+    if form.has_key("contour_params3"):
+        ch_p_obj = json.loads(form["contour_params3"].value)
+        contour_params.append(ch_p_obj)
+    else :
+        contour_params.append(["3.","8.","6."])
     astr="read\n"
     astr+=pdbId+".pdb\n"
     astr+="""HETATM-----HOH-- 0,9999,0,0,.5,.5,.5,1.6
@@ -279,13 +295,12 @@ END
                                             params_ao[3])
     #astr+="%d,%f,%f," % ((1 if (shadow) else 0),params_shadow[0],params_shadow[1])# cast shadow parameters
     #fake ambient occlusion parameters
-    astr+="""-30,-30                                                      # image size in pixels, negative numbers pad the molecule by that amount
-illustrate
-3.,10.,3.,8.,4,0.,5.                                         # parameters for outlines, atomic
-3.,10.                                                       # subunits
-3.,8.,6.                                                     # outlines defining regions of the chain
-calculate
-"""
+    astr+="-30,-30                                                      # image size in pixels, negative numbers pad the molecule by that amount\n"
+    astr+="illustrate\n"
+    astr+=",".join(contour_params[0])+"  # parameters for outlines, atomic\n"
+    astr+=",".join(contour_params[1])+"  # subunits\n"
+    astr+=",".join(contour_params[2])+"  # outlines defining regions of the chain\n"
+    astr+="calculate\n"
     astr+=pdbId+".pnm\n\n"
     return astr
 
