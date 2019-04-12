@@ -111,7 +111,7 @@ function onClick(){
       document.getElementById("loader").style.display = "none";
       img.style.display = "block";
       linkimg.href = data.image;
-      current_query.innerHTML="<h4>Current PDB and working Id :"+PDBID+" "+_id+"</h4>";
+      current_query.innerHTML="<h4>Current PDB and working Id :"+PDBID+" <a href='https://mesoscope.scripps.edu/data/tmp/ILL/"+_id+"'> "+_id+"</a></h4>";
       i=i+1;
     };
     xhr.send(formData);

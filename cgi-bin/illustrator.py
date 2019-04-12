@@ -226,16 +226,15 @@ def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0
         ao = True if form["ao"].value == 'true' else False
     params_shadow = [0.7,1.1]
     if form.has_key("shadow_params"):
-        params_shadow_obj = json.loads(form["position"].value)
-        params_shadow= [params_shadow_obj['x'],params_shadow_obj['y']]    
+        params_shadow_obj = json.loads(form["shadow_params"].value)
+        params_shadow= [float(params_shadow_obj['x']),float(params_shadow_obj['y'])]
     params_ao = [0.0023,2.0,1.0]
     if form.has_key("ao_params"):
-        params_ao_obj = json.loads(form["position"].value)
-        params_ao= [params_ao_obj['x'],params_ao_obj['y'],params_ao_obj['z']]
+        params_ao_obj = json.loads(form["ao_params"].value)
+        params_ao= [float(params_ao_obj['x']),float(params_ao_obj['y']),float(params_ao_obj['z'])]
     astr="read\n"
     astr+=pdbId+".pdb\n"
-    astr+="""
-HETATM-----HOH-- 0,9999,0,0,.5,.5,.5,1.6
+    astr+="""HETATM-----HOH-- 0,9999,0,0,.5,.5,.5,1.6
 ATOM  -H-------- 0,9999,0,0,.5,.5,.5,1.6
 ATOM  H--------- 0,9999,0,0,.5,.5,.5,1.6
 ATOM  -C-------A 5,9999,1,1,.9,.4,.4,1.3
@@ -288,7 +287,7 @@ illustrate
 3.,8.,6.                                                     # outlines defining regions of the chain
 calculate
 """
-    astr+=pdbId+".pnm\n"
+    astr+=pdbId+".pnm\n\n"
     return astr
 
 def queryForm(form):
@@ -542,6 +541,16 @@ function onClick(){
     aStr += htmlTailer()
     return aStr
 
+def printDebug(form):
+    print "Content-type:text/html\r\n\r\n"
+    print '<html>'
+    print '<head>'
+    print '<title>Hello Word - First CGI Program</title>'
+    print '</head>'
+    print '<body>'
+    print form
+    print '</body>'
+    print '</html>'
 ### ===========================================================
 ### Begin actual script
 ### ===========================================================
@@ -567,8 +576,7 @@ if __name__=='__main__':
         elif statuskey == "processpreview":
             if (form.has_key("preview")):displayFormPreview(form["PDBID"].value)
             else :
-                #print "Content-type: text/html"
-                #print
+                #printDebug(form)
                 #print True if form["shadow"].value == 'true' else False
                 processForm(form,False)
         elif statuskey == "query":
