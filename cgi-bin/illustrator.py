@@ -208,6 +208,37 @@ class processObj:
         # print "queryId: ",self.queryId
         return
 
+#maybe the input should be prepare in the client
+def prepareWildCard(style):
+    #ignore hydrogen
+    astr="""HETATM-----HOH-- 0,9999,0,0,.5,.5,.5,1.6
+ATOM  -H-------- 0,9999,0,0,.5,.5,.5,1.6
+ATOM  H--------- 0,9999,0,0,.5,.5,.5,1.6
+"""
+    if (style == 1) :
+        astr+="""ATOM  -C-------- 5,9999,3,3,.9,.0,.0,1.6
+"""
+    astr+="END\n"
+    return astr
+#"""HETATM-----HOH-- 0,9999,0,0,.5,.5,.5,1.6
+#ATOM  -H-------- 0,9999,0,0,.5,.5,.5,1.6
+#ATOM  H--------- 0,9999,0,0,.5,.5,.5,1.6
+#ATOM  -C-------A 5,9999,1,1,.9,.4,.4,1.3
+#ATOM  ---------A 5,9999,2,1,.9,.3,.3,1.3
+#ATOM  -C-------C 5,9999,3,2,.9,.4,.4,1.6
+#ATOM  ---------C 5,9999,4,2,.9,.3,.3,1.6
+#ATOM  -C-------- 5,9999,3,3,.9,.8,.4,1.6
+#ATOM  ---------- 5,9999,4,3,.9,.7,.3,1.6
+#HETATM-SG--SNC-- 0,9999,7,5,.5,.5,.5,1.6
+#HETATM-ND--SNC-- 0,9999,8,5,.5,.5,.5,1.6
+#HETATM-OE--SNC-- 0,9999,9,5,.5,.5,.5,1.6
+#HETATM-C---HEM-- 0,9999,5,4,.5,.5,.9,1.9
+#HETATM-----HEM-- 0,9999,6,4,.5,.5,.8,1.9
+#HETATM---------- 0,9999,0,0,.5,.5,.5,1.6
+#ATOM  HCCC-RES-A 0,9999,0,0,1.,1.,1.,1.6
+#END
+#"""
+
 #selection is wild card for chain for instance
 def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0]):
     if (form.has_key("rotation")) :
@@ -249,24 +280,7 @@ def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0
         contour_params.append(["3.","8.","6."])
     astr="read\n"
     astr+=pdbId+".pdb\n"
-    astr+="""HETATM-----HOH-- 0,9999,0,0,.5,.5,.5,1.6
-ATOM  -H-------- 0,9999,0,0,.5,.5,.5,1.6
-ATOM  H--------- 0,9999,0,0,.5,.5,.5,1.6
-ATOM  -C-------A 5,9999,1,1,.9,.4,.4,1.3
-ATOM  ---------A 5,9999,2,1,.9,.3,.3,1.3
-ATOM  -C-------C 5,9999,3,2,.9,.4,.4,1.6
-ATOM  ---------C 5,9999,4,2,.9,.3,.3,1.6
-ATOM  -C-------- 5,9999,3,3,.9,.8,.4,1.6
-ATOM  ---------- 5,9999,4,3,.9,.7,.3,1.6
-HETATM-SG--SNC-- 0,9999,7,5,.5,.5,.5,1.6
-HETATM-ND--SNC-- 0,9999,8,5,.5,.5,.5,1.6
-HETATM-OE--SNC-- 0,9999,9,5,.5,.5,.5,1.6
-HETATM-C---HEM-- 0,9999,5,4,.5,.5,.9,1.9
-HETATM-----HEM-- 0,9999,6,4,.5,.5,.8,1.9
-HETATM---------- 0,9999,0,0,.5,.5,.5,1.6
-ATOM  HCCC-RES-A 0,9999,0,0,1.,1.,1.,1.6
-END
-"""
+    astr+=prepareWildCard(1)
     if (center):
         astr+="center\n"
         astr+="auto\n"
