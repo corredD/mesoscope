@@ -289,7 +289,10 @@ def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0
         contour_params.append(["3.","8.","6."])
     astr="read\n"
     astr+=pdbId+".pdb\n"
-    astr+=prepareWildCard(1)
+    style=1
+    if form.has_key("style"):
+        style = int(form["style"].value)
+    astr+=prepareWildCard(style)
     if (center):
         astr+="center\n"
         astr+="auto\n"
