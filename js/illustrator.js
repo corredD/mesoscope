@@ -14,6 +14,7 @@ var ao_params2 = document.getElementById("ao_params2");
 var ao_params3 = document.getElementById("ao_params3");
 var ao_params4 = document.getElementById("ao_params4");
 var viewport = document.getElementById("viewport");
+var style = document.getElementById("style");
 
 function createOneElemNumber(id,value,parent){
   var elem = document.createElement("input");
@@ -168,6 +169,7 @@ function onClick(){
     formData.append("ao", ao.checked);
     formData.append("ao_params",  JSON.stringify(new NGL.Quaternion(ao_params1.value,ao_params2.value,ao_params3.value,ao_params4.value)));
     //show progress bar
+    formData.append("style",style.value);
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py');
     xhr.onload = function () {

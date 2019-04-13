@@ -211,14 +211,23 @@ class processObj:
 #maybe the input should be prepare in the client
 def prepareWildCard(style):
     #ignore hydrogen
-    astr="""HETATM-----HOH-- 0,9999,0,0,.5,.5,.5,1.6
+    astr=""
+    if (style == 1) :
+        astr="""HETATM-----HOH-- 0,9999,0,0,.5,.5,.5,1.6
 ATOM  -H-------- 0,9999,0,0,.5,.5,.5,1.6
 ATOM  H--------- 0,9999,0,0,.5,.5,.5,1.6
 """
-    if (style == 1) :
         astr+="""ATOM  -C-------- 5,9999,3,3,.9,.0,.0,1.6
 """
-    astr+="END\n"
+        astr+="END\n"
+    elif (style==2):
+        #open wildcard1
+        with open("../data/wildcard1.inp","r") as f:
+            astr=f.read()
+    elif (style==3):
+        #open wildcard1
+        with open("../data/wildcard2.inp","r") as f:
+            astr=f.read()
     return astr
 #"""HETATM-----HOH-- 0,9999,0,0,.5,.5,.5,1.6
 #ATOM  -H-------- 0,9999,0,0,.5,.5,.5,1.6
