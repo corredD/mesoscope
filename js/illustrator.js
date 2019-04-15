@@ -216,6 +216,10 @@ function loadStructure(e){
   current_query.innerHTML="<h4>Current PDBid :"+PDBID+"</h4>";
 }
 
+function changeName(e){
+
+}
+
 function changePDB(e){
   loaded_pdb = false;
   viewport.style.display = "block";
@@ -359,7 +363,7 @@ function prepareInput(){
     var astyle = ill_style.value;
     params_ao = [0.0023,2.0,1.0,0.7]
     var astr="read\n"
-    astr+=PDBID+".pdb\n"
+    astr+=nameinput.value+".pdb\n"
     astr+=prepareWildCard(astyle);
     astr+="center\n"
     astr+="auto\n"
@@ -386,7 +390,7 @@ function prepareInput(){
     astr+=subunit_outlines_params_elem.map(i=>i.value).join()+"  # subunits\n"
     astr+=chain_outlines_params_elem.map(i=>i.value).join()+"  # outlines defining regions of the chain\n"
     astr+="calculate\n"
-    astr+=PDBID+".pnm\n"
+    astr+=nameinput.value+".pnm\n"
     return astr;
 }
 
@@ -417,7 +421,7 @@ function BuildInputPDB(){
 }
 
 function onClick(){
-    nameinput.value = nameinput.value.slice(0, 20)
+    nameinput.value = nameinput.value.slice(0, 19)
     img.style.display = "none";
     document.getElementById("loader").style.display = "block";
     clearTimeout();
