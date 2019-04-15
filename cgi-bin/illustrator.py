@@ -289,7 +289,7 @@ def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0
         contour_params.append(["3.","8.","6."])
     astr="read\n"
     astr+=pdbId+".pdb\n"
-    style=1
+    style=2
     if form.has_key("style"):
         style = int(form["style"].value)
     astr+=prepareWildCard(style)
@@ -302,14 +302,14 @@ def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0
     astr+=str(scale)+"\n"                                                         # pixels/Angstrom
     astr+="zrot\n"
     astr+="90.0\n"
-    astr+="xrot\n"
-    astr+="180.0\n"
-    astr+="xrot\n"
-    astr+=str(-rotation[0])+"\n"
     astr+="yrot\n"
-    astr+=str(-rotation[1])+"\n"
+    astr+="-180.0\n"
+    astr+="xrot\n"
+    astr+=str(rotation[0])+"\n"
+    astr+="yrot\n"
+    astr+=str(rotation[1])+"\n"
     astr+="zrot\n"
-    astr+=str(-rotation[2])+"\n"
+    astr+=str(rotation[2])+"\n"
     #astr+="xrot\n"
     #astr+=str(rotation[0])+"\n"
     astr+="wor\n"

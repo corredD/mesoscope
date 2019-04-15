@@ -14,16 +14,29 @@ var ao_params2 = document.getElementById("ao_params2");
 var ao_params3 = document.getElementById("ao_params3");
 var ao_params4 = document.getElementById("ao_params4");
 var viewport = document.getElementById("viewport");
+var ill_style= document.getElementById("ill_style");
 
-function createOneElemNumber(id,value,parent){
+function createOneElemNumber(id,value,parent,label=""){
   var elem = document.createElement("input");
   elem.type = "number";
   elem.step = 0.1; // set the CSS class
   elem.value = atomic_outlines_params[i];
   elem.id=id;
   parent.appendChild(elem);
+  if (label!=""){
+    var t = document.createTextNode(" "+label);
+    parent.appendChild(t);
+    var br = document.createElement("br");
+    parent.appendChild(br);
+  }
   return elem;
 }
+
+var params1_labels = ["l_low thresholds for gray to black",
+                      "l_high thresholds for gray to black",
+                      "kernel for derivative calculation (1,2,3,4 smoothest=4)",
+                      "l_diff_max start range of z-difference used for derivative (Angstroms)",
+                      "l_diff_max end range of z-difference used for derivative (Angstroms)"]
 
 var atomic_outlines_paramsDiv = document.createElement("div");
 atomic_outlines_paramsDiv.id = "atomic_outlines_params";
@@ -33,9 +46,13 @@ var atomic_outlines_params=[3.0,10.0,4,0.0,5.0]
 var atomic_outlines_params_elem=[]
 for (var i=0;i<atomic_outlines_params.length;i++){
   var elem = createOneElemNumber("atomic_outlines_params"+(i+1),
-              atomic_outlines_params[i],atomic_outlines_paramsDiv)
+              atomic_outlines_params[i],atomic_outlines_paramsDiv,
+              params1_labels[i]);
   atomic_outlines_params_elem.push(elem);
 }
+
+var params2_labels = ["l_low thresholds for gray to black (typically ~ 3.0-20.0)",
+                      "l_high thresholds for gray to black (typically ~ 3.0-20.0)"]
 subunit_outlines_paramsDiv = document.createElement("div");
 subunit_outlines_paramsDiv.id = "subunit_outlines_params";
 subunit_outlines_paramsDiv.style="display:none";
@@ -44,9 +61,14 @@ var subunit_outlines_params=[3.,10.]
 var subunit_outlines_params_elem=[];
 for (var i=0;i<subunit_outlines_params.length;i++){
   var elem = createOneElemNumber("subunit_outlines_params"+(i+1),
-              subunit_outlines_params[i],subunit_outlines_paramsDiv)
+              subunit_outlines_params[i],subunit_outlines_paramsDiv,
+            params2_labels[i]);
   subunit_outlines_params_elem.push(elem)
 }
+
+var params3_labels = ["l_low thresholds for gray to black (typically ~ 3.0-20.0)",
+                      "l_high thresholds for gray to black (typically ~ 3.0-20.0",
+                      "difference in residue numbers to draw outlines"];
 chain_outlines_paramsDiv = document.createElement("div");
 chain_outlines_paramsDiv.id = "chain_outlines_params";
 chain_outlines_paramsDiv.style="display:none";
@@ -55,7 +77,8 @@ var chain_outlines_params=[3.,8.,6.];
 var chain_outlines_params_elem=[];
 for (var i=0;i<chain_outlines_params.length;i++){
   var elem = createOneElemNumber("chain_outlines_params"+(i+1),
-              chain_outlines_params[i],chain_outlines_paramsDiv)
+              chain_outlines_params[i],chain_outlines_paramsDiv,
+              params3_labels[i]);
   chain_outlines_params_elem.push(elem)
 }
 
@@ -167,6 +190,7 @@ function onClick(){
     //formData.append("shadow_params",  JSON.stringify(new NGL.Vector2(shadow_params1.value,shadow_params2.value)));
     formData.append("ao", ao.checked);
     formData.append("ao_params",  JSON.stringify(new NGL.Quaternion(ao_params1.value,ao_params2.value,ao_params3.value,ao_params4.value)));
+    formData.append("style", ill_style.value);
     //show progress bar
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py');
