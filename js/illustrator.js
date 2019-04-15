@@ -357,6 +357,7 @@ function prepareInput(){
     var rotation = new NGL.Euler().setFromQuaternion( q);
     var position = new NGL.Vector3(0,0,0);
     position.subVectors(stage.animationControls.controls.position , ngl_center);
+    position.multiplyScalar(-1.0);
     var scontour_params1 = JSON.stringify(atomic_outlines_params_elem.map(i=>i.value));
     var scontour_params2 = JSON.stringify(subunit_outlines_params_elem.map(i=>i.value));
     var scontour_params3 = JSON.stringify(chain_outlines_params_elem.map(i=>i.value));
@@ -372,7 +373,7 @@ function prepareInput(){
     astr+="center\n"
     astr+="auto\n"
     astr+="trans\n"
-    astr+= "-"+position.x.toString()+",-"+position.y.toString()+",-"+position.z.toString()+"\n"
+    astr+= position.x.toString()+","+position.y.toString()+","+position.z.toString()+"\n"
     astr+="scale\n"
     astr+=scale.value+"\n"
     astr+="zrot\n"
