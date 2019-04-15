@@ -331,7 +331,13 @@ def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0
     return astr
 
 def queryForm(form):
-    id = int(form["id"].value)
+    id = 0
+    idprovided = False
+    if form.has_key("_id") and int(form["_id"].value) != -1:
+        id = form["_id"].value
+        idprovided = True
+    else :
+        id = mkRand()
     wrkDir = "/var/www/html/data/tmp/ILL/"+id
     curentD = os.path.abspath(os.curdir)
     if not os.path.isdir(wrkDir):
@@ -376,7 +382,7 @@ def queryForm(form):
         filename = cgi.escape(form["input_file"].filename)
         inpstring = form["input_file"].file.readlines()
     elif form.has_key("input_txt"):
-        inpstring = form["input_file"].value
+        inpstring = form["input_txt"].value
     else :
         inpstring = prepareInput(queryTXT,form)
     f = open(inpfile, "w")

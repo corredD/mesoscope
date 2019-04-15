@@ -8,12 +8,13 @@ var inp_file=null;
 var inp_txt=null;
 var inp_txt_holder = document.getElementById("inp_txt");
 var use_loaded_inp_txt = document.getElementById("use_loaded_inp_txt");
-
+var loaded_pdb = false;
 //get the different elements
 var options_elem = document.getElementById("options");
 var linkimg = document.getElementById("linkimg");
 var current_query = document.getElementById("current_query");
 var pdbinput = document.getElementById("pdbinput");
+var nameinput= document.getElementById("nameinput");
 var ao = document.getElementById("ao");
 var advanced = document.getElementById("advanced");
 var ao_params1 = document.getElementById("ao_params1");
@@ -26,6 +27,8 @@ var scale = document.getElementById("scale");
 var current_selection=""
 var current_model=0
 var currentBU="AU"
+var project_name="";
+var pdbId="";
 
 function Util_forceSelect(e) {
 	e.value = '';
@@ -184,27 +187,15 @@ stage.setParameters({
   backgroundColor: "white"
 })
 
-function loadInp(e){
-  inp_file= e.target.files[ 0 ];
-  //update the txt dom content
-  var reader = new FileReader();
-  // Closure to capture the file information.
-  reader.onload = (function(theFile) {
-        return function(e) {
-           inp_txt = e.target.result;
-           inp_txt_holder.innerHTML = "<pre>"+inp_txt+"</pre>";
-           use_loaded_inp_txt.checked = true;
-        };
-      })(inp_file);
-      // Read in the image file as a data URL.
-  reader.readAsText(inp_file);
-}
+
 
 function loadStructure(e){
+  loaded_pdb = true;
   var input = e.target.files[ 0 ];
   viewport.style.display = "block";
   stage.removeAllComponents();
-  PDBID = input.name;
+  PDBID = input.name.split(".")[0];//no extension
+  nameinput = PDBID;
   stage.loadFile(input).then(function (o) {
       o.addRepresentation("spacefill", {
         sele: "polymer",
@@ -218,9 +209,11 @@ function loadStructure(e){
 }
 
 function changePDB(e){
+  loaded_pdb = false;
   viewport.style.display = "block";
   stage.removeAllComponents();
   PDBID = e.value;
+  nameinput = PDBID;
   stage.loadFile('rcsb://'+PDBID).then(function (o) {
       o.addRepresentation("spacefill", {
         sele: "polymer",
@@ -283,38 +276,128 @@ function resetToDefault(){
   }
 }
 
+function loadInp(e){
+  inp_file= e.target.files[ 0 ];
+  //update the txt dom content
+  var reader = new FileReader();
+  // Closure to capture the file information.
+  reader.onload = (function(theFile) {
+        return function(e) {
+           inp_txt = e.target.result;
+           inp_txt_holder.innerHTML = "<pre>"+inp_txt+"</pre>";
+           use_loaded_inp_txt.checked = true;
+        };
+      })(inp_file);
+      // Read in the image file as a data URL.
+  reader.readAsText(inp_file);
+}
+
+function getText(url){
+    // read text from URL location
+    var request = new XMLHttpRequest();
+    request.open('GET', url, true);
+    request.send(null);
+    request.onreadystatechange = function () {
+        if (request.readyState === 4 && request.status === 200) {
+            var type = request.getResponseHeader('Content-Type');
+            if (type.indexOf("text") !== 1) {
+                return request.responseText;
+            }
+        }
+    }
+}
+
+function readWildCard(filename){
+    var url="https://mesoscope.scripps.edu/beta/data/"+filename;
+    var outer_text = getText(url);
+    return outer_text;
+}
+
+function prepareWildCard(style){
+    //ignore hydrogen
+    var astr=""
+    if (style == 1)
+    {
+        astr+="HETATM-----HOH-- 0,9999,.5,.5,.5,1.6\n\
+ATOM  -H-------- 0,9999,.5,.5,.5,1.6\n\
+ATOM  H--------- 0,9999,.5,.5,.5,1.6\n\
+";
+        astr+="ATOM  -C-------- 5,9999,.9,.0,.0,1.6\n";
+        astr+="END\n"
+    }
+    else if (style == 2)
+    {
+        //#open wildcard1
+        astr+=readWildCard("wildcard1.inp");
+    }
+    else if (style==3)
+    {         //open wildcard1
+        astr+=readWildCard("wildcard2.inp");
+    }
+    return astr
+}
+
+function prepareInput(){
+    var q = stage.animationControls.controls.rotation;
+    var rotation = new NGL.Euler().setFromQuaternion( q);
+    var position = new NGL.Vector3(0,0,0);
+    var scontour_params1 = JSON.stringify(atomic_outlines_params_elem.map(i=>i.value));
+    var scontour_params2 = JSON.stringify(subunit_outlines_params_elem.map(i=>i.value));
+    var scontour_params3 = JSON.stringify(chain_outlines_params_elem.map(i=>i.value));
+    //formData.append("shadow", shadow.checked);
+    //formData.append("shadow_params",  JSON.stringify(new NGL.Vector2(shadow_params1.value,shadow_params2.value)));
+    var sao = ao.checked;
+    var sao_params = JSON.stringify(new NGL.Quaternion(ao_params1.value,ao_params2.value,ao_params3.value,ao_params4.value));
+    var astyle = ill_style.value;
+    params_ao = [0.0023,2.0,1.0,0.7]
+    var astr="read\n"
+    astr+=PDBID+".pdb\n"
+    astr+=prepareWildCard(astyle);
+    astr+="center\n"
+    astr+="auto\n"
+    astr+="trans\n"
+    astr+=position.x.toString()+","+position.y.toString()+","+position.z.toString()+"\n"
+    astr+="scale\n"
+    astr+=scale.value+"\n"
+    astr+="zrot\n"
+    astr+="90.0\n"
+    astr+="yrot\n"
+    astr+="-180.0\n"
+    astr+="xrot\n"
+    astr+=rotation.x.toString()+"\n"
+    astr+="yrot\n"
+    astr+=rotation.y.toString()+"\n"
+    astr+="zrot\n"
+    astr+=rotation.z.toString()+"\n"
+    astr+="wor\n"
+    astr+="0.99607843137,0.99607843137,0.99607843137,1.,1.,1.,1.,1.\n"
+    astr+=((sao)?"1":"0")+","+ ao_params1.value+","+ ao_params2.value+","+ ao_params3.value+","+ ao_params4.value+"\n"
+    astr+="-30,-30                                                      # image size in pixels, negative numbers pad the molecule by that amount\n"
+    astr+="illustrate\n"
+    astr+=atomic_outlines_params_elem.map(i=>i.value).join()+"  # parameters for outlines, atomic\n"
+    astr+=subunit_outlines_params_elem.map(i=>i.value).join()+"  # subunits\n"
+    astr+=chain_outlines_params_elem.map(i=>i.value).join()+"  # outlines defining regions of the chain\n"
+    astr+="calculate\n"
+    astr+=PDBID+".pnm\n"
+    return astr;
+}
+
 function BuildInput(){
   //given the option prepare the txt for input
   //depends on the style
-  var q = stage.animationControls.controls.rotation;
-  var rotation = new NGL.Euler().setFromQuaternion( q);
-  var pos = JSON.stringify(new NGL.Vector3(0,0,0));
-  var rot = JSON.stringify(rotation);
-  var ascale =  parseFloat(scale.value);
-  var scontour_params1 = JSON.stringify(atomic_outlines_params_elem.map(i=>i.value));
-  var scontour_params2 = JSON.stringify(subunit_outlines_params_elem.map(i=>i.value));
-  var scontour_params3 = JSON.stringify(chain_outlines_params_elem.map(i=>i.value));
-  //formData.append("shadow", shadow.checked);
-  //formData.append("shadow_params",  JSON.stringify(new NGL.Vector2(shadow_params1.value,shadow_params2.value)));
-  var sao = ao.checked;
-  var sao_params = JSON.stringify(new NGL.Quaternion(ao_params1.value,ao_params2.value,ao_params3.value,ao_params4.value));
-  var astyle = ill_style.value;
   inp_txt="<pre>"
-  inp_txt+=pos+"\n"
-  inp_txt+=rot+"\n"
-  inp_txt+=ascale+"\n"
-  inp_txt+=scontour_params1+"\n"
-  inp_txt+=scontour_params2+"\n"
-  inp_txt+=scontour_params3+"\n"
-  inp_txt+=sao+"\n"
-  inp_txt+=sao_params+"\n"
-  inp_txt+=astyle+"\n"
+  inp_txt+=prepareInput();
   inp_txt+="</pre>\n"
 }
 
 function previewInput(){
   BuildInput();
   inp_txt_holder.innerHTML = inp_txt;
+}
+
+function clearInpTxt(){
+  inp_txt_holder.innerHTML = "";
+  use_loaded_inp_txt.checked = false;
 }
 
 function BuildInputPDB(){
@@ -331,7 +414,14 @@ function onClick(){
     var q = stage.animationControls.controls.rotation;
     var rotation = new NGL.Euler().setFromQuaternion( q);
     var formData = new FormData();
-    if (use_loaded_inp_txt.checked){}
+    if (use_loaded_inp_txt.checked){
+      formData.append("key", "query");//array of x,y,z
+      if (use_loaded_inp_txt.checked)formData.append("input_txt", inp_txt);
+      else formData.append("input_txt", prepareInput());
+      formData.append("PDBID", PDBID);
+      formData.append("_id", _id);
+      formData.append("name",nameinput);
+    }
     else {
       formData.append("key", "processpreview");//array of x,y,z
       formData.append("PDBID", PDBID);
@@ -348,6 +438,8 @@ function onClick(){
       formData.append("ao_params",  JSON.stringify(new NGL.Quaternion(ao_params1.value,ao_params2.value,ao_params3.value,ao_params4.value)));
       formData.append("style", ill_style.value);
     }
+    console.log("submit to server");
+    console.log(formData);
     //show progress bar
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py');

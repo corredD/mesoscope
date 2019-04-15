@@ -63,10 +63,11 @@
         <input type="file" id="inp_file_input" accept=".inp,.txt" type="file" onclick="Util_forceSelect(this)" onchange="loadInp(event)" />
         <div id="inp_txt" contenteditable="true">
         </div><br>
-        <input type="checkbox" id="use_loaded_inp_txt" name="use_loaded_inp_txt"> Use <br>
+        <input type="checkbox" id="use_loaded_inp_txt" name="use_loaded_inp_txt"> Use
+        <button onclick='clearInpTxt()'>Clear</button>
      </div>
   </div>
-
+  <input type="text" id="nameinput" value="" style="" onchange="changeName(this)"/> Project name <br />
   <button onclick='resetToDefault()'>Reset to Default</button>
   <button onclick='onClick()'>Illustrate</button>
   <div id="loader" class="loader"></div>
