@@ -312,9 +312,7 @@ function getText(url){
     request.onreadystatechange = function () {
         if (request.readyState === 4 && request.status === 200) {
             var type = request.getResponseHeader('Content-Type');
-            if (type.indexOf("text") !== 1) {
-                return request.responseText;
-            }
+            return request.responseText;
         }
     }
 }
@@ -421,7 +419,7 @@ function BuildInputPDB(){
 }
 
 function onClick(){
-    nameinput.value = nameinput.value.slice(0, 19)
+    nameinput.value = nameinput.value.slice(0, 10)
     img.style.display = "none";
     document.getElementById("loader").style.display = "block";
     clearTimeout();
