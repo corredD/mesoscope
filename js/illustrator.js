@@ -4,6 +4,8 @@ var PDBID = "";//current PDB on server
 var img_source = "";//current url on server
 var structure=null;
 var structure_txt=null;
+var structure_file=null;
+var custom_structure = false;
 var inp_file=null;
 var inp_txt=null;
 var inp_txt_holder = document.getElementById("inp_txt");
@@ -197,12 +199,12 @@ stage.setParameters({
 
 function loadStructure(e){
   loaded_pdb = true;
-  var input = e.target.files[ 0 ];
+  structure_file = e.target.files[ 0 ];
   viewport.style.display = "block";
   stage.removeAllComponents();
-  PDBID = input.name.split(".")[0];//no extension
+  PDBID = structure_file.name.split(".")[0];//no extension
   nameinput.value = PDBID;
-  stage.loadFile(input).then(function (o) {
+  stage.loadFile(structure_file).then(function (o) {
       o.addRepresentation("spacefill", {
         sele: "polymer",
         name: "polymer",
@@ -409,6 +411,7 @@ function clearInpTxt(){
 function BuildInputPDB(){
   //if selection otherwise pass the BU/AU tothe server that will wget
   //does this take in account selection and assambly?
+  //how to use the bu.selection et etcx..test?
   var pdbWriter = new NGL.PdbWriter(structure);
   structure_txt = pdbWriter.getData();
 }
@@ -424,7 +427,16 @@ function onClick(){
       formData.append("key", "query");//array of x,y,z
       if (use_loaded_inp_txt.checked)formData.append("input_txt", inp_txt);
       else formData.append("input_txt", prepareInput());
-      formData.append("PDBID", PDBID);
+      if (loaded_pdb) {
+        formData.append("PDBfile",structure_file);
+      }
+      else if (custom_structure) {
+        BuildInputPDB();
+        formData.append("PDBtxt",structure_txt);
+      }
+      else {
+        formData.append("PDBID", PDBID);
+      }
       formData.append("_id", _id);
       formData.append("name",nameinput.value);
     }
