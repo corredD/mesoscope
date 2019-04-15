@@ -292,6 +292,12 @@ function resetToDefault(){
   }
 }
 
+function resetView(){
+  stage.animationControls.controls.rotate(new NGL.Quaternion(0,0,0,1));
+  stage.animationControls.controls.rotate(new NGL.Vector3(0,0,0));
+  stage.autoView(100)
+}
+
 function loadInp(e){
   inp_file= e.target.files[ 0 ];
   //update the txt dom content
@@ -366,7 +372,7 @@ function prepareInput(){
     astr+="center\n"
     astr+="auto\n"
     astr+="trans\n"
-    astr+=position.x.toString()+","+position.y.toString()+","+position.z.toString()+"\n"
+    astr+= "-"+position.x.toString()+",-"+position.y.toString()+",-"+position.z.toString()+"\n"
     astr+="scale\n"
     astr+=scale.value+"\n"
     astr+="zrot\n"
