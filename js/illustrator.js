@@ -5,6 +5,7 @@ var img_source = "";//current url on server
 var structure=null;
 var structure_txt=null;
 var structure_file=null;
+var structure_file_ext = "";
 var ngl_center = null;
 var custom_structure = false;
 var inp_file=null;
@@ -205,6 +206,7 @@ function loadStructure(e){
   viewport.style.display = "block";
   stage.removeAllComponents();
   PDBID = structure_file.name.split(".")[0];//no extension
+  structure_file_ext = structure_file.name.split('.').pop();
   nameinput.value = PDBID;
   stage.loadFile(structure_file).then(function (o) {
       o.addRepresentation("spacefill", {
@@ -421,7 +423,7 @@ function BuildInputPDB(){
   //if selection otherwise pass the BU/AU tothe server that will wget
   //does this take in account selection and assambly?
   //how to use the bu.selection et etcx..test?
-  var pdbWriter = new NGL.PdbWriter(structure);
+  var pdbWriter = new NGL.PdbWriter(structure.structure);
   structure_txt = pdbWriter.getData();
 }
 
@@ -442,7 +444,12 @@ function onClick(){
       formData.append("input_txt", input);
     }
     if (loaded_pdb) {
-      formData.append("PDBfile",structure_file);
+      if (structure_file_ext == "pdb")
+        formData.append("PDBfile",structure_file);
+      else{
+        formData.append("PDBtxt",structure_txt);
+        BuildInputPDB();
+      }
     }
     else if (custom_structure) {
       BuildInputPDB();

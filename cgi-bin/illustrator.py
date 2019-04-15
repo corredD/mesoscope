@@ -330,6 +330,13 @@ def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0
     astr+=pdbId+".pnm\n\n"
     return astr
 
+# Generator to buffer large file chunks
+def fbuffer(f, chunk_size=10000):
+    while True:
+        chunk = f.read(chunk_size)
+        if not chunk: break
+        yield chunk
+
 def queryForm(form, verbose = 0):
     id = 0
     idprovided = False
@@ -362,16 +369,23 @@ def queryForm(form, verbose = 0):
     elif form.has_key("PDBtxt") :
         queryTXT = form["PDBtxt"].value
         tmpPDBName = wrkDir+"/"+proj_name+".pdb"
-        f = open(tmpPDBName, "w")
-        f.write(queryTXT)
-        f.close()
+        if not os.path.isfile(tmpPDBName):
+            f = open(tmpPDBName, "w")
+            f.write(queryTXT)
+            f.close()
         queryTXT = proj_name
     elif form.has_key("PDBfile") :
-        queryTXT = form["PDBfile"].file.read()#readlines()
+        #queryTXT = form["PDBfile"].file.read()#readlines()
         tmpPDBName = wrkDir+"/"+proj_name+".pdb"
-        f = open(tmpPDBName, "w")
-        f.write(queryTXT)
-        f.close()
+        if not os.path.isfile(tmpPDBName):
+            f = open(tmpPDBName, 'wb', 10000)
+            # Read the file in chunks
+            for chunk in fbuffer(form["PDBfile"].file):
+                f.write(chunk)
+            f.close()
+            #f = open(tmpPDBName, "w")
+            #f.write(queryTXT)
+            #f.close()
         queryTXT = proj_name
     #prepare input
     redirectURL = "https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/illustrator.html"
