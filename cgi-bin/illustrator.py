@@ -213,7 +213,7 @@ def prepareWildCard(style):
     #ignore hydrogen
     astr=""
     if (style == 1) :
-        astr="""HETATM-----HOH-- 0,9999,0,0,.5,.5,.5,1.6
+        astr="""HETATM-----HOH-- 0,9999,.5,.5,.5,1.6
 ATOM  -H-------- 0,9999,.5,.5,.5,1.6
 ATOM  H--------- 0,9999,.5,.5,.5,1.6
 """
