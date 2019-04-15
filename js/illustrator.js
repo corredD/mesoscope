@@ -214,7 +214,7 @@ function loadStructure(e){
       });
       structure = o;
       o.autoView();
-      ngl_center = stage.animationControls.controls.position;
+      ngl_center = stage.animationControls.controls.position.clone();
   });
   current_query.innerHTML="<h4>Current PDBid :"+PDBID+"</h4>";
 }
@@ -237,7 +237,7 @@ function changePDB(e){
       });
       structure = o;
       o.autoView();
-      ngl_center = stage.animationControls.controls.position;
+      ngl_center = stage.animationControls.controls.position.clone();
   });
   current_query.innerHTML="<h4>Current PDBid :"+PDBID+"</h4>";
 }
