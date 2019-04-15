@@ -14,7 +14,6 @@ var ao_params2 = document.getElementById("ao_params2");
 var ao_params3 = document.getElementById("ao_params3");
 var ao_params4 = document.getElementById("ao_params4");
 var viewport = document.getElementById("viewport");
-var style = document.getElementById("style");
 
 function createOneElemNumber(id,value,parent){
   var elem = document.createElement("input");
@@ -30,7 +29,7 @@ var atomic_outlines_paramsDiv = document.createElement("div");
 atomic_outlines_paramsDiv.id = "atomic_outlines_params";
 atomic_outlines_paramsDiv.style="display:none";
 options_elem.appendChild(atomic_outlines_paramsDiv);
-var atomic_outlines_params=[3.,10.,3.,8.,4,0.,5.]
+var atomic_outlines_params=[3.0,10.0,4,0.0,5.0]
 var atomic_outlines_params_elem=[]
 for (var i=0;i<atomic_outlines_params.length;i++){
   var elem = createOneElemNumber("atomic_outlines_params"+(i+1),
@@ -169,7 +168,6 @@ function onClick(){
     formData.append("ao", ao.checked);
     formData.append("ao_params",  JSON.stringify(new NGL.Quaternion(ao_params1.value,ao_params2.value,ao_params3.value,ao_params4.value)));
     //show progress bar
-    formData.append("style",style.value);
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py');
     xhr.onload = function () {

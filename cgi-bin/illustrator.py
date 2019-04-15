@@ -214,10 +214,10 @@ def prepareWildCard(style):
     astr=""
     if (style == 1) :
         astr="""HETATM-----HOH-- 0,9999,0,0,.5,.5,.5,1.6
-ATOM  -H-------- 0,9999,0,0,.5,.5,.5,1.6
-ATOM  H--------- 0,9999,0,0,.5,.5,.5,1.6
+ATOM  -H-------- 0,9999,.5,.5,.5,1.6
+ATOM  H--------- 0,9999,.5,.5,.5,1.6
 """
-        astr+="""ATOM  -C-------- 5,9999,3,3,.9,.0,.0,1.6
+        astr+="""ATOM  -C-------- 5,9999,.9,.0,.0,1.6
 """
         astr+="END\n"
     elif (style==2):
@@ -313,7 +313,7 @@ def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0
     #astr+="xrot\n"
     #astr+=str(rotation[0])+"\n"
     astr+="wor\n"
-    astr+="254,254,254,255,255,255,1.,1.0\n"
+    astr+="0.99607843137,0.99607843137,0.99607843137,1.,1.,1.,1.,1.\n"
     astr+="%d,%f,%f,%f,%f\n" % ((1 if (ao) else 0),
                                             params_ao[0],
                                             params_ao[1],
