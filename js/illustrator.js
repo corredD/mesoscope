@@ -417,6 +417,7 @@ function BuildInputPDB(){
 }
 
 function onClick(){
+    nameinput.value = nameinput.value.slice(0, 20)
     img.style.display = "none";
     document.getElementById("loader").style.display = "block";
     clearTimeout();

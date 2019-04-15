@@ -350,6 +350,7 @@ def queryForm(form, verbose = 0):
     inpfile = ""#wrkDir+"/"+queryTXT+".inp"
     tmpPDBName = ""#wrkDir+"/"+queryTXT+".pdb"
     proj_name = "illustrated"
+    #no more than 20character
     if form.has_key("name") :
         proj_name = form["name"].value
     if form.has_key("PDBID") :
@@ -366,7 +367,7 @@ def queryForm(form, verbose = 0):
         f.close()
         queryTXT = proj_name
     elif form.has_key("PDBfile") :
-        queryTXT = form["PDBfile"].file.readlines()
+        queryTXT = form["PDBfile"].file.read()#readlines()
         tmpPDBName = wrkDir+"/"+proj_name+".pdb"
         f = open(tmpPDBName, "w")
         f.write(queryTXT)
@@ -380,7 +381,7 @@ def queryForm(form, verbose = 0):
     inpfile = wrkDir+"/"+proj_name+".inp"
     if form.has_key("input_file"):
         filename = cgi.escape(form["input_file"].filename)
-        inpstring = form["input_file"].file.readlines()
+        inpstring = form["input_file"].file.read()
     elif form.has_key("input_txt"):
         inpstring = form["input_txt"].value
     else :
@@ -625,6 +626,9 @@ def printDebug(form):
     print '</head>'
     print '<body>'
     print form
+    #print form["PDBfile"]
+    #print form["PDBfile"].filename
+    #print form["PDBfile"].file.readlines()
     print '</body>'
     print '</html>'
 ### ===========================================================
@@ -656,7 +660,7 @@ if __name__=='__main__':
                 #print True if form["shadow"].value == 'true' else False
                 processForm(form,False)
         elif statuskey == "query":
-            printDebug(form)
-            #queryForm(form)
+            #printDebug(form)
+            queryForm(form)
         else:
             displayForm()
