@@ -17,6 +17,7 @@ var linkimg = document.getElementById("linkimg");
 var current_query = document.getElementById("current_query");
 var pdbinput = document.getElementById("pdbinput");
 var nameinput= document.getElementById("nameinput");
+var _idinput = document.getElementById("_idinput");
 var ao = document.getElementById("ao");
 var advanced = document.getElementById("advanced");
 var ao_params1 = document.getElementById("ao_params1");
