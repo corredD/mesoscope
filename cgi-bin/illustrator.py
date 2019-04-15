@@ -330,7 +330,7 @@ def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0
     astr+=pdbId+".pnm\n\n"
     return astr
 
-def queryForm(form):
+def queryForm(form, verbose = 0):
     id = 0
     idprovided = False
     if form.has_key("_id") and int(form["_id"].value) != -1:

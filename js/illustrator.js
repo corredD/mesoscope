@@ -30,6 +30,12 @@ var currentBU="AU"
 var project_name="";
 var pdbId="";
 
+inp_txt_holder.addEventListener("input", function() {
+    console.log("input event fired");
+    //update the ino-text
+    inp_txt = inp_txt_holder.innerHTML.replace("<pre>","").replace("</pre>","");
+}, false);
+
 function Util_forceSelect(e) {
 	e.value = '';
 }
@@ -195,7 +201,7 @@ function loadStructure(e){
   viewport.style.display = "block";
   stage.removeAllComponents();
   PDBID = input.name.split(".")[0];//no extension
-  nameinput = PDBID;
+  nameinput.value = PDBID;
   stage.loadFile(input).then(function (o) {
       o.addRepresentation("spacefill", {
         sele: "polymer",
@@ -213,7 +219,7 @@ function changePDB(e){
   viewport.style.display = "block";
   stage.removeAllComponents();
   PDBID = e.value;
-  nameinput = PDBID;
+  nameinput.value = PDBID;
   stage.loadFile('rcsb://'+PDBID).then(function (o) {
       o.addRepresentation("spacefill", {
         sele: "polymer",
@@ -420,7 +426,7 @@ function onClick(){
       else formData.append("input_txt", prepareInput());
       formData.append("PDBID", PDBID);
       formData.append("_id", _id);
-      formData.append("name",nameinput);
+      formData.append("name",nameinput.value);
     }
     else {
       formData.append("key", "processpreview");//array of x,y,z
