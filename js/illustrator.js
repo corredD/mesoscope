@@ -307,14 +307,9 @@ function loadInp(e){
 function getText(url){
     // read text from URL location
     var request = new XMLHttpRequest();
-    request.open('GET', url, true);
+    request.open('GET', url, false);
     request.send(null);
-    request.onreadystatechange = function () {
-        if (request.readyState === 4 && request.status === 200) {
-            var type = request.getResponseHeader('Content-Type');
-            return request.responseText;
-        }
-    }
+    return request.responseText;
 }
 
 function readWildCard(filename){
