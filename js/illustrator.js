@@ -5,6 +5,7 @@ var img_source = "";//current url on server
 var structure=null;
 var structure_txt=null;
 var structure_file=null;
+var ngl_center = null;
 var custom_structure = false;
 var inp_file=null;
 var inp_txt=null;
@@ -212,7 +213,8 @@ function loadStructure(e){
         //assembly: "AU"
       });
       structure = o;
-      o.autoView()
+      o.autoView();
+      ngl_center = stage.animationControls.controls.position;
   });
   current_query.innerHTML="<h4>Current PDBid :"+PDBID+"</h4>";
 }
@@ -234,7 +236,8 @@ function changePDB(e){
         //assembly: "AU"
       });
       structure = o;
-      o.autoView()
+      o.autoView();
+      ngl_center = stage.animationControls.controls.position;
   });
   current_query.innerHTML="<h4>Current PDBid :"+PDBID+"</h4>";
 }
@@ -347,6 +350,7 @@ function prepareInput(){
     var q = stage.animationControls.controls.rotation;
     var rotation = new NGL.Euler().setFromQuaternion( q);
     var position = new NGL.Vector3(0,0,0);
+    position.subVectors(stage.animationControls.controls.position , ngl_center);
     var scontour_params1 = JSON.stringify(atomic_outlines_params_elem.map(i=>i.value));
     var scontour_params2 = JSON.stringify(subunit_outlines_params_elem.map(i=>i.value));
     var scontour_params3 = JSON.stringify(chain_outlines_params_elem.map(i=>i.value));
