@@ -35,7 +35,7 @@ var pdbId="";
 inp_txt_holder.addEventListener("input", function() {
     console.log("input event fired");
     //update the ino-text
-    inp_txt = inp_txt_holder.innerHTML.replace("<pre>","").replace("</pre>","");
+    inp_txt = inp_txt_holder.innerHTML;
 }, false);
 
 function Util_forceSelect(e) {
@@ -425,8 +425,12 @@ function onClick(){
     var formData = new FormData();
     //if (use_loaded_inp_txt.checked){
     formData.append("key", "query");//array of x,y,z
-    if (use_loaded_inp_txt.checked)formData.append("input_txt", inp_txt);
-    else formData.append("input_txt", prepareInput());
+    if (use_loaded_inp_txt.checked) formData.append("input_txt", inp_txt.replace("<pre>","").replace("</pre>",""));
+    else {
+      var input = prepareInput();
+      console.log(input);
+      formData.append("input_txt", input);
+    }
     if (loaded_pdb) {
       formData.append("PDBfile",structure_file);
     }
