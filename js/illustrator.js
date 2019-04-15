@@ -423,24 +423,24 @@ function onClick(){
     var q = stage.animationControls.controls.rotation;
     var rotation = new NGL.Euler().setFromQuaternion( q);
     var formData = new FormData();
-    if (use_loaded_inp_txt.checked){
-      formData.append("key", "query");//array of x,y,z
-      if (use_loaded_inp_txt.checked)formData.append("input_txt", inp_txt);
-      else formData.append("input_txt", prepareInput());
-      if (loaded_pdb) {
-        formData.append("PDBfile",structure_file);
-      }
-      else if (custom_structure) {
-        BuildInputPDB();
-        formData.append("PDBtxt",structure_txt);
-      }
-      else {
-        formData.append("PDBID", PDBID);
-      }
-      formData.append("_id", _id);
-      formData.append("name",nameinput.value);
+    //if (use_loaded_inp_txt.checked){
+    formData.append("key", "query");//array of x,y,z
+    if (use_loaded_inp_txt.checked)formData.append("input_txt", inp_txt);
+    else formData.append("input_txt", prepareInput());
+    if (loaded_pdb) {
+      formData.append("PDBfile",structure_file);
+    }
+    else if (custom_structure) {
+      BuildInputPDB();
+      formData.append("PDBtxt",structure_txt);
     }
     else {
+      formData.append("PDBID", PDBID);
+    }
+    formData.append("_id", _id);
+    formData.append("name",nameinput.value);
+    //}
+    /*else {
       formData.append("key", "processpreview");//array of x,y,z
       formData.append("PDBID", PDBID);
       formData.append("position", JSON.stringify(new NGL.Vector3(0,0,0)));
@@ -455,7 +455,7 @@ function onClick(){
       formData.append("ao", ao.checked);
       formData.append("ao_params",  JSON.stringify(new NGL.Quaternion(ao_params1.value,ao_params2.value,ao_params3.value,ao_params4.value)));
       formData.append("style", ill_style.value);
-    }
+    }*/
     console.log("submit to server");
     console.log(formData);
     //show progress bar

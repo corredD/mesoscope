@@ -656,6 +656,7 @@ if __name__=='__main__':
                 #print True if form["shadow"].value == 'true' else False
                 processForm(form,False)
         elif statuskey == "query":
-            queryForm(form)
+            printDebug(form)
+            #queryForm(form)
         else:
             displayForm()
