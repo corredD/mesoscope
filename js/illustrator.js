@@ -447,8 +447,8 @@ function onClick(){
       if (structure_file_ext == "pdb")
         formData.append("PDBfile",structure_file);
       else{
-        formData.append("PDBtxt",structure_txt);
         BuildInputPDB();
+        formData.append("PDBtxt",structure_txt);
       }
     }
     else if (custom_structure) {
