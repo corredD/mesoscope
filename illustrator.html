@@ -42,8 +42,9 @@
     <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js"></script>
   </HEAD>
   <BODY bgcolor=white>
+  <div style="display:flex;flex-flow:column">
   <div id="options" class="options">
-    <div>
+        <input type="file" id="pdb_file_input" accept=".pdb,.cif,.ent,.gz,.mol2" type="file" onclick="Util_forceSelect(this)" onchange="loadStructure(event)" /><br>
         <input type="text" id="pdbinput" value="" style="" onchange="changePDB(this)"/> PDB id <br />
         <input type="checkbox" id="advanced" name="advanced" onclick="showOptions(this)"> Advanced Options<br>
         <input type="checkbox" id="ao" name="ao" checked> Ambient Occlusion / Soft Shadow<br>
@@ -55,8 +56,17 @@
         </div>
         <input type=number id="scale" step=1 value=12 /> Pixel per Angstrom <br />
         <input type=number id="ill_style" step=1 value=1 /> style (1,2,3) <br />
-    </div>
+
+      </div>
+    <div id="inp_options">
+        <button onclick='previewInput()'>Preview Input Txt or</button>
+        <input type="file" id="inp_file_input" accept=".inp,.txt" type="file" onclick="Util_forceSelect(this)" onchange="loadInp(event)" />
+        <div id="inp_txt" contenteditable="true">
+        </div><br>
+        <input type="checkbox" id="use_loaded_inp_txt" name="use_loaded_inp_txt"> Use <br>
+     </div>
   </div>
+
   <button onclick='resetToDefault()'>Reset to Default</button>
   <button onclick='onClick()'>Illustrate</button>
   <div id="loader" class="loader"></div>

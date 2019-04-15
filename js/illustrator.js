@@ -2,6 +2,13 @@ var i=0;
 var _id = -1;//current id on server
 var PDBID = "";//current PDB on server
 var img_source = "";//current url on server
+var structure=null;
+var structure_txt=null;
+var inp_file=null;
+var inp_txt=null;
+var inp_txt_holder = document.getElementById("inp_txt");
+var use_loaded_inp_txt = document.getElementById("use_loaded_inp_txt");
+
 //get the different elements
 var options_elem = document.getElementById("options");
 var linkimg = document.getElementById("linkimg");
@@ -15,6 +22,66 @@ var ao_params3 = document.getElementById("ao_params3");
 var ao_params4 = document.getElementById("ao_params4");
 var viewport = document.getElementById("viewport");
 var ill_style= document.getElementById("ill_style");
+var scale = document.getElementById("scale");
+var current_selection=""
+var current_model=0
+var currentBU="AU"
+
+function Util_forceSelect(e) {
+	e.value = '';
+}
+
+/****DOM function******/
+function addElement (el,parent=null) {
+  Object.assign(el.style, {
+    position: "absolute",
+    zIndex: 10
+  })
+  if (parent == null) stage.viewer.container.appendChild(el)
+  else if (parent == "none") {}
+  else {
+    parent.appendChild(el)
+    }
+  return el;
+  }
+
+
+function createElement (name, properties, style) {
+  var el = document.createElement(name)
+  Object.assign(el, properties)
+  Object.assign(el.style, style)
+  return el
+}
+
+function createSelect (options, properties, style) {
+  var select = createElement("select", properties, style)
+  options.forEach(function (d) {
+    select.add(createElement("option", {
+      value: d[ 0 ], text: d[ 1 ]
+    }))
+  })
+  return select
+}
+
+function createFileButton (label, properties, style) {
+  var input = createElement("input", Object.assign({
+    type: "file"
+  }, properties), { display: "none" })
+  addElement(input)
+  var button = createElement("input", {
+    value: label,
+    type: "button",
+    onclick: function () { input.click() }
+  }, style)
+  return button
+}
+
+var topPosition = 12
+
+function getTopPosition (increment) {
+  if (increment) topPosition += increment
+  return topPosition + "px"
+}
 
 function createOneElemNumber(id,value,parent,label=""){
   var elem = document.createElement("input");
@@ -31,6 +98,7 @@ function createOneElemNumber(id,value,parent,label=""){
   }
   return elem;
 }
+
 
 var params1_labels = ["l_low thresholds for gray to black",
                       "l_high thresholds for gray to black",
@@ -83,7 +151,7 @@ for (var i=0;i<chain_outlines_params.length;i++){
 }
 
 var an_img = new Image();
-var scale = document.getElementById("scale");
+
 // When it is loaded...
 an_img.addEventListener("load", function() {
     // Set the on-screen image to the same source. This should be instant because
@@ -99,6 +167,10 @@ an_img.addEventListener("load", function() {
 an_img.src = img_source;
 var img = document.getElementById("result");
 
+
+var ligandSele = "( not polymer or not ( protein or nucleic ) ) and not ( water or ACE or NH2 )"
+
+
 // Create NGL Stage object
 var stage = new NGL.Stage( "viewport" );
 stage.setParameters({cameraType: "orthographic"})
@@ -112,6 +184,38 @@ stage.setParameters({
   backgroundColor: "white"
 })
 
+function loadInp(e){
+  inp_file= e.target.files[ 0 ];
+  //update the txt dom content
+  var reader = new FileReader();
+  // Closure to capture the file information.
+  reader.onload = (function(theFile) {
+        return function(e) {
+           inp_txt = e.target.result;
+           inp_txt_holder.innerHTML = "<pre>"+inp_txt+"</pre>";
+           use_loaded_inp_txt.checked = true;
+        };
+      })(inp_file);
+      // Read in the image file as a data URL.
+  reader.readAsText(inp_file);
+}
+
+function loadStructure(e){
+  var input = e.target.files[ 0 ];
+  viewport.style.display = "block";
+  stage.removeAllComponents();
+  PDBID = input.name;
+  stage.loadFile(input).then(function (o) {
+      o.addRepresentation("spacefill", {
+        sele: "polymer",
+        name: "polymer",
+        //assembly: "AU"
+      });
+      structure = o;
+      o.autoView()
+  });
+  current_query.innerHTML="<h4>Current PDBid :"+PDBID+"</h4>";
+}
 
 function changePDB(e){
   viewport.style.display = "block";
@@ -123,10 +227,19 @@ function changePDB(e){
         name: "polymer",
         //assembly: "AU"
       });
-      stage.autoView(100);
+      structure = o;
+      o.autoView()
   });
   current_query.innerHTML="<h4>Current PDBid :"+PDBID+"</h4>";
 }
+
+function changeBU_cb(bu){}
+function changeModel_cb(model){}
+function changeSelection_cb(selection){}
+
+function changeBU(e){}
+function changeModel(e){}
+function changeSelection(e){}
 
 function showOptions(e){
     var display = (e.checked)? "block" : "none";
@@ -170,6 +283,47 @@ function resetToDefault(){
   }
 }
 
+function BuildInput(){
+  //given the option prepare the txt for input
+  //depends on the style
+  var q = stage.animationControls.controls.rotation;
+  var rotation = new NGL.Euler().setFromQuaternion( q);
+  var pos = JSON.stringify(new NGL.Vector3(0,0,0));
+  var rot = JSON.stringify(rotation);
+  var ascale =  parseFloat(scale.value);
+  var scontour_params1 = JSON.stringify(atomic_outlines_params_elem.map(i=>i.value));
+  var scontour_params2 = JSON.stringify(subunit_outlines_params_elem.map(i=>i.value));
+  var scontour_params3 = JSON.stringify(chain_outlines_params_elem.map(i=>i.value));
+  //formData.append("shadow", shadow.checked);
+  //formData.append("shadow_params",  JSON.stringify(new NGL.Vector2(shadow_params1.value,shadow_params2.value)));
+  var sao = ao.checked;
+  var sao_params = JSON.stringify(new NGL.Quaternion(ao_params1.value,ao_params2.value,ao_params3.value,ao_params4.value));
+  var astyle = ill_style.value;
+  inp_txt="<pre>"
+  inp_txt+=pos+"\n"
+  inp_txt+=rot+"\n"
+  inp_txt+=ascale+"\n"
+  inp_txt+=scontour_params1+"\n"
+  inp_txt+=scontour_params2+"\n"
+  inp_txt+=scontour_params3+"\n"
+  inp_txt+=sao+"\n"
+  inp_txt+=sao_params+"\n"
+  inp_txt+=astyle+"\n"
+  inp_txt+="</pre>\n"
+}
+
+function previewInput(){
+  BuildInput();
+  inp_txt_holder.innerHTML = inp_txt;
+}
+
+function BuildInputPDB(){
+  //if selection otherwise pass the BU/AU tothe server that will wget
+  //does this take in account selection and assambly?
+  var pdbWriter = new NGL.PdbWriter(structure);
+  structure_txt = pdbWriter.getData();
+}
+
 function onClick(){
     img.style.display = "none";
     document.getElementById("loader").style.display = "block";
@@ -177,20 +331,23 @@ function onClick(){
     var q = stage.animationControls.controls.rotation;
     var rotation = new NGL.Euler().setFromQuaternion( q);
     var formData = new FormData();
-    formData.append("key", "processpreview");//array of x,y,z
-    formData.append("PDBID", PDBID);
-    formData.append("position", JSON.stringify(new NGL.Vector3(0,0,0)));
-    formData.append("rotation", JSON.stringify(rotation));
-    formData.append("scale", parseFloat(scale.value));
-    formData.append("_id", _id);
-    formData.append("contour_params1",JSON.stringify(atomic_outlines_params_elem.map(i=>i.value)));
-    formData.append("contour_params2",JSON.stringify(subunit_outlines_params_elem.map(i=>i.value)));
-    formData.append("contour_params3",JSON.stringify(chain_outlines_params_elem.map(i=>i.value)));
-    //formData.append("shadow", shadow.checked);
-    //formData.append("shadow_params",  JSON.stringify(new NGL.Vector2(shadow_params1.value,shadow_params2.value)));
-    formData.append("ao", ao.checked);
-    formData.append("ao_params",  JSON.stringify(new NGL.Quaternion(ao_params1.value,ao_params2.value,ao_params3.value,ao_params4.value)));
-    formData.append("style", ill_style.value);
+    if (use_loaded_inp_txt.checked){}
+    else {
+      formData.append("key", "processpreview");//array of x,y,z
+      formData.append("PDBID", PDBID);
+      formData.append("position", JSON.stringify(new NGL.Vector3(0,0,0)));
+      formData.append("rotation", JSON.stringify(rotation));
+      formData.append("scale", parseFloat(scale.value));
+      formData.append("_id", _id);
+      formData.append("contour_params1",JSON.stringify(atomic_outlines_params_elem.map(i=>i.value)));
+      formData.append("contour_params2",JSON.stringify(subunit_outlines_params_elem.map(i=>i.value)));
+      formData.append("contour_params3",JSON.stringify(chain_outlines_params_elem.map(i=>i.value)));
+      //formData.append("shadow", shadow.checked);
+      //formData.append("shadow_params",  JSON.stringify(new NGL.Vector2(shadow_params1.value,shadow_params2.value)));
+      formData.append("ao", ao.checked);
+      formData.append("ao_params",  JSON.stringify(new NGL.Quaternion(ao_params1.value,ao_params2.value,ao_params3.value,ao_params4.value)));
+      formData.append("style", ill_style.value);
+    }
     //show progress bar
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py');

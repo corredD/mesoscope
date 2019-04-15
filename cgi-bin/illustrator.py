@@ -332,40 +332,70 @@ def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0
 
 def queryForm(form):
     id = int(form["id"].value)
+    wrkDir = "/var/www/html/data/tmp/ILL/"+id
+    curentD = os.path.abspath(os.curdir)
+    if not os.path.isdir(wrkDir):
+        os.mkdir(wrkDir)
     #print "<html>Hello World</html>"
     x = processObj(argsDict)
     x.formParse(form,argsDict, verbose)
-    queryTXT = string.upper(form["PDBID"].value)
+    queryTXT=""
+    fetch=False
+    inpfile = ""#wrkDir+"/"+queryTXT+".inp"
+    tmpPDBName = ""#wrkDir+"/"+queryTXT+".pdb"
+    proj_name = "illustrated"
+    if form.has_key("name") :
+        proj_name = form["name"].value
+    if form.has_key("PDBID") :
+        queryTXT = string.upper(form["PDBID"].value)
+        fetch = True
+        tmpPDBName = wrkDir+"/"+queryTXT+".pdb"
+        if not form.has_key("name") :
+            proj_name = queryTXT
+    elif form.has_key("PDBtxt") :
+        queryTXT = form["PDBtxt"].value
+        tmpPDBName = wrkDir+"/"+proj_name+".pdb"
+        f = open(tmpPDBName, "w")
+        f.write(queryTXT)
+        f.close()
+        queryTXT = proj_name
+    elif form.has_key("PDBfile") :
+        queryTXT = form["PDBfile"].file.readlines()
+        tmpPDBName = wrkDir+"/"+proj_name+".pdb"
+        f = open(tmpPDBName, "w")
+        f.write(queryTXT)
+        f.close()
+        queryTXT = proj_name
     #prepare input
     redirectURL = "https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/illustrator.html"
-    wrkDir = "/var/www/html/data/tmp/ILL/"+id
-    print "Access-Control-Allow-Origin: *"
-    print 'Content-type: application/json\n'
-    print
     #print "<html>Hello World</html>"
-    curentD = os.path.abspath(os.curdir)
-    if not os.path.isdir(curentD):
-        os.mkdir(wrkDir)
+
     #did the user send in the input file?
-    inpfile = wrkDir+"/"+queryTXT+".inp"
+    inpfile = wrkDir+"/"+proj_name+".inp"
     if form.has_key("input_file"):
         filename = cgi.escape(form["input_file"].filename)
         inpstring = form["input_file"].file.readlines()
+    elif form.has_key("input_txt"):
+        inpstring = form["input_file"].value
     else :
-        inpstring = prepareInput(queryTXT)
+        inpstring = prepareInput(queryTXT,form)
     f = open(inpfile, "w")
     f.write(inpstring)
     f.close()
-    tmpPDBName = wrkDir+"/"+queryTXT+".pdb"
     cmd = "cd "+wrkDir+";"
-    cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
+    if fetch :
+        cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
     cmd+= curentD+"/illustrator < "+queryTXT+".inp>/dev/null;"
     cmd+="/bin/convert "+queryTXT+".pnm -transparent \"rgb(254,254,254)\" "+queryTXT+".png>/dev/null;"
     os.system(cmd)
 
-    #httpfile="https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/"+queryTXT+".pdb"
+    httpfile="https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/"+queryTXT+".pdb"
     httpimg="https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/"+queryTXT+".png"
-    print "{'image':'"+httpimg+"'} "
+
+    print "Access-Control-Allow-Origin: *"
+    print 'Content-type: application/json\n'
+    print
+    print "{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(id)+"\"}"
     #displayResult(tmpPDBName,httpfile,httpimg,queryTXT)
     cleanup(wrkDir, "5 days")
     return
