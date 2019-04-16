@@ -73,21 +73,21 @@
   <button onclick='onClick()'>Illustrate</button>
   <div id="loader" class="loader"></div>
   <div id="current_query"></div>
-  <div style="display:flex;flex-flow:row">
-    <div>
-      <label for="assa"> Assambly</label>
-      <select id = "ass_type" onchange="changeBU()">
-        <option value="AU" selected> AU </option>
-      </select>
-      <select id = "mod_type" onchange="changeModel(e)">
-        <option value="0" selected> 0 </option>
-      </select>
-      <div class="multiselect">
-      <div id="selection_ch_checkboxes">
-      </div>
-      </div>
-      <input type="text" id="sel_str" value="" style="" onchange="changeSelection(e)"/> selection <br />
+  <div>
+    <label for="assa"> Assambly</label>
+    <select id = "ass_type" onchange="changeBU()">
+      <option value="AU" selected> AU </option>
+    </select>
+    <select id = "mod_type" onchange="changeModel(e)">
+      <option value="0" selected> 0 </option>
+    </select>
+    <div class="multiselect">
+    <div id="selection_ch_checkboxes">
     </div>
+    </div>
+    <input type="text" id="sel_str" value="" style="" onchange="changeSelection(e)"/> selection <br />
+  </div>
+  <div style="display:flex;flex-flow:row">
     <div id="viewport" class="NGLpan" style="width:300px; height:300px;"></div>
     <div><a id="linkimg" href="" target="blanck"><img id="result" src="" style="width:300px"></img></a></div>
   </div>
