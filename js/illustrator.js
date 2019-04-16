@@ -343,9 +343,9 @@ function prepareWildCard(style){
     var astr=""
     if (style == 1)
     {
-        astr+="HETATM-----HOH-- 0,9999,.5,.5,.5,1.6\n\
-ATOM  -H-------- 0,9999,.5,.5,.5,1.6\n\
-ATOM  H--------- 0,9999,.5,.5,.5,1.6\n\
+        astr+="HETATM-----HOH-- 0,9999,.5,.5,.5,0.0\n\
+ATOM  -H-------- 0,9999,.5,.5,.5,0.0\n\
+ATOM  H--------- 0,9999,.5,.5,.5,0.0\n\
 ";
         astr+="ATOM  -C-------- 5,9999,.9,.0,.0,1.6\n";
         astr+="END\n"
