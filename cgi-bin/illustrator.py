@@ -363,7 +363,7 @@ def queryForm(form, verbose = 0):
     if form.has_key("PDBID") :
         queryTXT = form["PDBID"].value
         fetch = True
-        tmpPDBName = wrkDir+"/"+queryTXT+".pdb"
+        tmpPDBName = wrkDir+"/"+proj_name+".pdb"
         if not form.has_key("name") :
             proj_name = queryTXT
     elif form.has_key("PDBtxt") :
@@ -406,6 +406,7 @@ def queryForm(form, verbose = 0):
     cmd = "cd "+wrkDir+";"
     if fetch and not os.path.isfile(tmpPDBName):
         cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
+        cmd+= "mv "+queryTXT+".pdb "+tmpPDBName+";"
     cmd+= curentD+"/illustrator < "+queryTXT+".inp>/dev/null;"
     cmd+="/bin/convert "+queryTXT+".pnm -transparent \"rgb(254,254,254)\" "+queryTXT+".png>/dev/null;"
     os.system(cmd)

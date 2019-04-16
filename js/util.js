@@ -678,3 +678,37 @@ function Util_FixBeadsFormat(p,r){
   }
   return {"pos":p,"radii":r};
 }
+
+function Util_download_png(the_image, name) {
+    var canvas = document.createElement('canvas');
+    var context = canvas.getContext('2d');
+    canvas.width = the_image.width;
+    canvas.height = the_image.height;
+    var base_image = new Image();
+    base_image.onload = function() {
+        //context.fillStyle = "#FFF";
+        //context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(base_image, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(function(blob) {
+            saveAs(blob, name + ".png");
+        });
+    };
+    base_image.src = the_image.src;
+};
+
+function Util_download_src_png(the_src, name) {
+    var canvas = document.createElement('canvas');
+    var context = canvas.getContext('2d');
+    var base_image = new Image();
+    base_image.onload = function() {
+        canvas.width = this.width;
+        canvas.height = this.height;
+        //context.fillStyle = "#FFF";
+        //context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(base_image, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(function(blob) {
+            saveAs(blob, name + ".png");
+        });
+    };
+    base_image.src = the_src;
+};
