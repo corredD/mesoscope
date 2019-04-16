@@ -1803,6 +1803,10 @@ function NGL_Illustrate(){
           this.oh = parseFloat(height);
           this.ow = parseFloat(width);
           this.done = true;
+          if (document.getElementById("savethumbnail").checked){
+              node_selected.data.sprite.image = node_selected.data.name+".png";
+              download(node_selected.data.thumbnail.src, node_selected.data.name+".png");
+          }
         }
         node_selected.data.thumbnail.onerror = function () {
           this.src = 'images/Warning_icon.png';
@@ -1810,10 +1814,6 @@ function NGL_Illustrate(){
         };
       }
       node_selected.data.thumbnail.src = data.image+"?"+new Date();
-      if (document.getElementById("savethumbnail").checked){
-          node_selected.data.sprite.image = node_selected.data.name+".png";
-          download(data.image, node_selected.data.name+".png");
-      }
       ill_current_id = parseInt(data.id);
       //hide progress bar
     };
