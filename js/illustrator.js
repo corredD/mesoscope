@@ -43,7 +43,8 @@ var pdbId="";
 inp_txt_holder.addEventListener("input", function() {
     console.log("input event fired");
     //update the ino-text
-    inp_txt = inp_txt_holder.innerHTML;
+    inp_txt_holder.innerHTML = inp_txt_holder.innerHTML.replace("<br>","\n")
+    inp_txt = inp_txt_holder.innerHTML.replace("<pre>","").replace("</pre>","").replace("<code contenteditable=\"true\">","").replace("</code>","");
 }, false);
 
 function Util_forceSelect(e) {
@@ -316,7 +317,7 @@ function loadInp(e){
   reader.onload = (function(theFile) {
         return function(e) {
            inp_txt = e.target.result;
-           inp_txt_holder.innerHTML = "<pre>"+inp_txt+"</pre>";
+           inp_txt_holder.innerHTML = "<pre><code contenteditable=\"true\">"+inp_txt+"</code></pre>";
            use_loaded_inp_txt.checked = true;
         };
       })(inp_file);
@@ -412,9 +413,9 @@ function prepareInput(){
 function BuildInput(){
   //given the option prepare the txt for input
   //depends on the style
-  inp_txt="<pre>"
+  inp_txt="<pre><code contenteditable=\"true\">"
   inp_txt+=prepareInput();
-  inp_txt+="</pre>\n"
+  inp_txt+="</code></pre>\n"
 }
 
 function previewInput(){
@@ -676,7 +677,7 @@ function onClick(){
     var formData = new FormData();
     //if (use_loaded_inp_txt.checked){
     formData.append("key", "query");//array of x,y,z
-    if (use_loaded_inp_txt.checked) formData.append("input_txt", inp_txt.replace("<pre>","").replace("</pre>",""));
+    if (use_loaded_inp_txt.checked) formData.append("input_txt", inp_txt);
     else {
       var input = prepareInput();
       console.log(input);
