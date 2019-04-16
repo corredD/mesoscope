@@ -1667,7 +1667,8 @@ function NGL_saveThumbnail(){
         var blob = node_selected.imgBlob;
         if ( blob == null)
         {
-          download(node_selected.data.thumbnail.src, node_selected.data.name+".png");
+          //download(node_selected.data.thumbnail.src, node_selected.data.name+".png");
+          Util_download_src_png(node_selected.data.thumbnail.src, node_selected.data.name);
         }
         else {
           NGL.download( blob, node_selected.data.name+".png" );
