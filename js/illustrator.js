@@ -304,8 +304,8 @@ function resetToDefault(){
 
 function resetView(){
   stage.animationControls.controls.rotate(new NGL.Quaternion(0,0,0,1));
-  stage.animationControls.controls.rotate(new NGL.Vector3(0,0,0));
-  stage.autoView(100)
+  stage.animationControls.controls.center();
+  structure.autoView()
 }
 
 function loadInp(e){
@@ -727,7 +727,12 @@ function onClick(){
     console.log(formData);
     //show progress bar
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py');
+    var url = 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py'
+    xhr.open('POST', url);
+    xhr.timeout = 1000000000;
+    xhr.ontimeout = function () {
+      console.error("The request for " + url + " timed out.");
+    };
     xhr.onload = function () {
       // do something to response
       console.log(this.responseText);
