@@ -1,6 +1,6 @@
 var atomic_outlines_params=[3.0,10.0,4,0.0,5.0];
 var subunit_outlines_params=[3.,10.];
-var chain_outlines_params=[3.,8.,6.];
+var chain_outlines_params=[3.,10.,6.];
 var ao_params=[0.0023,2.0,1.0,0.7];
 var ill_current_id=-1;
 
@@ -40,6 +40,11 @@ ATOM  H--------- 0,9999,.5,.5,.5,0.0\n\
     else if (style==3)
     {         //open wildcard1
         astr+=readWildCard("wildcard2.inp");
+    }
+    else if (style==4)
+    {         //open wildcard1
+        astr+=readWildCard("generic.inp");
+        chain_outlines_params[2] = 6000;
     }
     return astr
 }

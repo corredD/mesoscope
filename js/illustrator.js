@@ -360,6 +360,11 @@ ATOM  H--------- 0,9999,.5,.5,.5,0.0\n\
     {         //open wildcard1
         astr+=readWildCard("wildcard2.inp");
     }
+    else if (style==4)
+    {         //open wildcard1
+        astr+=readWildCard("generic.inp");
+        chain_outlines_params_elem[2].value = 6000;
+    }
     return astr
 }
 

@@ -1766,7 +1766,7 @@ function NGL_Illustrate(){
     var formData = new FormData();
     formData.append("key", "query");
     node_selected.data.sprite.scale2d = 6;
-    var input = ill_prepareInput(1,nameinput,6);
+    var input = ill_prepareInput(4,nameinput,6);
     formData.append("input_txt", input);
     if (node_selected.data.source.pdb.length == 4){
       if (sele_elem.value!="" || assembly_elem.selectedOptions[0].value!="AU"){
