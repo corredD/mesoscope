@@ -1682,6 +1682,144 @@ function NGL_UpdateThumbnailCurrent(){
     });
 }
 
+function defaults(value, defaultValue) {
+    return value !== undefined ? value : defaultValue;
+}
+
+const AtomFormat = 'ATOM  %5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
+const HetatmFormat = 'HETATM%5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
+function NGL_writeAtoms() {
+    let ia = 1;
+    let im = 1;
+    let renumberSerial = false;
+    let asele="";
+    var o = ngl_current_structure;
+    _records = [];
+    if (sele_elem.value&& sele_elem.value!=="") {
+      if (asele !== sele_elem.value) asele = sele_elem.value;
+    }
+    var bu = false;
+    var au=assembly_elem.selectedOptions[0].value;
+    if (au !== "AU" && o.object.biomolDict[au]) bu = true;
+    if (asele === "" && bu) {
+      //need to apply the matrix to the selection inside the BU selection ?
+      //console.log(o.object.biomolDict[o.assembly].getSelection());
+      //build using given selection AND biomolDic selection
+      asele = "(" + o.object.biomolDict[au].getSelection().string + ") AND " + asele;
+    }
+    if (asele === "") asele = "polymer";
+    console.log(asele);
+    if(bu)
+    {
+      for (var j = 0; j < o.object.biomolDict[au].partList.length; j++) {
+        for (var k = 0; k < o.object.biomolDict[au].partList[j].matrixList.length; k++) {
+          var mat = o.object.biomolDict[au].partList[j].matrixList[k];
+          //console.log("mat ",j,k);
+          ngl_current_structure.structure.eachAtom((a) => {
+                var new_pos = new NGL.Vector3(a.x, a.y, a.z);//should be uncentered
+                new_pos.applyMatrix4(mat);
+                const formatString = a.hetero ? HetatmFormat : AtomFormat;
+                const serial = renumberSerial ? ia : a.serial;
+                // Alignment of one-letter atom name such as C starts at column 14,
+                // while two-letter atom name such as FE starts at column 13.
+                let atomname = a.atomname;
+                if (atomname.length === 1)
+                    atomname = ' ' + atomname;
+                _records.push(sprintf(formatString, serial, atomname, a.resname,
+                                    defaults(a.chainname, ' '), a.resno, new_pos.x, new_pos.y, new_pos.z,
+                                    defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
+                                    defaults(a.element, '')));
+                ia += 1;
+            }, new NGL.Selection(asele));
+          //new_pos.applyMatrix4(mat);
+          //pos[pos.length] = new_pos.x - center.x;
+          //pos[pos.length] = new_pos.y - center.y;
+          //pos[pos.length] = new_pos.z - center.z;
+          //rad[rad.length] = radius;
+        }
+      }
+    }
+    else {
+      ngl_current_structure.structure.eachAtom((a) => {
+            const formatString = a.hetero ? HetatmFormat : AtomFormat;
+            const serial = this.renumberSerial ? ia : a.serial;
+            // Alignment of one-letter atom name such as C starts at column 14,
+            // while two-letter atom name such as FE starts at column 13.
+            let atomname = a.atomname;
+            if (atomname.length === 1)
+                atomname = ' ' + atomname;
+            _records.push(sprintf(formatString, serial, atomname, a.resname, defaults(a.chainname, ' '), a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
+            defaults(a.element, '')));
+            ia += 1;
+        }, new NGL.Selection(asele));
+    }
+    _records.push(sprintf('%-80s', 'END'));
+    return _records.join('\n');
+}
+
+
+function NGL_Illustrate(){
+    if(!node_selected) return;
+    if (!ngl_current_structure) return;
+    var nameinput = node_selected.data.name;
+    var formData = new FormData();
+    formData.append("key", "query");
+    node_selected.data.sprite.scale2d = 6;
+    var input = ill_prepareInput(2,nameinput,6);
+    formData.append("input_txt", input);
+    if (node_selected.data.source.pdb.length == 4){
+      if (sele_elem.value!="" || assembly_elem.selectedOptions[0].value!="AU"){
+          structure_txt=NGL_writeAtoms();
+          formData.append("PDBtxt",structure_txt);
+      }
+      else formData.append("PDBID", node_selected.data.source.pdb);
+    }
+    else {
+      if (sele_elem.value!="" || assembly_elem.selectedOptions[0].value!="AU"){
+          structure_txt=NGL_writeAtoms();
+          formData.append("PDBtxt",structure_txt);
+      }
+      else formData.append("PDBfile", pathList_[node_selected.data.source.pdb]);
+    }
+    formData.append("_id", ill_current_id);
+    formData.append("name",nameinput);
+    var xhr = new XMLHttpRequest();
+    var url = 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py'
+    xhr.open('POST', url);
+    xhr.timeout = 1000000000;
+    xhr.ontimeout = function () {
+      console.error("The request for " + url + " timed out.");
+    };
+    xhr.onload = function () {
+      // do something to response
+      console.log(this.responseText);
+      var data = JSON.parse(this.responseText)
+      if (!node_selected.data.thumbnail){
+        node_selected.data.thumbnail = new Image();
+        node_selected.data.thumbnail.done = false;
+        node_selected.data.thumbnail.onload = function() {
+          var height = this.height;
+          var width = this.width;
+          this.oh = parseFloat(height);
+          this.ow = parseFloat(width);
+          this.done = true;
+        }
+        node_selected.data.thumbnail.onerror = function () {
+          this.src = 'images/Warning_icon.png';
+          this.done = false;
+        };
+      }
+      node_selected.data.thumbnail.src = data.image+"?"+new Date();
+      if (document.getElementById("savethumbnail").checked){
+          node_selected.data.sprite.image = node_selected.data.name+".png";
+          download(data.image, node_selected.data.name+".png");
+      }
+      ill_current_id = parseInt(data.id);
+      //hide progress bar
+    };
+    xhr.send(formData);
+}
+
 function myTimerToGetTHeBuffer(o,aStopFunction,clean) {
     console.log("cms_surface_"+o.name);
     var arep = stage.getRepresentationsByName("cms_surface_"+o.name).list[0];

@@ -235,6 +235,7 @@ var ngl_options= ''+
   '<button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
   '<button onclick="NextIgredient()" style="">Next Ingredient</button>' +
   '<button onclick="NGL_UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite</button>' +
+  '<button onclick="NGL_Illustrate()" style="">Illustrate</button>' +
   '<input type="checkbox" id="savethumbnail" checked="true">Save Thumbnail/Sprite</input>' +
   '<button class="accordion">NGL options</button>'+
   '<div class="accordion_panel">'+
@@ -329,6 +330,7 @@ var ngloptions = '' +
     '<div style="position:absolute;top:0px;z-index:999"><button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
     '<button onclick="NextIgredient()" style="">Next Ingredient</button>' +
     '<button onclick="NGL_UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite</button>' +
+    '<button onclick="NGL_Illustrate()" style="">Illustrate</button>' +
     '<input type="checkbox" id="savethumbnail" checked="true">Save Thumbnail/Sprite</input></div>' +
     ngl_viewport+
   '</div>';
