@@ -366,8 +366,8 @@ function prepareInput(){
     var q = stage.animationControls.controls.rotation;
     var rotation = new NGL.Euler().setFromQuaternion( q);
     var position = new NGL.Vector3(0,0,0);
-    position.subVectors(stage.animationControls.controls.position , ngl_center);
-    position.multiplyScalar(-1.0);
+    //position.subVectors(stage.animationControls.controls.position , ngl_center);
+    //position.multiplyScalar(-1.0);
     var scontour_params1 = JSON.stringify(atomic_outlines_params_elem.map(i=>i.value));
     var scontour_params2 = JSON.stringify(subunit_outlines_params_elem.map(i=>i.value));
     var scontour_params3 = JSON.stringify(chain_outlines_params_elem.map(i=>i.value));
@@ -591,6 +591,81 @@ function ChangeModel() {
   ChangeRep();
 }
 
+function defaults(value, defaultValue) {
+    return value !== undefined ? value : defaultValue;
+}
+
+const AtomFormat = 'ATOM  %5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
+const HetatmFormat = 'HETATM%5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
+function writeAtoms() {
+    let ia = 1;
+    let im = 1;
+    let renumberSerial = false;
+    let asele="";
+    var o = structure;
+    _records = [];
+    if (sele_elem.value&& sele_elem.value!=="") {
+      if (asele !== sele_elem.value) asele = sele_elem.value;
+    }
+    var bu = false;
+    var au=assembly_elem.selectedOptions[0].value;
+    if (au !== "AU" && o.object.biomolDict[au]) bu = true;
+    if (asele === "" && bu) {
+      //need to apply the matrix to the selection inside the BU selection ?
+      //console.log(o.object.biomolDict[o.assembly].getSelection());
+      //build using given selection AND biomolDic selection
+      asele = "(" + o.object.biomolDict[au].getSelection().string + ") AND " + asele;
+    }
+    if (asele === "") asele = "polymer";
+    console.log(asele);
+    if(bu)
+    {
+      for (var j = 0; j < o.object.biomolDict[au].partList.length; j++) {
+        for (var k = 0; k < o.object.biomolDict[au].partList[j].matrixList.length; k++) {
+          var mat = o.object.biomolDict[au].partList[j].matrixList[k];
+          //console.log("mat ",j,k);
+          structure.structure.eachAtom((a) => {
+                var new_pos = new NGL.Vector3(a.x, a.y, a.z);//should be uncentered
+                new_pos.applyMatrix4(mat);
+                const formatString = a.hetero ? HetatmFormat : AtomFormat;
+                const serial = renumberSerial ? ia : a.serial;
+                // Alignment of one-letter atom name such as C starts at column 14,
+                // while two-letter atom name such as FE starts at column 13.
+                let atomname = a.atomname;
+                if (atomname.length === 1)
+                    atomname = ' ' + atomname;
+                _records.push(sprintf(formatString, serial, atomname, a.resname,
+                                    defaults(a.chainname, ' '), a.resno, new_pos.x, new_pos.y, new_pos.z,
+                                    defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
+                                    defaults(a.element, '')));
+                ia += 1;
+            }, new NGL.Selection(asele));
+          //new_pos.applyMatrix4(mat);
+          //pos[pos.length] = new_pos.x - center.x;
+          //pos[pos.length] = new_pos.y - center.y;
+          //pos[pos.length] = new_pos.z - center.z;
+          //rad[rad.length] = radius;
+        }
+      }
+    }
+    else {
+      structure.structure.eachAtom((a) => {
+            const formatString = a.hetero ? HetatmFormat : AtomFormat;
+            const serial = this.renumberSerial ? ia : a.serial;
+            // Alignment of one-letter atom name such as C starts at column 14,
+            // while two-letter atom name such as FE starts at column 13.
+            let atomname = a.atomname;
+            if (atomname.length === 1)
+                atomname = ' ' + atomname;
+            _records.push(sprintf(formatString, serial, atomname, a.resname, defaults(a.chainname, ' '), a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
+            defaults(a.element, '')));
+            ia += 1;
+        }, new NGL.Selection(asele));
+    }
+    _records.push(sprintf('%-80s', 'END'));
+    return _records.join('\n');
+}
+
 function onClick(){
     nameinput.value = nameinput.value.slice(0, 80-4)//max char is 80
     img.style.display = "none";
@@ -609,18 +684,25 @@ function onClick(){
     }
     if (loaded_pdb) {
       if (structure_file_ext == "pdb")
-        formData.append("PDBfile",structure_file);
+        if (sele_elem.value!=""){
+            structure_txt=writeAtoms();
+            formData.append("PDBtxt",structure_txt);}
+        else formData.append("PDBfile",structure_file);
       else{
-        BuildInputPDB();
+        structure_txt=writeAtoms();
         formData.append("PDBtxt",structure_txt);
       }
     }
     else if (custom_structure) {
-      BuildInputPDB();
+      structure_txt=writeAtoms();
       formData.append("PDBtxt",structure_txt);
     }
     else {
-      formData.append("PDBID", PDBID);
+      if (sele_elem.value!=""){
+          structure_txt=writeAtoms();
+          formData.append("PDBtxt",structure_txt);
+        }
+      else formData.append("PDBID", PDBID);
     }
     formData.append("_id", _id);
     formData.append("name",nameinput.value);
