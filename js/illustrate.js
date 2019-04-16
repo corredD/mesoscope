@@ -13,7 +13,7 @@ function getText(url){
 }
 
 function readWildCard(filename){
-    var url="../data/"+filename;
+    var url="https://mesoscope.scripps.edu/beta/data/"+filename;
     var outer_text = getText(url);
     return outer_text;
 }
