@@ -29,6 +29,11 @@ var ao_params4 = document.getElementById("ao_params4");
 var viewport = document.getElementById("viewport");
 var ill_style= document.getElementById("ill_style");
 var scale = document.getElementById("scale");
+var assembly_elem = document.getElementById("ass_type");
+var model_number_elem = document.getElementById("model_number");
+var sele_elem = document.getElementById("sel_str");
+var model_elem = document.getElementById("mod_type");
+
 var current_selection=""
 var current_model=0
 var currentBU="AU"
@@ -240,17 +245,20 @@ function changePDB(e){
       structure = o;
       o.autoView();
       ngl_center = stage.animationControls.controls.position.clone();
+      UpdateassemblyList(structure);
+      setModelOptions(structure);
+      setChainSelectionOptions(structure);
   });
   current_query.innerHTML="<h4>Current PDBid :"+PDBID+"</h4>";
 }
 
-function changeBU_cb(bu){}
-function changeModel_cb(model){}
-function changeSelection_cb(selection){}
-
-function changeBU(e){}
-function changeModel(e){}
-function changeSelection(e){}
+function changeBU(){
+  ChangeRep();
+}
+function changeModel(){
+  ChangeModel();
+}
+function changeSelection(){}
 
 function showOptions(e){
     var display = (e.checked)? "block" : "none";
@@ -426,9 +434,165 @@ function BuildInputPDB(){
   var pdbWriter = new NGL.PdbWriter(structure.structure);
   structure_txt = pdbWriter.getData();
 }
+//sele = ngl_current_structure.object.biomolDict[assembly].getSelection().string;
+function UpdateassemblyList(ngl_ob) {
+  assembly_elem.options.length = 0;
+  assembly_elem.options[0] = new Option("assembly:", "assembly:");
+  assembly_elem.options[1] = new Option("AU", "AU");
+  Object.keys(ngl_ob.structure.biomolDict).forEach(function(k) {
+    console.log(k);
+    assembly_elem.options[assembly_elem.options.length] = new Option(k, k);
+  });
+}
+
+function GetSelection(sel_str, model) {
+  //doesnt work with model onmly?
+  var ngl_sele = "";
+  sel_str = sel_str.replace("(","").replace(")","")
+  if ( sel_str.includes(":") || sel_str.includes("or") || sel_str.includes("and") || sel_str.includes("/")) {ngl_sele = sel_str;}
+  else {
+    if (sel_str && sel_str !== "") {
+    //convert to ngl selection string.
+      var ch_sel = "(";
+      var sp = sel_str.split(",");
+      for (var i = 0; i < sp.length; i++) {
+        var el = sp[i].split("!");
+        console.log("el ",el);
+        if (el[0] === "") {
+          ch_sel += " not ";
+          if (/[0-9a-zA-Z]/.test(el[1])) ch_sel += ":" + el[1].replace(":","") + " and ";
+        }
+        else if (/[0-9a-zA-Z]/.test(el[0])) ch_sel += ":" + el[0].replace(":","") + "  or ";
+      }
+      ngl_sele = ch_sel.slice(0, -5) + ")";
+      console.log("ngl_sele ",ngl_sele);
+  }
+    if (model && model !== "") {
+      ngl_sele += " and /" + model;
+    }
+  }
+  return ngl_sele;
+}
+
+function testSelectedChain(chainName){
+    var elem = sele_elem.value.split(":")
+    var selected_chains = [];
+    elem.forEach(
+      function(el){
+          if  ( el[0] !== " " && !(!(el[0]))) selected_chains.push(el[0]);
+      }
+    )
+    if ( selected_chains.length === 0 ) return true;
+    else return ($.inArray(chainName, selected_chains)!==-1);
+}
+
+function addOptionsForMultiSelect(select_id,options){
+  var check_elem = document.getElementById(select_id);
+  check_elem.innerHTML = "";
+  for (var i = 0;i<options.length;i++) {
+    var opt = options[i];//label
+    var ch = (testSelectedChain(opt))?" checked ":"";
+    check_elem.innerHTML += '<label for="'+opt+'"><input type="checkbox" id="'+opt+'" onclick="ChangeChainsSelection(this)"'+ch+'/>'+opt+'</label>';
+    //if (i > 20) break;//safety ?
+  }
+}
+
+function Util_showCheckboxes() {
+  var checkboxes = document.getElementById("selection_ch_checkboxes");
+  checkboxes.style.display = "block";
+}
+
+function setChainSelectionOptions(ngl_ob)
+{
+  //update the selection div element
+   const modelStore = structure.structure.modelStore;
+   var model = model_elem.value;
+   var aselection = (modelStore.count > 1) ? GetSelection("", model):"polymer";
+   var chnames = []
+   var nch = structure.structure.getChainnameCount();
+   structure.structure.eachChain( chain => {
+     if ( $.inArray(chain.chainname, chnames) === -1 ) chnames.push( chain.chainname)
+  }, new NGL.Selection(aselection));
+  //console.log("layout_addOptionsForMultiSelect",aselection,chnames,nch);
+  addOptionsForMultiSelect("selection_ch_checkboxes",chnames);
+}
+
+function setModelOptions(ngl_ob) {
+  model_elem.options.length = 0;
+  const modelStore = ngl_ob.structure.modelStore;
+  var model = "0";
+  if (modelStore.count > 1) {
+    model_elem.options[model_elem.options.length] = new Option('Show model:', 'Show model:');
+    model_elem.options[model_elem.options.length] = new Option('all', 'all');
+  }
+  for (let i = 0; i < modelStore.count; ++i) {
+    //addOption(options, i, 'Model ' + (i + 1))
+    model_elem.options[model_elem.options.length] = new Option(i, i,(parseInt(model) === i), (parseInt(model) === i));
+  }
+  //if (modelStore.count === 0) model_elem.options[model_elem.options.length] = new Option(0, 0);
+}
+
+function ChangeRep() {
+  stage.getRepresentationsByName("polymer").dispose();
+  stage.eachComponent(function(o) {
+    o.addRepresentation("spacefill", {
+      name: "polymer",
+      sele: sele_elem.value,
+      assembly: assembly_elem.selectedOptions[0].value
+    });
+  });
+  stage.autoView(10);
+}
+
+function ChangeChainsSelection(an_elem) {
+  var aselection = "";
+  //check the model
+  var checkboxes = document.getElementById("selection_ch_checkboxes");
+  var selection = "";
+  var allcheck = checkboxes.getElementsByTagName("input");
+  var all = allcheck.length;
+  var countchecked = 0;
+  for (var i=0;i<all;i++)
+  {
+      if (allcheck[i].checked) countchecked++;
+  }
+  var diff = all-countchecked;//1-1 or 1-0 when only one entry
+  var test = false;//(diff<countchecked);
+  //if (all === 1 ) test = countchecked === 0;
+  if (test) {
+    //aselection+="not :"+allcheck[0].id
+    for (var i=0;i<all;i++)
+    {
+        if (!allcheck[i].checked) aselection+=" and not :"+allcheck[i].id;
+    }
+  }
+  else {
+    //aselection+=":"+allcheck[0].id
+    for (var i=0;i<all;i++)
+    {
+        if (allcheck[i].checked) aselection+=" or :"+allcheck[i].id;
+    }
+  }
+  //add the model
+  aselection += GetSelection("",current_model);
+  console.log(aselection);
+  sele_elem.value = aselection;
+  ChangeRep();
+}
+
+function ChangeModel() {
+  var curr_sel = sele_elem.value.split("/")[0];
+  //split on /
+  current_model = model_elem.value;
+  console.log(curr_sel + "/" + model_elem.value);
+  sele_elem.value = curr_sel + "/" + model_elem.value;
+
+  setChainSelectionOptions();
+  ChangeRep();
+}
 
 function onClick(){
-    nameinput.value = nameinput.value.slice(0, 10)
+    nameinput.value = nameinput.value.slice(0, 80-4)//max char is 80
     img.style.display = "none";
     document.getElementById("loader").style.display = "block";
     clearTimeout();

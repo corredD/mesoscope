@@ -40,6 +40,7 @@
     }
     </style>
     <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js"></script>
+  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
   </HEAD>
   <BODY bgcolor=white>
   <div style="display:flex;flex-flow:column">
@@ -73,6 +74,20 @@
   <div id="loader" class="loader"></div>
   <div id="current_query"></div>
   <div style="display:flex;flex-flow:row">
+    <div>
+      <label for="assa"> Assambly</label>
+      <select id = "ass_type" onchange="changeBU()">
+        <option value="AU" selected> AU </option>
+      </select>
+      <select id = "mod_type" onchange="changeModel(e)">
+        <option value="0" selected> 0 </option>
+      </select>
+      <div class="multiselect">
+      <div id="selection_ch_checkboxes">
+      </div>
+      </div>
+      <input type="text" id="sel_str" value="" style="" onchange="changeSelection(e)"/> selection <br />
+    </div>
     <div id="viewport" class="NGLpan" style="width:300px; height:300px;"></div>
     <div><a id="linkimg" href="" target="blanck"><img id="result" src="" style="width:300px"></img></a></div>
   </div>
