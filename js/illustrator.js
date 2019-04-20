@@ -13,6 +13,8 @@ var inp_txt=null;
 var inp_txt_holder = document.getElementById("inp_txt");
 var use_loaded_inp_txt = document.getElementById("use_loaded_inp_txt");
 var loaded_pdb = false;
+var ignore_h = true;
+var current_style = 1;
 //get the different elements
 var options_elem = document.getElementById("options");
 var linkimg = document.getElementById("linkimg");
@@ -40,12 +42,55 @@ var currentBU="AU"
 var project_name="";
 var pdbId="";
 
+var ngl_available_color_schem = [
+  "atomindex",
+  "bfactor",
+  "chainid",
+  "chainindex",
+  "chainname",
+  "densityfit",
+  "electrostatic",
+  "element",
+  "entityindex",
+  "entitytype",
+  "geoquality",
+  "hydrophobicity",
+  "modelindex",
+  "moleculetype",
+  "occupancy",
+  "random",
+  "residueindex",
+  "resname",
+  "sstruc",
+  "uniform",
+  "value",
+  "volume"
+];
+
+var schemeId2 = NGL.ColormakerRegistry.addSelectionScheme([
+  ["rgb(127,178,255)", "_C"],
+  ["rgb(102,153,255)", "not _C"]// 0.40, 0.60, 1.00
+], "style2");
+//0.50, 0.70, 1.00
+var schemeId3 = NGL.ColormakerRegistry.addSelectionScheme([
+  ["rgb(127,178,255)", ".CA"]
+], "style2");
+
 inp_txt_holder.addEventListener("input", function() {
     console.log("input event fired");
     //update the ino-text
-    inp_txt_holder.innerHTML = inp_txt_holder.innerHTML.replace("<br>","\n")
-    inp_txt = inp_txt_holder.innerHTML.replace("<pre>","").replace("</pre>","").replace("<code contenteditable=\"true\">","").replace("</code>","");
+    //inp_txt_holder.innerHTML = inp_txt_holder.innerHTML.replace("<br>","\n")
+    inp_txt = inp_txt_holder.value;//innerHTML.replace("<pre>","").replace("</pre>","").replace("<code contenteditable=\"true\">","").replace("</code>","");
 }, false);
+
+ill_style.addEventListener("selected", function() {
+    console.log("input event selected");
+    //update the ino-text
+    current_style = ill_style.selected;
+    //inp_txt_holder.innerHTML = inp_txt_holder.innerHTML.replace("<br>","\n")
+    ChangeRep();//innerHTML.replace("<pre>","").replace("</pre>","").replace("<code contenteditable=\"true\">","").replace("</code>","");
+}, false);
+
 
 function Util_forceSelect(e) {
 	e.value = '';
@@ -201,10 +246,13 @@ window.addEventListener( "resize", function( event ){
 }, false );
 
 stage.setParameters({
-  backgroundColor: "white"
+  backgroundColor: 'rgba(255, 255, 255, 0)'
 })
 
+var test = document.getElementsByTagName('canvas')
+test[0].style.backgroundColor = 'rgba(255, 255, 255, 0)'
 
+inp_txt_holder.style.display = "none";
 
 function loadStructure(e){
   loaded_pdb = true;
@@ -214,11 +262,16 @@ function loadStructure(e){
   PDBID = structure_file.name.split(".")[0];//no extension
   structure_file_ext = structure_file.name.split('.').pop();
   nameinput.value = PDBID;
+  var colorStyle = getStyleNGL();
+  var colorsc = colorStyle.scheme;
+  var color = colorStyle.color;//"rgb(255,0,0)";
   stage.loadFile(structure_file).then(function (o) {
       o.addRepresentation("spacefill", {
         sele: "polymer",
         name: "polymer",
-        //assembly: "AU"
+        colorScheme: colorsc,
+        color:color,
+        assembly: "AU"
       });
       structure = o;
       o.autoView();
@@ -237,11 +290,16 @@ function changePDB(e){
   stage.removeAllComponents();
   PDBID = e.value;
   nameinput.value = PDBID;
+  var colorStyle = getStyleNGL();
+  var colorsc = colorStyle.scheme;
+  var color = colorStyle.color;//"rgb(255,0,0)";
   stage.loadFile('rcsb://'+PDBID).then(function (o) {
       o.addRepresentation("spacefill", {
         sele: "polymer",
         name: "polymer",
-        //assembly: "AU"
+        colorScheme: colorsc,
+        color:color,
+        assembly: "AU"
       });
       structure = o;
       o.autoView();
@@ -259,7 +317,9 @@ function changeBU(){
 function changeModel(){
   ChangeModel();
 }
-function changeSelection(){}
+function changeSelection(e){
+  ChangeRep();
+}
 
 function showOptions(e){
     var display = (e.checked)? "block" : "none";
@@ -317,9 +377,9 @@ function loadInp(e){
   reader.onload = (function(theFile) {
         return function(e) {
            inp_txt = e.target.result;
-           inp_txt_holder.innerHTML = "<pre><code contenteditable=\"true\">"+inp_txt+"</code></pre>";
+           inp_txt_holder.value = inp_txt;//innerHTML = "<pre><code contenteditable=\"true\">"+inp_txt+"</code></pre>";
            use_loaded_inp_txt.checked = true;
-        };
+           inp_txt_holder.style.display = "block";        };
       })(inp_file);
       // Read in the image file as a data URL.
   reader.readAsText(inp_file);
@@ -334,7 +394,7 @@ function getText(url){
 }
 
 function readWildCard(filename){
-    var url="https://mesoscope.scripps.edu/beta/data/"+filename;
+    var url="https://mesoscope.scripps.edu/beta/data/"+filename;//https://mesoscope.scripps.edu/beta
     var outer_text = getText(url);
     return outer_text;
 }
@@ -342,13 +402,15 @@ function readWildCard(filename){
 function prepareWildCard(style){
     //ignore hydrogen
     var astr=""
+    if (ignore_h){
+      astr+="HETATM-----HOH-- 0,9999, 0.5,0.5,0.5, 0.0\n\
+ATOM  -H-------- 0,9999, 1.0,1.0,1.0, 0.0\n\
+ATOM  H--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
+";
+    }
     if (style == 1)
     {
-        astr+="HETATM-----HOH-- 0,9999,.5,.5,.5,0.0\n\
-ATOM  -H-------- 0,9999,.5,.5,.5,0.0\n\
-ATOM  H--------- 0,9999,.5,.5,.5,0.0\n\
-";
-        astr+="ATOM  -C-------- 5,9999,.9,.0,.0,1.6\n";
+        astr+="ATOM  ---------- 5,9999,.9,.0,.0,1.6\n";
         astr+="END\n"
     }
     else if (style == 2)
@@ -359,11 +421,12 @@ ATOM  H--------- 0,9999,.5,.5,.5,0.0\n\
     else if (style==3)
     {         //open wildcard1
         astr+=readWildCard("wildcard2.inp");
+        chain_outlines_params_elem[2].value = 6000;
     }
     else if (style==4)
     {         //open wildcard1
         astr+=readWildCard("generic.inp");
-        chain_outlines_params_elem[2].value = 6000;
+        //chain_outlines_params_elem[2].value = 6000;
     }
     return astr
 }
@@ -381,7 +444,7 @@ function prepareInput(){
     //formData.append("shadow_params",  JSON.stringify(new NGL.Vector2(shadow_params1.value,shadow_params2.value)));
     var sao = ao.checked;
     var sao_params = JSON.stringify(new NGL.Quaternion(ao_params1.value,ao_params2.value,ao_params3.value,ao_params4.value));
-    var astyle = ill_style.value;
+    var astyle = current_style;
     params_ao = [0.0023,2.0,1.0,0.7]
     var astr="read\n"
     astr+=nameinput.value+".pdb\n"
@@ -418,19 +481,22 @@ function prepareInput(){
 function BuildInput(){
   //given the option prepare the txt for input
   //depends on the style
-  inp_txt="<pre><code contenteditable=\"true\">"
-  inp_txt+=prepareInput();
-  inp_txt+="</code></pre>\n"
+  //var astr ="<pre><code contenteditable=\"true\">"
+  var astr=prepareInput();
+  //astr+="</code></pre>\n"
+  inp_txt =  astr;
 }
 
 function previewInput(){
   BuildInput();
-  inp_txt_holder.innerHTML = inp_txt;
+  inp_txt_holder.style.display = "block";
+  inp_txt_holder.value = inp_txt;
 }
 
 function clearInpTxt(){
-  inp_txt_holder.innerHTML = "";
+  inp_txt_holder.value = "";
   use_loaded_inp_txt.checked = false;
+  inp_txt_holder.style.display = "none";
 }
 
 function BuildInputPDB(){
@@ -538,10 +604,50 @@ function setModelOptions(ngl_ob) {
   //if (modelStore.count === 0) model_elem.options[model_elem.options.length] = new Option(0, 0);
 }
 
+
+
+function getStyleNGL(){
+  var colorStyle = {"scheme":"uniform","color":"rgb(255,0,0)"};
+  if (current_style == 1){colorStyle = {"scheme":"uniform","color":"rgb(255,0,0)"};}
+  else if (current_style == 2){
+      /*var schemeId = NGL.ColormakerRegistry.addScheme(function (params) {
+        this.atomColor = function (atom) {
+          if (atom.serial < 1000) {
+            return 0x0000FF;  // blue
+          } else if (atom.serial > 2000) {
+            return 0xFF0000;  // red
+          } else {
+            return 0x00FF00;  // green
+          }
+        };
+      });*/
+      colorStyle = {"scheme":"null","color":schemeId2};
+  }
+  else if (current_style == 3){
+      colorStyle = {"scheme":"null","color":schemeId3};
+  }
+  else if (current_style == 4){colorStyle = {"scheme":"uniform","color":"rgb(255,255,255)"};}
+  return colorStyle;
+}
+
 function ChangeRep() {
+  var colorStyle = getStyleNGL();
+  var colorsc = colorStyle.scheme;
+  var color = colorStyle.color;//"rgb(255,0,0)";
   stage.getRepresentationsByName("polymer").dispose();
+  var params = {
+    name: "polymer",
+    sele: sele_elem.value,
+    assembly: assembly_elem.selectedOptions[0].value
+  }
+  if (colorsc!="null"){
+    params.colorScheme= colorsc;
+  }
+  params.color=color;
   stage.eachComponent(function(o) {
     o.addRepresentation("spacefill", {
+      colorScheme: colorsc,
+      color:color,
       name: "polymer",
       sele: sele_elem.value,
       assembly: assembly_elem.selectedOptions[0].value

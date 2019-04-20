@@ -5,7 +5,66 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+  .bg-image {
+  /* The image used */
+  background-image: url('images/wallpaper.jpg.png');
+
+  /* Add the blur effect */
+  filter: blur(8px);
+  -webkit-filter: blur(8px);
+
+  /* Full height */
+  height: 100%;
+  background-color: white;
+  background-blend-mode: luminosity;
+  /* Center and scale the image nicely */
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+/* Position text in the middle of the page/image */
+.bg-text {
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0, 0.4); /* Black w/opacity/see-through */
+  color: white;
+  font-weight: bold;
+  border: 3px solid #f1f1f1;
+  position: absolute;
+  top: 0%;
+  left: 0%;
+  //transform: translate(-50%, -50%);
+  z-index: 2;
+  width: 100%;
+  //padding: 20px;
+  //text-align: center;
+}
+.bg-form{
+  //background-color: rgb(0,0,0); /* Fallback color */
+  //background-color: rgba(0,0,0, 0.4); /* Black w/opacity/see-through */
+  //color: white;
+  font-weight: bold;
+  //border: 3px solid #f1f1f1;
+  position: absolute;
+  top: 33%;
+  left: 0%;
+  //transform: translate(-50%, -50%);
+  z-index: 2;
+  width: 100%;
+  //padding: 20px;
+  //text-align: center;
+}
 
     .loader {
       border: 16px solid #f3f3f3; /* Light grey */
@@ -39,58 +98,94 @@
       100% { transform: rotate(360deg); }
     }
     </style>
+    <script src="https://unpkg.com/@webcomponents/webcomponentsjs@latest/webcomponents-loader.js"></script>
+    <script src="https://unpkg.com/wired-elements@latest/dist/wired-elements.bundled.js"></script>
     <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js"></script>
-  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+    <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
   </HEAD>
-  <BODY bgcolor=white>
-  <div style="display:flex;flex-flow:column">
-  <div id="options" class="options">
-        <input type="file" id="pdb_file_input" accept=".pdb,.cif,.ent,.gz,.mol2" type="file" onclick="Util_forceSelect(this)" onchange="loadStructure(event)" /><br>
-        <input type="text" id="pdbinput" value="" style="" onchange="changePDB(this)"/> PDB id <br />
-        <input type="checkbox" id="advanced" name="advanced" onclick="showOptions(this)"> Advanced Options<br>
-        <input type="checkbox" id="ao" name="ao" checked> Ambient Occlusion / Soft Shadow<br>
-        <div id="ao_options" style="display:none">
-          <input type=number id="ao_params1" step=0.0001 value=0.0023 /> fractional shadowing around each atom : larger=darker (0.0-1.0, typically 0.0023)<br />
-          <input type=number id="ao_params2" step=0.1 value=2.0 /> angle of shadowing around each atom : larger=tighter region (0.0-1.0, typically 2.0) <br />
-          <input type=number id="ao_params3" step=0.1 value=1.0 /> shadowing only applied if z-difference greater than this value  (Angstroms, typically 1.0)<br />
-          <input type=number id="ao_params4" step=0.1 value=0.7 /> maximal shadowing amount : smaller=darker (0.0-1.0, typically 0.7) <br />
+  <BODY>
+  <div class="bg-image"></div>
+  <div class="bg-text"><pre>
+                   ******************************
+                        I L L U S T R A T E
+                     Biomolecular Illustration
+  		  ******************************
+  		  copyright 2019 David S Goodsell
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License
+
+   This work was supported by Damon Runyon-Walter Winchell Cancer Research Fund Fellowship DRG 972,
+   the US National Institutes of Health R01-GM120604 and the RCSB Protein Data Bank.
+
+  --------------------------------------------------------------------
+  <a href=https://www.ncbi.nlm.nih.gov/pubmed/1476997>DS Goodsell & AJ Olson (1992) "Molecular Illustration in Black and White" JMolGraphics 10, 235-240.</a>
+  --------------------------------------------------------------------
+  </pre>
+  </div>
+  <div class="bg-form" style="display:flex;flex-flow:row">
+    <div style="display:flex;flex-flow:column">
+      <div id="options" class="options">
+            <wired-input type="file" id="pdb_file_input" accept=".pdb,.cif,.ent,.gz,.mol2" type="file" onclick="Util_forceSelect(this)" onchange="loadStructure(event)" /></wired-input>
+            <wired-input type="text" id="pdbinput" value="" style="" onchange="changePDB(this)"/> PDB id </wired-input>
+            <wired-checkbox id="advanced" name="advanced" onclick="showOptions(this)"> Advanced Options</wired-checkbox>
+            <wired-checkbox id="ao" name="ao" checked> Ambient Occlusion / Soft Shadow</wired-checkbox>
+            <div id="ao_options" style="display:none">
+              <input type=number id="ao_params1" step=0.0001 value=0.0023 /> fractional shadowing around each atom : larger=darker (0.0-1.0, typically 0.0023)<br />
+              <input type=number id="ao_params2" step=0.1 value=2.0 /> angle of shadowing around each atom : larger=tighter region (0.0-1.0, typically 2.0) <br />
+              <input type=number id="ao_params3" step=0.1 value=1.0 /> shadowing only applied if z-difference greater than this value  (Angstroms, typically 1.0)<br />
+              <input type=number id="ao_params4" step=0.1 value=0.7 /> maximal shadowing amount : smaller=darker (0.0-1.0, typically 0.7) <br />
+            </div>
+            <input type=number id="scale" step=1 value=12 /> Pixel per Angstrom <br />
+            <wired-combo id="ill_style" selected=1>
+              <wired-item value=1>One Color</wired-item>
+              <wired-item value=2>Protein/DNA</wired-item>
+              <wired-item value=3>Coarse</wired-item>
+              <wired-item value=4>Generic</wired-item>
+            </wired-combo>
+      </div>
+      <div id="inp_options">
+            <wired-button onclick='previewInput()'>Preview Input Txt or</wired-button>
+            <input type="file" id="inp_file_input" accept=".inp,.txt" type="file" onclick="Util_forceSelect(this)" onchange="loadInp(event)" />
+            <wired-textarea id="inp_txt" placeholder="Enter text" rows="3"></wired-textarea>
+            <wired-checkbox id="use_loaded_inp_txt" name="use_loaded_inp_txt"> Use Input Script</wired-checkbox>
+            <wired-button onclick='clearInpTxt()'>Clear Input Script</wired-button>
+      </div>
+      <div class="options">
+      <input type="text" id="nameinput" value="" style="" onchange="changeName(this)"/> Project name<br>
+      <wired-button style="width: max-content;" onclick='resetView()'>Reset View</wired-button>
+      <wired-button style="width: max-content;" onclick='resetToDefault()'>Reset to Default</wired-button>
+      <wired-button style="width: max-content;" onclick='onClick()'>Illustrate</wired-button>
+      </div>
+      <div><div id="loader" class="loader"></div><a id="linkimg" href="" target="blanck"><img id="result" src="" style="width:300px"></img></a></div>
+    </div>
+    <div style="display:flex;flex-flow:column">
+      <div id="current_query"></div>
+      <div>
+        <label for="assa"> Assambly</label>
+        <select id = "ass_type" onchange="changeBU()">
+          <option value="AU" selected> AU </option>
+        </select>
+        <select id = "mod_type" onchange="changeModel(e)">
+          <option value="0" selected> 0 </option>
+        </select>
+        <div class="multiselect">
+        <div id="selection_ch_checkboxes">
         </div>
-        <input type=number id="scale" step=1 value=12 /> Pixel per Angstrom <br />
-        <input type=number id="ill_style" step=1 value=1 /> style (1,2,3) <br />
-  </div>
-  <div id="inp_options">
-        <button onclick='previewInput()'>Preview Input Txt or</button>
-        <input type="file" id="inp_file_input" accept=".inp,.txt" type="file" onclick="Util_forceSelect(this)" onchange="loadInp(event)" />
-        <div id="inp_txt">
-        </div><br>
-        <input type="checkbox" id="use_loaded_inp_txt" name="use_loaded_inp_txt"> Use
-        <button onclick='clearInpTxt()'>Clear</button>
-  </div>
-  </div>
-  <input type="text" id="nameinput" value="" style="" onchange="changeName(this)"/> Project name <br />
-  <button onclick='resetView()'>Reset View</button>
-  <button onclick='resetToDefault()'>Reset to Default</button>
-  <button onclick='onClick()'>Illustrate</button>
-  <div id="loader" class="loader"></div>
-  <div id="current_query"></div>
-  <div>
-    <label for="assa"> Assambly</label>
-    <select id = "ass_type" onchange="changeBU()">
-      <option value="AU" selected> AU </option>
-    </select>
-    <select id = "mod_type" onchange="changeModel(e)">
-      <option value="0" selected> 0 </option>
-    </select>
-    <div class="multiselect">
-    <div id="selection_ch_checkboxes">
+        </div>
+        <input type="text" id="sel_str" value="" style="" onchange="ChangeRep()"/> selection <br />
+      </div>
+      <div id="viewport" class="NGLpan" style="width:300px; height:300px;">
     </div>
     </div>
-    <input type="text" id="sel_str" value="" style="" onchange="changeSelection(e)"/> selection <br />
   </div>
-  <div style="display:flex;flex-flow:row">
-    <div id="viewport" class="NGLpan" style="width:300px; height:300px;"></div>
-    <div><a id="linkimg" href="" target="blanck"><img id="result" src="" style="width:300px"></img></a></div>
-  </div>
+
   <script src="js/illustrator.js"></script>
 </body>
 </html>

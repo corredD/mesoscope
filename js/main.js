@@ -1780,6 +1780,7 @@ function getcomphtml(anode) {
 			var n_mb = anode.data.pos[0].coords.length/3;
 			mb_options = d3.range(n_mb);
 			cradius = parseFloat(anode.data.radii[0].radii[0]);//node_selected.data.radii[0].radii[mbi];
+      if (!"types" in anode.data) anode.data.types=[{"types":[0]}];
 		}
 		else {
 			anode.data.pos = [{"coords":[0.0,0.0,0.0]}];

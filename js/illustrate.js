@@ -3,6 +3,7 @@ var subunit_outlines_params=[3.,10.];
 var chain_outlines_params=[3.,10.,6.];
 var ao_params=[0.0023,2.0,1.0,0.7];
 var ill_current_id=-1;
+var ignore_h = true;
 
 function getText(url){
     // read text from URL location
@@ -22,12 +23,14 @@ function prepareWildCard(style){
     //ignore hydrogen
     var astr=""
     //use the selection?
+    if (ignore_h){
+      astr+="HETATM-----HOH-- 0,9999, 0.5,0.5,0.5, 0.0\n\
+ATOM  -H-------- 0,9999, 1.0,1.0,1.0, 0.0\n\
+ATOM  H--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
+";
+    }
     if (style == 1)
     {
-        astr+="HETATM-----HOH-- 0,9999,.5,.5,.5,0.0\n\
-ATOM  -H-------- 0,9999,.5,.5,.5,0.0\n\
-ATOM  H--------- 0,9999,.5,.5,.5,0.0\n\
-";
         astr+="ATOM  ---------- 0,9999,1.0,1.0,1.0,1.6\n";//all atoms
         astr+="HETATM---------- 0,9999,0.8,0.8,0.8,1.6\n";//all atoms
         astr+="END\n"
