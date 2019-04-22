@@ -15,6 +15,7 @@ var use_loaded_inp_txt = document.getElementById("use_loaded_inp_txt");
 var loaded_pdb = false;
 var ignore_h = true;
 var current_style = 1;
+var changed_selection = false;
 //get the different elements
 var options_elem = document.getElementById("options");
 var linkimg = document.getElementById("linkimg");
@@ -86,7 +87,7 @@ inp_txt_holder.addEventListener("input", function() {
 ill_style.addEventListener("selected", function() {
     console.log("input event selected");
     //update the ino-text
-    current_style = ill_style.selected;
+    current_style = parseInt(ill_style.selected);
     //inp_txt_holder.innerHTML = inp_txt_holder.innerHTML.replace("<br>","\n")
     ChangeRep();//innerHTML.replace("<pre>","").replace("</pre>","").replace("<code contenteditable=\"true\">","").replace("</code>","");
 }, false);
@@ -276,6 +277,7 @@ function loadStructure(e){
       structure = o;
       o.autoView();
       ngl_center = stage.animationControls.controls.position.clone();
+      changed_selection = true;
   });
   current_query.innerHTML="<h4>Current PDBid :"+PDBID+"</h4>";
 }
@@ -307,6 +309,7 @@ function changePDB(e){
       UpdateassemblyList(structure);
       setModelOptions(structure);
       setChainSelectionOptions(structure);
+      changed_selection = true;
   });
   current_query.innerHTML="<h4>Current PDBid :"+PDBID+"</h4>";
 }
@@ -394,7 +397,7 @@ function getText(url){
 }
 
 function readWildCard(filename){
-    var url="https://mesoscope.scripps.edu/beta/data/"+filename;//https://mesoscope.scripps.edu/beta
+    var url="/data/"+filename;//https://mesoscope.scripps.edu/beta
     var outer_text = getText(url);
     return outer_text;
 }
@@ -654,6 +657,7 @@ function ChangeRep() {
     });
   });
   stage.autoView(10);
+  changed_selection = true;
 }
 
 function ChangeChainsSelection(an_elem) {
@@ -818,6 +822,9 @@ function onClick(){
     }
     formData.append("_id", _id);
     formData.append("name",nameinput.value);
+    formData.append("force_pdb",changed_selection);
+    if (changed_selection)
+      changed_selection = false;
     //}
     /*else {
       formData.append("key", "processpreview");//array of x,y,z

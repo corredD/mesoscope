@@ -1,21 +1,42 @@
 <!DOCTYPE html>
 <html lang="en-us">
 <HEAD>
-    <TITLE>Illustrator</TITLE>
+    <TITLE>Illustrate</TITLE>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <style>
+    @font-face {
+  font-family: 'Gloria Hallelujah';
+  font-style: normal;
+  font-weight: 400;
+  font-display: fallback;
+  src: local('Gloria Hallelujah'), local('GloriaHallelujah'), url(fonts/font.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
     body, html {
       height: 100%;
       margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
+      //font-family: Arial, Helvetica, sans-serif;
+      font-family: 'Gloria Hallelujah', sans-serif;
+      //font-size: 22px;
+      font-display: fallback;
     }
 
     * {
       box-sizing: border-box;
     }
+
+    //pre {
+    //   overflow-x: auto;
+  //     white-space: pre-wrap;
+  //     white-space: -moz-pre-wrap;
+  //     white-space: -pre-wrap;
+  //     white-space: -o-pre-wrap;
+  //     word-wrap: break-word;
+  //  }
 
   .bg-image {
   /* The image used */
@@ -24,7 +45,7 @@
   /* Add the blur effect */
   filter: blur(8px);
   -webkit-filter: blur(8px);
-
+  width: 100%;
   /* Full height */
   height: 100%;
   background-color: white;
@@ -129,45 +150,41 @@
   --------------------------------------------------------------------
   </pre>
   </div>
-  <div class="bg-form" style="display:flex;flex-flow:row">
+  <div class="bg-form" style="display:flex;flex-flow:row;flex-wrap:wrap">
     <div style="display:flex;flex-flow:column">
       <div id="options" class="options">
             <wired-input type="file" id="pdb_file_input" accept=".pdb,.cif,.ent,.gz,.mol2" type="file" onclick="Util_forceSelect(this)" onchange="loadStructure(event)" /></wired-input>
-            <wired-input type="text" id="pdbinput" value="" style="" onchange="changePDB(this)"/> PDB id </wired-input>
+            or use PDB id <wired-input type="text" id="pdbinput" value="" style="" onchange="changePDB(this)"/></wired-input>
             <wired-checkbox id="advanced" name="advanced" onclick="showOptions(this)"> Advanced Options</wired-checkbox>
             <wired-checkbox id="ao" name="ao" checked> Ambient Occlusion / Soft Shadow</wired-checkbox>
+            <input type=number id="scale" step=1 value=12 /> Pixel per Angstrom <br />
+            <wired-combo id="ill_style" selected="1" role="combobox" tabindex="0">
+              <wired-item value="1">One Color</wired-item>
+              <wired-item value="2">Protein/DNA</wired-item>
+              <wired-item value="3">Coarse</wired-item>
+              <wired-item value="4">Generic</wired-item>
+            </wired-combo>
             <div id="ao_options" style="display:none">
               <input type=number id="ao_params1" step=0.0001 value=0.0023 /> fractional shadowing around each atom : larger=darker (0.0-1.0, typically 0.0023)<br />
               <input type=number id="ao_params2" step=0.1 value=2.0 /> angle of shadowing around each atom : larger=tighter region (0.0-1.0, typically 2.0) <br />
               <input type=number id="ao_params3" step=0.1 value=1.0 /> shadowing only applied if z-difference greater than this value  (Angstroms, typically 1.0)<br />
               <input type=number id="ao_params4" step=0.1 value=0.7 /> maximal shadowing amount : smaller=darker (0.0-1.0, typically 0.7) <br />
             </div>
-            <input type=number id="scale" step=1 value=12 /> Pixel per Angstrom <br />
-            <wired-combo id="ill_style" selected=1>
-              <wired-item value=1>One Color</wired-item>
-              <wired-item value=2>Protein/DNA</wired-item>
-              <wired-item value=3>Coarse</wired-item>
-              <wired-item value=4>Generic</wired-item>
-            </wired-combo>
       </div>
       <div id="inp_options">
             <wired-button onclick='previewInput()'>Preview Input Txt or</wired-button>
-            <input type="file" id="inp_file_input" accept=".inp,.txt" type="file" onclick="Util_forceSelect(this)" onchange="loadInp(event)" />
+            <wired-input type="file" id="inp_file_input" accept=".inp,.txt" type="file" onclick="Util_forceSelect(this)" onchange="loadInp(event)"></wired-input>
             <wired-textarea id="inp_txt" placeholder="Enter text" rows="3"></wired-textarea>
             <wired-checkbox id="use_loaded_inp_txt" name="use_loaded_inp_txt"> Use Input Script</wired-checkbox>
             <wired-button onclick='clearInpTxt()'>Clear Input Script</wired-button>
+            <wired-button style="width: max-content;" onclick='resetToDefault()'>Reset to Default</wired-button>
       </div>
-      <div class="options">
-      <input type="text" id="nameinput" value="" style="" onchange="changeName(this)"/> Project name<br>
-      <wired-button style="width: max-content;" onclick='resetView()'>Reset View</wired-button>
-      <wired-button style="width: max-content;" onclick='resetToDefault()'>Reset to Default</wired-button>
-      <wired-button style="width: max-content;" onclick='onClick()'>Illustrate</wired-button>
-      </div>
-      <div><div id="loader" class="loader"></div><a id="linkimg" href="" target="blanck"><img id="result" src="" style="width:300px"></img></a></div>
+      Project name <wired-input type="text" id="nameinput" value="" style="" onchange="changeName(this)"></wired-input>
+      <div id="current_query"></div>
     </div>
     <div style="display:flex;flex-flow:column">
-      <div id="current_query"></div>
       <div>
+        <div id="viewport" class="NGLpan" style="width:300px; height:300px;"></div>
         <label for="assa"> Assambly</label>
         <select id = "ass_type" onchange="changeBU()">
           <option value="AU" selected> AU </option>
@@ -179,11 +196,12 @@
         <div id="selection_ch_checkboxes">
         </div>
         </div>
-        <input type="text" id="sel_str" value="" style="" onchange="ChangeRep()"/> selection <br />
+        Selection <wired-input type="text" id="sel_str" value="" style="" onchange="ChangeRep()"></wired-input><br>
+        <wired-button style="width: max-content;" onclick='resetView()'>Reset View</wired-button>
+        <wired-button style="width: max-content;" onclick='onClick()'>Illustrate</wired-button>
       </div>
-      <div id="viewport" class="NGLpan" style="width:300px; height:300px;">
     </div>
-    </div>
+    <div><div id="loader" class="loader"></div><a id="linkimg" href="" target="blanck"><img id="result" src="" style="width:300px"></img></a></div>
   </div>
 
   <script src="js/illustrator.js"></script>

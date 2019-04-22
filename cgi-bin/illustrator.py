@@ -358,6 +358,9 @@ def queryForm(form, verbose = 0):
     tmpPDBName = ""#wrkDir+"/"+queryTXT+".pdb"
     proj_name = "illustrated"
     #no more than 20character
+    force_pdb = False
+    if form.has_key("force_pdb"):
+        force_pdb = form["force_pdb"].value
     if form.has_key("name") :
         proj_name = form["name"].value
     if form.has_key("PDBID") :
@@ -369,7 +372,7 @@ def queryForm(form, verbose = 0):
     elif form.has_key("PDBtxt") :
         queryTXT = form["PDBtxt"].value
         tmpPDBName = wrkDir+"/"+proj_name+".pdb"
-        if not os.path.isfile(tmpPDBName):
+        if not os.path.isfile(tmpPDBName) or force_pdb:
             f = open(tmpPDBName, "w")
             f.write(queryTXT)
             f.close()
@@ -377,7 +380,7 @@ def queryForm(form, verbose = 0):
     elif form.has_key("PDBfile") :
         #queryTXT = form["PDBfile"].file.read()#readlines()
         tmpPDBName = wrkDir+"/"+proj_name+".pdb"
-        if not os.path.isfile(tmpPDBName):
+        if not os.path.isfile(tmpPDBName) or force_pdb:
             f = open(tmpPDBName, 'wb', 10000)
             # Read the file in chunks
             for chunk in fbuffer(form["PDBfile"].file):
@@ -404,7 +407,7 @@ def queryForm(form, verbose = 0):
     f.write(inpstring)
     f.close()
     cmd = "cd "+wrkDir+";"
-    if fetch and not os.path.isfile(tmpPDBName):
+    if fetch and (not os.path.isfile(tmpPDBName) or force_pdb):
         cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
         cmd+= "mv "+queryTXT+".pdb "+tmpPDBName+";"
     cmd+= curentD+"/illustrator < "+proj_name+".inp>/dev/null;"
