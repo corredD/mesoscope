@@ -68,11 +68,16 @@ var ngl_available_color_schem = [
   "volume"
 ];
 
+//wildcard1
 var schemeId2 = NGL.ColormakerRegistry.addSelectionScheme([
+  ["rgb(255,140,140)", "_O and nucleic"],//1.00, 0.55, 0.55
+  ["rgb(255,125,125)", "_P and nucleic"],//1.00, 0.49, 0.49
+  ["rgb(255,166,166)", "not _O and not _P and nucleic"],//1.00, 0.65, 0.65
   ["rgb(127,178,255)", "_C"],
   ["rgb(102,153,255)", "not _C"]// 0.40, 0.60, 1.00
 ], "style2");
 //0.50, 0.70, 1.00
+//wildcard2
 var schemeId3 = NGL.ColormakerRegistry.addSelectionScheme([
   ["rgb(127,178,255)", ".CA"]
 ], "style2");
@@ -81,7 +86,7 @@ inp_txt_holder.addEventListener("input", function() {
     console.log("input event fired");
     //update the ino-text
     //inp_txt_holder.innerHTML = inp_txt_holder.innerHTML.replace("<br>","\n")
-    inp_txt = inp_txt_holder.value;//innerHTML.replace("<pre>","").replace("</pre>","").replace("<code contenteditable=\"true\">","").replace("</code>","");
+    inp_txt = inp_txt_holder.value.replace("<pre>","").replace("</pre>","");//innerHTML.replace("<pre>","").replace("</pre>","").replace("<code contenteditable=\"true\">","").replace("</code>","");
 }, false);
 
 ill_style.addEventListener("selected", function() {
@@ -380,7 +385,7 @@ function loadInp(e){
   reader.onload = (function(theFile) {
         return function(e) {
            inp_txt = e.target.result;
-           inp_txt_holder.value = inp_txt;//innerHTML = "<pre><code contenteditable=\"true\">"+inp_txt+"</code></pre>";
+           inp_txt_holder.value = "<pre>"+inp_txt+"</pre>";//innerHTML = "<pre><code contenteditable=\"true\">"+inp_txt+"</code></pre>";
            use_loaded_inp_txt.checked = true;
            inp_txt_holder.style.display = "block";        };
       })(inp_file);
@@ -401,6 +406,174 @@ function readWildCard(filename){
     var outer_text = getText(url);
     return outer_text;
 }
+//ATOM  HCCC-RES-A 0,9999  0.00, 0.00, 0.00, 1.6
+//HETATMHCCC-RES-A 0,9999  0.00, 0.00, 0.00, 1.6
+//HETATM----------
+const IllAtomFormat   = 'ATOM  %4s-%3s-%1s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
+const IllHetatmFormat = 'HETATM%4s-%3s-%1s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
+
+function Ill_defaults(value, defaultValue) {
+    return value !== undefined ? value : defaultValue;
+}
+
+function getStructureWildCardStyle1(){
+  //proteins
+  //nucleic
+  _records=[];
+  var _residues_done={};
+  var nucleic_colors_templates = {"-P--":[1.00, 0.49, 0.49, 1.8],
+                "-O3'":[1.00, 0.55, 0.55, 1.5],
+                "-O5'":[1.00, 0.55, 0.55, 1.5],
+                "-OP-":[1.00, 0.55, 0.55, 1.5],
+                "---'":[1.00, 0.55, 0.55, 1.6],
+                "----":[1.00, 0.75, 0.79, 1.6]
+      };
+  var proteins_color_templates = {"-C--":[0.50, 0.70, 1.00, 1.6],
+                                  "----":[0.40, 0.60, 1.00, 1.5]};
+  structure.structure.eachEntity(ent=>{
+    var chlist = ent.chainIndexList;
+    var cnames = []
+    for (var chid in chlist){
+        var cname = structure.structure.chainStore.getChainname(chlist[chid]);
+        if (ent.entityType==1) {
+          if (testSelectedChain(cname))
+              cnames.push(cname);
+        }
+    }
+    console.log(ent);
+    console.log(ent.description);
+    console.log(ent.entityType);
+    console.log(cnames);
+    var is_protein = false;
+    ent.eachChain( chain => {
+      var chain_is_protein = false;
+      _residues_done={};
+      console.log(chain);
+      console.log(chain.chainname);
+      console.log( cnames.includes(chain.chainname ) );
+      if ( cnames.includes(chain.chainname ) ) {
+        chain.eachResidue(r =>{
+          var res = r.resname;
+          if (!(r.resname in _residues_done)){
+            _residues_done[res] = "done";
+            const formatString = r.hetero ? IllHetatmFormat : IllAtomFormat;
+            var atoms = "----";
+            var res = r.resname;
+            if (res.length==1) {
+              res = "--"+res;
+            }
+            var chains = chain.chainname;
+            var rangeS = 0;
+            var rangeE = 9999;
+            if (r.moleculeType == 4 || r.moleculeType == 5) {
+              for (var d in nucleic_colors_templates) {
+                var templ = nucleic_colors_templates[d];
+                _records.push(sprintf(formatString, defaults(d, '----'),
+                                    Ill_defaults(res, '---'),
+                                    Ill_defaults(chains, '--'),
+                                    Ill_defaults(rangeS, '0'),
+                                    Ill_defaults(rangeE, '9999'),
+                                    Ill_defaults(templ[0], 1.0),
+                                    Ill_defaults(templ[1], 0.0),
+                                    Ill_defaults(templ[2], 0.0),
+                                    Ill_defaults(templ[3], 1.5) ) );
+              }
+            }
+            else if (r.moleculeType == 3) {
+              chain_is_protein = true;
+            }
+          }
+        });
+        /*structure.structure.residueMap.list.forEach(function(r){
+            const formatString = r.hetero ? IllHetatmFormat : IllAtomFormat;
+            var atoms = "----";
+            var res = r.resname;
+            if (res.length==1) {
+              res = "--"+res;
+            }
+            var chains = chain.chainname;
+            var rangeS = 0;
+            var rangeE = 9999;
+            if (r.moleculeType == 4 || r.moleculeType == 5) {
+            //sprintf(IllAtomFormat1 ,"----","---","-",0,9999,1.00,0.5,0.5,1.5)
+              for (var d in nucleic_colors_templates) {
+                var templ = nucleic_colors_templates[d];
+                _records.push(sprintf(formatString, defaults(d, '----'),
+                                    Ill_defaults(res, '---'),
+                                    Ill_defaults(chains, '--'),
+                                    Ill_defaults(rangeS, '0'),
+                                    Ill_defaults(rangeE, '9999'),
+                                    Ill_defaults(templ[0], 1.0),
+                                    Ill_defaults(templ[1], 0.0),
+                                    Ill_defaults(templ[2], 0.0),
+                                    Ill_defaults(templ[3], 1.5) ) );
+              }
+          }
+            else if (r.moleculeType == 3) {
+              chain_is_protein = true;
+            }
+        });*/
+        if (chain_is_protein) {
+          for (var d in proteins_color_templates) {
+            var templ = proteins_color_templates[d];
+            _records.push(sprintf(IllAtomFormat, defaults(d, '----'),
+                                '---',
+                                Ill_defaults(chain.chainname, '--'),
+                                0,
+                                9999,
+                                Ill_defaults(templ[0], 1.0),
+                                Ill_defaults(templ[1], 0.0),
+                                Ill_defaults(templ[2], 0.0),
+                                Ill_defaults(templ[3], 1.5) ) );
+          }
+        }
+        //chain type?
+      }
+    });
+  });
+  /*structure.structure.residueMap.list.forEach(function(r){
+      //r.chemCompType
+      //r.hetero
+      //r.resname
+      //r.moleculeType
+      if (r.moleculeType == 4 || r.moleculeType == 5) {
+        const formatString = r.hetero ? IllHetatmFormat : IllAtomFormat;
+        //sprintf(IllAtomFormat1 ,"----","---","-",0,9999,1.00,0.5,0.5,1.5)
+        var atoms = "----";
+        var res = r.resname;
+        if (res.length==1) {
+          res = "--"+res;
+        }
+        var chains = "-";
+        var rangeS = 0;
+        var rangeE = 9999;
+        for (var d in nucleic_colors_templates) {
+          var templ = nucleic_colors_templates[d];
+          _records.push(sprintf(formatString, defaults(d, '----'),
+                              defaults(res, '---'),
+                              defaults(chains, '--'),
+                              defaults(rangeS, '0'),
+                              defaults(rangeE, '9999'),
+                              defaults(templ[0], 1.0),
+                              defaults(templ[1], 0.0),
+                              defaults(templ[2], 0.0),
+                              defaults(templ[3], 1.5) ) );
+        }
+      }
+  });
+  astr+="HETATMMG-------- 0,9999  1.00, 0.60, 1.00, 1.6\n\
+HETATMCA-------- 0,9999  1.00, 0.60, 1.00, 1.6\n\
+HETATMFE-------- 0,9999  1.00, 0.60, 1.00, 1.6\n\
+HETATMMN-------- 0,9999  1.00, 0.60, 1.00, 1.6\n\
+HETATM-C-------- 0,9999  0.60, 0.95, 0.60, 1.6\n\
+HETATM---------- 0,9999  0.50, 0.95, 0.50, 1.5\n\
+"
+
+  */
+  astr = _records.join('\n')+"\n";
+  console.log(_residues_done);
+  return astr;
+}
 
 function prepareWildCard(style){
     //ignore hydrogen
@@ -414,12 +587,14 @@ ATOM  H--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
     if (style == 1)
     {
         astr+="ATOM  ---------- 5,9999,.9,.0,.0,1.6\n";
-        astr+="END\n"
     }
     else if (style == 2)
     {
         //#open wildcard1
-        astr+=readWildCard("wildcard1.inp");
+        //wildcard 1 is
+        //protein blue range
+        //nucleic orange range
+        astr+=getStructureWildCardStyle1();//readWildCard("wildcard1.inp");
     }
     else if (style==3)
     {         //open wildcard1
@@ -431,6 +606,7 @@ ATOM  H--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
         astr+=readWildCard("generic.inp");
         //chain_outlines_params_elem[2].value = 6000;
     }
+    astr+="END\n"
     return astr
 }
 
@@ -493,7 +669,7 @@ function BuildInput(){
 function previewInput(){
   BuildInput();
   inp_txt_holder.style.display = "block";
-  inp_txt_holder.value = inp_txt;
+  inp_txt_holder.value = "<pre>"+inp_txt+"</pre>";
 }
 
 function clearInpTxt(){
@@ -550,7 +726,7 @@ function GetSelection(sel_str, model) {
 }
 
 function testSelectedChain(chainName){
-    var elem = sele_elem.value.split(":")
+    var elem = sele_elem.value.split("(polymer or rna or dna)")[1].split(":")
     var selected_chains = [];
     elem.forEach(
       function(el){
@@ -613,18 +789,9 @@ function getStyleNGL(){
   var colorStyle = {"scheme":"uniform","color":"rgb(255,0,0)"};
   if (current_style == 1){colorStyle = {"scheme":"uniform","color":"rgb(255,0,0)"};}
   else if (current_style == 2){
-      /*var schemeId = NGL.ColormakerRegistry.addScheme(function (params) {
-        this.atomColor = function (atom) {
-          if (atom.serial < 1000) {
-            return 0x0000FF;  // blue
-          } else if (atom.serial > 2000) {
-            return 0xFF0000;  // red
-          } else {
-            return 0x00FF00;  // green
-          }
-        };
-      });*/
       colorStyle = {"scheme":"null","color":schemeId2};
+      //update selection
+      sele_elem.value = "(polymer or rna or dna) and ("+sele_elem.value+")"
   }
   else if (current_style == 3){
       colorStyle = {"scheme":"null","color":schemeId3};
@@ -748,8 +915,9 @@ function writeAtoms() {
                 // Alignment of one-letter atom name such as C starts at column 14,
                 // while two-letter atom name such as FE starts at column 13.
                 let atomname = a.atomname;
-                if (atomname.length === 1)
-                    atomname = ' ' + atomname;
+                atomname = ' ' + atomname;
+                //if (atomname.length === 1)
+                //    atomname = ' ' + atomname;
                 _records.push(sprintf(formatString, serial, atomname, a.resname,
                                     defaults(a.chainname, ' '), a.resno, new_pos.x, new_pos.y, new_pos.z,
                                     defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
@@ -771,8 +939,9 @@ function writeAtoms() {
             // Alignment of one-letter atom name such as C starts at column 14,
             // while two-letter atom name such as FE starts at column 13.
             let atomname = a.atomname;
-            if (atomname.length === 1)
-                atomname = ' ' + atomname;
+            atomname = ' ' + atomname;
+            //if (atomname.length === 1)
+            //    atomname = ' ' + atomname;
             _records.push(sprintf(formatString, serial, atomname, a.resname, defaults(a.chainname, ' '), a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
             defaults(a.element, '')));
             ia += 1;

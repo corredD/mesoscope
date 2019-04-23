@@ -33,7 +33,6 @@ ATOM  H--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
     {
         astr+="ATOM  ---------- 0,9999,1.0,1.0,1.0,1.6\n";//all atoms
         astr+="HETATM---------- 0,9999,0.8,0.8,0.8,1.6\n";//all atoms
-        astr+="END\n"
     }
     else if (style == 2)
     {
@@ -49,6 +48,7 @@ ATOM  H--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
         astr+=readWildCard("generic.inp");
         chain_outlines_params[2] = 6000;
     }
+    astr+="END\n"
     return astr
 }
 

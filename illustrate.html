@@ -18,6 +18,7 @@
 
     body, html {
       height: 100%;
+      width: 100%;
       margin: 0;
       //font-family: Arial, Helvetica, sans-serif;
       font-family: 'Gloria Hallelujah', sans-serif;
@@ -29,14 +30,14 @@
       box-sizing: border-box;
     }
 
-    //pre {
-    //   overflow-x: auto;
-  //     white-space: pre-wrap;
-  //     white-space: -moz-pre-wrap;
-  //     white-space: -pre-wrap;
-  //     white-space: -o-pre-wrap;
-  //     word-wrap: break-word;
-  //  }
+    pre {
+       overflow-x: auto;
+       white-space: pre-wrap;
+       white-space: -moz-pre-wrap;
+       white-space: -pre-wrap;
+       white-space: -o-pre-wrap;
+       word-wrap: break-word;
+  }
 
   .bg-image {
   /* The image used */
@@ -62,11 +63,11 @@
   color: white;
   font-weight: bold;
   border: 3px solid #f1f1f1;
-  position: absolute;
-  top: 0%;
-  left: 0%;
+  //position: absolute;
+  //top: 0%;
+  //left: 0%;
   //transform: translate(-50%, -50%);
-  z-index: 2;
+  //z-index: 2;
   width: 100%;
   //padding: 20px;
   //text-align: center;
@@ -77,14 +78,27 @@
   //color: white;
   font-weight: bold;
   //border: 3px solid #f1f1f1;
-  position: absolute;
-  top: 33%;
-  left: 0%;
+  //position: absolute;
+//  top: 33%;
+  //left: 0%;
   //transform: translate(-50%, -50%);
-  z-index: 2;
+  //z-index: 2;
   width: 100%;
   //padding: 20px;
   //text-align: center;
+}
+
+.content {
+  position: absolute;
+  top: 0%;
+  left: 0%;
+  z-index: 9999;
+  margin-left: 0px;
+  margin-right: 0px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
     .loader {
@@ -126,6 +140,7 @@
   </HEAD>
   <BODY>
   <div class="bg-image"></div>
+  <div class="content">
   <div class="bg-text"><pre>
                    ******************************
                         I L L U S T R A T E
@@ -150,7 +165,7 @@
   --------------------------------------------------------------------
   </pre>
   </div>
-  <div class="bg-form" style="display:flex;flex-flow:row;flex-wrap:wrap">
+  <div style="display:flex;flex-flow:row;flex-wrap:wrap">
     <div style="display:flex;flex-flow:column">
       <div id="options" class="options">
             <wired-input type="file" id="pdb_file_input" accept=".pdb,.cif,.ent,.gz,.mol2" type="file" onclick="Util_forceSelect(this)" onchange="loadStructure(event)" /></wired-input>
@@ -203,7 +218,7 @@
     </div>
     <div><div id="loader" class="loader"></div><a id="linkimg" href="" target="blanck"><img id="result" src="" style="width:300px"></img></a></div>
   </div>
-
+</div>
   <script src="js/illustrator.js"></script>
 </body>
 </html>
