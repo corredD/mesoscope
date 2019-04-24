@@ -39,13 +39,17 @@
        word-wrap: break-word;
   }
 
+  wired-textarea{
+    font-family: 'Courier', sans-serif;
+    font-size: 12px;
+  }
   .bg-image {
   /* The image used */
   background-image: url('images/wallpaper.jpg.png');
 
   /* Add the blur effect */
-  filter: blur(8px);
-  -webkit-filter: blur(8px);
+  filter: blur(10px);
+  -webkit-filter: blur(10px);
   width: 100%;
   /* Full height */
   height: 100%;
@@ -59,7 +63,7 @@
 /* Position text in the middle of the page/image */
 .bg-text {
   background-color: rgb(0,0,0); /* Fallback color */
-  background-color: rgba(0,0,0, 0.4); /* Black w/opacity/see-through */
+  background-color: rgba(0,0,0, 0.5); /* Black w/opacity/see-through */
   color: white;
   font-weight: bold;
   border: 3px solid #f1f1f1;
@@ -74,7 +78,7 @@
 }
 .bg-form{
   //background-color: rgb(0,0,0); /* Fallback color */
-  //background-color: rgba(0,0,0, 0.4); /* Black w/opacity/see-through */
+  //background-color: rgba(0,0,0, 0.5); /* Black w/opacity/see-through */
   //color: white;
   font-weight: bold;
   //border: 3px solid #f1f1f1;
@@ -99,6 +103,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  background-color: rgba(0,0,0, 0.5);
 }
 
     .loader {
@@ -165,19 +170,20 @@
   --------------------------------------------------------------------
   </pre>
   </div>
-  <div style="display:flex;flex-flow:row;flex-wrap:wrap">
+  <div style="display:flex;flex-flow:row;flex-wrap:wrap;background-color: rgba(0,0,0, 0.5);color: white;">
     <div style="display:flex;flex-flow:column">
       <div id="options" class="options">
-            <wired-input type="file" id="pdb_file_input" accept=".pdb,.cif,.ent,.gz,.mol2" type="file" onclick="Util_forceSelect(this)" onchange="loadStructure(event)" /></wired-input>
-            or use PDB id <wired-input type="text" id="pdbinput" value="" style="" onchange="changePDB(this)"/></wired-input>
+            <wired-input type="file" id="pdb_file_input" style="color:black" accept=".pdb,.cif,.ent,.gz,.mol2" type="file" onclick="Util_forceSelect(this)" onchange="loadStructure(event)" /></wired-input>
+            or use PDB id <wired-input type="text" id="pdbinput" value="" style="color:black" onchange="changePDB(this)"/></wired-input>
             <wired-checkbox id="advanced" name="advanced" onclick="showOptions(this)"> Advanced Options</wired-checkbox>
             <wired-checkbox id="ao" name="ao" checked> Ambient Occlusion / Soft Shadow</wired-checkbox>
             <input type=number id="scale" step=1 value=12 /> Pixel per Angstrom <br />
+            <label for="ill_style"> Style </label>
             <wired-combo id="ill_style" selected="1" role="combobox" tabindex="0">
-              <wired-item value="1">One Color</wired-item>
-              <wired-item value="2">Protein/DNA</wired-item>
-              <wired-item value="3">Coarse</wired-item>
-              <wired-item value="4">Generic</wired-item>
+              <wired-item style="color:black" value="1">One Color</wired-item>
+              <wired-item style="color:black" value="2">Protein/DNA</wired-item>
+              <wired-item style="color:black" value="3">Coarse</wired-item>
+              <wired-item style="color:black" value="4">Generic</wired-item>
             </wired-combo>
             <div id="ao_options" style="display:none">
               <input type=number id="ao_params1" step=0.0001 value=0.0023 /> fractional shadowing around each atom : larger=darker (0.0-1.0, typically 0.0023)<br />
@@ -188,30 +194,32 @@
       </div>
       <div id="inp_options">
             <wired-button onclick='previewInput()'>Preview Input Txt or</wired-button>
-            <wired-input type="file" id="inp_file_input" accept=".inp,.txt" type="file" onclick="Util_forceSelect(this)" onchange="loadInp(event)"></wired-input>
+            <wired-input style="color:black" type="file" id="inp_file_input" accept=".inp,.txt" type="file" onclick="Util_forceSelect(this)" onchange="loadInp(event)"></wired-input>
             <wired-textarea id="inp_txt" placeholder="Enter text" rows="3"></wired-textarea>
             <wired-checkbox id="use_loaded_inp_txt" name="use_loaded_inp_txt"> Use Input Script</wired-checkbox>
             <wired-button onclick='clearInpTxt()'>Clear Input Script</wired-button>
             <wired-button style="width: max-content;" onclick='resetToDefault()'>Reset to Default</wired-button>
       </div>
-      Project name <wired-input type="text" id="nameinput" value="" style="" onchange="changeName(this)"></wired-input>
+      Project name <wired-input type="text" style="color:black" id="nameinput" value="" style="" onchange="changeName(this)"></wired-input>
       <div id="current_query"></div>
     </div>
     <div style="display:flex;flex-flow:column">
       <div>
         <div id="viewport" class="NGLpan" style="width:300px; height:300px;"></div>
-        <label for="assa"> Assambly</label>
-        <select id = "ass_type" onchange="changeBU()">
-          <option value="AU" selected> AU </option>
-        </select>
-        <select id = "mod_type" onchange="changeModel(e)">
-          <option value="0" selected> 0 </option>
-        </select>
+        <label for="ass_type"> Assambly</label>
+        <wired-combo id="ass_type" onchange="changeBU()" selected="AU" role="combobox" tabindex="0">
+          <wired-item style="color:black" value="AU">AU</wired-item>
+        </wired-combo>
+        <br>
+        <label for="mod_type"> Modelid </label>
+        <wired-combo id="mod_type" onchange="changeModel()" selected="0" role="combobox" tabindex="0">
+          <wired-item style="color:black" value="0">0</wired-item>
+        </wired-combo>
         <div class="multiselect">
-        <div id="selection_ch_checkboxes">
+        <div id="selection_ch_checkboxes" style="display:flex;flex-flow:row;flex-wrap:wrap;">
         </div>
         </div>
-        Selection <wired-input type="text" id="sel_str" value="" style="" onchange="ChangeRep()"></wired-input><br>
+        Selection <wired-input style="color:black" type="text" id="sel_str" value="" style="" onchange="ChangeRep()"></wired-input><br>
         <wired-button style="width: max-content;" onclick='resetView()'>Reset View</wired-button>
         <wired-button style="width: max-content;" onclick='onClick()'>Illustrate</wired-button>
       </div>

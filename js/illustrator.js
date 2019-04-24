@@ -86,7 +86,15 @@ inp_txt_holder.addEventListener("input", function() {
     console.log("input event fired");
     //update the ino-text
     //inp_txt_holder.innerHTML = inp_txt_holder.innerHTML.replace("<br>","\n")
-    inp_txt = inp_txt_holder.value.replace("<pre>","").replace("</pre>","");//innerHTML.replace("<pre>","").replace("</pre>","").replace("<code contenteditable=\"true\">","").replace("</code>","");
+    inp_txt = inp_txt_holder.value;//.replace("<pre>","").replace("</pre>","");//innerHTML.replace("<pre>","").replace("</pre>","").replace("<code contenteditable=\"true\">","").replace("</code>","");
+}, false);
+
+assembly_elem.addEventListener("selected", function() {
+    ChangeRep();//innerHTML.replace("<pre>","").replace("</pre>","").replace("<code contenteditable=\"true\">","").replace("</code>","");
+}, false);
+
+model_elem.addEventListener("selected", function() {
+    ChangeModel();//innerHTML.replace("<pre>","").replace("</pre>","").replace("<code contenteditable=\"true\">","").replace("</code>","");
 }, false);
 
 ill_style.addEventListener("selected", function() {
@@ -311,8 +319,8 @@ function changePDB(e){
       structure = o;
       o.autoView();
       ngl_center = stage.animationControls.controls.position.clone();
-      UpdateassemblyList(structure);
-      setModelOptions(structure);
+      UpdateassemblyCombo(structure);// UpdateassemblyList(structure);
+      setModelOptionsCombo(structure);//setModelOptions(structure);
       setChainSelectionOptions(structure);
       changed_selection = true;
   });
@@ -385,7 +393,7 @@ function loadInp(e){
   reader.onload = (function(theFile) {
         return function(e) {
            inp_txt = e.target.result;
-           inp_txt_holder.value = "<pre>"+inp_txt+"</pre>";//innerHTML = "<pre><code contenteditable=\"true\">"+inp_txt+"</code></pre>";
+           inp_txt_holder.value =  inp_txt ;//innerHTML = "<pre><code contenteditable=\"true\">"+inp_txt+"</code></pre>";
            use_loaded_inp_txt.checked = true;
            inp_txt_holder.style.display = "block";        };
       })(inp_file);
@@ -669,7 +677,7 @@ function BuildInput(){
 function previewInput(){
   BuildInput();
   inp_txt_holder.style.display = "block";
-  inp_txt_holder.value = "<pre>"+inp_txt+"</pre>";
+  inp_txt_holder.value =  inp_txt ;
 }
 
 function clearInpTxt(){
@@ -694,6 +702,16 @@ function UpdateassemblyList(ngl_ob) {
     console.log(k);
     assembly_elem.options[assembly_elem.options.length] = new Option(k, k);
   });
+}
+
+function UpdateassemblyCombo(ngl_ob) {
+  assembly_elem.innerHTML = '';// <wired-item style=\"color:black\" value=\"AU\">AU</wired-item>\n\
+  assembly_elem.innerHTML += '<wired-item style="color:black" value="AU">AU</wired-item>\n'
+  Object.keys(ngl_ob.structure.biomolDict).forEach(function(k) {
+    console.log(k);
+    assembly_elem.innerHTML += '<wired-item style="color:black" value="'+k+'">'+k+'</wired-item>\n'
+  });
+  assembly_elem.selected = "AU";
 }
 
 function GetSelection(sel_str, model) {
@@ -726,7 +744,10 @@ function GetSelection(sel_str, model) {
 }
 
 function testSelectedChain(chainName){
-    var elem = sele_elem.value.split("(polymer or rna or dna)")[1].split(":")
+    var tsplit = sele_elem.value.split("(polymer or rna or dna)");
+    var elem=[];
+    if (tsplit.length < 2) elem = tsplit[0].split(":");
+    else elem = tsplit[1].split(":");
     var selected_chains = [];
     elem.forEach(
       function(el){
@@ -743,7 +764,8 @@ function addOptionsForMultiSelect(select_id,options){
   for (var i = 0;i<options.length;i++) {
     var opt = options[i];//label
     var ch = (testSelectedChain(opt))?" checked ":"";
-    check_elem.innerHTML += '<label for="'+opt+'"><input type="checkbox" id="'+opt+'" onclick="ChangeChainsSelection(this)"'+ch+'/>'+opt+'</label>';
+    //check_elem.innerHTML += '<label for="'+opt+'"><input type="checkbox" id="'+opt+'" onclick="ChangeChainsSelection(this)"'+ch+'/>'+opt+'</label>';
+    check_elem.innerHTML += '<wired-checkbox id="'+opt+'" name="'+opt+'"onclick="ChangeChainsSelection(this)"'+ch+'>'+opt+'</wired-checkbox>';
     //if (i > 20) break;//safety ?
   }
 }
@@ -757,7 +779,7 @@ function setChainSelectionOptions(ngl_ob)
 {
   //update the selection div element
    const modelStore = structure.structure.modelStore;
-   var model = model_elem.value;
+   var model = model_elem.selected;//.value;
    var aselection = (modelStore.count > 1) ? GetSelection("", model):"polymer";
    var chnames = []
    var nch = structure.structure.getChainnameCount();
@@ -783,7 +805,18 @@ function setModelOptions(ngl_ob) {
   //if (modelStore.count === 0) model_elem.options[model_elem.options.length] = new Option(0, 0);
 }
 
-
+function setModelOptionsCombo(ngl_ob) {
+  model_elem.innerHTML = '';
+  const modelStore = ngl_ob.structure.modelStore;
+  var model = "0";
+  if (modelStore.count > 1) {
+    model_elem.innerHTML+= '<wired-item style="color:black" value="All">All</wired-item>\n'
+  }
+  for (let i = 0; i < modelStore.count; ++i) {
+    //addOption(options, i, 'Model ' + (i + 1))
+    model_elem.innerHTML+= '<wired-item style="color:black" value="'+i+'">'+i+'</wired-item>\n'
+  }
+}
 
 function getStyleNGL(){
   var colorStyle = {"scheme":"uniform","color":"rgb(255,0,0)"};
@@ -808,7 +841,7 @@ function ChangeRep() {
   var params = {
     name: "polymer",
     sele: sele_elem.value,
-    assembly: assembly_elem.selectedOptions[0].value
+    assembly: assembly_elem.selected//Options[0].value
   }
   if (colorsc!="null"){
     params.colorScheme= colorsc;
@@ -820,7 +853,7 @@ function ChangeRep() {
       color:color,
       name: "polymer",
       sele: sele_elem.value,
-      assembly: assembly_elem.selectedOptions[0].value
+      assembly: assembly_elem.selected//Options[0].value
     });
   });
   stage.autoView(10);
@@ -832,7 +865,7 @@ function ChangeChainsSelection(an_elem) {
   //check the model
   var checkboxes = document.getElementById("selection_ch_checkboxes");
   var selection = "";
-  var allcheck = checkboxes.getElementsByTagName("input");
+  var allcheck = checkboxes.getElementsByTagName("wired-checkbox");//input");
   var all = allcheck.length;
   var countchecked = 0;
   for (var i=0;i<all;i++)
@@ -866,9 +899,9 @@ function ChangeChainsSelection(an_elem) {
 function ChangeModel() {
   var curr_sel = sele_elem.value.split("/")[0];
   //split on /
-  current_model = model_elem.value;
-  console.log(curr_sel + "/" + model_elem.value);
-  sele_elem.value = curr_sel + "/" + model_elem.value;
+  current_model = model_elem.selected;//.value;
+  console.log(curr_sel + "/" + current_model);
+  sele_elem.value = curr_sel + "/" +current_model;
 
   setChainSelectionOptions();
   ChangeRep();
@@ -891,7 +924,7 @@ function writeAtoms() {
       if (asele !== sele_elem.value) asele = sele_elem.value;
     }
     var bu = false;
-    var au=assembly_elem.selectedOptions[0].value;
+    var au=assembly_elem.selected;//Options[0].value;
     if (au !== "AU" && o.object.biomolDict[au]) bu = true;
     if (asele === "" && bu) {
       //need to apply the matrix to the selection inside the BU selection ?
