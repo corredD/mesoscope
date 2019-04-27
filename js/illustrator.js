@@ -36,7 +36,12 @@ var assembly_elem = document.getElementById("ass_type");
 var model_number_elem = document.getElementById("model_number");
 var sele_elem = document.getElementById("sel_str");
 var model_elem = document.getElementById("mod_type");
+var inp_options =document.getElementById("inp_options");
+var ignore_H= document.getElementById("hb");
 
+window.addEventListener('load', function() {
+  //inp_options.style.display = "none";
+})
 var current_selection=""
 var current_model=0
 var currentBU="AU"
@@ -68,6 +73,12 @@ var ngl_available_color_schem = [
   "volume"
 ];
 
+function toRGB(color){
+  return "rgb("+Math.ceil(color[0]*255).toString()+","+
+                Math.ceil(color[1]*255).toString()+","+
+                Math.ceil(color[2]*255).toString()+")";
+}
+
 //wildcard1
 var schemeId2 = NGL.ColormakerRegistry.addSelectionScheme([
   ["rgb(255,140,140)", "_O and nucleic"],//1.00, 0.55, 0.55
@@ -81,6 +92,31 @@ var schemeId2 = NGL.ColormakerRegistry.addSelectionScheme([
 var schemeId3 = NGL.ColormakerRegistry.addSelectionScheme([
   ["rgb(127,178,255)", ".CA"]
 ], "style2");
+
+var schemeId5 = NGL.ColormakerRegistry.addSelectionScheme([
+  [toRGB([1.00, 0.20, 0.20]), "(.O5' or .O3' or .OP) and nucleic"],//1.00, 0.55, 0.55
+  [toRGB([1.00, 0.90, 0.50]), "_P and nucleic"],//1.00, 0.49, 0.49
+  [toRGB([0.80, 0.90, 1.00]), "_N and nucleic"],//1.00, 0.65, 0.65
+  [toRGB([1.00, 0.80, 0.80]), "_O and not (.O5' or .O3' or .OP) and nucleic"],
+  [toRGB([1.00, 1.00, 1.00]), "_C"],
+  [toRGB([1.00, 0.20, 0.20]), "((.OD and ASP) or (.OE and GLU)) and protein"],
+  [toRGB([0.10, 0.70, 1.00]), "((.NZ and LYS) or ((.NH or .NE) and ARG)) or ((.ND or .NE) and HIS)) and protein"],
+  [toRGB([1.00, 0.80, 0.80]), "_O and protein"],
+  [toRGB([0.80, 0.90, 1.00]), ".N and protein"],
+  [toRGB([1.00, 0.80, 0.80]), "_O and protein"],
+  [toRGB([0.60, 0.90, 0.60]), "_C and (ligand and hetero)"],
+  [toRGB([0.40, 0.90, 0.40]), "not _C and (ligand and hetero)"],
+], "style5");
+
+var schemeId6 = NGL.ColormakerRegistry.addSelectionScheme([
+  [toRGB([1.00, 1.00, 1.00]), "_H"],//1.00, 0.55, 0.55
+  [toRGB([0.50, 0.50, 0.50]), "_C"],//1.00, 0.49, 0.49
+  [toRGB([0.10, 0.70, 1.00]), "_N"],//1.00, 0.65, 0.65
+  [toRGB([1.00, 0.20, 0.20]), "_O"],
+  [toRGB([1.00, 0.90, 0.50]), "_S or _SE or _P"],
+  [toRGB([0.40, 0.90, 0.40]), "(_F or _BR or _CL or _I) and (ligand and hetero)"],
+  [toRGB([1.00, 0.40, 1.00]), "(_MG or _CA or _NA or _K or _FE or _CU or _ZN ) and (ligand and hetero)"]
+], "style6");
 
 inp_txt_holder.addEventListener("input", function() {
     console.log("input event fired");
@@ -344,6 +380,7 @@ function showOptions(e){
     atomic_outlines_paramsDiv.style.display = display;
     subunit_outlines_paramsDiv.style.display = display;
     chain_outlines_paramsDiv.style.display = display;
+    inp_options.style.display = display;
 }
 
 function updateImage()
@@ -410,7 +447,7 @@ function getText(url){
 }
 
 function readWildCard(filename){
-    var url="https://mesoscope.scripps.edu/beta/data/"+filename;//https://mesoscope.scripps.edu/beta
+    var url="/data/"+filename;//https://mesoscope.scripps.edu/beta
     var outer_text = getText(url);
     return outer_text;
 }
@@ -421,7 +458,131 @@ const IllAtomFormat   = 'ATOM  %4s-%3s-%1s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
 const IllHetatmFormat = 'HETATM%4s-%3s-%1s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
 
 function Ill_defaults(value, defaultValue) {
-    return value !== undefined ? value : defaultValue;
+    return (value !== undefined && value !== "")? value : defaultValue;
+}
+
+function OnCard(atom,residue,chain,color){
+  var card ={};
+  card.atom = atom;
+  card.residue = residue;
+  card.chain = chain;
+  card.color = color;
+  return card;
+}
+
+function getStructureWildCardStyle5(){
+  _records=[];
+  var nucleic_colors_templates = [
+              OnCard("-P--","","",[1.00, 0.90, 0.50, 1.8]),
+              OnCard("-O3'","","",[1.00, 0.20, 0.20, 1.5]),
+              OnCard("-O5'","","",[1.00, 0.20, 0.20, 1.5]),
+              OnCard("-OP-","","",[1.00, 0.20, 0.20, 1.5]),
+              OnCard("-N--","","",[0.80, 0.90, 1.00, 1.5]),
+              OnCard("-O--","","",[1.00, 0.80, 0.80, 1.5]),
+              OnCard("-C--","","",[1.00, 1.00, 1.00, 1.6])];
+  var hetatm_n_color_templates=[]
+  var proteins_color_templates = [
+              OnCard("-OD-","ASP","",[1.00, 0.20, 0.20, 1.6]),
+              OnCard("-OE'","GLU","",[1.00, 0.20, 0.20, 1.6]),
+              OnCard("-NZ'","LYS","",[0.10, 0.70, 1.00, 1.6]),
+              OnCard("-NH-","ARG","",[0.10, 0.70, 1.00, 1.6]),
+              OnCard("-NE-","ARG","",[0.10, 0.70, 1.00, 1.6]),
+              OnCard("-ND-","HIS","",[0.10, 0.70, 1.00, 1.6]),
+              OnCard("-NE-","HIS","",[0.10, 0.70, 1.00, 1.6]),
+              OnCard("-N--","","",[0.80, 0.90, 1.00, 1.5]),
+              OnCard("-O--","","",[1.00, 0.80, 0.80, 1.5]),
+              OnCard("-C--","","",[1.00, 1.00, 1.00, 1.6]),
+              OnCard("-S--","","",[1.00, 0.90, 0.50, 1.8])
+            ];
+  var hetatm_p_color_templates=[
+      OnCard("-C--","","",[0.60, 0.90, 0.60, 1.5]),
+      OnCard("----","","",[0.40, 0.90, 0.40, 1.5])
+    ];
+  structure.structure.eachEntity(ent=>{
+    var chlist = ent.chainIndexList;
+    var cnames = []
+    for (var chid in chlist){
+        var cname = structure.structure.chainStore.getChainname(chlist[chid]);
+        if (ent.entityType==1) {
+          if (testSelectedChain(cname))
+              cnames.push(cname);
+        }
+    }
+    var is_protein = false;
+    ent.eachChain( chain => {
+      var chain_is_protein = false;
+      var found = false;
+      _residues_done={};
+      console.log(chain);
+      console.log(chain.chainname);
+      console.log( cnames.includes(chain.chainname ) );
+      if ( cnames.includes(chain.chainname ) ) {
+        chain.eachResidue(r =>{
+          var res = r.resname;
+          if (r.moleculeType == 4 || r.moleculeType == 5) {
+            //break;
+            if (!found) {
+              chain_is_protein = false;
+              found = true;
+            }
+          }
+          else if (r.moleculeType == 3) {
+            if (!found) {
+              chain_is_protein = true;
+              found = true;
+            }
+          }
+        });
+
+        if (chain_is_protein) {
+          for (var d in proteins_color_templates) {
+            var templ = proteins_color_templates[d];
+            _records.push(sprintf(IllAtomFormat,
+                                Ill_defaults(templ.atom, '----'),
+                                Ill_defaults(templ.residue, '---'),
+                                Ill_defaults(chain.chainname, '-'),
+                                0,
+                                9999,
+                                Ill_defaults(templ.color[0], 1.0),
+                                Ill_defaults(templ.color[1], 0.0),
+                                Ill_defaults(templ.color[2], 0.0),
+                                Ill_defaults(templ.color[3], 1.5) ) );
+          }
+        }
+        else {
+          for (var d in nucleic_colors_templates) {
+            var templ = nucleic_colors_templates[d];
+            _records.push(sprintf(IllAtomFormat,
+                                Ill_defaults(templ.atom, '----'),
+                                Ill_defaults(templ.residue, '---'),
+                                Ill_defaults(chain.chainname, '-'),
+                                0,
+                                9999,
+                                Ill_defaults(templ.color[0], 1.0),
+                                Ill_defaults(templ.color[1], 0.0),
+                                Ill_defaults(templ.color[2], 0.0),
+                                Ill_defaults(templ.color[3], 1.5) ) );
+          }
+        }
+      }
+    });
+  });
+  //add hetatm
+  for (var d in hetatm_p_color_templates) {
+    var templ = hetatm_p_color_templates[d];
+    _records.push(sprintf(IllHetatmFormat,
+                        Ill_defaults(templ.atom, '----'),
+                        Ill_defaults(templ.residue, '---'),
+                        Ill_defaults(templ.chain, '-'),
+                        0,
+                        9999,
+                        Ill_defaults(templ.color[0], 1.0),
+                        Ill_defaults(templ.color[1], 0.0),
+                        Ill_defaults(templ.color[2], 0.0),
+                        Ill_defaults(templ.color[3], 1.5) ) );
+  }
+  astr = _records.join('\n')+"\n";
+  return astr;
 }
 
 function getStructureWildCardStyle1(){
@@ -448,10 +609,6 @@ function getStructureWildCardStyle1(){
               cnames.push(cname);
         }
     }
-    console.log(ent);
-    console.log(ent.description);
-    console.log(ent.entityType);
-    console.log(cnames);
     var is_protein = false;
     ent.eachChain( chain => {
       var chain_is_protein = false;
@@ -586,7 +743,7 @@ HETATM---------- 0,9999  0.50, 0.95, 0.50, 1.5\n\
 function prepareWildCard(style){
     //ignore hydrogen
     var astr=""
-    if (ignore_h){
+    if (ignore_H.checked){
       astr+="HETATM-----HOH-- 0,9999, 0.5,0.5,0.5, 0.0\n\
 ATOM  -H-------- 0,9999, 1.0,1.0,1.0, 0.0\n\
 ATOM  H--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
@@ -613,6 +770,14 @@ ATOM  H--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
     {         //open wildcard1
         astr+=readWildCard("generic.inp");
         //chain_outlines_params_elem[2].value = 6000;
+    }
+    else if (style==5)
+    {         //open wildcard1
+        astr+=getStructureWildCardStyle5();
+    }
+    else if (style==6)
+    {         //open wildcard1
+        astr+=readWildCard("wildcard_cpk.inp");
     }
     astr+="END\n"
     return astr
@@ -823,13 +988,13 @@ function getStyleNGL(){
   if (current_style == 1){colorStyle = {"scheme":"uniform","color":"rgb(255,0,0)"};}
   else if (current_style == 2){
       colorStyle = {"scheme":"null","color":schemeId2};
-      //update selection
-      sele_elem.value = "(polymer or rna or dna) and ("+sele_elem.value+")"
   }
   else if (current_style == 3){
       colorStyle = {"scheme":"null","color":schemeId3};
   }
   else if (current_style == 4){colorStyle = {"scheme":"uniform","color":"rgb(255,255,255)"};}
+  else if (current_style == 5){colorStyle = {"scheme":"null","color":schemeId5};}
+  else if (current_style == 6){colorStyle = {"scheme":"null","color":schemeId6};}
   return colorStyle;
 }
 
@@ -1016,7 +1181,7 @@ function onClick(){
       formData.append("PDBtxt",structure_txt);
     }
     else {
-      if (sele_elem.value!=""){
+      if (sele_elem.value!="" || assembly_elem.selected != "AU"){
           structure_txt=writeAtoms();
           formData.append("PDBtxt",structure_txt);
         }

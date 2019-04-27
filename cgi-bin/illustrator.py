@@ -416,8 +416,8 @@ def queryForm(form, verbose = 0):
     cmd+="/bin/composite -compose copy_opacity opacity.pnm "+proj_name+".pnm "+proj_name+".png;"
     os.system(cmd)
 
-    httpfile="https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/"+queryTXT+".pdb"
-    httpimg="https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/"+queryTXT+".png"
+    httpfile="https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/"+proj_name+".pdb"
+    httpimg="https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/"+proj_name+".png"
 
     print "Access-Control-Allow-Origin: *"
     print 'Content-type: application/json\n'
