@@ -447,7 +447,7 @@ function getText(url){
 }
 
 function readWildCard(filename){
-    var url="/data/"+filename;//https://mesoscope.scripps.edu/beta
+    var url="https://mesoscope.scripps.edu/beta/data/"+filename;//https://mesoscope.scripps.edu/beta
     var outer_text = getText(url);
     return outer_text;
 }
