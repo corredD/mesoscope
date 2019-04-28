@@ -7,6 +7,25 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <style>
+    /* A link that has not been visited */
+  a:link {
+      color: white;
+  }
+
+  /* A link that has been visited */
+  a:visited {
+      color: red;
+  }
+
+  /* A link that is hovered on */
+  a:hover {
+      color: yellow;
+  }
+
+  /* A link that is selected */
+  a:active {
+      color: green;
+  }
     @font-face {
   font-family: 'Gloria Hallelujah';
   font-style: normal;
@@ -172,22 +191,25 @@
   </div>
   <div style="display:flex;flex-flow:row;flex-wrap:wrap;background-color: rgba(0,0,0, 0.5);color: white;">
     <div style="display:flex;flex-flow:column">
-      Project name <wired-input type="text" style="color:black" id="nameinput" value="" style="" onchange="changeName(this)"></wired-input>
       <div id="options" class="options">
             <input type="file" id="pdb_file_input" style="color:white" accept=".pdb,.cif,.ent,.gz,.mol2" type="file" onclick="Util_forceSelect(this)" onchange="loadStructure(event)" /></input>
             <br>
             or use PDB id <wired-input type="text" id="pdbinput" value="" style="color:black" onchange="changePDB(this)"/></wired-input>
+            <br>Project name <wired-input type="text" style="color:black" id="nameinput" value="" style="" onchange="changeName(this)"></wired-input>
             <wired-checkbox id="advanced" name="advanced" onclick="showOptions(this)"> Advanced Options</wired-checkbox>
             <input type=number id="scale" step=1 value=12 /> Pixel per Angstrom <br />
             <label for="ill_style"> Style </label>
             <wired-combo id="ill_style" selected="1" role="combobox" tabindex="0">
-              <wired-item style="color:black" value="1">One Color</wired-item>
-              <wired-item style="color:black" value="2">Protein/DNA</wired-item>
-              <wired-item style="color:black" value="3">Coarse</wired-item>
-              <wired-item style="color:black" value="4">Generic</wired-item>
-              <wired-item style="color:black" value="5">Atomic</wired-item>
-              <wired-item style="color:black" value="6">CPK</wired-item>
+              <wired-item style="color:black" value="One">One Color</wired-item>
+              <wired-item style="color:black" value="OneRange">One Color Range</wired-item>
+              <wired-item style="color:black" value="ProteinDNA">Protein/DNA</wired-item>
+              <wired-item style="color:black" value="Coarse">Coarse</wired-item>
+              <wired-item style="color:black" value="Generic">Generic</wired-item>
+              <wired-item style="color:black" value="Atomic">Atomic</wired-item>
+              <wired-item style="color:black" value="CPK">CPK</wired-item>
+              <wired-item style="color:black" value="EntityChain">EntityChain</wired-item>
             </wired-combo>
+            <input type="color" onchange="ChangeRep()" id="ucolor" name="ucolor" style="display:none" value="#ff0000">
             <div id="ao_options" style="display:none">
               <wired-checkbox id="hb" name="hb" checked> Ignore water / hydrogen</wired-checkbox>
               <wired-checkbox id="ao" name="ao" checked> Ambient Occlusion / Soft Shadow</wired-checkbox>
@@ -231,6 +253,9 @@
     <div><div id="loader" class="loader"></div><a id="linkimg" href="" target="blanck"><img id="result" src="" style="width:300px"></img></a></div>
   </div>
 </div>
+  <script src="extras/chroma.min.js"></script>
+  <script src="extras/chroma.palette-gen.js"></script>
+  <script src="js/util.js"></script>
   <script src="js/illustrator.js"></script>
 </body>
 </html>

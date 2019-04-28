@@ -14,7 +14,7 @@ var inp_txt_holder = document.getElementById("inp_txt");
 var use_loaded_inp_txt = document.getElementById("use_loaded_inp_txt");
 var loaded_pdb = false;
 var ignore_h = true;
-var current_style = 1;
+var current_style = "One";
 var changed_selection = false;
 //get the different elements
 var options_elem = document.getElementById("options");
@@ -38,6 +38,7 @@ var sele_elem = document.getElementById("sel_str");
 var model_elem = document.getElementById("mod_type");
 var inp_options =document.getElementById("inp_options");
 var ignore_H= document.getElementById("hb");
+var ucolor = document.getElementById("ucolor");
 
 window.addEventListener('load', function() {
   //inp_options.style.display = "none";
@@ -79,6 +80,12 @@ function toRGB(color){
                 Math.ceil(color[2]*255).toString()+")";
 }
 
+function toRGBf(color){
+  return "rgb("+color[0].toString()+","+
+                color[1].toString()+","+
+                color[2].toString()+")";
+}
+
 //wildcard1
 var schemeId2 = NGL.ColormakerRegistry.addSelectionScheme([
   ["rgb(255,140,140)", "_O and nucleic"],//1.00, 0.55, 0.55
@@ -118,6 +125,9 @@ var schemeId6 = NGL.ColormakerRegistry.addSelectionScheme([
   [toRGB([1.00, 0.40, 1.00]), "(_MG or _CA or _NA or _K or _FE or _CU or _ZN ) and (ligand and hetero)"]
 ], "style6");
 
+var schemeGeneral;
+var schemeGeneralStr;
+
 inp_txt_holder.addEventListener("input", function() {
     console.log("input event fired");
     //update the ino-text
@@ -136,7 +146,9 @@ model_elem.addEventListener("selected", function() {
 ill_style.addEventListener("selected", function() {
     console.log("input event selected");
     //update the ino-text
-    current_style = parseInt(ill_style.selected);
+    current_style = ill_style.selected;
+    if (current_style == "One" || current_style== "OneRange") ucolor.style.display = "";
+    else ucolor.style.display = "none";
     //inp_txt_holder.innerHTML = inp_txt_holder.innerHTML.replace("<br>","\n")
     ChangeRep();//innerHTML.replace("<pre>","").replace("</pre>","").replace("<code contenteditable=\"true\">","").replace("</code>","");
 }, false);
@@ -364,12 +376,15 @@ function changePDB(e){
 }
 
 function changeBU(){
+  getEntityChainAtomStyleAndNGL();
   ChangeRep();
 }
 function changeModel(){
+  getEntityChainAtomStyleAndNGL();
   ChangeModel();
 }
 function changeSelection(e){
+  getEntityChainAtomStyleAndNGL();
   ChangeRep();
 }
 
@@ -470,6 +485,114 @@ function OnCard(atom,residue,chain,color){
   return card;
 }
 
+function getEntityChainAtomNGLStyle(){
+
+}
+
+function getEntityChainAtomStyleAndNGL(){
+    //one input color?
+    var _records=[];
+    var _selection_schem=[];
+    var nentity = structure.structure.entityList.length;
+    var nchains;
+    var natom;//_C and not _C
+    //schemeGeneral
+    var entity_colors = GenerateNColor(nentity);
+    structure.structure.eachEntity(ent=>{
+      var chlist = ent.chainIndexList;
+      var cnames = []
+      for (var chid in chlist){
+          var cname = structure.structure.chainStore.getChainname(chlist[chid]);
+          if (ent.entityType==1) {
+            if (testSelectedChain(cname))
+                if (!cnames.includes(cname)) cnames.push(cname);
+          }
+      }
+      var is_protein = false;
+      var chain_colors = GenerateOneColorRangePalette(entity_colors[ent.index].rgb(),cnames.length);
+      var cid = 0;
+      ent.eachChain( chain => {
+        var chain_is_protein = false;
+        var found = false;
+        if ( cnames.includes(chain.chainname ) ) {
+          var atom_colors = GenerateOneColorRangePalette(chain_colors[cid].rgb(),2);
+          var c1 = atom_colors[0].rgb();//chain_colors[cid].rgb()
+          var c2 = atom_colors[1].rgb();//chain_colors[cid].brighten().rgb()
+          cid+=1;
+          chain.eachResidue(r =>{
+            var res = r.resname;
+            if (r.moleculeType == 4 || r.moleculeType == 5) {
+              //break;
+              if (!found) {
+                chain_is_protein = false;
+                found = true;
+              }
+            }
+            else if (r.moleculeType == 3) {
+              if (!found) {
+                chain_is_protein = true;
+                found = true;
+              }
+            }
+          });
+          if (chain_is_protein) {
+              _records.push(sprintf(IllAtomFormat,
+                                  Ill_defaults("-C--", '----'),
+                                  Ill_defaults("", '---'),
+                                  Ill_defaults(chain.chainname, '-'),
+                                  0,
+                                  9999,
+                                  Ill_defaults(c1[0]/255.0, 1.0),
+                                  Ill_defaults(c1[1]/255.0, 0.0),
+                                  Ill_defaults(c1[2]/255.0, 0.0),
+                                  Ill_defaults("", 1.6) ) );
+              _records.push(sprintf(IllAtomFormat,
+                                  Ill_defaults("----", '----'),
+                                  Ill_defaults("", '---'),
+                                  Ill_defaults(chain.chainname, '-'),
+                                  0,
+                                  9999,
+                                  Ill_defaults(c2[0]/255.0, 1.0),
+                                  Ill_defaults(c2[1]/255.0, 0.0),
+                                  Ill_defaults(c2[2]/255.0, 0.0),
+                                  Ill_defaults("", 1.6) ) );
+
+          }
+          else {
+            _records.push(sprintf(IllAtomFormat,
+                                Ill_defaults("-C--", '----'),
+                                Ill_defaults("", '---'),
+                                Ill_defaults(chain.chainname, '-'),
+                                0,
+                                9999,
+                                Ill_defaults(c1[0]/255.0, 1.0),
+                                Ill_defaults(c1[1]/255.0, 0.0),
+                                Ill_defaults(c1[2]/255.0, 0.0),
+                                Ill_defaults("", 1.6) ) );
+            _records.push(sprintf(IllAtomFormat,
+                                Ill_defaults("----", '----'),
+                                Ill_defaults("", '---'),
+                                Ill_defaults(chain.chainname, '-'),
+                                0,
+                                9999,
+                                Ill_defaults(c2[0]/255.0, 1.0),
+                                Ill_defaults(c2[1]/255.0, 0.0),
+                                Ill_defaults(c2[2]/255.0, 0.0),
+                                Ill_defaults("", 1.6) ) );
+
+          }
+          _selection_schem.push([toRGBf(c2),"_C and :"+chain.chainname]);
+          _selection_schem.push([toRGBf(c1),"not _C and :"+chain.chainname]);
+        }
+      });
+    });
+    console.log(_selection_schem);
+    schemeGeneral = NGL.ColormakerRegistry.addSelectionScheme(_selection_schem,"entity");
+    astr = _records.join('\n')+"\n";
+    schemeGeneralStr = astr;
+    return astr;
+}
+
 function getStructureWildCardStyle5(){
   _records=[];
   var nucleic_colors_templates = [
@@ -505,7 +628,7 @@ function getStructureWildCardStyle5(){
         var cname = structure.structure.chainStore.getChainname(chlist[chid]);
         if (ent.entityType==1) {
           if (testSelectedChain(cname))
-              cnames.push(cname);
+              if (!cnames.include(cname)) cnames.push(cname);
         }
     }
     var is_protein = false;
@@ -749,36 +872,56 @@ ATOM  -H-------- 0,9999, 1.0,1.0,1.0, 0.0\n\
 ATOM  H--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
 ";
     }
-    if (style == 1)
+    if (style == "OneRange")
     {
-        astr+="ATOM  ---------- 5,9999,.9,.0,.0,1.6\n";
+        var col = Util_getRGB(ucolor.value);
+        var r = col.arr[0]/255.0;
+        var g = col.arr[1]/255.0;
+        var b = col.arr[2]/255.0;
+        astr+=sprintf(IllAtomFormat,'-C--','---','-','0','9999',r,g,b,1.6 )+"\n";
+        astr+=sprintf(IllAtomFormat,'----','---','-','0','9999',(r>=0.1)?r-0.1:r,
+                        (g>=0.1)?g-0.1:g,(b>=0.1)?b-0.1:b,1.6 )+"\n";
+        astr+=sprintf(IllHetatmFormat,'----','---','-','0','9999',r,g,b,1.6 )+"\n"
     }
-    else if (style == 2)
+    else if (style == "One"){
+      var col = Util_getRGB(ucolor.value);
+      var r = col.arr[0]/255.0;
+      var g = col.arr[1]/255.0;
+      var b = col.arr[2]/255.0;
+      astr+=sprintf(IllAtomFormat,'----','---','-','0','9999',r,g,b,1.6 )+"\n";
+      astr+=sprintf(IllHetatmFormat,'----','---','-','0','9999',r,g,b,1.6 )+"\n"
+    }
+    else if (style == "ProteinDNA")
     {
-        //#open wildcard1
-        //wildcard 1 is
-        //protein blue range
-        //nucleic orange range
         astr+=getStructureWildCardStyle1();//readWildCard("wildcard1.inp");
     }
-    else if (style==3)
+    else if (style=="Coarse")
     {         //open wildcard1
         astr+=readWildCard("wildcard2.inp");
         chain_outlines_params_elem[2].value = 6000;
     }
-    else if (style==4)
+    else if (style=="Generic")
     {         //open wildcard1
         astr+=readWildCard("generic.inp");
         //chain_outlines_params_elem[2].value = 6000;
     }
-    else if (style==5)
+    else if (style=="Atomic")
     {         //open wildcard1
         astr+=getStructureWildCardStyle5();
     }
-    else if (style==6)
+    else if (style=="CPK")
     {         //open wildcard1
         astr+=readWildCard("wildcard_cpk.inp");
     }
+    else if (style=="EntityChain")
+    {
+      if (schemeGeneralStr==null) schemeGeneralStr=getEntityChainAtomStyleAndNGL();
+      astr+=schemeGeneralStr;
+    }
+    //else if (style==7){
+        //use uniq color to get a range using IwantHue?
+        //how many color ?
+    //}
     astr+="END\n"
     return astr
 }
@@ -985,16 +1128,34 @@ function setModelOptionsCombo(ngl_ob) {
 
 function getStyleNGL(){
   var colorStyle = {"scheme":"uniform","color":"rgb(255,0,0)"};
-  if (current_style == 1){colorStyle = {"scheme":"uniform","color":"rgb(255,0,0)"};}
-  else if (current_style == 2){
+  if (current_style == "OneRange"){
+    var col = Util_getRGB(ucolor.value);
+    var lr = (col.arr[0]>=25)? col.arr[0]-25:col.arr[0];
+    var lg = (col.arr[1]>=25)? col.arr[1]-25:col.arr[1];
+    var lb = (col.arr[2]>=25)? col.arr[2]-25:col.arr[2];
+    var schemeId1 = NGL.ColormakerRegistry.addSelectionScheme([
+      [col.rgb, "_C"],
+      ["rgb("+lr+","+lg+","+lb+")", "not _C"]// 0.40, 0.60, 1.00
+    ], "style2");
+    colorStyle = {"scheme":"null","color":schemeId1};
+  }
+  else if (current_style == "One"){
+    var col = Util_getRGB(ucolor.value);
+    colorStyle = {"scheme":"uniform","color":col.rgb};
+  }
+  else if (current_style == "ProteinDNA"){
       colorStyle = {"scheme":"null","color":schemeId2};
   }
-  else if (current_style == 3){
+  else if (current_style == "Coarse"){
       colorStyle = {"scheme":"null","color":schemeId3};
   }
-  else if (current_style == 4){colorStyle = {"scheme":"uniform","color":"rgb(255,255,255)"};}
-  else if (current_style == 5){colorStyle = {"scheme":"null","color":schemeId5};}
-  else if (current_style == 6){colorStyle = {"scheme":"null","color":schemeId6};}
+  else if (current_style == "Generic"){colorStyle = {"scheme":"uniform","color":"rgb(255,255,255)"};}
+  else if (current_style == "Atomic"){colorStyle = {"scheme":"null","color":schemeId5};}
+  else if (current_style == "CPK"){colorStyle = {"scheme":"null","color":schemeId6};}
+  else if (current_style == "EntityChain"){
+    getEntityChainAtomStyleAndNGL();//update
+    colorStyle = {"scheme":"null","color":schemeGeneral};
+  }
   return colorStyle;
 }
 
@@ -1233,4 +1394,47 @@ function onClick(){
       i=i+1;
     };
     xhr.send(formData);
+}
+//var col = Util_getRGB(ucolor.value);
+function GenerateOneColorRangePalette(rgb,ncolors){
+  // Generate colors (as Chroma.js objects)
+  var hcl = chroma.rgb(rgb[0],rgb[1],rgb[2]).hcl();
+  var start = hcl[0]-25;
+  var end = hcl[0]+25;
+  var colors = paletteGenerator.generate(
+    ncolors, // Colors
+    function(color){ // This function filters valid colors
+      var hcl = color.hcl();
+      return hcl[0]>=start && hcl[0]<=end
+        && hcl[1]>=38.82 && hcl[1]<=100
+        && hcl[2]>=38.04 && hcl[2]<=100;
+    },
+    false, // Using Force Vector instead of k-Means
+    50, // Steps (quality)
+    false, // Ultra precision
+    'Default' // Color distance type (colorblindness)
+  );
+  // Sort colors by differenciation first
+  colors = paletteGenerator.diffSort(colors, 'Default');
+  return colors;
+}
+
+function GenerateNColor(ncolors){
+  // Generate colors (as Chroma.js objects)
+  var colors = paletteGenerator.generate(
+    ncolors, // Colors
+    function(color){ // This function filters valid colors
+    var hcl = color.hcl();
+    return hcl[0]>=0 && hcl[0]<=360
+      && hcl[1]>=0 && hcl[1]<=100
+      && hcl[2]>=0 && hcl[2]<=100;
+  },
+    false, // Using Force Vector instead of k-Means
+    50, // Steps (quality)
+    false, // Ultra precision
+    'Default' // Color distance type (colorblindness)
+  );
+  // Sort colors by differenciation first
+  colors = paletteGenerator.diffSort(colors, 'Default');
+  return colors;
 }
