@@ -39,6 +39,18 @@ var model_elem = document.getElementById("mod_type");
 var inp_options =document.getElementById("inp_options");
 var ignore_H= document.getElementById("hb");
 var ucolor = document.getElementById("ucolor");
+var customStyle = document.getElementById("customStyle");
+var customStyleColor = document.getElementById("acolor");
+var customStyleSelectionAtoms = document.getElementById("atoms");
+var customStyleSelectionResidues = document.getElementById("residues");
+var customStyleSelectionChains = document.getElementById("chains");
+
+var customStyleSelectionAtomsList = new Awesomplete(customStyleSelectionAtoms,
+                                      {minChars: 1,autoFirst:true,maxItems:200});
+var customStyleSelectionResiduesList = new Awesomplete(customStyleSelectionResidues,{minChars: 1,autoFirst:true,maxItems:200});
+var customStyleSelectionChainsList = new Awesomplete(customStyleSelectionChains,{minChars: 1,autoFirst:true,maxItems:200});
+
+var customStyleCard = customStyle.firstChild;
 
 window.addEventListener('load', function() {
   //inp_options.style.display = "none";
@@ -127,6 +139,9 @@ var schemeId6 = NGL.ColormakerRegistry.addSelectionScheme([
 
 var schemeGeneral;
 var schemeGeneralStr;
+var schemeCustom;
+var schemeCustomStr;
+var cards=[];
 
 inp_txt_holder.addEventListener("input", function() {
     console.log("input event fired");
@@ -149,6 +164,13 @@ ill_style.addEventListener("selected", function() {
     current_style = ill_style.selected;
     if (current_style == "One" || current_style== "OneRange") ucolor.style.display = "";
     else ucolor.style.display = "none";
+    if (current_style == "Custom"){
+        customStyle.style = "";
+    }
+    else {
+      customStyle.style.display = "none";
+    }
+
     //inp_txt_holder.innerHTML = inp_txt_holder.innerHTML.replace("<br>","\n")
     ChangeRep();//innerHTML.replace("<pre>","").replace("</pre>","").replace("<code contenteditable=\"true\">","").replace("</code>","");
 }, false);
@@ -338,6 +360,13 @@ function loadStructure(e){
       structure = o;
       o.autoView();
       ngl_center = stage.animationControls.controls.position.clone();
+      UpdateassemblyCombo(structure);// UpdateassemblyList(structure);
+      setModelOptionsCombo(structure);//setModelOptions(structure);
+      setChainSelectionOptions(structure);
+      setCustomStyle(structure);
+      if(current_style!="Custom") {
+        customStyle.style.display="none";
+      }
       changed_selection = true;
   });
   current_query.innerHTML="<h4>Current PDBid :"+PDBID+"</h4>";
@@ -370,7 +399,11 @@ function changePDB(e){
       UpdateassemblyCombo(structure);// UpdateassemblyList(structure);
       setModelOptionsCombo(structure);//setModelOptions(structure);
       setChainSelectionOptions(structure);
+      setCustomStyle(structure);
       changed_selection = true;
+      if(current_style!="Custom") {
+        customStyle.style.display="none";
+      }
   });
   current_query.innerHTML="<h4>Current PDBid :"+PDBID+"</h4>";
 }
@@ -628,7 +661,7 @@ function getStructureWildCardStyle5(){
         var cname = structure.structure.chainStore.getChainname(chlist[chid]);
         if (ent.entityType==1) {
           if (testSelectedChain(cname))
-              if (!cnames.include(cname)) cnames.push(cname);
+              if (!cnames.includes(cname)) cnames.push(cname);
         }
     }
     var is_protein = false;
@@ -918,6 +951,12 @@ ATOM  H--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
       if (schemeGeneralStr==null) schemeGeneralStr=getEntityChainAtomStyleAndNGL();
       astr+=schemeGeneralStr;
     }
+    else if (style=="Custom")
+    {
+      //use the current list of card=>string
+      //or premade them as we go
+      astr+=schemeCustomStr;
+    }
     //else if (style==7){
         //use uniq color to get a range using IwantHue?
         //how many color ?
@@ -1083,6 +1122,43 @@ function Util_showCheckboxes() {
   checkboxes.style.display = "block";
 }
 
+function setCustomStyle(ngl_ob){
+    cards=[];
+
+    //customStyleSelectionAtoms.innerHTML = '';
+    //customStyleSelectionResidues.innerHTML = '';
+    //customStyleSelectionChains.innerHTML = '';
+    var atlist = ["All"];
+    //customStyleSelectionAtoms.innerHTML += '<wired-item style="width:30px;color:black" value="All">All</wired-item>\n'
+    ngl_ob.structure.atomMap.list.forEach(function(k) {
+      //console.log(k);
+      atlist.push(k.atomname);
+      //customStyleSelectionAtoms.innerHTML += '<wired-item style="color:black" value="'+k.atomname+'">'+k.atomname+'</wired-item>\n'
+    });
+    customStyleSelectionAtomsList.list = atlist;
+
+    var reslist = ["All"];
+    //customStyleSelectionResidues.innerHTML += '<wired-item style="width:30px;color:black" value="All">All</wired-item>\n'
+    ngl_ob.structure.residueMap.list.forEach(function(k) {
+      //console.log(k);
+      reslist.push(k.resname);
+      //customStyleSelectionResidues.innerHTML += '<wired-item style="color:black" value="'+k.resname+'">'+k.resname+'</wired-item>\n'
+    });
+    customStyleSelectionResiduesList.list = reslist;
+
+    var chnames = ["All"]
+    var nch = ngl_ob.structure.getChainnameCount();
+    ngl_ob.structure.eachChain( chain => {
+      if ( $.inArray(chain.chainname, chnames) === -1 ) chnames.push( chain.chainname)
+   });
+   customStyleSelectionChainsList.list = chnames;
+   //customStyleSelectionChains.innerHTML += '<wired-item style="width:30px;color:black" value="All">All</wired-item>\n'
+   //chnames.forEach(function(k) {
+      //console.log(k);
+  //    customStyleSelectionChains.innerHTML += '<wired-item style="color:black" value="'+k+'">'+k+'</wired-item>\n'
+  //  });
+}
+
 function setChainSelectionOptions(ngl_ob)
 {
   //update the selection div element
@@ -1155,6 +1231,9 @@ function getStyleNGL(){
   else if (current_style == "EntityChain"){
     getEntityChainAtomStyleAndNGL();//update
     colorStyle = {"scheme":"null","color":schemeGeneral};
+  }
+  else if (current_style == "Custom"){
+    colorStyle = {"scheme":"custom","color":schemeCustom};
   }
   return colorStyle;
 }
@@ -1437,4 +1516,114 @@ function GenerateNColor(ncolors){
   // Sort colors by differenciation first
   colors = paletteGenerator.diffSort(colors, 'Default');
   return colors;
+}
+
+//TRANSFORM ngl SELECTION OT WILDCARD?
+function nglSelToWildCard(ngl_sel_string){
+    var sel =new NGL.Selection(ngl_sel_string);
+    //can be used in each iteration
+    //is it chain,residue,atom
+}
+//or use button (Atom,Res,Chain,BU?)
+
+function UpdateSchemeCustom(){
+  var sstyle=[];
+  var _records = [];
+  schemeCustomStr="";
+  cards.forEach(function(c){
+      var col = Util_getRGB(c.acolor.value);
+      var sele = (c.sele.value=="")?c.sele.placeholder:c.sele.value;
+      sstyle.push([col.rgb,sele]);
+      var r = col.arr[0]/255.0;
+      var g = col.arr[1]/255.0;
+      var b = col.arr[2]/255.0;
+      var at = ""
+      if (c.card.at!="")
+          at = (c.card.at.length==1)?"-"+c.card.at+"--":"-"+c.card.at+"-";
+      _records.push(sprintf(IllAtomFormat,
+                          Ill_defaults(at, '----'),
+                          Ill_defaults(c.card.res, '---'),
+                          Ill_defaults(c.card.chain, '-'),
+                          0,
+                          9999,
+                          Ill_defaults(r, 1.0),
+                          Ill_defaults(g, 0.0),
+                          Ill_defaults(b, 0.0),
+                          Ill_defaults("", 1.6) ) );
+      sele_elem.value = sele_elem.value+" or ("+sele+")";
+  });
+  console.log(sstyle);
+  schemeCustom=NGL.ColormakerRegistry.addSelectionScheme(sstyle,"custom");
+  //the string
+  schemeCustomStr=_records.join('\n')+"\n";
+}
+
+function AddCard(){
+  //use acolor and acard
+  //create new div element editable
+  //customStyle
+  var id = cards.length;
+  //var asele = customStyleSelection.value;
+  //customStyleSelectionAtoms.innerHTML = '';
+  //customStyleSelectionResidues.innerHTML = '';
+  //customStyleSelectionChains.innerHTML = '';
+  var asele = "";
+  var card = {"at":"","res":"","chain":""};
+  if (customStyleSelectionAtoms.value!="All" && customStyleSelectionAtoms.value!="")
+  {
+    card.at = customStyleSelectionAtoms.value;
+    asele+="."+customStyleSelectionAtoms.value;
+  }
+  if (customStyleSelectionResidues.value!="All" && customStyleSelectionResidues.value!="")
+      {
+        asele+=" and "+customStyleSelectionResidues.value;
+        card.res = customStyleSelectionResidues.value;
+  }
+  if (customStyleSelectionChains.value!="All" && customStyleSelectionChains.value!="")
+      {
+        asele+=" and :"+customStyleSelectionChains.value;
+        card.chain = customStyleSelectionChains.value;
+      }
+  var acolor = Util_getRGB(customStyleColor.value);
+  var container = document.createElement("div");
+  container.className = "cards";
+  //selection should be NGL selection? or simplified ?
+  var asele_elem = document.createElement("input");
+  asele_elem.type = "text";
+  asele_elem.id = "acard"+id.toString();
+  asele_elem.style = "color:black";
+  asele_elem.onchange = function() { console.log(asele_elem.value); };
+
+  var acolor_elem = document.createElement("input");
+  acolor_elem.type = "color";
+  acolor_elem.id = "acolor"+id.toString();
+  acolor_elem.onchange = function(){console.log("changed color");};
+
+  var delete_button = document.createElement("wired-button");
+  delete_button.innerHTML="Delete Card";
+  var elem = {"sele":asele_elem,"acolor":acolor_elem,"button":delete_button,"card":card}
+  cards.push(elem);
+  delete_button.onclick = function() { RemoveCard(container,elem); }
+  container.appendChild(asele_elem);
+  container.appendChild(acolor_elem);
+  container.appendChild(delete_button);
+  //customStyle.appendChild(container);
+  customStyle.insertBefore(container,customStyleCard);
+  asele_elem.placeholder = asele;
+  asele_elem.value = asele;
+  $("acard"+id.toString()).val(asele);
+  acolor_elem.value = customStyleColor.value;
+  //sele_elem.value = sele_elem.value+" or ("+asele+")";
+  console.log(acolor_elem.value);
+  console.log(asele);
+  UpdateSchemeCustom();
+  ChangeRep();
+}
+
+function RemoveCard(container,elem){
+  var anid = cards.indexOf(elem);
+  var removed = cards.splice(anid,1)[0];
+  customStyle.removeChild(container);
+  UpdateSchemeCustom();
+  ChangeRep();
 }

@@ -5,8 +5,13 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
     <style>
+
+  input
+  {
+      font-family: 'Gloria Hallelujah';
+  }
     /* A link that has not been visited */
   a:link {
       color: white;
@@ -137,6 +142,10 @@
     .options{
       display: block;
     }
+
+    .cards{
+
+    }
     .NGLpan {
       width: 100%;
       height: 100%; //order:2;
@@ -157,10 +166,12 @@
       100% { transform: rotate(360deg); }
     }
     </style>
+    <link type="text/css" rel="stylesheet" href="awesomplete.css" />
     <script src="https://unpkg.com/@webcomponents/webcomponentsjs@latest/webcomponents-loader.js"></script>
     <script src="https://unpkg.com/wired-elements@latest/dist/wired-elements.bundled.js"></script>
     <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js"></script>
     <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+    <script src="extras/awesomplete.min.js"></script>
   </HEAD>
   <BODY>
   <div class="bg-image"></div>
@@ -208,6 +219,7 @@
               <wired-item style="color:black" value="Atomic">Atomic</wired-item>
               <wired-item style="color:black" value="CPK">CPK</wired-item>
               <wired-item style="color:black" value="EntityChain">EntityChain</wired-item>
+              <wired-item style="color:black" value="Custom">Custom</wired-item>
             </wired-combo>
             <input type="color" onchange="ChangeRep()" id="ucolor" name="ucolor" style="display:none" value="#ff0000">
             <div id="ao_options" style="display:none">
@@ -218,6 +230,15 @@
               <input type=number id="ao_params3" step=0.1 value=1.0 /> shadowing only applied if z-difference greater than this value  (Angstroms, typically 1.0)<br />
               <input type=number id="ao_params4" step=0.1 value=0.7 /> maximal shadowing amount : smaller=darker (0.0-1.0, typically 0.7) <br />
             </div>
+      </div>
+      <div id="customStyle" style="display:none">
+        <div>
+          <input style="color:black" type="text" id="atoms" value="" style=""></input>
+          <input style="color:black" type="text" id="residues" value="" style=""></input>
+          <input style="color:black" type="text" id="chains" value="" style=""></input>
+          <input type="color" id="acolor" name="acolor" value="#ff0000"/>
+          <wired-button onclick='AddCard()'>Add Card</wired-button>
+        </div>
       </div>
       <div id="inp_options">
             <wired-button onclick='previewInput()'>Preview Input Txt</wired-button>
