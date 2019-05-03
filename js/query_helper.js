@@ -1704,7 +1704,7 @@ function SaveRecipeCellPACK_serialized() {
     return;
   }
   */
-  var jdata = serializedRecipe(graph.nodes[0].descendants(), graph.links);
+  var jdata = serializedRecipe(graph.nodes, graph.links);//[0].descendants()
   //var jdata = serializedRecipe(graph.nodes, graph.links);
   console.log(jdata);
   console.log(JSON.stringify(jdata));
@@ -1713,3 +1713,4 @@ function SaveRecipeCellPACK_serialized() {
   recipe_changed = false;
   grid_tab_label[0].text ( "" );
 }
+//var jdata = serializedRecipe(graph.nodes, graph.links);download(JSON.stringify(jdata), jdata.name + '_serialized.json', 'text/plain');
