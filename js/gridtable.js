@@ -1147,7 +1147,7 @@ function CreateNodeColumns() {
       name: "ingtype",
       field: "ingtype",
       sortable: true,
-      options: "protein,fiber",
+      options: "protein,ligand,fiber",
       editor: SelectCellEditor
     },
     {

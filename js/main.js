@@ -409,7 +409,7 @@ var allattributes_type={
   "offset": {"type":"vector3","editable":false},
   "pos": {"type":"object","editable":false},
   "radii": {"type":"object","editable":false},
-  "ingtype": {"type":"select","editable":true,"options":["protein","fiber"]},
+  "ingtype": {"type":"select","editable":true,"options":["protein","fiber","ligand"]},
   "buildtype": {"type":"select","editable":true,"options":["random","file","supercell"],"callback":"switchBuildType_cb"},
   "buildfilename":{"type":"string","editable":true},
   "comments":{"type":"string","editable":true},
