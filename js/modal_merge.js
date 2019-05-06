@@ -65,6 +65,23 @@ function merge_getModal(newnodes,newlinks) {
 				merge_createOneColumnSelect(k, item_cont);
     }
 
+    var new_elem =  grid_addToModalDiv( item_cont, 'modal-content-elem', "Create new ingredient upon merge / Only Update");
+    var mergecheckbox = document.createElement('input');
+    mergecheckbox.type = "checkbox";
+    mergecheckbox.name = "create_when_merge";
+    mergecheckbox.checked = true;
+    mergecheckbox.id = "create_when_merge";
+    mergecheckbox.onclick = function(cb){
+        create_when_merge = cb.checked;
+    }
+    new_elem.prepend(mergecheckbox);
+    /*item_cont.appendChild(mergecheckbox);
+    var label = document.createElement('label');
+    label.for="create_when_merge";
+    label.innerHTML = "Create new ingredient upon merge / Only Update";
+    item_cont.appendChild(label);
+    */
+
     modal_cont.style.display = "block";
 
     span.onclick = function() {

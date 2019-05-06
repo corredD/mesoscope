@@ -52,6 +52,7 @@ var current_data_header,
     current_jsondic,
     current_rootName;
 
+var create_when_merge = true;
 //eukaryote type
 var comp_template_cell = {
   nodetype: "compartment",
@@ -793,7 +794,18 @@ function getModalMapping(data_header,jsondic,rootName) {
 		//}
 		var textelem =  grid_addToModalDiv( item_cont, 'modal-content-elem', astr);
 		//textelem.innerHTML+=astr;
-
+    if (MERGE){
+      var new_elem =  grid_addToModalDiv( item_cont, 'modal-content-elem', "Create new ingredient upon merge / Only Update");
+      var mergecheckbox = document.createElement('input');
+      mergecheckbox.type = "checkbox";
+      mergecheckbox.name = "create_when_merge";
+      mergecheckbox.checked = true;
+      mergecheckbox.id = "create_when_merge";
+      mergecheckbox.onclick = function(cb){
+          create_when_merge = cb.checked;
+      }
+      new_elem.prepend(mergecheckbox);
+    }
     modal_cont.style.display = "block";
 
 		SetupCompartmentModalCanvas(canvas_cont,loc_comp);
@@ -2523,7 +2535,7 @@ function applyColorModeToIngredient(){
     var color = colorNode(d);//return "rbg()"
     var dcolor = d3v4.color(color);
     if (!d.children && "data" in d ){
-      if (!( "color" in d.data )) d.data.color=[1,0,0];
+      if (!(d.data.color) || !( "color" in d.data )) d.data.color=[1,0,0];
       if (!("_color" in d.data)) d.data._color=[d.data.color[0],d.data.color[1],d.data.color[2]];
       d.data.color=[dcolor.r/255.0,dcolor.g/255.0,dcolor.b/255.0];
     }
@@ -2574,7 +2586,7 @@ function colorNode(d) {
 															 + Math.floor(d.data.color[2]*255)+')' : color(d.depth);//rgb list ?
 	}
 	else if (colorby === "confidence") {
-    var scores = graph.nodes.map(d=>(d.data.confidence!=null)?d.data.confidence:0.0 );
+    var scores = graph.nodes.map(d=>(d.data.confidence!=null && d.data.confidence!=-1)?d.data.confidence:null).filter(d=>d!=null);
     property_mapping[colorby].max = Math.max.apply(null, scores);
     property_mapping[colorby].min = Math.min.apply(null, scores);
 		var color_mapping = d3v4.scaleLinear()
@@ -2582,7 +2594,7 @@ function colorNode(d) {
 			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax])//red to green
 			.interpolate(d3v4.interpolateHcl);
 		return (!d.children && "data" in d && "confidence" in d.data
-			&& d.data.confidence && d.data.confidence >= 0.0)? color_mapping(d.data[colorby]):color(d.depth);//rgb list ?
+			&& d.data.confidence != null && d.data.confidence >= 0.0)? color_mapping(d.data[colorby]):color(d.depth);//rgb list ?
 	}
 	else if (colorby === "viewed") {
 		return (!d.children && "data" in d && "visited" in d.data
@@ -2591,32 +2603,44 @@ function colorNode(d) {
 	//molarity_count using the same kind of linear mapping but with color ?
 	//else if (colorby === "molarity") {}
 	else if (colorby === "count") {
+    var scores = graph.nodes.map(d=>(d.data.count!=null && d.data.count!=-1)?d.data.count:0.0 );
+    property_mapping[colorby].max = Math.max.apply(null, scores);
+    property_mapping[colorby].min = Math.min.apply(null, scores);
 		var color_mapping = d3v4.scaleLinear()
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
 			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax])//blue to red
 			.interpolate(d3v4.interpolateHcl);
-			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby] && d.data.count >= 0.0)?color_mapping(d.data[colorby]):color(d.depth);
+		return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null && d.data[colorby] >= 0.0)?color_mapping(d.data[colorby]):color(d.depth);
 	}
 	else if (colorby === "size") {
+    var scores = graph.nodes.map(d=>(d.data.size!=null && d.data.size!=-1)?d.data.size:null).filter(d=>d!=null);
+    property_mapping[colorby].max = Math.max.apply(null, scores);
+    property_mapping[colorby].min = Math.min.apply(null, scores);
 		var color_mapping = d3v4.scaleLinear()
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
 			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax])
 			.interpolate(d3v4.interpolateHcl);
-			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby])?color_mapping(d.data[colorby]):color(d.depth);
+			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null)?color_mapping(d.data[colorby]):color(d.depth);
 	}
 	else if (colorby === "molarity") {
+    var scores = graph.nodes.map(d=>(d.data.molarity!=null && d.data.molarity!=-1)?d.data.molarity:null).filter(d=>d!=null);
+    property_mapping[colorby].max = Math.max.apply(null, scores);
+    property_mapping[colorby].min = Math.min.apply(null, scores);
 		var color_mapping = d3v4.scaleLinear()
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
 			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax])
 			.interpolate(d3v4.interpolateHcl);
-			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby])?color_mapping(d.data[colorby]):color(d.depth);
+			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null)?color_mapping(d.data[colorby]):color(d.depth);
 	}
 	else if (colorby === "molecularweight") {
+    var scores = graph.nodes.map(d=>(d.data.molecularweight!=null && d.data.molecularweight!=-1)?d.data.molecularweight:null).filter(d=>d!=null);
+    property_mapping[colorby].max = Math.max.apply(null, scores);
+    property_mapping[colorby].min = Math.min.apply(null, scores);
 		var color_mapping = d3v4.scaleLinear()
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
 			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax])
 			.interpolate(d3v4.interpolateHcl);
-		return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]) ? color_mapping(d.data[colorby]):color(d.depth);
+		return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null) ? color_mapping(d.data[colorby]):color(d.depth);
 	}
   else if (colorby === "default") {
     if (!d.children && "data" in d && "_color" in d.data)
@@ -4277,14 +4301,12 @@ function merge_graph(agraph,alink){
   new_nodes.forEach(function(n){
       var cnode = getNodeByName(n.data.name);
       if (n !== new_root) {
-        if (cnode !==null){
-            merge_node(cnode,n);
-        }
-        else
-        {
+        if (cnode == null && create_when_merge){
           console.log(n.data.name);
           merge_one_node(n);
-          //graph.nodes.push(n);
+        }
+        else {
+            merge_node(cnode,n);
         }
       }
   });
