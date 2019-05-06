@@ -2591,8 +2591,7 @@ function colorNode(d) {
     property_mapping[colorby].min = Math.min.apply(null, scores);
 		var color_mapping = d3v4.scaleLinear()
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
-			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax])//red to green
-			.interpolate(d3v4.interpolateHcl);
+			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
 		return (!d.children && "data" in d && "confidence" in d.data
 			&& d.data.confidence != null && d.data.confidence >= 0.0)? color_mapping(d.data[colorby]):color(d.depth);//rgb list ?
 	}
@@ -2608,8 +2607,7 @@ function colorNode(d) {
     property_mapping[colorby].min = Math.min.apply(null, scores);
 		var color_mapping = d3v4.scaleLinear()
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
-			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax])//blue to red
-			.interpolate(d3v4.interpolateHcl);
+			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
 		return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null && d.data[colorby] >= 0.0)?color_mapping(d.data[colorby]):color(d.depth);
 	}
 	else if (colorby === "size") {
@@ -2618,9 +2616,8 @@ function colorNode(d) {
     property_mapping[colorby].min = Math.min.apply(null, scores);
 		var color_mapping = d3v4.scaleLinear()
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
-			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax])
-			.interpolate(d3v4.interpolateHcl);
-			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null)?color_mapping(d.data[colorby]):color(d.depth);
+			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
+			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null&& d.data[colorby] >= 0.0)?color_mapping(d.data[colorby]):color(d.depth);
 	}
 	else if (colorby === "molarity") {
     var scores = graph.nodes.map(d=>(d.data.molarity!=null && d.data.molarity!=-1)?d.data.molarity:null).filter(d=>d!=null);
@@ -2628,19 +2625,18 @@ function colorNode(d) {
     property_mapping[colorby].min = Math.min.apply(null, scores);
 		var color_mapping = d3v4.scaleLinear()
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
-			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax])
-			.interpolate(d3v4.interpolateHcl);
-			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null)?color_mapping(d.data[colorby]):color(d.depth);
+			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
+			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null&& d.data[colorby] >= 0.0)?color_mapping(d.data[colorby]):color(d.depth);
 	}
 	else if (colorby === "molecularweight") {
     var scores = graph.nodes.map(d=>(d.data.molecularweight!=null && d.data.molecularweight!=-1)?d.data.molecularweight:null).filter(d=>d!=null);
     property_mapping[colorby].max = Math.max.apply(null, scores);
     property_mapping[colorby].min = Math.min.apply(null, scores);
-		var color_mapping = d3v4.scaleLinear()
+    //try different mapping
+		var color_mapping = d3v4.scaleLinear()//d3v4.scaleLinear()
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
-			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax])
-			.interpolate(d3v4.interpolateHcl);
-		return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null) ? color_mapping(d.data[colorby]):color(d.depth);
+			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
+		return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null&& d.data[colorby] >= 0.0) ? color_mapping(d.data[colorby]):color(d.depth);
 	}
   else if (colorby === "default") {
     if (!d.children && "data" in d && "_color" in d.data)
