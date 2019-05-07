@@ -142,6 +142,7 @@ var canvasOption = '' +
       '<input type="color" id="max_color" onchange="ChangeMaxColor(this)" name="colormax" value="#00ffbf" />' +
       //add two color picker for the min-max linear mapping
       '<button id="applycolor" onclick="applyColorModeToIngredient()">Apply to ingredient color</button>' +
+      //load color palette?
       getSelect("canvas_map_r", "options_elems", "Node size",
                             "mapRadiusToProperty(this)", Object.keys(property_mapping),"size")+
       getSelect("canvas_group", "options_elems", "Node group by",

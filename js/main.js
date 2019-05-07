@@ -2580,7 +2580,8 @@ function colorNode(d) {
 			&& d.data.count === 0 && d.data.molarity === 0.0)? "red" : color(d.depth);
 	}
 	else if (colorby === "color") {
-		return (!d.children && "data" in d && "color" in d.data
+    //should work with compartments
+		return ( "data" in d && "color" in d.data
 			&& d.data.color !== null)? 'rgb('+ Math.floor(d.data.color[0]*255)+","
 															 + Math.floor(d.data.color[1]*255)+","
 															 + Math.floor(d.data.color[2]*255)+')' : color(d.depth);//rgb list ?
@@ -3403,7 +3404,7 @@ function ChangeColorNodeOver(){
   var acolor = node_over_to_use.data.color;
   GP_updateMeshColorGeometry(node_over_to_use);
   //change also in ngl view if geometry is toggled
-  if (node_over_to_use === node_selected) {
+  if (node_over_to_use === ngl_current_node) {//node_selected
     if  (document.getElementById("showgeom").checked ) {
       var comp = stage.getComponentsByName("geom_surface");
       if (comp.list.length)
@@ -4297,9 +4298,9 @@ function merge_graph(agraph,alink){
   new_nodes.forEach(function(n){
       var cnode = getNodeByName(n.data.name);
       if (n !== new_root) {
-        if (cnode == null && create_when_merge){
+        if (cnode == null){
           console.log(n.data.name);
-          merge_one_node(n);
+          if (create_when_merge) merge_one_node(n);
         }
         else {
             merge_node(cnode,n);

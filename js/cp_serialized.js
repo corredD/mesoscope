@@ -178,6 +178,7 @@ function oneCompartment(scomp, node) {
     }
   } else if (gtype === "None") {} else {}
   scomp["thickness"] = ("thickness" in node.data) ? node.data.thickness : 7.5;
+  scomp["color"] = ("color" in node.data) ? node.data.color : null;
   return scomp;
 }
 
@@ -475,6 +476,7 @@ function SetupOneCompartment(acomp, acompdic) {
     acomp["geom"] = "None";
   }
   //could have both a source file and a mesh ? if the source is a map or pdb ?
+  acomp["color"] = ("color" in acompdic) ? acompdic.color : null;
   acomp["thickness"] = ("thickness" in acompdic) ? acompdic.thickness : 7.5;
   return acomp;
 }
@@ -1157,6 +1159,20 @@ function cp_SerializedColorSchem(){
                    "y":parseInt(d.data.color[1]*255.0),
                    "z":parseInt(d.data.color[2]*255.0)};
       color_mapping_js[name_path]=node_color;
+    }
+    else {
+      //compartment inner and outer membrane if specified?
+      //root.mpn.membrane.inner_membrane
+      //root.mpn.membrane.outer_membrane
+      var name_path = d.ancestors().reverse().map(function(d) {
+        return (d.children) ? d.data.name : "";
+      }).join('.').slice(0, -1);
+      if (!d.data.color) d.data.color = [1,0,0];
+      var node_color = {"x":parseInt(d.data.color[0]*255.0),
+                   "y":parseInt(d.data.color[1]*255.0),
+                   "z":parseInt(d.data.color[2]*255.0)};
+      color_mapping_js[name_path+".membrane.outer_membrane"]=node_color;
+      color_mapping_js[name_path+".membrane.inner_membrane"]=node_color;
     }
   });
   console.log(JSON.stringify(color_mapping_js));
