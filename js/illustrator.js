@@ -1380,6 +1380,7 @@ function writeAtoms() {
             _records.push(sprintf(BiomtFormat, 2, k+1,-mat.elements[4],mat.elements[5],mat.elements[6],mat.elements[13]));//- + +
             _records.push(sprintf(BiomtFormat, 3, k+1,-mat.elements[8],mat.elements[9],mat.elements[10],mat.elements[14]));//- + +
           }
+          _records.push("REMARK 350END");
         }
         //then the atoms
         structure.structure.eachAtom((a) => {
