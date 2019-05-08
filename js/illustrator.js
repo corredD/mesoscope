@@ -1316,9 +1316,35 @@ function defaults(value, defaultValue) {
     return value !== undefined ? value : defaultValue;
 }
 
+
+//need a function to write BIOMT
+/*
+12345678901234567890123456789012345678901234567890123456789012345678901234567890
+REMARK 350 BIOMOLECULE: 1
+REMARK 350 APPLY THE FOLLOWING TO CHAINS: 1, 2, 3, 4
+REMARK 350   BIOMT1   1  1.000000  0.000000  0.000000        0.00000
+REMARK 350   BIOMT2   1  0.000000  1.000000  0.000000        0.00000
+REMARK 350   BIOMT3   1  0.000000  0.000000  1.000000        0.00000
+"0.30901699,0.80901699,-0.5,0, + - -
+-0.80901699,0.5,0.30901699,0,  - + +
+0.5,0.30901699,0.80901699,0,   - + +
+0,0,0,1"
+REMARK 350   BIOMT1   2  0.309017 -0.809017  0.500000        0.00000
+REMARK 350   BIOMT2   2  0.809017  0.500000  0.309017        0.00000
+REMARK 350   BIOMT3   2 -0.500000  0.309017  0.809017        0.00000
+"-0.80901699,0.5,-0.30901699,0,
+ -0.5,-0.30901699,0.80901699,0,
+  0.30901699,0.80901699,0.5,
+  0,0,0,0,1"
+REMARK 350   BIOMT1   3 -0.809017 -0.500000  0.309017        0.00000
+REMARK 350   BIOMT2   3  0.500000 -0.309017  0.809017        0.00000
+REMARK 350   BIOMT3   3 -0.309017  0.809017  0.500000        0.00000
+*/
 const AtomFormat = 'ATOM  %5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
 const HetatmFormat = 'HETATM%5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
+const BiomtFormat = 'REMARK 350   BIOMT%1d %3d%10.6f%10.6f%10.6f%15.5f';
 function writeAtoms() {
+    let writeBU = true;
     let ia = 1;
     let im = 1;
     let renumberSerial = false;
@@ -1339,7 +1365,38 @@ function writeAtoms() {
     }
     if (asele === "") asele = "polymer";
     console.log(asele);
-    if(bu)
+    if (bu && writeBU) {
+        //first write the matrix
+        for (var j = 0; j < o.object.biomolDict[au].partList.length; j++) {
+          //REMARK 350 BIOMOLECULE: 1
+          //REMARK 350 APPLY THE FOLLOWING TO CHAINS: 1, 2, 3, 4
+          var s= structure.object.biomolDict[au].getSelection()
+          var t = s.selection.rules.map(d=>d.chainname)
+          _records.push("REMARK 350 BIOMOLECULE: 1");
+          _records.push("REMARK 350 APPLY THE FOLLOWING TO CHAINS: "+t.join(', '));
+          for (var k = 0; k < o.object.biomolDict[au].partList[j].matrixList.length; k++) {
+            var mat = o.object.biomolDict[au].partList[j].matrixList[k];
+            _records.push(sprintf(BiomtFormat, 1, k+1,mat.elements[0],-mat.elements[1],-mat.elements[2],mat.elements[12]));//+ - -
+            _records.push(sprintf(BiomtFormat, 2, k+1,-mat.elements[4],mat.elements[5],mat.elements[6],mat.elements[13]));//- + +
+            _records.push(sprintf(BiomtFormat, 3, k+1,-mat.elements[8],mat.elements[9],mat.elements[10],mat.elements[14]));//- + +
+          }
+        }
+        //then the atoms
+        structure.structure.eachAtom((a) => {
+              const formatString = a.hetero ? HetatmFormat : AtomFormat;
+              const serial = this.renumberSerial ? ia : a.serial;
+              // Alignment of one-letter atom name such as C starts at column 14,
+              // while two-letter atom name such as FE starts at column 13.
+              let atomname = a.atomname;
+              atomname = ' ' + atomname;
+              //if (atomname.length === 1)
+              //    atomname = ' ' + atomname;
+              _records.push(sprintf(formatString, serial, atomname, a.resname, defaults(a.chainname, ' '), a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
+              defaults(a.element, '')));
+              ia += 1;
+          }, new NGL.Selection(asele));
+    }
+    else if(bu)
     {
       for (var j = 0; j < o.object.biomolDict[au].partList.length; j++) {
         for (var k = 0; k < o.object.biomolDict[au].partList[j].matrixList.length; k++) {
@@ -1405,7 +1462,7 @@ function onClick(){
       console.log(input);
       formData.append("input_txt", input);
     }
-    if (loaded_pdb) {
+    /*if (loaded_pdb) {
       if (structure_file_ext == "pdb")
         if (sele_elem.value!=""){
             structure_txt=writeAtoms();
@@ -1427,6 +1484,14 @@ function onClick(){
         }
       else formData.append("PDBID", PDBID);
     }
+    */
+    structure_txt=writeAtoms();
+    //make a blob of it?
+    var astructure_file = new Blob([structure_txt], {
+      type: 'text/plain'
+    });
+    //formData.append("PDBtxt",structure_txt);
+    formData.append("PDBfile",astructure_file);
     formData.append("_id", _id);
     formData.append("name",nameinput.value);
     formData.append("force_pdb",changed_selection);
