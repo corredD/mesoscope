@@ -430,7 +430,7 @@ function showOptions(e){
     atomic_outlines_paramsDiv.style.display = display;
     subunit_outlines_paramsDiv.style.display = display;
     chain_outlines_paramsDiv.style.display = display;
-    inp_options.style.display = display;
+    //inp_options.style.display = display;
 }
 
 function updateImage()
@@ -622,6 +622,24 @@ function getEntityChainAtomStyleAndNGL(){
         }
       });
     });
+    var hetatm_p_color_templates=[
+        OnCard("-C--","","",[0.60, 0.90, 0.60, 1.5]),
+        OnCard("----","","",[0.40, 0.90, 0.40, 1.5])
+      ];
+      //add hetatm
+    for (var d in hetatm_p_color_templates) {
+      var templ = hetatm_p_color_templates[d];
+      _records.push(sprintf(IllHetatmFormat,
+                          Ill_defaults(templ.atom, '----'),
+                          Ill_defaults(templ.residue, '---'),
+                          Ill_defaults(templ.chain, '-'),
+                          0,
+                          9999,
+                          Ill_defaults(templ.color[0], 1.0),
+                          Ill_defaults(templ.color[1], 0.0),
+                          Ill_defaults(templ.color[2], 0.0),
+                          Ill_defaults(templ.color[3], 1.5) ) );
+    }
     console.log(_selection_schem);
     schemeGeneral = NGL.ColormakerRegistry.addSelectionScheme(_selection_schem,"entity");
     astr = _records.join('\n')+"\n";
