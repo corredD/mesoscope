@@ -195,6 +195,9 @@
    This work was supported by Damon Runyon-Walter Winchell Cancer Research Fund Fellowship DRG 972,
    the US National Institutes of Health R01-GM120604 and the RCSB Protein Data Bank.
 
+   To get started, type in a PDB id, pick a Style, choose a view in the NGL window, and click Illustrate.
+   Documentation and Illustrate source at <a href=https://ccsb.scripps.edu/illustrate>https://ccsb.scripps.edu/illustrate</a>
+
   --------------------------------------------------------------------
   <a href=https://www.ncbi.nlm.nih.gov/pubmed/1476997>DS Goodsell & AJ Olson (1992) "Molecular Illustration in Black and White" JMolGraphics 10, 235-240.</a>
   --------------------------------------------------------------------
@@ -211,20 +214,21 @@
             <input type=number id="scale" step=1 value=12 /> Pixel per Angstrom <br />
             <label for="ill_style"> Style </label>
             <wired-combo id="ill_style" selected="1" role="combobox" tabindex="0">
-              <wired-item style="color:black" value="One">One Color</wired-item>
-              <wired-item style="color:black" value="OneRange">One Color Range</wired-item>
               <wired-item style="color:black" value="ProteinDNA">Protein/DNA</wired-item>
-              <wired-item style="color:black" value="Coarse">Coarse</wired-item>
-              <wired-item style="color:black" value="Generic">Generic</wired-item>
+              <wired-item style="color:black" value="EntityChain">EntityChain</wired-item>
               <wired-item style="color:black" value="Atomic">Atomic</wired-item>
               <wired-item style="color:black" value="CPK">CPK</wired-item>
-              <wired-item style="color:black" value="EntityChain">EntityChain</wired-item>
-              <wired-item style="color:black" value="Custom">Custom</wired-item>
+              <wired-item style="color:black" value="One">One Color</wired-item>
+              <wired-item style="color:black" value="OneRange">One Color Range</wired-item>
+              <wired-item style="color:black" value="Coarse">Coarse</wired-item>
+              <wired-item style="color:black" value="Generic">Generic</wired-item>
+              <wired-item style="color:black" value="Custom">Advanced</wired-item>
             </wired-combo>
             <input type="color" onchange="ChangeRep()" id="ucolor" name="ucolor" style="display:none" value="#ff0000">
             <div id="ao_options" style="display:none">
-              <wired-checkbox id="hb" name="hb" checked> Ignore water / hydrogen</wired-checkbox>
-              <wired-checkbox id="ao" name="ao" checked> Ambient Occlusion / Soft Shadow</wired-checkbox>
+              <wired-checkbox id="hb" name="hb" checked> Ignore hydrogen</wired-checkbox>
+              <wired-checkbox id="water" name="water" checked> Ignore water</wired-checkbox>
+              <wired-checkbox id="ao" name="ao" checked> Soft Shadow</wired-checkbox>
               <input type=number id="ao_params1" step=0.0001 value=0.0023 /> fractional shadowing around each atom : larger=darker (0.0-1.0, typically 0.0023)<br />
               <input type=number id="ao_params2" step=0.1 value=2.0 /> angle of shadowing around each atom : larger=tighter region (0.0-1.0, typically 2.0) <br />
               <input type=number id="ao_params3" step=0.1 value=1.0 /> shadowing only applied if z-difference greater than this value  (Angstroms, typically 1.0)<br />
@@ -253,7 +257,7 @@
     <div style="display:flex;flex-flow:column">
       <div>
         <div id="viewport" class="NGLpan" style="width:300px; height:300px;"></div>
-        <label for="ass_type"> Assambly</label>
+        <label for="ass_type"> Assembly</label>
         <wired-combo id="ass_type" onchange="changeBU()" selected="AU" role="combobox" tabindex="0">
           <wired-item style="color:black" value="AU">AU</wired-item>
         </wired-combo>

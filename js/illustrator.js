@@ -14,6 +14,7 @@ var inp_txt_holder = document.getElementById("inp_txt");
 var use_loaded_inp_txt = document.getElementById("use_loaded_inp_txt");
 var loaded_pdb = false;
 var ignore_h = true;
+var ignore_w = true;
 var current_style = "One";
 var changed_selection = false;
 //get the different elements
@@ -38,6 +39,7 @@ var sele_elem = document.getElementById("sel_str");
 var model_elem = document.getElementById("mod_type");
 var inp_options =document.getElementById("inp_options");
 var ignore_H= document.getElementById("hb");
+var ignore_W= document.getElementById("water");
 var ucolor = document.getElementById("ucolor");
 var customStyle = document.getElementById("customStyle");
 var customStyleColor = document.getElementById("acolor");
@@ -391,7 +393,7 @@ function changePDB(e){
         name: "polymer",
         colorScheme: colorsc,
         color:color,
-        assembly: "AU"
+        assembly: "BU1"
       });
       structure = o;
       o.autoView();
@@ -524,6 +526,7 @@ function getEntityChainAtomNGLStyle(){
 
 function getEntityChainAtomStyleAndNGL(){
     //one input color?
+    //handle HETATOM
     var _records=[];
     var _selection_schem=[];
     var nentity = structure.structure.entityList.length;
@@ -639,8 +642,8 @@ function getStructureWildCardStyle5(){
   var hetatm_n_color_templates=[]
   var proteins_color_templates = [
               OnCard("-OD-","ASP","",[1.00, 0.20, 0.20, 1.6]),
-              OnCard("-OE'","GLU","",[1.00, 0.20, 0.20, 1.6]),
-              OnCard("-NZ'","LYS","",[0.10, 0.70, 1.00, 1.6]),
+              OnCard("-OE-","GLU","",[1.00, 0.20, 0.20, 1.6]),
+              OnCard("-NZ-","LYS","",[0.10, 0.70, 1.00, 1.6]),
               OnCard("-NH-","ARG","",[0.10, 0.70, 1.00, 1.6]),
               OnCard("-NE-","ARG","",[0.10, 0.70, 1.00, 1.6]),
               OnCard("-ND-","HIS","",[0.10, 0.70, 1.00, 1.6]),
@@ -891,6 +894,25 @@ HETATM---------- 0,9999  0.50, 0.95, 0.50, 1.5\n\
 "
 
   */
+
+  var hetatm_p_color_templates=[
+      OnCard("-C--","","",[0.60, 0.90, 0.60, 1.5]),
+      OnCard("----","","",[0.40, 0.90, 0.40, 1.5])
+    ];
+    //add hetatm
+  for (var d in hetatm_p_color_templates) {
+    var templ = hetatm_p_color_templates[d];
+    _records.push(sprintf(IllHetatmFormat,
+                        Ill_defaults(templ.atom, '----'),
+                        Ill_defaults(templ.residue, '---'),
+                        Ill_defaults(templ.chain, '-'),
+                        0,
+                        9999,
+                        Ill_defaults(templ.color[0], 1.0),
+                        Ill_defaults(templ.color[1], 0.0),
+                        Ill_defaults(templ.color[2], 0.0),
+                        Ill_defaults(templ.color[3], 1.5) ) );
+  }
   astr = _records.join('\n')+"\n";
   console.log(_residues_done);
   return astr;
@@ -900,10 +922,14 @@ function prepareWildCard(style){
     //ignore hydrogen
     var astr=""
     if (ignore_H.checked){
-      astr+="HETATM-----HOH-- 0,9999, 0.5,0.5,0.5, 0.0\n\
-ATOM  -H-------- 0,9999, 1.0,1.0,1.0, 0.0\n\
-ATOM  H--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
+      astr+="HETATM-H-------- 0,9999, 1.1,1.1,1.1, 0.0\n\
+HETATMH--------- 0,9999, 1.1,1.1,1.1, 0.0\n\
+ATOM  -H-------- 0,9999, 1.1,1.1,1.1, 0.0\n\
+ATOM  H--------- 0,9999, 1.1,1.1,1.1, 0.0\n\
 ";
+    }
+    if (ignore_W.checked){
+      astr+="HETATM-----HOH-- 0,9999, 1.5,1.5,1.5, 0.0\n";
     }
     if (style == "OneRange")
     {
@@ -914,7 +940,9 @@ ATOM  H--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
         astr+=sprintf(IllAtomFormat,'-C--','---','-','0','9999',r,g,b,1.6 )+"\n";
         astr+=sprintf(IllAtomFormat,'----','---','-','0','9999',(r>=0.1)?r-0.1:r,
                         (g>=0.1)?g-0.1:g,(b>=0.1)?b-0.1:b,1.6 )+"\n";
-        astr+=sprintf(IllHetatmFormat,'----','---','-','0','9999',r,g,b,1.6 )+"\n"
+        astr+=sprintf(IllHetatmFormat,'----','---','-','0','9999',(r>=0.1)?r-0.1:r,
+                        (g>=0.1)?g-0.1:g,(b>=0.1)?b-0.1:b,1.6 )+"\n";
+        astr+=sprintf(IllHetatmFormat,'-C--','---','-','0','9999',r,g,b,1.6 )+"\n"
     }
     else if (style == "One"){
       var col = Util_getRGB(ucolor.value);
@@ -930,7 +958,14 @@ ATOM  H--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
     }
     else if (style=="Coarse")
     {         //open wildcard1
-        astr+=readWildCard("wildcard2.inp");
+        //astr+=readWildCard("wildcard2.inp");
+        astr+="ATOM  -P---  --- 0,9999 1.00, 0.49, 0.49, 5.0\n\
+ATOM  -C5--  --- 0,9999 1.00, 0.49, 0.49, 5.0\n\
+ATOM  -P--- D--- 0,9999 1.00, 0.75, 0.40, 5.0\n\
+ATOM  -C5-- D--- 0,9999 1.00, 0.75, 0.40, 5.0\n\
+ATOM  -CA------- 0,9999 0.50, 0.70, 1.00, 5.0\n\
+HETATM-C-------- 0,9999 0.60, 0.95, 0.60, 1.6\n\
+HETATM---------- 0,9999 0.50, 0.95, 0.50, 1.5\n";
         chain_outlines_params_elem[2].value = 6000;
     }
     else if (style=="Generic")
@@ -1000,7 +1035,8 @@ function prepareInput(){
     astr+="zrot\n"
     astr+=(rotation.z * 180 / Math.PI).toString()+"\n"
     astr+="wor\n"
-    astr+="0.99607843137,0.99607843137,0.99607843137,1.,1.,1.,1.,1.\n"
+    //astr+="0.99607843137,0.99607843137,0.99607843137,1.,1.,1.,1.,1.\n"
+    astr+="1.,1.,1.,1.,1.,1.,1.,1.\n"
     astr+=((sao)?"1":"0")+","+ ao_params1.value+","+ ao_params2.value+","+ ao_params3.value+","+ ao_params4.value+"\n"
     astr+="-30,-30                                                      # image size in pixels, negative numbers pad the molecule by that amount\n"
     astr+="illustrate\n"
@@ -1058,7 +1094,7 @@ function UpdateassemblyCombo(ngl_ob) {
     console.log(k);
     assembly_elem.innerHTML += '<wired-item style="color:black" value="'+k+'">'+k+'</wired-item>\n'
   });
-  assembly_elem.selected = "AU";
+  assembly_elem.selected = "BU1";
 }
 
 function GetSelection(sel_str, model) {
@@ -1389,11 +1425,12 @@ function writeAtoms() {
               // Alignment of one-letter atom name such as C starts at column 14,
               // while two-letter atom name such as FE starts at column 13.
               let atomname = a.atomname;
-              atomname = ' ' + atomname;
-              //if (atomname.length === 1)
-              //    atomname = ' ' + atomname;
-              _records.push(sprintf(formatString, serial, atomname, a.resname, defaults(a.chainname, ' '), a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
-              defaults(a.element, '')));
+              if (atomname.length <= 3)
+              {
+                  atomname = ' ' + atomname;
+                  _records.push(sprintf(formatString, serial, atomname, a.resname, defaults(a.chainname, ' '), a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
+                          defaults(a.element, '')));
+              }
               ia += 1;
           }, new NGL.Selection(asele));
     }
@@ -1411,13 +1448,16 @@ function writeAtoms() {
                 // Alignment of one-letter atom name such as C starts at column 14,
                 // while two-letter atom name such as FE starts at column 13.
                 let atomname = a.atomname;
-                atomname = ' ' + atomname;
-                //if (atomname.length === 1)
-                //    atomname = ' ' + atomname;
-                _records.push(sprintf(formatString, serial, atomname, a.resname,
+                if (atomname.length <= 3)
+                {
+                  atomname = ' ' + atomname;
+                  //if (atomname.length === 1)
+                  //    atomname = ' ' + atomname;
+                  _records.push(sprintf(formatString, serial, atomname, a.resname,
                                     defaults(a.chainname, ' '), a.resno, new_pos.x, new_pos.y, new_pos.z,
                                     defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
                                     defaults(a.element, '')));
+                }
                 ia += 1;
             }, new NGL.Selection(asele));
           //new_pos.applyMatrix4(mat);
@@ -1435,11 +1475,14 @@ function writeAtoms() {
             // Alignment of one-letter atom name such as C starts at column 14,
             // while two-letter atom name such as FE starts at column 13.
             let atomname = a.atomname;
-            atomname = ' ' + atomname;
-            //if (atomname.length === 1)
-            //    atomname = ' ' + atomname;
-            _records.push(sprintf(formatString, serial, atomname, a.resname, defaults(a.chainname, ' '), a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
-            defaults(a.element, '')));
+            if (atomname.length <= 3)
+            {
+                atomname = ' ' + atomname;
+                //if (atomname.length === 1)
+                //    atomname = ' ' + atomname;
+                _records.push(sprintf(formatString, serial, atomname, a.resname, defaults(a.chainname, ' '), a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
+              defaults(a.element, '')));
+            }
             ia += 1;
         }, new NGL.Selection(asele));
     }
