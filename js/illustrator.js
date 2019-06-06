@@ -1043,7 +1043,7 @@ function prepareInput(){
     astr+=(rotation.z * 180 / Math.PI).toString()+"\n"
     astr+="wor\n"
     //astr+="0.99607843137,0.99607843137,0.99607843137,1.,1.,1.,1.,1.\n"
-    astr+="1.,1.,1.,1.,1.,1.,1.,1.\n"
+    astr+="0.,0.,0.,0.,0.,0.,1.,1.\n"
     astr+=((sao)?"1":"0")+","+ ao_params1.value+","+ ao_params2.value+","+ ao_params3.value+","+ ao_params4.value+"\n"
     astr+="-30,-30                                                      # image size in pixels, negative numbers pad the molecule by that amount\n"
     astr+="illustrate\n"
