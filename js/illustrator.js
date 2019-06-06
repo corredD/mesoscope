@@ -657,16 +657,23 @@ function getStructureWildCardStyle5(){
       OnCard("-C--","","",[0.60, 0.90, 0.60, 1.5]),
       OnCard("----","","",[0.40, 0.90, 0.40, 1.5])
     ];
+  let asele="";
+  if (sele_elem.value&& sele_elem.value!=="") {
+    if (asele !== sele_elem.value) asele = sele_elem.value;
+  }
+  let mid = parseInt(model_elem.selected);
+  console.log(asele);
   structure.structure.eachEntity(ent=>{
-    var chlist = ent.chainIndexList;
+    var chlist = ent.chainIndexList;//per model?
     var cnames = []
-    for (var chid in chlist){
+    let chid = mdi;
+    //for (var chid in chlist){
         var cname = structure.structure.chainStore.getChainname(chlist[chid]);
         if (ent.entityType==1) {
           if (testSelectedChain(cname))
               if (!cnames.includes(cname)) cnames.push(cname);
         }
-    }
+    //}
     var is_protein = false;
     ent.eachChain( chain => {
       var chain_is_protein = false;
@@ -724,7 +731,7 @@ function getStructureWildCardStyle5(){
           }
         }
       }
-    });
+    },new NGL.Selection(asele));
   });
   //add hetatm
   for (var d in hetatm_p_color_templates) {
