@@ -15,7 +15,7 @@ var use_loaded_inp_txt = document.getElementById("use_loaded_inp_txt");
 var loaded_pdb = false;
 var ignore_h = true;
 var ignore_w = true;
-var current_style = "One";
+var current_style = "ProteinDNA";
 var changed_selection = false;
 //get the different elements
 var options_elem = document.getElementById("options");
