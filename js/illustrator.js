@@ -54,6 +54,8 @@ var customStyleSelectionChainsList = new Awesomplete(customStyleSelectionChains,
 
 var customStyleCard = customStyle.firstChild;
 
+var list_chain_selected=[]
+
 window.addEventListener('load', function() {
   //inp_options.style.display = "none";
 })
@@ -353,7 +355,7 @@ function loadStructure(e){
   var color = colorStyle.color;//"rgb(255,0,0)";
   stage.loadFile(structure_file).then(function (o) {
       o.addRepresentation("spacefill", {
-        sele: "polymer",
+        sele: "polymer and /0",
         name: "polymer",
         colorScheme: colorsc,
         color:color,
@@ -389,7 +391,7 @@ function changePDB(e){
   var color = colorStyle.color;//"rgb(255,0,0)";
   stage.loadFile('rcsb://'+PDBID).then(function (o) {
       o.addRepresentation("spacefill", {
-        sele: "polymer",
+        sele: "polymer and /0",
         name: "polymer",
         colorScheme: colorsc,
         color:color,
@@ -684,7 +686,7 @@ function getStructureWildCardStyle5(){
   structure.structure.eachEntity(ent=>{
     var chlist = ent.chainIndexList;//per model?
     var cnames = []
-    let chid = mdi;
+    let chid = mid;
     //for (var chid in chlist){
         var cname = structure.structure.chainStore.getChainname(chlist[chid]);
         if (ent.entityType==1) {
@@ -1151,7 +1153,7 @@ function GetSelection(sel_str, model) {
   return ngl_sele;
 }
 
-function testSelectedChain(chainName){
+function testSelectedChainBack(chainName){
     var tsplit = sele_elem.value.split("(polymer or rna or dna)");
     var elem=[];
     if (tsplit.length < 2) elem = tsplit[0].split(":");
@@ -1162,8 +1164,12 @@ function testSelectedChain(chainName){
           if  ( el[0] !== " " && !(!(el[0]))) selected_chains.push(el[0]);
       }
     )
-    if ( selected_chains.length === 0 ) return true;
+    if ( selected_chains.length == 0 ) return true;
     else return ($.inArray(chainName, selected_chains)!==-1);
+}
+function testSelectedChain(chainName){
+    if ( list_chain_selected.length == 0 ) return true;
+    else return ($.inArray(chainName, list_chain_selected)!==-1);
 }
 
 function addOptionsForMultiSelect(select_id,options){
@@ -1247,6 +1253,8 @@ function setModelOptions(ngl_ob) {
     //addOption(options, i, 'Model ' + (i + 1))
     model_elem.options[model_elem.options.length] = new Option(i, i,(parseInt(model) === i), (parseInt(model) === i));
   }
+  model_elem.selected = "0";
+  current_model = model_elem.selected;
   //if (modelStore.count === 0) model_elem.options[model_elem.options.length] = new Option(0, 0);
 }
 
@@ -1327,6 +1335,7 @@ function ChangeRep() {
 }
 
 function ChangeChainsSelection(an_elem) {
+  list_chain_selected=[]
   var aselection = "";
   //check the model
   var checkboxes = document.getElementById("selection_ch_checkboxes");
@@ -1345,18 +1354,24 @@ function ChangeChainsSelection(an_elem) {
     //aselection+="not :"+allcheck[0].id
     for (var i=0;i<all;i++)
     {
-        if (!allcheck[i].checked) aselection+=" and not :"+allcheck[i].id;
+        if (!allcheck[i].checked) {
+          aselection+=" and not :"+allcheck[i].id;
+        }
     }
   }
   else {
     //aselection+=":"+allcheck[0].id
     for (var i=0;i<all;i++)
     {
-        if (allcheck[i].checked) aselection+=" or :"+allcheck[i].id;
+        if (allcheck[i].checked) {
+          aselection+=" or :"+allcheck[i].id;
+          if (current_model) aselection+="/"+current_model;
+          list_chain_selected.push(allcheck[i].id)
+        }
     }
   }
   //add the model
-  aselection += GetSelection("",current_model);
+  //aselection += GetSelection("",current_model);
   console.log(aselection);
   sele_elem.value = aselection;
   ChangeRep();
@@ -1424,6 +1439,7 @@ function writeAtoms() {
       //build using given selection AND biomolDic selection
       asele = "(" + o.object.biomolDict[au].getSelection().string + ") AND " + asele;
     }
+    if (asele == "" && current_model != null ) asele = "/"+model_elem.selected;
     if (asele === "") asele = "polymer";
     console.log(asele);
     if (bu && writeBU) {

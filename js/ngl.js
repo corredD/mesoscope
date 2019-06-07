@@ -3239,7 +3239,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
         if (ngl_current_node.data.opm === 1)
           {
             pdb_id_elem.innerHTML = '<a href="http://opm.phar.umich.edu/protein.php?search=' + o.name + '" target="_blank"> opm : ' + o.name + '</a>';
-            if (!(ngl_current_node.data.comments.includes("opm"))) ngl_current_node.data.comments += " opm";
+            if (ngl_current_node.data.comments && !(ngl_current_node.data.comments.includes("opm"))) ngl_current_node.data.comments += " opm";
             updateDataGridRowElem(0, ngl_current_item_id, "comments", ngl_current_node.data.comments);
           }
       }
