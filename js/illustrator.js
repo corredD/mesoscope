@@ -555,9 +555,9 @@ function getEntityChainAtomStyleAndNGL(){
         var found = false;
         if ( cnames.includes(chain.chainname ) ) {
           cid = cnames.indexOf(chain.chainname);
-          var atom_colors = GenerateOneColorRangePalette(chain_colors[cid].rgb(),2);
-          var c1 = atom_colors[0].rgb();//chain_colors[cid].rgb()
-          var c2 = atom_colors[1].rgb();//chain_colors[cid].brighten().rgb()
+          //var atom_colors = GenerateOneColorRangePalette(chain_colors[cid].rgb(),2);
+          var c1 = chain_colors[cid].rgb();//atom_colors[1].rgb();//chain_colors[cid].rgb()
+          var c2 = chain_colors[cid].rgb();//atom_colors[0].rgb();//chain_colors[cid].brighten().rgb()
           //cid+=1;
           chain.eachResidue(r =>{
             var res = r.resname;
@@ -592,9 +592,9 @@ function getEntityChainAtomStyleAndNGL(){
                                   Ill_defaults(chain.chainname, '-'),
                                   0,
                                   9999,
-                                  Ill_defaults(c2[0]/255.0, 1.0),
-                                  Ill_defaults(c2[1]/255.0, 0.0),
-                                  Ill_defaults(c2[2]/255.0, 0.0),
+                                  Ill_defaults(c2[0]/255.0-0.1, 1.0),
+                                  Ill_defaults(c2[1]/255.0-0.1, 0.0),
+                                  Ill_defaults(c2[2]/255.0-0.1, 0.0),
                                   Ill_defaults("", 1.6) ) );
 
           }
@@ -615,9 +615,9 @@ function getEntityChainAtomStyleAndNGL(){
                                 Ill_defaults(chain.chainname, '-'),
                                 0,
                                 9999,
-                                Ill_defaults(c2[0]/255.0, 1.0),
-                                Ill_defaults(c2[1]/255.0, 0.0),
-                                Ill_defaults(c2[2]/255.0, 0.0),
+                                Ill_defaults(c2[0]/255.0-0.1, 1.0),
+                                Ill_defaults(c2[1]/255.0-0.1, 0.0),
+                                Ill_defaults(c2[2]/255.0-0.1, 0.0),
                                 Ill_defaults("", 1.6) ) );
 
           }
@@ -1438,7 +1438,7 @@ function ChangeModel() {
   current_model = model_elem.selected;//.value;
   console.log(curr_sel + "/" + current_model);
   sele_elem.value = curr_sel + "/" +current_model;
-  
+
   setChainSelectionOptions();
   ChangeRep();
 }
