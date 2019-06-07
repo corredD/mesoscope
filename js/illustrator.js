@@ -391,7 +391,7 @@ function changePDB(e){
   var color = colorStyle.color;//"rgb(255,0,0)";
   stage.loadFile('rcsb://'+PDBID).then(function (o) {
       o.addRepresentation("spacefill", {
-        sele: "polymer and /0",
+        sele: "polymer and /0 and not _H",
         name: "polymer",
         colorScheme: colorsc,
         color:color,
@@ -546,6 +546,7 @@ function getEntityChainAtomStyleAndNGL(){
                 if (!cnames.includes(cname)) cnames.push(cname);
           }
       }
+      console.log(cnames);
       var is_protein = false;
       var chain_colors = GenerateOneColorRangePalette(entity_colors[ent.index].rgb(),cnames.length);
       var cid = 0;
@@ -553,10 +554,11 @@ function getEntityChainAtomStyleAndNGL(){
         var chain_is_protein = false;
         var found = false;
         if ( cnames.includes(chain.chainname ) ) {
+          cid = cnames.indexOf(chain.chainname);
           var atom_colors = GenerateOneColorRangePalette(chain_colors[cid].rgb(),2);
           var c1 = atom_colors[0].rgb();//chain_colors[cid].rgb()
           var c2 = atom_colors[1].rgb();//chain_colors[cid].brighten().rgb()
-          cid+=1;
+          //cid+=1;
           chain.eachResidue(r =>{
             var res = r.resname;
             if (r.moleculeType == 4 || r.moleculeType == 5) {
@@ -681,19 +683,19 @@ function getStructureWildCardStyle5(){
   if (sele_elem.value&& sele_elem.value!=="") {
     if (asele !== sele_elem.value) asele = sele_elem.value;
   }
-  let mid = parseInt(model_elem.selected);
+  //let mid = parseInt(model_elem.selected);
   console.log(asele);
   structure.structure.eachEntity(ent=>{
     var chlist = ent.chainIndexList;//per model?
     var cnames = []
-    let chid = mid;
-    //for (var chid in chlist){
+    //let chid = mid;
+    for (var chid in chlist){
         var cname = structure.structure.chainStore.getChainname(chlist[chid]);
         if (ent.entityType==1) {
           if (testSelectedChain(cname))
               if (!cnames.includes(cname)) cnames.push(cname);
         }
-    //}
+    }
     var is_protein = false;
     ent.eachChain( chain => {
       var chain_is_protein = false;
@@ -945,6 +947,59 @@ HETATM---------- 0,9999  0.50, 0.95, 0.50, 1.5\n\
   return astr;
 }
 
+function getWildCardCPK()
+{
+   return "HETATM-----HOH-- 0,9999, 0.5,0.5,0.5, 0.0\n\
+ATOM  -H-------- 0,9999, 1.00, 1.00, 1.00, 1.1\n\
+ATOM  H--------- 0,9999, 1.00, 1.00, 1.00, 1.1\n\
+ATOM  -N-------- 0,9999  0.10, 0.70, 1.00, 1.55\n\
+ATOM  -O-------- 0,9999  1.00, 0.20, 0.20, 1.52\n\
+ATOM  -C-------- 0,9999  0.50, 0.50, 0.50, 1.7\n\
+ATOM  -S-------- 0,9999  1.00, 0.90, 0.50, 1.8\n\
+ATOM  -P-------- 0,9999  1.00, 0.90, 0.50, 1.8\n\
+HETATMF--------- 0,9999  0.40, 0.90, 0.40, 1.47\n\
+HETATMCL-------- 0,9999  0.40, 0.90, 0.40, 1.75\n\
+HETATMBR-------- 0,9999  0.40, 0.90, 0.40, 1.85\n\
+HETATM-I-------- 0,9999  0.40, 0.90, 0.40, 1.98\n\
+HETATMMG-------- 0,9999  1.00, 0.40, 1.00, 0.86\n\
+HETATMCA-------- 0,9999  1.00, 0.40, 1.00, 1.14\n\
+HETATMNA-------- 0,9999  1.00, 0.40, 1.00, 1.16\n\
+HETATM-K-------- 0,9999  1.00, 0.40, 1.00, 1.52\n\
+HETATMFE-------- 0,9999  1.00, 0.40, 1.00, 0.70\n\
+HETATMCU-------- 0,9999  1.00, 0.40, 1.00, 0.87\n\
+HETATMZN-------- 0,9999  1.00, 0.40, 1.00, 0.88\n\
+HETATM-H-------- 0,9999, 1.00, 1.00, 1.00, 1.0\n\
+HETATMH--------- 0,9999, 1.00, 1.00, 1.00, 1.0\n\
+HETATM-N-------- 0,9999  0.10, 0.70, 1.00, 1.55\n\
+HETATM-O-------- 0,9999  1.00, 0.20, 0.20, 1.55\n\
+HETATM-C-------- 0,9999  0.50, 0.50, 0.50, 1.7\n\
+HETATM-S-------- 0,9999  1.00, 0.90, 0.50, 1.8\n\
+HETATM-P-------- 0,9999  1.00, 0.90, 0.50, 1.8\n\
+HETATMSE-------- 0,9999  1.00, 0.90, 0.50, 1.9\n\
+ATOM  ---------- 0,9999  0.40, 0.90, 0.40, 1.5\n\
+HETATM---------- 0,9999  0.40, 0.90, 0.40, 1.5\n\
+";
+}
+
+function getWildCardGeneric(){
+  return "ATOM  -C-------- 0,9999, 1.0,1.0,1.0, 1.6\n\
+ATOM  C--------- 0,9999, 1.0,1.0,1.0, 1.6\n\
+ATOM  -S-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
+ATOM  -P-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
+ATOM  -N-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+ATOM  -O-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+ATOM  ---------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+HETATM-H-------- 0,9999, 1.0,1.0,1.0, 0.0\n\
+HETATMH--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
+HETATM-C-------- 0,9999, 1.0,1.0,1.0, 1.6\n\
+HETATM-S-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
+HETATM-P-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
+HETATM-N-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+HETATM-O-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+HETATM---------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+";
+}
+
 function prepareWildCard(style){
     //ignore hydrogen
     var astr=""
@@ -997,7 +1052,7 @@ HETATM---------- 0,9999 0.50, 0.95, 0.50, 1.5\n";
     }
     else if (style=="Generic")
     {         //open wildcard1
-        astr+=readWildCard("generic.inp");
+        astr+=getWildCardGeneric();//readWildCard("generic.inp");
         //chain_outlines_params_elem[2].value = 6000;
     }
     else if (style=="Atomic")
@@ -1006,7 +1061,7 @@ HETATM---------- 0,9999 0.50, 0.95, 0.50, 1.5\n";
     }
     else if (style=="CPK")
     {         //open wildcard1
-        astr+=readWildCard("wildcard_cpk.inp");
+        astr+=getWildCardCPK();
     }
     else if (style=="EntityChain")
     {
@@ -1383,7 +1438,7 @@ function ChangeModel() {
   current_model = model_elem.selected;//.value;
   console.log(curr_sel + "/" + current_model);
   sele_elem.value = curr_sel + "/" +current_model;
-
+  
   setChainSelectionOptions();
   ChangeRep();
 }
