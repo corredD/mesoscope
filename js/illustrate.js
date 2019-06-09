@@ -64,9 +64,9 @@ function ill_toRGBf(color){
 
 //const AtomFormat = 'ATOM  %5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
 //const HetatmFormat = 'HETATM%5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
-const BiomtFormat = 'REMARK 350   BIOMT%1d %3d%10.6f%10.6f%10.6f%15.5f';
 //ngl_current_structure.structure
 function ill_writeAtoms(structure) {
+    const BiomtFormat = 'REMARK 350   BIOMT%1d %3d%10.6f%10.6f%10.6f%15.5f';
     let writeBU = true;
     let ia = 1;
     let im = 1;
