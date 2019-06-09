@@ -18,6 +18,7 @@ var pcp_elem = [];
 var offset_elem = [];
 var ngl_geom_opacity = 1.0;
 var use_mglserver_beads = false;
+var ill_style = document.getElementById("ill_style");
 
 var nLod = 3;
 var slidercluster_elem;
@@ -1766,9 +1767,10 @@ function NGL_Illustrate(){
     var formData = new FormData();
     formData.append("key", "query");
     node_selected.data.sprite.scale2d = 6;
-    var input = ill_prepareInput(4,nameinput,6);
+    var input = ill_prepareInput((document.getElementById("ill_style").checked)?1:0,nameinput,6);
     formData.append("input_txt", input);
-    if (node_selected.data.source.pdb.length == 4){
+    console.log(input);//problem with rotation?
+    /*if (node_selected.data.source.pdb.length == 4){
       if (sele_elem.value!="" || assembly_elem.selectedOptions[0].value!="AU"){
           structure_txt=NGL_writeAtoms();
           formData.append("PDBtxt",structure_txt);
@@ -1782,8 +1784,15 @@ function NGL_Illustrate(){
       }
       else formData.append("PDBfile", pathList_[node_selected.data.source.pdb]);
     }
+    */
+    structure_txt=ill_writeAtoms(ngl_current_structure);
+    var astructure_file = new Blob([structure_txt], {
+      type: 'text/plain'
+    });
+    formData.append("PDBfile",astructure_file);
     formData.append("_id", ill_current_id);
     formData.append("name",nameinput);
+    formData.append("force_pdb",true);
     var xhr = new XMLHttpRequest();
     var url = 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py'
     xhr.open('POST', url);
@@ -1817,7 +1826,9 @@ function NGL_Illustrate(){
           node_selected.data.sprite.image = node_selected.data.name+".png";
           Util_download_src_png(node_selected.data.thumbnail.src, node_selected.data.name);
       }
+      toggleHide(document.getElementById("spinner"));
     };
+    toggleShow(document.getElementById("spinner"));
     xhr.send(formData);
 }
 

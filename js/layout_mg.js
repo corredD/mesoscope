@@ -236,6 +236,7 @@ var ngl_options= ''+
   '<button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
   '<button onclick="NextIgredient()" style="">Next Ingredient</button>' +
   '<button onclick="NGL_UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite</button>' +
+  '<input type="checkbox" id="ill_style" checked="false">Coarse Illustration</input>' +
   '<button onclick="NGL_Illustrate()" style="">Illustrate</button>' +
   '<input type="checkbox" id="savethumbnail" checked="true">Save Thumbnail/Sprite</input>' +
   '<button class="accordion">NGL options</button>'+
@@ -331,6 +332,7 @@ var ngloptions = '' +
     '<div style="position:absolute;top:0px;z-index:999"><button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
     '<button onclick="NextIgredient()" style="">Next Ingredient</button>' +
     '<button onclick="NGL_UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite</button>' +
+    '<input type="checkbox" id="ill_style">Coarse Illustration</input>' +
     '<button onclick="NGL_Illustrate()" style="">Illustrate</button>' +
     '<input type="checkbox" id="savethumbnail" checked="true">Save Thumbnail/Sprite</input></div>' +
     ngl_viewport+

@@ -5,47 +5,220 @@ var ao_params=[0.0023,2.0,1.0,0.7];
 var ill_current_id=-1;
 var ignore_h = true;
 
-function getText(url){
-    // read text from URL location
-    var request = new XMLHttpRequest();
-    request.open('GET', url, false);
-    request.send(null);
-    return request.responseText;
+var schemeId2 = NGL.ColormakerRegistry.addSelectionScheme([
+  ["rgb(255,140,140)", "_O and nucleic"],//1.00, 0.55, 0.55
+  ["rgb(255,125,125)", "_P and nucleic"],//1.00, 0.49, 0.49
+  ["rgb(255,166,166)", "not _O and not _P and nucleic"],//1.00, 0.65, 0.65
+  ["rgb(127,178,255)", "_C"],
+  ["rgb(102,153,255)", "not _C"]// 0.40, 0.60, 1.00
+], "style2");
+//0.50, 0.70, 1.00
+//wildcard2
+var schemeId3 = NGL.ColormakerRegistry.addSelectionScheme([
+  ["rgb(127,178,255)", ".CA"]
+], "style2");
+
+var schemeId5 = NGL.ColormakerRegistry.addSelectionScheme([
+  [toRGB([1.00, 0.20, 0.20]), "(.O5' or .O3' or .OP) and nucleic"],//1.00, 0.55, 0.55
+  [toRGB([1.00, 0.90, 0.50]), "_P and nucleic"],//1.00, 0.49, 0.49
+  [toRGB([0.80, 0.90, 1.00]), "_N and nucleic"],//1.00, 0.65, 0.65
+  [toRGB([1.00, 0.80, 0.80]), "_O and not (.O5' or .O3' or .OP) and nucleic"],
+  [toRGB([1.00, 1.00, 1.00]), "_C"],
+  [toRGB([1.00, 0.20, 0.20]), "((.OD and ASP) or (.OE and GLU)) and protein"],
+  [toRGB([0.10, 0.70, 1.00]), "((.NZ and LYS) or ((.NH or .NE) and ARG)) or ((.ND or .NE) and HIS)) and protein"],
+  [toRGB([1.00, 0.80, 0.80]), "_O and protein"],
+  [toRGB([0.80, 0.90, 1.00]), ".N and protein"],
+  [toRGB([1.00, 0.80, 0.80]), "_O and protein"],
+  [toRGB([0.60, 0.90, 0.60]), "_C and (ligand and hetero)"],
+  [toRGB([0.40, 0.90, 0.40]), "not _C and (ligand and hetero)"],
+], "style5");
+
+var schemeId6 = NGL.ColormakerRegistry.addSelectionScheme([
+  [toRGB([1.00, 1.00, 1.00]), "_H"],//1.00, 0.55, 0.55
+  [toRGB([0.50, 0.50, 0.50]), "_C"],//1.00, 0.49, 0.49
+  [toRGB([0.10, 0.70, 1.00]), "_N"],//1.00, 0.65, 0.65
+  [toRGB([1.00, 0.20, 0.20]), "_O"],
+  [toRGB([1.00, 0.90, 0.50]), "_S or _SE or _P"],
+  [toRGB([0.40, 0.90, 0.40]), "(_F or _BR or _CL or _I) and (ligand and hetero)"],
+  [toRGB([1.00, 0.40, 1.00]), "(_MG or _CA or _NA or _K or _FE or _CU or _ZN ) and (ligand and hetero)"]
+], "style6");
+
+const illAtomFormat   = 'ATOM  %4s-%3s-%1s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
+const ilHetatmFormat = 'HETATM%4s-%3s-%1s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
+
+function ill_defaults(value, defaultValue) {
+    return (value !== undefined && value !== "")? value : defaultValue;
 }
 
-function readWildCard(filename){
-    var url="https://mesoscope.scripps.edu/beta/data/"+filename;
-    var outer_text = getText(url);
-    return outer_text;
+function ill_toRGB(color){
+  return "rgb("+Math.ceil(color[0]*255).toString()+","+
+                Math.ceil(color[1]*255).toString()+","+
+                Math.ceil(color[2]*255).toString()+")";
 }
 
-function prepareWildCard(style){
+function ill_toRGBf(color){
+  return "rgb("+color[0].toString()+","+
+                color[1].toString()+","+
+                color[2].toString()+")";
+}
+
+//const AtomFormat = 'ATOM  %5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
+//const HetatmFormat = 'HETATM%5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
+const BiomtFormat = 'REMARK 350   BIOMT%1d %3d%10.6f%10.6f%10.6f%15.5f';
+//ngl_current_structure.structure
+function ill_writeAtoms(structure) {
+    let writeBU = true;
+    let ia = 1;
+    let im = 1;
+    let renumberSerial = false;
+    let asele="";
+    var o = structure;
+    var current_model = model_elem.value;
+    _records = [];
+    if (sele_elem.value&& sele_elem.value!=="") {
+      if (asele !== sele_elem.value) asele = sele_elem.value;
+    }
+    var bu = false;
+    var au=assembly_elem.selectedOptions[0].value;//Options[0].value;
+    if (au !== "AU" && o.object.biomolDict[au]) bu = true;
+    if (asele === "" && bu) {
+      //need to apply the matrix to the selection inside the BU selection ?
+      //console.log(o.object.biomolDict[o.assembly].getSelection());
+      //build using given selection AND biomolDic selection
+      asele = "(" + o.object.biomolDict[au].getSelection().string + ") AND " + asele;
+    }
+    if (asele == "" && current_model != null ) asele = "/"+model_elem.value;
+    if (asele === "") asele = "polymer";
+    console.log(asele);
+    if (bu && writeBU) {
+        //first write the matrix
+        for (var j = 0; j < o.object.biomolDict[au].partList.length; j++) {
+          //REMARK 350 BIOMOLECULE: 1
+          //REMARK 350 APPLY THE FOLLOWING TO CHAINS: 1, 2, 3, 4
+          var s= structure.object.biomolDict[au].getSelection()
+          var t = s.selection.rules.map(d=>d.chainname)
+          _records.push("REMARK 350 BIOMOLECULE: 1");
+          _records.push("REMARK 350 APPLY THE FOLLOWING TO CHAINS: "+t.join(', '));
+          for (var k = 0; k < o.object.biomolDict[au].partList[j].matrixList.length; k++) {
+            var mat = o.object.biomolDict[au].partList[j].matrixList[k];
+            _records.push(sprintf(BiomtFormat, 1, k+1,mat.elements[0],-mat.elements[1],-mat.elements[2],mat.elements[12]));//+ - -
+            _records.push(sprintf(BiomtFormat, 2, k+1,-mat.elements[4],mat.elements[5],mat.elements[6],mat.elements[13]));//- + +
+            _records.push(sprintf(BiomtFormat, 3, k+1,-mat.elements[8],mat.elements[9],mat.elements[10],mat.elements[14]));//- + +
+          }
+          _records.push("REMARK 350END");
+        }
+        //then the atoms
+        structure.structure.eachAtom((a) => {
+              const formatString = a.hetero ? HetatmFormat : AtomFormat;
+              const serial = this.renumberSerial ? ia : a.serial;
+              // Alignment of one-letter atom name such as C starts at column 14,
+              // while two-letter atom name such as FE starts at column 13.
+              let atomname = a.atomname;
+              if (atomname.length <= 3)
+              {
+                  atomname = ' ' + atomname;
+                  _records.push(sprintf(formatString, serial, atomname, a.resname, defaults(a.chainname, ' '), a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
+                          defaults(a.element, '')));
+              }
+              ia += 1;
+          }, new NGL.Selection(asele));
+    }
+    else if(bu)
+    {
+      for (var j = 0; j < o.object.biomolDict[au].partList.length; j++) {
+        for (var k = 0; k < o.object.biomolDict[au].partList[j].matrixList.length; k++) {
+          var mat = o.object.biomolDict[au].partList[j].matrixList[k];
+          //console.log("mat ",j,k);
+          structure.structure.eachAtom((a) => {
+                var new_pos = new NGL.Vector3(a.x, a.y, a.z);//should be uncentered
+                new_pos.applyMatrix4(mat);
+                const formatString = a.hetero ? HetatmFormat : AtomFormat;
+                const serial = renumberSerial ? ia : a.serial;
+                // Alignment of one-letter atom name such as C starts at column 14,
+                // while two-letter atom name such as FE starts at column 13.
+                let atomname = a.atomname;
+                if (atomname.length <= 3)
+                {
+                  atomname = ' ' + atomname;
+                  //if (atomname.length === 1)
+                  //    atomname = ' ' + atomname;
+                  _records.push(sprintf(formatString, serial, atomname, a.resname,
+                                    defaults(a.chainname, ' '), a.resno, new_pos.x, new_pos.y, new_pos.z,
+                                    defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
+                                    defaults(a.element, '')));
+                }
+                ia += 1;
+            }, new NGL.Selection(asele));
+          //new_pos.applyMatrix4(mat);
+          //pos[pos.length] = new_pos.x - center.x;
+          //pos[pos.length] = new_pos.y - center.y;
+          //pos[pos.length] = new_pos.z - center.z;
+          //rad[rad.length] = radius;
+        }
+      }
+    }
+    else {
+      structure.structure.eachAtom((a) => {
+            const formatString = a.hetero ? HetatmFormat : AtomFormat;
+            const serial = this.renumberSerial ? ia : a.serial;
+            // Alignment of one-letter atom name such as C starts at column 14,
+            // while two-letter atom name such as FE starts at column 13.
+            let atomname = a.atomname;
+            if (atomname.length <= 3)
+            {
+                atomname = ' ' + atomname;
+                //if (atomname.length === 1)
+                //    atomname = ' ' + atomname;
+                _records.push(sprintf(formatString, serial, atomname, a.resname, defaults(a.chainname, ' '), a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
+              defaults(a.element, '')));
+            }
+            ia += 1;
+        }, new NGL.Selection(asele));
+    }
+    _records.push(sprintf('%-80s', 'END'));
+    return _records.join('\n');
+}
+
+
+function ill_prepareWildCard(style){
     //ignore hydrogen
     var astr=""
     //use the selection?
     if (ignore_h){
-      astr+="HETATM-----HOH-- 0,9999, 0.5,0.5,0.5, 0.0\n\
-ATOM  -H-------- 0,9999, 1.0,1.0,1.0, 0.0\n\
-ATOM  H--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
+      astr+="HETATM-H-------- 0,9999, 1.1,1.1,1.1, 0.0\n\
+HETATMH--------- 0,9999, 1.1,1.1,1.1, 0.0\n\
+ATOM  -H-------- 0,9999, 1.1,1.1,1.1, 0.0\n\
+ATOM  H--------- 0,9999, 1.1,1.1,1.1, 0.0\n\
 ";
     }
-    if (style == 1)
+    if (style == 0)
     {
-        astr+="ATOM  ---------- 0,9999,1.0,1.0,1.0,1.6\n";//all atoms
-        astr+="HETATM---------- 0,9999,0.8,0.8,0.8,1.6\n";//all atoms
+        astr+="ATOM  -C-------- 0,9999, 1.0,1.0,1.0, 1.6\n\
+ATOM  C--------- 0,9999, 1.0,1.0,1.0, 1.6\n\
+ATOM  -S-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
+ATOM  -P-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
+ATOM  -N-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+ATOM  -O-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+ATOM  ---------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+HETATM-H-------- 0,9999, 1.0,1.0,1.0, 0.0\n\
+HETATMH--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
+HETATM-C-------- 0,9999, 1.0,1.0,1.0, 1.6\n\
+HETATM-S-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
+HETATM-P-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
+HETATM-N-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+HETATM-O-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+HETATM---------- 0,9999, 1.0,1.0,1.0, 1.5\n";
     }
-    else if (style == 2)
+    else if (style == 1)
     {
         //#open wildcard1
-        astr+=readWildCard("wildcard1.inp");
-    }
-    else if (style==3)
-    {         //open wildcard1
-        astr+=readWildCard("wildcard2.inp");
-    }
-    else if (style==4)
-    {         //open wildcard1
-        astr+=readWildCard("generic.inp");
+        astr+="ATOM  -P---  --- 0,9999 1.00, 0.49, 0.49, 5.0\n\
+ATOM  -C5--  --- 0,9999 1.0,1.0,1.0, 5.0\n\
+ATOM  -P--- D--- 0,9999 1.0,1.0,1.0, 5.0\n\
+ATOM  -C5-- D--- 0,9999 1.0,1.0,1.0, 5.0\n\
+ATOM  -CA------- 0,9999 1.0,1.0,1.0, 5.0\n\
+HETATM-C-------- 0,9999 1.0,1.0,1.0, 1.6\n\
+HETATM---------- 0,9999 1.0,1.0,1.0, 1.5\n";
         chain_outlines_params[2] = 6000;
     }
     astr+="END\n"
@@ -56,12 +229,10 @@ function ill_prepareInput(astyle,nameinput,ascale=12){
     var q = stage.animationControls.controls.rotation;
     var rotation = new NGL.Euler().setFromQuaternion( q);
     var position = new NGL.Vector3(0,0,0);
-    //position.subVectors(stage.animationControls.controls.position , ngl_center);
-    //position.multiplyScalar(-1.0);
     var sao = true;
     var astr="read\n"
     astr+=nameinput+".pdb\n"
-    astr+=prepareWildCard(astyle);
+    astr+=ill_prepareWildCard(astyle);
     astr+="center\n"
     astr+="auto\n"
     astr+="trans\n"
@@ -79,8 +250,9 @@ function ill_prepareInput(astyle,nameinput,ascale=12){
     astr+="zrot\n"
     astr+=(rotation.z * 180 / Math.PI).toString()+"\n"
     astr+="wor\n"
-    astr+="0.99607843137,0.99607843137,0.99607843137,1.,1.,1.,1.,1.\n"
-    astr+=((sao)?"1":"0")+","+ao_params.join()+"\n";
+    //astr+="0.99607843137,0.99607843137,0.99607843137,1.,1.,1.,1.,1.\n"
+    astr+="0.,0.,0.,0.,0.,0.,1.,1.\n"
+    astr+=((sao)?"1":"0")+","+ ao_params.join()+"\n";
     astr+="-30,-30                                                      # image size in pixels, negative numbers pad the molecule by that amount\n"
     astr+="illustrate\n"
     astr+=atomic_outlines_params.join()+"  # parameters for outlines, atomic\n"
@@ -90,5 +262,3 @@ function ill_prepareInput(astyle,nameinput,ascale=12){
     astr+=nameinput+".pnm\n"
     return astr;
 }
-
-//node_selected.data.sprite.scale2d
