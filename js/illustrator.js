@@ -1005,13 +1005,13 @@ function prepareWildCard(style){
     var astr=""
     if (ignore_H.checked){
       astr+="HETATM-H-------- 0,9999, 1.1,1.1,1.1, 0.0\n\
-HETATMH--------- 0,9999, 1.1,1.1,1.1, 0.0\n\
-ATOM  -H-------- 0,9999, 1.1,1.1,1.1, 0.0\n\
-ATOM  H--------- 0,9999, 1.1,1.1,1.1, 0.0\n\
+HETATMH--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
+ATOM  -H-------- 0,9999, 1.0,1.0,1.0, 0.0\n\
+ATOM  H--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
 ";
     }
     if (ignore_W.checked){
-      astr+="HETATM-----HOH-- 0,9999, 1.5,1.5,1.5, 0.0\n";
+      astr+="HETATM-----HOH-- 0,9999, 1.0,1.0,0.0, 0.0\n";
     }
     if (style == "OneRange")
     {
