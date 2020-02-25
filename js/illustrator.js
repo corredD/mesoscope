@@ -58,6 +58,25 @@ var list_chain_selected=[]
 
 window.addEventListener('load', function() {
   //inp_options.style.display = "none";
+query = parseParams();
+beiframe = query.header ? query.header == 'false' : false;
+let mainDiv = document.getElementById("mainDiv");
+let mainContent =  document.getElementById("mainContent");
+if (beiframe)//document.domain == "ccsb.scripps.edu" ) //iframe
+{
+  let ch1 = document.getElementById("bgimage");
+  let ch2 = document.getElementById("bgtext");
+  ch1.parentNode.removeChild(ch1);
+  ch2.parentNode.removeChild(ch2);
+  mainDiv.style["background-color"]="white";
+  mainDiv.style.color = "black";
+  mainContent.className="";
+  console.log(mainDiv);
+  console.log(mainContent);
+  //ch1.innerHTML="";
+  //ch2.innerHTML="";
+  //inverse color ?
+}
 })
 var current_selection=""
 var current_model=0
@@ -89,6 +108,28 @@ var ngl_available_color_schem = [
   "value",
   "volume"
 ];
+
+//check if iframe
+//console.log(document.domain);
+//console.log(parent.document);
+//console.log(parent.document.domain);
+let beiframe = false;
+function parseParams(){
+  return location.search
+    .substr(1)
+    .split("&")
+    .map(function(pair){
+      var a = pair.split("=");
+      var o = {};
+      o[a[0]] = a[1];
+      return o;
+    })
+    .reduce(function(a,b){
+      for(var key in b) a[key] = b[key];
+      return a;
+    });
+}
+
 
 function toRGB(color){
   return "rgb("+Math.ceil(color[0]*255).toString()+","+

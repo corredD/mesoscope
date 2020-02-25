@@ -1707,22 +1707,34 @@ function updateAttributesNode(anode,new_data,akey) {
 			 console.log("update ",key,anode.data[key],new_data[key]);
 			 if (key === "offset"){
 				 anode.data.offset = (Array.isArray(new_data.offset)) ? new_data.offset : new_data.offset.split(",").map(function(d) {
-	         return parseFloat(d);
-	       });
+	         		return parseFloat(d);
+	       		});
 			 }
 			 else if (key ==="pcpalAxis") {
 				 anode.data.pcpalAxis = (Array.isArray(new_data.pcpalAxis)) ? new_data.pcpalAxis : new_data.pcpalAxis.split(",").map(function(d) {
-	         return parseFloat(d);
-	       });
+	         		return parseFloat(d);
+	       		});
 			 }
 			 else if (key === "pdb") {
 				 if (!anode.data.source) anode.data.source={};
 				 anode.data.source.pdb = new_data.pdb;
 			 }
-			 else {
+			 else if (key === "bu") {
+				if (!anode.data.source) anode.data.source={};
+				anode.data.source.bu = new_data.bu;
+			}
+			else if (key === "model") {
+				if (!anode.data.source) anode.data.source={};
+				anode.data.source.model = new_data.model;
+			}
+			else if (key === "selection") {
+				if (!anode.data.source) anode.data.source={};
+				anode.data.source.selection = new_data.selection;
+			}
+			else {
 				 if(key in anode.data)
 				 		anode.data[key] = new_data[key];
-			 }
+			}
 		}
 		return anode;
 }

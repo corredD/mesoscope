@@ -868,7 +868,7 @@ function CreateDataColumnFromD3Nodes(agraph) {
       var elem = JSON.parse(JSON.stringify(agraph[i].data));
       if ("source" in elem) {
         var model =""
-        if ("model" in elem.source) model = (elem.source.mode !=="")? elem.source.model : "";
+        if ("model" in elem.source) model = (elem.source.model !=="")? elem.source.model : "";
         elem.bu = ("bu" in elem.source) ? elem.source.bu : "";
         elem.selection = ("selection" in elem.source) ? sele = elem.source.selection : "";//NGL_GetSelection(elem.source.selection,model) : "";
         elem.pdb = elem.source.pdb;
@@ -1489,7 +1489,6 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
     console.log("doubleClick");
     console.log(e);
     console.log(args);
-    console.log()
     var cell = grid.getCellFromEvent(e);
     var cid = grid.getColumns()[cell.cell].id;
     var arow = grid.dataView.getItem(args.row);

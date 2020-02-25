@@ -424,7 +424,7 @@ def queryForm(form, verbose = 0):
     print
     print "{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(id)+"\"}"
     #displayResult(tmpPDBName,httpfile,httpimg,queryTXT)
-    cleanup(wrkDir, "5 days")
+    cleanup(wrkDir, "1 days")
     return
 
 #https://files.rcsb.org/download/1crn.pdb

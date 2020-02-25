@@ -818,10 +818,16 @@ function OneCPIngredient(node, surface) {
     };
   }
   //add the selection and the bu in the source
-  node.data.source.selection = (node.data.selection) ? node.data.selection : "";
-  node.data.source.bu = (node.data.bu) ? node.data.bu : "";
-  node.data.source.model = (node.data.model) ? node.data.model : "";
-
+  //node.data.source.selection = (node.data.selection) ? node.data.selection : "";
+  //node.data.source.bu = (node.data.bu) ? node.data.bu : "";
+  //node.data.source.model = (node.data.model) ? node.data.model : "";
+  if (!(node.data.source.selection) || node.data.source.selection === '')
+    node.data.source.selection =  (node.data.selection) ? node.data.selection : '';
+  if (!(node.data.source.bu) || node.data.source.bu === '')
+    node.data.source.bu = (node.data.bu) ? node.data.bu : '';
+  if (!(node.data.source.model) || node.data.source.model === '')
+    node.data.source.model = (node.data.model) ? node.data.model : '';
+    
   aing_dic["source"] = node.data.source; //var source = ("pdb" in ing_dic)? ing_dic["pdb"] : "None";
   aing_dic["nbMol"] = (node.data.count!=="")? parseInt(node.data.count):0;//shouldnt be a string
   aing_dic["molarity"] = node.data.molarity;

@@ -709,6 +709,8 @@ function Util_download_png(the_image, name) {
     canvas.width = the_image.width;
     canvas.height = the_image.height;
     var base_image = new Image();
+    // Fix CORS error
+    base_image.crossOrigin = 'anonymous';
     base_image.onload = function() {
         //context.fillStyle = "#FFF";
         //context.fillRect(0, 0, canvas.width, canvas.height);

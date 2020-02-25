@@ -29,6 +29,9 @@ var cluster_elem;
 var nbBeads_elem;
 var ngl_force_build_beads = false;
 
+var cluster_force_radius = -1.0;
+var cluster_avg_radius = false;
+var use_cluster_radius = false;
 var current_annotation;
 var title_annotation = document.getElementById("pdb_title");
 
@@ -553,6 +556,11 @@ function NGL_Setup() {
     NGL_updateCurrentBeadsLevel();
   });
 
+  var cl_radius = document.getElementById("cl_radius");
+  cl_radius.addEventListener('onchange', function(e) {
+    NGL_updateCurrentBeadsLevel();
+  });
+
   slidercluster_elem2 = document.getElementById("slidercl_params2");
   slidercluster_label_elem2 = document.getElementById("cl_params2");
   slidercluster_elem2.addEventListener('input', function(e) {
@@ -913,6 +921,25 @@ function NGL_updateCurrentBeadsLevelServer() {
     processData: false,
     timeout: 60000
   });
+}
+
+function NGL_toggleUseCurrentBeadsRadius(e) {
+  console.log(e)
+  use_cluster_radius = e.checked;
+  console.log(use_cluster_radius)
+  if (use_cluster_radius === false) cluster_force_radius = -1;
+  else cluster_force_radius = cl_radius.value;
+  NGL_updateCurrentBeadsLevel();
+}
+
+function NGL_updateCurrentBeadsRadius(e) {
+  var new_radius = e.value;
+  //var lod = beads_elem.selectedOptions[0].value;
+  //ngl_load_params.beads.rad[lod].radii
+  if (use_cluster_radius) {
+    cluster_force_radius = new_radius;
+    NGL_updateCurrentBeadsLevel();
+  }
 }
 
 function NGL_updateCurrentBeadsLevel() {
@@ -2564,10 +2591,10 @@ function NGL_GetGeometricCenterArray(clusteri, some_data) {
   }
   return {
     "center": center,
-    "radius": R
+    "radius": (cluster_force_radius!=-1.0)?cluster_force_radius:parseInt(R)
   };
 }
-
+//node_selected.data.radii[0].radii=node_selected.data.radii[0].radii.map(x=>3.0)
 function NGL_ClusterStructure(o, center) {
   return buildWithKmeans(o, center, parseInt(slidercluster_elem.value));
   //if (cluster_elem.selectedOptions[0].value==="Kmeans") return buildWithKmeans(o,center);
