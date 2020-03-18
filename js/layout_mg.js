@@ -200,10 +200,12 @@ var ngl_widget_options = ''+
                         "NGL_showBeadsLevel(this)", ["All","0","1","2","None"],"None")+
   '<div>'+
     '<label> number of cluster</label>' +
-    '<input id="slidercl_params1" style="width:70%;display:inline" type="range" min="1" max="100"" step="1" value="10" /> ' +
-    '<label id="cl_params1" for="slidercl_params1">10</label>' +  getSpinner("stopkmeans","stopKmeans()")+
+    '<input id="slidercl_params1" style="width:70%;display:inline" type="range" min="1" max="200"" step="1" value="10" /> ' +
+    '<input class="inputNumber" id="slidercl_params11" min="1" max="200" type="number" value="10" />' +getSpinner("stopkmeans","stopKmeans()")+
   '</div>'+
   '<div>'+
+  '<input type="checkbox"  id="toggle_cluster_edit" onclick="NGL_ChangeOpacityMultiSpheresComp_cb(this)">' + 
+  '<label for="toggle_cluster_edit"> Edit beads (ctrl) </label> '+
   '<input type="checkbox"  id="cl_use_radius" onclick="NGL_toggleUseCurrentBeadsRadius(this)" >' + 
   '<label for="showgeom"> Overwrite cluster radius</label> '+   
   '</div>'+
@@ -284,7 +286,8 @@ var ngl_options= ''+
   //' </select>' +
     '<div>'+
       '<label> number of cluster</label>' +
-      '<input id="slidercl_params1" style="width:70%;display:inline" type="range" min="1" max="100"" step="1" value="10" /> ' +
+      '<input id="slidercl_params1" style="width:70%;display:inline" type="range" min="1" max="200"" step="1" value="10" /> ' +
+      '<input class="inputNumber" id="slidercl_params2" min="1" max="200" type="number" value="1" />' +
       '<label id="cl_params1" for="slidercl_params1">10</label>' +  getSpinner("stopkmeans","stopKmeans()")+
       '<input id="cl_radius" min="1.0" max="100.0" onchange="NGL_updateCurrentBeadsRadius(this)" type="number" value="1.0" style="width:30%"/>' +
       '<input type="checkbox"  id="cl_use_radius" onclick="NGL_updateCurrentBeadsRadius(this)" checked>' +

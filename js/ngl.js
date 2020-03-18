@@ -22,12 +22,15 @@ var ill_style = document.getElementById("ill_style");
 
 var nLod = 3;
 var slidercluster_elem;
-var slidercluster_label_elem;
+//var slidercluster_label_elem;
 var slidercluster_elem2;
 var slidercluster_label_elem2;
 var cluster_elem;
 var nbBeads_elem;
 var ngl_force_build_beads = false;
+var slidercl_params2;
+
+var toggle_cluster_edit;
 
 var cluster_force_radius = -1.0;
 var cluster_avg_radius = false;
@@ -292,7 +295,7 @@ function NGL_updateMetaBallsGeom(anode)
     anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
     anode.data.radii=[{"radii":[500.0]}];
   }
-  NGL_multiSpheresComp(anode.data.name,anode.data.pos[0].coords,anode.data.radii[0].radii);//box around ?
+  NGL_multiSpheresComp(anode.data.name,anode.data.pos[0].coords,node_selected.data.radii[0].radii.map(x=>x/2.0),1.0);//box around ?
   if (nlg_preview_isosurface){
     if (!ngl_marching_cube) ngl_marching_cube = new NGL.MarchingCubes(30, null, true, false);
     NGL_updateMetaBalls(anode);
@@ -546,13 +549,28 @@ function NGL_Setup() {
     NGL_updateMBcomp();
     NGL_applyPcp();
   });
+  
 
   slidercluster_elem = document.getElementById("slidercl_params1");
-  slidercluster_label_elem = document.getElementById("cl_params1");
+  slidercl_params2= document.getElementById("slidercl_params11");
+  //slidercluster_label_elem = document.getElementById("cl_params1");
+
   slidercluster_elem.addEventListener('input', function(e) {
-    slidercluster_label_elem.textContent = slidercluster_elem.value;
+    //slidercluster_label_elem.textContent = slidercluster_elem.value;
+    slidercl_params2.value = slidercluster_elem.value;
   });
   slidercluster_elem.addEventListener('mouseup', function(e) {
+    NGL_updateCurrentBeadsLevel();
+  });
+
+  slidercl_params2.addEventListener('input', function(e) {
+    //slidercluster_label_elem.textContent = slidercl_params2.value;
+    slidercluster_elem.value = slidercl_params2.value;
+    NGL_updateCurrentBeadsLevel();
+  });
+
+  slidercl_params2.addEventListener('onchange', function(e) {
+    slidercluster_elem.value = slidercl_params2.value;
     NGL_updateCurrentBeadsLevel();
   });
 
@@ -571,6 +589,8 @@ function NGL_Setup() {
       NGL_buildCMS();
   });
 
+  toggle_cluster_edit= document.getElementById("toggle_cluster_edit");
+
   heading = document.getElementById("heading");
   grid_viewport = document.getElementById("viewport"); //createElement( "div" );
 
@@ -586,7 +606,6 @@ function NGL_Setup() {
   $('#color_type').val("atomindex");
 
   ngl_force_build_beads = false;
-
 
   title_annotation = document.getElementById("pdb_title");
   pcontainer = document.getElementById("NGL") || document.getElementById("NGLpane"); //
@@ -617,8 +636,66 @@ function NGL_Setup() {
     backgroundColor: "white"
   });
   viewport.setAttribute("style", "width:100%; height:100%;");
-  stage.setParameters({cameraType: "orthographic"})
-  stage.mouseObserver.signals.dragged.add(function (deltaX,deltaY){
+  stage.setParameters({cameraType: "orthographic"});
+  stage.mouseControls.add("scroll-ctrl", 
+  //stage.mouseObserver.signals.scrolled.add(
+    function (stage,delta) {
+    console.log("scrolled "+delta.toString());
+    console.log(delta);
+    if (!ngl_current_pickingProxy) return;
+    if (ngl_current_pickingProxy.sphere) {
+      var asplit = ngl_current_pickingProxy.sphere.name.split("_");
+      var name = asplit[0];
+      if (name === "lod" ){
+        //resize beads
+        var lod = parseInt(asplit[1]);
+        var lodid=parseInt(asplit[3]);
+        console.log("lod "+lod.toString()+" "+lodid.toString());
+        //anode should be the current selected node
+        var change = 1.0;
+        var r = parseFloat(node_selected.data.radii[lod].radii[lodid]);
+        var rr = ngl_current_pickingProxy.sphere.radius;
+        if (delta < 0.0) {
+          node_selected.data.radii[lod].radii[lodid] = r-change;       
+        }
+        else {
+          node_selected.data.radii[lod].radii[lodid] = r+change;
+        }
+        if (node_selected.data.radii[lod].radii[lodid]<0) node_selected.data.radii[lod].radii[lodid] = 1.0;
+        ngl_current_pickingProxy.component.setScale(node_selected.data.radii[lod].radii[lodid]/rr);
+      }
+      else {
+        //resize metaballs
+        var anode = getNodeByName(name);
+        var mbi = parseInt( (asplit.length>1)? asplit[1]:"0");
+        var change = 1.0;
+        var r = parseFloat(node_selected.data.radii[0].radii[mbi]);
+        var rr = ngl_current_pickingProxy.sphere.radius;
+        if (delta < 0.0) {
+          anode.data.radii[0].radii[mbi] = r-change;       
+        }
+        else {
+          anode.data.radii[0].radii[mbi] = r+change;
+        }
+        if (node_selected.data.radii[0].radii[mbi]<0) node_selected.data.radii[0].radii[mbi] = 1.0;
+        ngl_current_pickingProxy.component.setScale((node_selected.data.radii[0].radii[mbi]/2)/rr);
+        //change the compslider value but no trigger ?
+        comp_slider.value = node_selected.data.radii[0].radii[mbi];
+        comp_slider_num.value = node_selected.data.radii[0].radii[mbi];
+        if (nlg_preview_isosurface) {
+          NGL_updateMetaBalls(anode);
+          var geo = ngl_marching_cube.generateGeometry();
+          //how to update the shape mesh instead of recreating it
+          geo.name = name;
+          NGL_MetaBallsGeom(geo);
+        }
+      }
+    }
+  });
+  //and shift ?
+  //stage.mouseControls.add("drag-ctrl", 
+  stage.mouseObserver.signals.dragged.add(
+    function (deltaX,deltaY){
     //update
     //console.log(ngl_current_pickingProxy);
     //console.log(node_selected.data.nodetype);
@@ -640,24 +717,39 @@ function NGL_Setup() {
     else if (ngl_current_pickingProxy.sphere) {
       var asplit = ngl_current_pickingProxy.sphere.name.split("_");
       var name = asplit[0];
+      if (name === "lod" ){
+        var cpos = new NGL.Vector3();
+        cpos.copy(ngl_current_pickingProxy.position);
+        var lod = parseInt(asplit[1]);
+        var lodid=parseInt(asplit[3]);
+        console.log("lod "+lod.toString()+" "+lodid.toString());
+        var pi = lodid*3;
+        //anode should be the current selected node
+        node_selected.data.pos[lod].coords[pi] = cpos.x;
+        node_selected.data.pos[lod].coords[pi+1] = cpos.y;
+        node_selected.data.pos[lod].coords[pi+2] = cpos.z;
+      }
+      else 
       //retrieve the node with this name
-      var anode = getNodeByName(name);
-      var mbi = parseInt( (asplit.length>1)? asplit[1]:"0");
-      var pi = mbi*3;
-      var cpos = new NGL.Vector3();
-      console.log(name,mbi,pi,anode);
-      console.log("update ",pi,anode.data.pos[0].coords);
-      cpos.copy(ngl_current_pickingProxy.position);
-      anode.data.pos[0].coords[pi] = cpos.x;
-      anode.data.pos[0].coords[pi+1] = cpos.y;
-      anode.data.pos[0].coords[pi+2] = cpos.z;
-      //console.log("update ",pi,anode.data.pos[0].coords);
-      if (nlg_preview_isosurface) {
-        NGL_updateMetaBalls(anode);
-        var geo = ngl_marching_cube.generateGeometry();
-        //how to update the shape mesh instead of recreating it
-        geo.name = name;
-        NGL_MetaBallsGeom(geo);
+      {
+        var anode = getNodeByName(name);
+        var mbi = parseInt( (asplit.length>1)? asplit[1]:"0");
+        var pi = mbi*3;
+        var cpos = new NGL.Vector3();
+        console.log(name,mbi,pi,anode);
+        console.log("update ",pi,anode.data.pos[0].coords);
+        cpos.copy(ngl_current_pickingProxy.position);
+        anode.data.pos[0].coords[pi] = cpos.x;
+        anode.data.pos[0].coords[pi+1] = cpos.y;
+        anode.data.pos[0].coords[pi+2] = cpos.z;
+        //console.log("update ",pi,anode.data.pos[0].coords);
+        if (nlg_preview_isosurface) {
+          NGL_updateMetaBalls(anode);
+          var geo = ngl_marching_cube.generateGeometry();
+          //how to update the shape mesh instead of recreating it
+          geo.name = name;
+          NGL_MetaBallsGeom(geo);
+        }
       }
   }
   });
@@ -669,10 +761,47 @@ function NGL_Setup() {
     ngl_current_pickingProxy = pickingProxy;
   });
 
+  var tooltip = document.createElement("div");
+  Object.assign(tooltip.style, {
+    display: "none",
+    position: "absolute",
+    zIndex: 10,
+    pointerEvents: "none",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    color: "lightgrey",
+    padding: "0.5em",
+    fontFamily: "sans-serif"
+  });
+  stage.viewer.container.appendChild(tooltip);
+
   stage.signals.hovered.add(function (pickingProxy){
     //console.log("pickingProxy");
     //console.log(pickingProxy);
-   if (pickingProxy) ngl_current_pickingProxy = pickingProxy;
+   if (pickingProxy) {
+     ngl_current_pickingProxy = pickingProxy;
+     var rad = 0.0;
+     if (ngl_current_pickingProxy.sphere)
+     {
+      var asplit = ngl_current_pickingProxy.sphere.name.split("_");
+      var name = asplit[0];
+      if (name === "lod" ){
+        //resize beads
+        var lod = parseInt(asplit[1]);
+        var lodid=parseInt(asplit[3]);
+        rad = node_selected.data.radii[lod].radii[lodid];
+      }
+      else {
+        var mbi = parseInt( (asplit.length>1)? asplit[1]:"0");
+        rad = node_selected.data.radii[0].radii[mbi];
+      }
+      var cp = pickingProxy.canvasPosition;
+      tooltip.innerText = "Radius: " + rad.toString();
+      tooltip.style.bottom = cp.y + 3 + "px";
+      tooltip.style.left = cp.x + 3 + "px";
+      tooltip.style.display = "block";
+    }
+   }
+   else tooltip.style.display = "none";
   });
 
   //stage.mouseControls.remove( "drag-ctrl-right" );
@@ -770,11 +899,58 @@ function NGL_showBox(e) {
     .setVisibility(e.checked);
 }
 
+
+function NGL_LoadSpheres(pos, rad) {
+  //start with level 0
+  //add the beads representation to current stage
+  console.log("load Beads");
+  console.log(pos);
+  console.log(rad);
+  if (!pos || pos.length === 0) return;
+  var nLod = rad.length;
+  console.log(nLod);
+  for (var i = 0; i < nLod; i++) {
+    var lod = i;
+    if (!pos[lod].coords) continue;
+    var col = Array(pos[lod].coords.length).fill(0).map(Util_makeARandomNumber);
+    NGL_multiSpheresComp("lod_"+lod.toString()+"_",pos[lod].coords,rad[lod].radii,(toggle_cluster_edit.checked)?1.0:0.5);
+    /*
+    //check if exist
+    var rep = stage.getComponentsByName("beads_"+i);
+    if (rep.list.length){
+      rep.list.forEach(function(elem){stage.removeComponent(elem);});
+    }
+
+    var shape = new NGL.Shape("beads_" + lod, {
+      disableImpostor: true,
+      radialSegments: 10
+    });
+    //console.log(labels);
+    var sphereBuffer = new NGL.SphereBuffer({
+      position: new Float32Array(pos[lod].coords),
+      color: new Float32Array(col),
+      radius: new Float32Array(rad[lod].radii)
+      //	labelType:"text",
+      //	labelText:labels
+    });
+    shape.addBuffer(sphereBuffer)
+    var shapeComp = stage.addComponentFromObject(shape)
+    var rep = shapeComp.addRepresentation("beads_" + lod, {
+      opacity: 1.0,
+      visibility: true
+    });
+    console.log("rep", rep);
+    */
+    stage.autoView();
+  }
+}
+
+
 function NGL_updateCurrentBeadsLevelClient() {
   //center
   //async function updateCurrentBeadsLevel() {
   console.log("update beads", beads_elem.selectedOptions[0].value); //undefined?//lod level
-  var asele = "polymer";
+  var asele = "";
   var o = ngl_current_structure;
   if (o.ngl_sele && o.ngl_sele!=="") {
     if (o.ngl_sele.string !== null) asele = o.ngl_sele.string;
@@ -786,7 +962,7 @@ function NGL_updateCurrentBeadsLevelClient() {
   if (sele_elem.value&& sele_elem.value!=="") {
     if (asele !== sele_elem.value) asele = sele_elem.value;
   }
-  if (asele === "") asele = "polymer";
+  if (asele === "") asele = "";
   var bu = false;
   if (o.assembly !== "AU" && o.object.biomolDict[o.assembly]) {
     //need to apply the matrix to the selection inside the BU selection ?
@@ -818,29 +994,63 @@ function NGL_updateCurrentBeadsLevelClient() {
     //comp.list[0].reprList[0].dispose();
     //comp.list[0].dispose();
   }
+  if (ngl_load_params.beads.rad) NGL_RemoveMultiSpheresComp("lod_"+lod.toString()+"_",ngl_load_params.beads.rad[lod].radii.length);
+
   var res = NGL_buildBeads(lod, ngl_current_structure, center);
   console.log("finsihed building", res);
   var col = Array(ngl_load_params.beads.pos[lod].coords.length).fill(0).map(Util_makeARandomNumber);
   var labels = Array(ngl_load_params.beads.pos[lod].coords.length).fill("0").map(function(v, i) {
     return "bead_" + i.toString()
   });
-
-  var sphereBuffer = new NGL.SphereBuffer({
+  //var p = new NGL.SpherePicker
+  /*var sphereBuffer = new NGL.SphereBuffer({
     position: new Float32Array(ngl_load_params.beads.pos[lod].coords),
     color: new Float32Array(col),
     radius: new Float32Array(ngl_load_params.beads.rad[lod].radii)
     //labelType:"text",
     //labelText:labels
-  })
+  }
+  ,{ disableImpostor: true }
+  )
   //update the component buffer ?
-  var shape = new NGL.Shape("beads_" + lod);
-  shape.addBuffer(sphereBuffer)
+  var shape = new NGL.Shape("beads_" + lod,{
+    disableImpostor: true,
+    radialSegments: 10
+  });
+  
+  //shape.addBuffer(sphereBuffer)
+  var p=0;
+  var pos = ngl_load_params.beads.pos[lod].coords;
+  for (var i=0;i<ngl_load_params.beads.rad[lod].radii.length;i++) {  
+    shape.addSphere([pos[p],pos[p+1],pos[p+2]], [1, 0, 0], ngl_load_params.beads.rad[lod].radii[i]/2.0,"lod_"+lod.toString()+"_"+i.toString());
+    p+=3;
+  }
+
   var shapeComp = stage.addComponentFromObject(shape)
   var rep = shapeComp.addRepresentation("beads_" + lod, {
-    opacity: 0.6,
+    //opacity: 0.6,
     visibility: true
   });
+  */
+  //NGL_RemoveMultiSpheresComp("lod_"+lod.toString()+"_",ngl_load_params.beads.rad[lod].radii.length);
+  NGL_multiSpheresComp("lod_"+lod.toString()+"_",ngl_load_params.beads.pos[lod].coords,ngl_load_params.beads.rad[lod].radii,(toggle_cluster_edit.checked)?1.0:0.5);
+
   nbBeads_elem.textContent = '' + ngl_load_params.beads.pos[lod].coords.length / 3 + ' beads';
+  /*
+  NGL_multiSpheresComp(anode.data.name,anode.data.pos[0].coords,anode.data.radii[0].radii);//box around ?
+    var shape = new NGL.Shape("beads_" + lod, {
+      disableImpostor: true,
+      radialSegments: 10
+    });
+    var p=0;
+    var pos = ngl_load_params.beads.pos[lod].coords;
+    for (var i=0;i<ngl_load_params.beads.rad[lod].radii.length;i++) {  
+      shape.addSphere([pos[p],pos[p+1],pos[p+2]], [1, 0, 0], ngl_load_params.beads.rad[lod].radii[i]/2.0,name+"_lod_"+lod.toString()+"_"+i.toString());
+      p+=3;
+    }
+    var shapeComp = stage.addComponentFromObject(shape);
+    shapeComp.addRepresentation("beads_" + lod); 
+  */
 }
 
 // server side function for computing beads
@@ -987,6 +1197,8 @@ function NGL_changeClusterMethod(e) {
   NGL_updateCurrentBeadsLevel();
 }
 
+//NGL_RemoveMultiSpheresComp("lod_"+lod.toString()+"_",ngl_load_params.beads.rad[lod].radii.length);
+//NGL_multiSpheresComp("lod_"+lod.toString()+"_",ngl_load_params.beads.pos[lod].coords,ngl_load_params.beads.rad[lod].radii);
 function NGL_showBeadsLevel_cb(alevel) {
   if (!node_selected.data.pos) return;
   if (!ngl_load_params.beads.pos) return;
@@ -996,10 +1208,13 @@ function NGL_showBeadsLevel_cb(alevel) {
       var rep = stage.getComponentsByName("beads_" + i);
       console.log(rep, "beads_" + i);
       if (rep.list.length !== 0)
+      {  
         if (rep.list[0].reprList.length !== 0) {
           rep.list[0].reprList[0].setVisibility(false);
-
         }
+      }
+      if ( i < ngl_load_params.beads.rad.length) 
+        NGL_ChangeVisibilityMultiSpheresComp("lod_"+i.toString()+"_",ngl_load_params.beads.rad[i].radii.length,false);
     }
     nbBeads_elem.textContent = "";
   } else if (alevel === "All") {
@@ -1007,12 +1222,15 @@ function NGL_showBeadsLevel_cb(alevel) {
       var rep = stage.getComponentsByName("beads_" + i);
       console.log(rep, "beads_" + i);
       if (rep.list.length !== 0)
-        if (rep.list[0].reprList.length !== 0) {
+      {  if (rep.list[0].reprList.length !== 0) {
           rep.list[0].reprList[0].setVisibility(true);
           rep.list[0].reprList[0].setParameters({
             opacity: 0.6
           });
         }
+      }
+      if ( i < ngl_load_params.beads.rad.length) 
+        NGL_ChangeVisibilityMultiSpheresComp("lod_"+i.toString()+"_",ngl_load_params.beads.rad[i].radii.length,true);
     }
     nbBeads_elem.textContent = "";
   } else {
@@ -1025,13 +1243,16 @@ function NGL_showBeadsLevel_cb(alevel) {
           nbBeads_elem.textContent = '' + ngl_load_params.beads.pos[i].coords.length / 3 + ' beads';
       } else v = false;
       console.log(rep, "beads_" + i, v);
-      if (rep.list.length !== 0)
+      if (rep.list.length !== 0){
         if (rep.list[0].reprList.length !== 0) {
           rep.list[0].reprList[0].setVisibility(v);
           rep.list[0].reprList[0].setParameters({
             opacity: 0.6
           })
         }
+      }
+      if ( i < ngl_load_params.beads.rad.length) 
+        NGL_ChangeVisibilityMultiSpheresComp("lod_"+i.toString()+"_",ngl_load_params.beads.rad[i].radii.length,v);
     }
   }
 }
@@ -2313,49 +2534,6 @@ function NGL_setupBeads(respone) {
   console.log(response);
 }
 
-function NGL_LoadSpheres(pos, rad) {
-  //start with level 0
-  //add the beads representation to current stage
-  console.log("load Beads");
-  console.log(pos);
-  console.log(rad);
-  if (!pos || pos.length === 0) return;
-  var nLod = rad.length;
-  console.log(nLod);
-  for (var i = 0; i < nLod; i++) {
-    var lod = i;
-    if (!pos[lod].coords) continue;
-    var col = Array(pos[lod].coords.length).fill(0).map(Util_makeARandomNumber);
-
-    //check if exist
-    var rep = stage.getComponentsByName("beads_"+i);
-    if (rep.list.length){
-      rep.list.forEach(function(elem){stage.removeComponent(elem);});
-    }
-
-    var shape = new NGL.Shape("beads_" + lod, {
-      disableImpostor: true,
-      radialSegments: 10
-    });
-    //console.log(labels);
-    var sphereBuffer = new NGL.SphereBuffer({
-      position: new Float32Array(pos[lod].coords),
-      color: new Float32Array(col),
-      radius: new Float32Array(rad[lod].radii)
-      //	labelType:"text",
-      //	labelText:labels
-    });
-    shape.addBuffer(sphereBuffer)
-    var shapeComp = stage.addComponentFromObject(shape)
-    var rep = shapeComp.addRepresentation("beads_" + lod, {
-      opacity: 1.0,
-      visibility: true
-    });
-    console.log("rep", rep);
-    stage.autoView();
-  }
-}
-
 /*
 use
 ngl_current_structure = o;
@@ -2437,7 +2615,7 @@ function NGL_GetAtomDataSet(pdb,struture_object){
   var ats = o.structure.atomStore;
   var nAtom = ats.count;
   console.log("found ",nAtom);
-  var asele = "polymer";
+  var asele = "";
   if (o.ngl_sele && o.ngl_sele!=="") {
     if (o.ngl_sele.string !== null) asele = o.ngl_sele.string;
     else asele = o.ngl_sele;
@@ -2448,7 +2626,7 @@ function NGL_GetAtomDataSet(pdb,struture_object){
   if (sele_elem.value&& sele_elem.value!=="") {
     if (asele !== sele_elem.value) asele = sele_elem.value;
   }
-  if (asele === "") asele = "polymer";
+  if (asele === "") asele = "";
   var bu = false;
   if (o.assembly !== "AU" && o.object.biomolDict[o.assembly]) {
     //need to apply the matrix to the selection inside the BU selection ?
@@ -2663,9 +2841,9 @@ function buildWithKmeans(o, center, ncluster) {
   var kmeans = new KMEANS();
   var ats = o.structure.atomStore;
   var nAtom = ats.count;
-  var asele = (o.ngl_sele) ? o.ngl_sele : "polymer";
+  var asele = (o.ngl_sele) ? o.ngl_sele : "";
   if (o.ngl_sele.string !== null) asele = o.ngl_sele.string;
-  if (asele === "") asele = "polymer";
+  if (asele === "") asele = "";
   //console.log("kmeans sele",asele); //current sele undefined
   var bu = false;
   console.log(o.assembly); //current assembly
@@ -3339,7 +3517,64 @@ function NGL_multiSpheres(pos, radii) {
   //stage.autoView();
 }
 
-function NGL_multiSpheresComp(name,pos, radii) {
+function NGL_RemoveMultiSpheresComp(name,count){
+  console.log("remove "+count.toString()+" lod sphere "+name);
+  for (var i=0;i<count;i++) {
+    var r = stage.getComponentsByName(name+"_"+i.toString());
+    if (r.list && r.list.length) {
+      for (var j = 0; j < r.list.length; j++) {
+        stage.removeComponent(r.list[j]);
+      }
+    }
+  }
+}
+
+function NGL_ChangeVisibilityMultiSpheresComp(name,count,value){
+  console.log("change "+count.toString()+" lod sphere "+name+" "+value.toString());
+  for (var i=0;i<count;i++) {
+    //console.log(name+"_"+i.toString());
+    var rep = stage.getComponentsByName(name+"_"+i.toString());
+    //console.log(rep);
+    if (rep.list && rep.list.length !== 0) {
+      for (var j = 0; j < rep.list.length; j++) {
+        if (rep.list[j].reprList.length !== 0) {
+          //console.log(rep.list[j].reprList[0]);
+          rep.list[j].reprList[0].setVisibility(value);
+          rep.list[j].reprList[0].setParameters({opacity:(toggle_cluster_edit.checked)?1.0:0.5});
+        }
+      }
+    }
+  }
+}
+
+function NGL_ChangeOpacityMultiSpheresComp(name,count,value){
+  console.log("change "+count.toString()+" lod sphere "+name+" "+value.toString());
+  for (var i=0;i<count;i++) {
+    //console.log(name+"_"+i.toString());
+    var rep = stage.getComponentsByName(name+"_"+i.toString());
+    //console.log(rep);
+    if (rep.list && rep.list.length !== 0) {
+      for (var j = 0; j < rep.list.length; j++) {
+        if (rep.list[j].reprList.length !== 0) {
+          //console.log(rep.list[j].reprList[0]);
+          rep.list[j].reprList[0].setParameters({
+            opacity: value
+          });
+        }
+      }
+    }
+  }
+}
+
+function NGL_ChangeOpacityMultiSpheresComp_cb(e)
+{
+  var lod = beads_elem.selectedOptions[0].value;
+  var count = ngl_load_params.beads.rad[lod].radii.length
+  if (e.checked) NGL_ChangeOpacityMultiSpheresComp("lod_"+lod.toString()+"_",count,1.0);
+  else NGL_ChangeOpacityMultiSpheresComp("lod_"+lod.toString()+"_",count,0.6);
+}
+
+function NGL_multiSpheresComp(name,pos, radii, opacity) {
   var p=0;
   for (var i=0;i<radii.length;i++) {
     //position,color,radii,label
@@ -3347,10 +3582,10 @@ function NGL_multiSpheresComp(name,pos, radii) {
       disableImpostor: true,
       radialSegments: 10
     });
-    shape.addSphere([pos[p],pos[p+1],pos[p+2]], [1, 0, 0], radii[i]/2.0,name+"_"+i.toString());
+    shape.addSphere([pos[p],pos[p+1],pos[p+2]], [1, 0, 0], radii[i],name+"_"+i.toString());
     p+=3;
     var shapeComp = stage.addComponentFromObject(shape);
-    shapeComp.addRepresentation(name+"_"+i.toString()); //wireframe ?
+    shapeComp.addRepresentation(name+"_"+i.toString(),{opacity:opacity}); //wireframe ?
   }
 }
 
