@@ -29,9 +29,9 @@ var cluster_elem;
 var nbBeads_elem;
 var ngl_force_build_beads = false;
 var slidercl_params2;
-
+var ngl_cluster_automatic = false;
 var toggle_cluster_edit;
-
+var force_do_cms = true;
 var cluster_force_radius = -1.0;
 var cluster_avg_radius = false;
 var use_cluster_radius = false;
@@ -295,7 +295,7 @@ function NGL_updateMetaBallsGeom(anode)
     anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
     anode.data.radii=[{"radii":[500.0]}];
   }
-  NGL_multiSpheresComp(anode.data.name,anode.data.pos[0].coords,node_selected.data.radii[0].radii.map(x=>x/2.0),1.0);//box around ?
+  NGL_multiSpheresComp(anode.data.name,anode.data.pos[0].coords,anode.data.radii[0].radii.map(x=>x/2.0),1.0);//box around ?
   if (nlg_preview_isosurface){
     if (!ngl_marching_cube) ngl_marching_cube = new NGL.MarchingCubes(30, null, true, false);
     NGL_updateMetaBalls(anode);
@@ -994,8 +994,10 @@ function NGL_updateCurrentBeadsLevelClient() {
     //comp.list[0].reprList[0].dispose();
     //comp.list[0].dispose();
   }
-  if (ngl_load_params.beads.rad) NGL_RemoveMultiSpheresComp("lod_"+lod.toString()+"_",ngl_load_params.beads.rad[lod].radii.length);
-
+  if (ngl_load_params.beads.rad && ngl_load_params.beads.rad.length != 0) 
+  {
+    NGL_RemoveMultiSpheresComp("lod_"+lod.toString()+"_",ngl_load_params.beads.rad[lod].radii.length);
+  }
   var res = NGL_buildBeads(lod, ngl_current_structure, center);
   console.log("finsihed building", res);
   var col = Array(ngl_load_params.beads.pos[lod].coords.length).fill(0).map(Util_makeARandomNumber);
@@ -1203,23 +1205,26 @@ function NGL_showBeadsLevel_cb(alevel) {
   if (!node_selected.data.pos) return;
   if (!ngl_load_params.beads.pos) return;
   if (!ngl_load_params.beads.rad) return;
+  console.log("NGL_showBeadsLevel_cb "+alevel.toString());
   if (alevel === "None") {
     for (var i = 0; i < nLod; i++) {
-      var rep = stage.getComponentsByName("beads_" + i);
+      /*var rep = stage.getComponentsByName("beads_" + i);
       console.log(rep, "beads_" + i);
       if (rep.list.length !== 0)
       {  
         if (rep.list[0].reprList.length !== 0) {
           rep.list[0].reprList[0].setVisibility(false);
         }
+      }*/
+      if ( i < node_selected.data.radii.length) 
+      {  
+        NGL_ChangeVisibilityMultiSpheresComp("lod_"+i.toString()+"_",node_selected.data.radii[i].radii.length,false);
       }
-      if ( i < ngl_load_params.beads.rad.length) 
-        NGL_ChangeVisibilityMultiSpheresComp("lod_"+i.toString()+"_",ngl_load_params.beads.rad[i].radii.length,false);
     }
     nbBeads_elem.textContent = "";
   } else if (alevel === "All") {
     for (var i = 0; i < nLod; i++) {
-      var rep = stage.getComponentsByName("beads_" + i);
+      /*var rep = stage.getComponentsByName("beads_" + i);
       console.log(rep, "beads_" + i);
       if (rep.list.length !== 0)
       {  if (rep.list[0].reprList.length !== 0) {
@@ -1228,15 +1233,17 @@ function NGL_showBeadsLevel_cb(alevel) {
             opacity: 0.6
           });
         }
+      }*/
+      if ( i < node_selected.data.radii.length) 
+      {
+          NGL_ChangeVisibilityMultiSpheresComp("lod_"+i.toString()+"_",node_selected.data.radii[i].radii.length,true);
       }
-      if ( i < ngl_load_params.beads.rad.length) 
-        NGL_ChangeVisibilityMultiSpheresComp("lod_"+i.toString()+"_",ngl_load_params.beads.rad[i].radii.length,true);
     }
     nbBeads_elem.textContent = "";
   } else {
     var v = false;
     for (var i = 0; i < nLod; i++) {
-      var rep = stage.getComponentsByName("beads_" + i);
+      /*var rep = stage.getComponentsByName("beads_" + i);
       if (i === parseInt(alevel)) {
         v = true;
         if (ngl_load_params.beads.pos[i])
@@ -1250,9 +1257,16 @@ function NGL_showBeadsLevel_cb(alevel) {
             opacity: 0.6
           })
         }
+      }*/
+      if (i === parseInt(alevel)) {
+        v = true;
+        if (ngl_load_params.beads.pos[i])
+          nbBeads_elem.textContent = '' + ngl_load_params.beads.pos[i].coords.length / 3 + ' beads';
+      } else v = false;
+      if ( i < node_selected.data.radii.length) 
+      {
+          NGL_ChangeVisibilityMultiSpheresComp("lod_"+i.toString()+"_",node_selected.data.radii[i].radii.length,v);
       }
-      if ( i < ngl_load_params.beads.rad.length) 
-        NGL_ChangeVisibilityMultiSpheresComp("lod_"+i.toString()+"_",ngl_load_params.beads.rad[i].radii.length,v);
     }
   }
 }
@@ -1363,7 +1377,7 @@ function NGL_setSymmetryOptions(ngl_ob) {
 function NGL_ChangeSymmetry(select0) {}
 
 function NGL_ChangeBiologicalAssembly(selected0) {
-  NGL_ChangeRepresentation(rep_elem.selectedOptions[0]);
+
   //also change the geometric center
   var center_bu= NGL_GetBUCenter(ngl_current_structure,selected0.value);
   ngl_current_structure.setPosition([-center_bu.x,-center_bu.y,-center_bu.z]);
@@ -1378,7 +1392,9 @@ function NGL_ChangeBiologicalAssembly(selected0) {
     node_selected.data.bu = selected0.value;
     node_selected.data.source.bu = selected0.value;
     console.log("node_selected.data.bu ", node_selected.data.bu);
+    //NGL_updateCurrentBeadsLevel();
   }
+  NGL_ChangeRepresentation(rep_elem.selectedOptions[0]);
   //update the center
   //o.setPosition([-center.x, -center.y, -center.z]); //center molecule
 
@@ -1406,12 +1422,14 @@ function NGL_Changelabel(select0) {
 }
 
 function NGL_ChangeRepresentation(selectedO) {
+  //this overwrite the opacity of the beads
   console.log(assembly_elem.selectedOptions[0].value);
   stage.getRepresentationsByName("polymer").dispose();
   stage.getRepresentationsByName("axes").dispose();
-  stage.eachComponent(function(o) {
+  var comp = ngl_current_structure;
+  //stage.eachComponent(function(o) {
     if (selectedO.value==="cms"){
-      o.addRepresentation("surface", {
+      comp.addRepresentation("surface", {
         colorScheme: color_elem.selectedOptions[0].value,
         sele: sele_elem.value,
         name: "polymer",
@@ -1426,7 +1444,7 @@ function NGL_ChangeRepresentation(selectedO) {
       });
     }
     else {
-      o.addRepresentation(selectedO.value, {
+      comp.addRepresentation(selectedO.value, {
         colorScheme: color_elem.selectedOptions[0].value,
         sele: sele_elem.value,
         name: "polymer",
@@ -1434,17 +1452,14 @@ function NGL_ChangeRepresentation(selectedO) {
       });
     }
     //doesnt work with biological assembly
-    o.addRepresentation("axes", {
+    comp.addRepresentation("axes", {
       sele: sele_elem.value,
       showAxes: true,
       showBox: true,
       radius: 0.2,
       assembly: assembly_elem.selectedOptions[0].value
     });
-  });
-
-  //this overwrite the opacity of the beads
-  NGL_showBeadsLevel_cb(beads_elem.selectedOptions[0].value);
+  //});
 }
 
 //overwrite model ?
@@ -1456,6 +1471,7 @@ function NGL_ChangeSelection() {
   if (node_selected) {
     node_selected.data.selection = sele_elem.value;
     node_selected.data.source.selection = sele_elem.value;
+    NGL_updateCurrentBeadsLevel();
   }
   /*var rep = stage.getRepresentationsByName( "polymer" );
 	rep.setParameters(
@@ -1553,6 +1569,7 @@ function NGL_ChangeModel(model_elem) {
   if (node_selected) {
     node_selected.data.source.selection = curr_sel + "/" + model_elem.value;
     node_selected.data.source.model = model_elem.value;
+    NGL_updateCurrentBeadsLevel();
   }
   if (ngl_current_structure) NGL_setChainSelectionOptions(ngl_current_structure);
   NGL_ChangeRepresentation(rep_elem.selectedOptions[0]);
@@ -2655,7 +2672,7 @@ function NGL_GetAtomDataSet(pdb,struture_object){
     });
   }*/
   o.structure.eachAtom(function(ap) {
-    if (ap.atomname ==="CA" || ap.atomname==="C4'" || nAtom < 20000) {//problem with DNA no CA
+    if (ap.atomname ==="CA" || ap.atomname==="C4'" || ap.atomname==="C4*" || nAtom < 20000) {//problem with DNA no CA why || nAtom < 20000 ?
       dataset.push([ap.x, ap.y, ap.z]);
       //console.log(ap.modelIndex,ap.index);
     }
@@ -2772,8 +2789,32 @@ function NGL_GetGeometricCenterArray(clusteri, some_data) {
     "radius": (cluster_force_radius!=-1.0)?cluster_force_radius:parseInt(R)
   };
 }
+
+function NGL_autoClusterUniqueSize(o,center){
+  var proxy_radius=cluster_force_radius;
+  var Vproxy = 4*Math.PI*(proxy_radius*proxy_radius*proxy_radius)/3.0;
+  var nAtom = o.structure.atomStore.count;
+  var V = nAtom * 10.0 * 1.21
+  var beads0 = o.structure.boundingBox.getBoundingSphere();
+  var bsize = o.structure.boundingBox.getSize();
+  var biszea = bsize.toArray();
+  //console.log("box size is",bsize,biszea);
+  var R = Math.max.apply(null, biszea) / 4; //beads0.radius
+  V = 4*Math.PI*(R*R*R)/3.0;
+  var nProxy = parseInt(Math.round(V/Vproxy));
+  if (nProxy < 3) nProxy = 3
+  console.log("ncluster "+ nProxy.toString()+" "+nAtom.toString())
+  //let pcluster_force_radius=cluster_force_radius;
+  //cluster_force_radius = proxy_radius;
+  var _cluster_coords = buildWithKmeans(o, center, nProxy);
+  //cluster_force_radius = pcluster_force_radius; 
+  return _cluster_coords;
+}
+
 //node_selected.data.radii[0].radii=node_selected.data.radii[0].radii.map(x=>3.0)
 function NGL_ClusterStructure(o, center) {
+  //if (ngl_cluster_automatic) return NGL_autoClusterUniqueSize(o,center);
+  //else 
   return buildWithKmeans(o, center, parseInt(slidercluster_elem.value));
   //if (cluster_elem.selectedOptions[0].value==="Kmeans") return buildWithKmeans(o,center);
   //else if (cluster_elem.selectedOptions[0].value==="Optics") return buildWithOptics(o,center);
@@ -2857,15 +2898,22 @@ function buildWithKmeans(o, center, ncluster) {
   console.log("Kmeans selection", asele);
   var dataset = NGL_GetAtomDataSet(null,o);
   if (dataset.length === 0 ) return null;
-  //var dataset = [];
-  //o.structure.eachAtom(function(ap) {
-  //    dataset.push([ap.x, ap.y, ap.z]);
-  //  }, new NGL.Selection(asele));
+  
+  if (ngl_cluster_automatic)
+  {
 
-  //center = NGL_GetGeometricCenter(o,asele);
-  //for (var i=0;i<nAtom;i++) {
-  //		 dataset.push([ats.x[i],ats.y[i],ats.z[i]]);
-  //	}
+    var proxy_radius=cluster_force_radius;
+    var Vproxy = 4*Math.PI*(proxy_radius*proxy_radius*proxy_radius)/3.0;
+    var nAtom = dataset.length*2;
+    var V = nAtom * 10.0 * 1.21
+    var R = o.viewer.bRadius;//Math.max.apply(null, biszea) / 4; //beads0.radius
+    V = 4*Math.PI*(R*R*R)/3.0;
+    var nProxy = parseInt(Math.round(V/Vproxy));
+    if (nProxy < 3) nProxy = 3
+    ncluster = nProxy;
+    console.log("ncluster "+ nProxy.toString()+" "+nAtom.toString())
+  }
+
   console.log("cluster!!", ncluster, dataset.length);
   //should we use a worker ?
   // parameters: 3 - number of clusters
@@ -3024,6 +3072,7 @@ function NGL_buildBeads(lod, o, center) {
     node_selected.data.radii = JSON.parse(JSON.stringify(ngl_load_params.beads.rad));
   }
 }
+
 
 function NGL_autoBuildBeads(o, center) {
   var beads0 = o.structure.boundingBox.getBoundingSphere();
@@ -3532,18 +3581,20 @@ function NGL_RemoveMultiSpheresComp(name,count){
 function NGL_ChangeVisibilityMultiSpheresComp(name,count,value){
   console.log("change "+count.toString()+" lod sphere "+name+" "+value.toString());
   for (var i=0;i<count;i++) {
-    //console.log(name+"_"+i.toString());
+    console.log(name+"_"+i.toString()+" "+value.toString());
     var rep = stage.getComponentsByName(name+"_"+i.toString());
-    //console.log(rep);
+    console.log(rep);
     if (rep.list && rep.list.length !== 0) {
       for (var j = 0; j < rep.list.length; j++) {
+        //rep.list[j].setVisibility(value);
         if (rep.list[j].reprList.length !== 0) {
           //console.log(rep.list[j].reprList[0]);
+          rep.list[j].reprList[0].setParameters({opacity:(toggle_cluster_edit.checked)?1.0:0.6});
           rep.list[j].reprList[0].setVisibility(value);
-          rep.list[j].reprList[0].setParameters({opacity:(toggle_cluster_edit.checked)?1.0:0.5});
         }
       }
     }
+    console.log(rep);
   }
 }
 
@@ -3883,7 +3934,7 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
       anode.data.radii[0] = JSON.parse(JSON.stringify(_rad));
       console.log("kmeans done with 10 cluster ",anode.data.pos);
       //build the CMS Representation
-      var rep = o.addRepresentation("surface", {
+      if (force_do_cms) var rep = o.addRepresentation("surface", {
           //colorScheme: color_elem.selectedOptions[0].value,
           sele: sele,
           name: "cms_surface_"+aname,
@@ -3897,11 +3948,12 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
           useWorker: false,
           lowResolution: true,
         });
+
     }).then(function(){
         console.log(aname);
         var o = stage.getComponentsByName(aname).list[0];
         console.log(o);
-        NGL_setCMSBufferGeomTimer(o);//wait ?
+        if (force_do_cms) NGL_setCMSBufferGeomTimer(o);//wait ?
         //stage.removeComponent(o);
         //do next
         document.getElementById("stopbeads_lbl").innerHTML = "building " + current_compute_index + " / " + graph.nodes.length;
@@ -3966,6 +4018,7 @@ function NGL_buildLoopAsync() {
       d.data.pos === "")) {
     dobeads = true;
   }
+
   if (dobeads )// || docms)
   {
     var purl = NGL_getUrlStructure(d,pdb);

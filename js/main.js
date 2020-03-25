@@ -1256,7 +1256,18 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 	         //var pdb2 = idata[3];
 	         var sel1 = idata[3];
 	         var sel2 = idata[4];
-		   	   var alink = {"source":name1,"target":name2,"name1":name1,"name2":name2,"pdb1":pdb1,"sel1":sel1,"sel2":sel2,"id":i};
+			 var alink = {"source":name1,
+							"target":name2,
+							"name1":name1,
+							"name2":name2,
+							"pdb1":pdb1,
+							"sel1":sel1,
+							"sel2":sel2,
+							"coords1":[],
+							"coords2":[],
+							"beads1":[],
+							"beads2":[],
+							"id":i};
 					 //console.log(alink);
 		   	   agraph_links.push(alink);
 		   }
@@ -3233,13 +3244,31 @@ function addLink(){
 			var t = graph.nodes.indexOf(nodes_selections[i+1]);
 			console.log(name1,name2);
 			var id = graph.links.length;
-			var alink = {"source":nodes_selections[i],"target":nodes_selections[i+1],
-			"name1":name1,"name2":name2,"pdb1":"",
-			"sel1":"","sel2":"","id":id};
+			var alink = {
+				"source":nodes_selections[i],
+				"target":nodes_selections[i+1],
+				"name1":name1,
+				"name2":name2,
+				"pdb1":"",
+				"sel1":"",
+				"sel2":"",
+				"coords1":[],
+				"coords2":[],
+				"beads1":[],
+				"beads2":[],
+				"id":id};
 			console.log(alink);
 			graph.links.push(alink);
-			alink = {"source":s,"target":t,"name1":name1,"name2":name2,
-			"pdb1":"","sel1":"","sel2":"","id":id};
+			alink = {"source":s,
+					"target":t,
+					"name1":name1,
+					"name2":name2,
+					"pdb1":"","sel1":"","sel2":"",
+					"coords1":[],
+					"coords2":[],
+					"beads1":[],
+					"beads2":[],
+					"id":id};
 
 			//update the table
 			updateForce();
@@ -3251,7 +3280,7 @@ function addLink(){
 			//update the grid
 		  gridArray[1].dataView.beginUpdate();
 		  gridArray[1].dataView.addItem(alink);
-	    gridArray[1].dataView.endUpdate();
+	   	 gridArray[1].dataView.endUpdate();
 	    gridArray[1].dataView.setGrouping([])
 	    gridArray[1].render();
 	    gridArray[1].dataView.refresh();

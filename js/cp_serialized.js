@@ -17,7 +17,14 @@ class sCompartment {
   }
 
   addCompartment(compartment) {
-    this.Compartments.push(compartment);
+    if (compartment.name=="surface"){
+      //mahe sure its the first one
+      if (this.Compartments.length!=0) {
+        this.Compartments.splice( 0, 0, compartment );
+      }
+      else this.Compartments.push(compartment);
+    }
+    else this.Compartments.push(compartment);
     compartment.local_id = this.Compartments.length - 1;
   }
 
@@ -46,6 +53,31 @@ class sIngredientGroup {
   }
 };
 
+class sBindingSite
+{
+  constructor(binding_ids,binding_coords) {
+    this.binding_proba = 1;
+    this.binding_occupied = "uniform_start";
+    this.binding_max = 1;
+    this.binding_site=binding_ids;
+    this.coords=binding_coords;
+  }
+}
+
+class sPartnersProperties
+{
+  //static_id = [0, 0, 0]
+  constructor(partner_name) {
+    this.partner_id = -1;
+    this.partner_name = partner_name;
+    this.binding_site_lod = [];
+  }
+
+  addBindingSite(bindingsite) {
+    this.binding_site_lod.push(bindingsite);
+  }
+};
+
 class sIngredient {
   //static_id = [0, 0, 0]
   constructor(name, groupType, static_id) {
@@ -56,6 +88,9 @@ class sIngredient {
     //for k in kwds:
     //    setattr(self, k, kwds[k])
     //sIngredient.static_id[groupType] += 1
+  }
+  addPartner(partner) {
+    this.partners_properties.push(partner);
   }
 };
 
@@ -70,7 +105,12 @@ class sIngredientFiber {
     //    setattr(self, k, kwds[k])
     //sIngredient.static_id[groupType] += 1
   }
+  addPartner(partner) {
+    this.partners_properties.push(partner);
+  }
 };
+
+
 
 function oneIngredientSerialized(singr, node) {
   if (!node.data.source) node.data.source = {};
@@ -139,21 +179,6 @@ function OneIngredientSerializedPartner(singr, link_node) {
   return linkdata;
 }
 
-//properties?
-function AddSerializedPartner(ingdic, node, some_links) {
-  ingdic["partners_name"] = [];
-  for (var i = 0; i < some_links.length; i++) {
-    //partner_name from the link table/graph_links
-    if (some_links[i].source === node)
-      if (ingdic["partners_name"].indexOf(some_links[i].target.data.name) == -1)
-        //if (!(some_links[i].target.data.name in ingdic["partners_name"]))
-        ingdic["partners_name"].push(some_links[i].target.data.name);
-    if (some_links[i].target === node)
-      if (ingdic["partners_name"].indexOf(some_links[i].source.data.name) == -1)
-        ingdic["partners_name"].push(some_links[i].source.data.name);
-  }
-  return ingdic;
-}
 
 function oneCompartment(scomp, node) {
   var gtype = (node.data.geom_type) ? node.data.geom_type : "None";
@@ -180,6 +205,43 @@ function oneCompartment(scomp, node) {
   scomp["thickness"] = ("thickness" in node.data) ? node.data.thickness : 7.5;
   scomp["color"] = ("color" in node.data) ? node.data.color : null;
   return scomp;
+}
+
+function AddPartnerSerialized(ingdic, node, some_links) {
+  for (var i = 0; i < some_links.length; i++) {
+    //partner_name from the link table/graph_links
+    if (some_links[i].source === node){
+      var found = false;
+      for (var i=0;i<ingdic.partners_properties.length;i++){
+        if (ingdic.partners_properties[i].partner_name == some_links[i].target.data.name) {
+          found = true;
+          break;
+        }
+      }
+      if (!(found)){
+        var partner = new sPartnersProperties(some_links[i].target.data.name);
+        var binding = new sBindingSite(some_links[i].beads1,some_links[i].coords1);
+        partner.addBindingSite(binding);
+        ingdic.addPartner(partner);
+      }
+    }
+    if (some_links[i].target === node){
+      var found = false;
+      for (var i=0;i<ingdic.partners_properties.length;i++){
+        if (ingdic.partners_properties[i].partner_name == some_links[i].target.data.name) {
+          found = true;
+          break;
+        }
+      }
+      if (!(found)){
+        var partner = new sPartnersProperties(some_links[i].source.data.name);
+        var binding = new sBindingSite(some_links[i].beads2,some_links[i].coords2);
+        partner.addBindingSite(binding);
+        ingdic.addPartner(partner);
+      }
+    }
+  }
+  return ingdic;
 }
 
 function serializedRecipe(some_data, some_links) {
@@ -241,7 +303,7 @@ function serializedRecipe(some_data, some_links) {
       sing = oneIngredientSerialized(sing, node); //assign the attributes
       if (some_links.length) {
         console.log("check links", some_links.length)
-        //ingdic = AddPartner(ingdic, node, some_links);
+        sing = AddPartnerSerialized(sing, node, some_links);
       }
       if (node.parent === aroot) {
         var pgroup;
@@ -414,18 +476,40 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
 function OneIngredientDeserializedPartner(ing_dic, linkdata) {
   var pproperty = ing_dic.partners_properties;
   for (var i = 0; i < pproperty.length; i++) {
-    var partnerid = pproperty[i].partner_id; //if negative-> fiber
-    var alink = {
-      "source": ing_dic.ingredient_id,
-      "target": partnerid,
-      "name1": ing_dic.ingredient_id,
-      "name2": partnerid,
-      "pdb1": "",
-      "sel1": "",
-      "sel2": "",
-      "id": linkdata.length
-    };
-    linkdata.push(alink);
+    //does the link already exist
+    var found = false;
+    for (var i = 0; i < linkdata.length; i++) {
+      //partner_name from the link table/graph_links
+      if (linkdata[i].name1 === pproperty[i].partner_name && linkdata[i].name2 === ing_dic.name){
+        linkdata[i].coords2 = pproperty[i].binding_site_lod[0].coords;
+        linkdata[i].beads2 = pproperty[i].binding_site_lod[0].binding_site;
+        found=true;
+        break;
+      }
+      else if (linkdata[i].name2 === pproperty[i].partner_name && linkdata[i].name1 === ing_dic.name){
+        linkdata[i].coords1 = pproperty[i].binding_site_lod[0].coords;
+        linkdata[i].beads1 = pproperty[i].binding_site_lod[0].binding_site;
+        found=true;
+        break;
+      }
+    }
+    if (!(found)){
+      var alink = {
+        "source": ing_dic.name,
+        "target": pproperty[i].partner_name,
+        "name1": ing_dic.name,
+        "name2": pproperty[i].partner_name,
+        "pdb1": "",
+        "sel1": "",
+        "sel2": "",
+        "coords1":pproperty[i].binding_site_lod[0].coords,
+        "coords2":[],
+        "beads1":pproperty[i].binding_site_lod[0].binding_site,
+        "beads2":[],
+        "id": linkdata.length
+      };
+      linkdata.push(alink);
+    }
   }
   return linkdata;
 }
