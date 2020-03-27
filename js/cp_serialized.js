@@ -208,34 +208,34 @@ function oneCompartment(scomp, node) {
 }
 
 function AddPartnerSerialized(ingdic, node, some_links) {
-  for (var i = 0; i < some_links.length; i++) {
+  for (var l = 0; l < some_links.length; l++) {
     //partner_name from the link table/graph_links
-    if (some_links[i].source === node){
+    if (some_links[l].source === node){
       var found = false;
       for (var i=0;i<ingdic.partners_properties.length;i++){
-        if (ingdic.partners_properties[i].partner_name == some_links[i].target.data.name) {
+        if (ingdic.partners_properties[i].partner_name == some_links[l].target.data.name) {
           found = true;
           break;
         }
       }
       if (!(found)){
-        var partner = new sPartnersProperties(some_links[i].target.data.name);
-        var binding = new sBindingSite(some_links[i].beads1,some_links[i].coords1);
+        var partner = new sPartnersProperties(some_links[l].target.data.name);
+        var binding = new sBindingSite(some_links[l].beads1,some_links[l].coords1);
         partner.addBindingSite(binding);
         ingdic.addPartner(partner);
       }
     }
-    if (some_links[i].target === node){
+    if (some_links[l].target === node){
       var found = false;
       for (var i=0;i<ingdic.partners_properties.length;i++){
-        if (ingdic.partners_properties[i].partner_name == some_links[i].target.data.name) {
+        if (ingdic.partners_properties[i].partner_name == some_links[l].target.data.name) {
           found = true;
           break;
         }
       }
       if (!(found)){
-        var partner = new sPartnersProperties(some_links[i].source.data.name);
-        var binding = new sBindingSite(some_links[i].beads2,some_links[i].coords2);
+        var partner = new sPartnersProperties(some_links[l].source.data.name);
+        var binding = new sBindingSite(some_links[l].beads2,some_links[l].coords2);
         partner.addBindingSite(binding);
         ingdic.addPartner(partner);
       }
@@ -475,22 +475,29 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
 
 function OneIngredientDeserializedPartner(ing_dic, linkdata) {
   var pproperty = ing_dic.partners_properties;
+  console.log(ing_dic.name);
+  console.log(pproperty.length)
+  console.log(pproperty);
   for (var i = 0; i < pproperty.length; i++) {
     //does the link already exist
+    console.log(pproperty[i]);
     var found = false;
-    for (var i = 0; i < linkdata.length; i++) {
+    for (var j = 0; j < linkdata.length; j++) {
       //partner_name from the link table/graph_links
-      if (linkdata[i].name1 === pproperty[i].partner_name && linkdata[i].name2 === ing_dic.name){
-        linkdata[i].coords2 = pproperty[i].binding_site_lod[0].coords;
-        linkdata[i].beads2 = pproperty[i].binding_site_lod[0].binding_site;
+      if (linkdata[j].name1 === pproperty[i].partner_name && linkdata[j].name2 === ing_dic.name){
+        linkdata[j].coords2 = pproperty[i].binding_site_lod[0].coords;
+        linkdata[j].beads2 = pproperty[i].binding_site_lod[0].binding_site;
         found=true;
         break;
       }
-      else if (linkdata[i].name2 === pproperty[i].partner_name && linkdata[i].name1 === ing_dic.name){
-        linkdata[i].coords1 = pproperty[i].binding_site_lod[0].coords;
-        linkdata[i].beads1 = pproperty[i].binding_site_lod[0].binding_site;
+      else if (linkdata[j].name2 === pproperty[i].partner_name && linkdata[j].name1 === ing_dic.name){
+        linkdata[j].coords1 = pproperty[i].binding_site_lod[0].coords;
+        linkdata[j].beads1 = pproperty[i].binding_site_lod[0].binding_site;
         found=true;
         break;
+      }
+      else {
+        found=false;
       }
     }
     if (!(found)){
