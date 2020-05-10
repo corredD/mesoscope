@@ -19,28 +19,28 @@ var schemeId3 = NGL.ColormakerRegistry.addSelectionScheme([
 ], "style2");
 
 var schemeId5 = NGL.ColormakerRegistry.addSelectionScheme([
-  [toRGB([1.00, 0.20, 0.20]), "(.O5' or .O3' or .OP) and nucleic"],//1.00, 0.55, 0.55
-  [toRGB([1.00, 0.90, 0.50]), "_P and nucleic"],//1.00, 0.49, 0.49
-  [toRGB([0.80, 0.90, 1.00]), "_N and nucleic"],//1.00, 0.65, 0.65
-  [toRGB([1.00, 0.80, 0.80]), "_O and not (.O5' or .O3' or .OP) and nucleic"],
-  [toRGB([1.00, 1.00, 1.00]), "_C"],
-  [toRGB([1.00, 0.20, 0.20]), "((.OD and ASP) or (.OE and GLU)) and protein"],
-  [toRGB([0.10, 0.70, 1.00]), "((.NZ and LYS) or ((.NH or .NE) and ARG)) or ((.ND or .NE) and HIS)) and protein"],
-  [toRGB([1.00, 0.80, 0.80]), "_O and protein"],
-  [toRGB([0.80, 0.90, 1.00]), ".N and protein"],
-  [toRGB([1.00, 0.80, 0.80]), "_O and protein"],
-  [toRGB([0.60, 0.90, 0.60]), "_C and (ligand and hetero)"],
-  [toRGB([0.40, 0.90, 0.40]), "not _C and (ligand and hetero)"],
+  [ill_toRGB([1.00, 0.20, 0.20]), "(.O5' or .O3' or .OP) and nucleic"],//1.00, 0.55, 0.55
+  [ill_toRGB([1.00, 0.90, 0.50]), "_P and nucleic"],//1.00, 0.49, 0.49
+  [ill_toRGB([0.80, 0.90, 1.00]), "_N and nucleic"],//1.00, 0.65, 0.65
+  [ill_toRGB([1.00, 0.80, 0.80]), "_O and not (.O5' or .O3' or .OP) and nucleic"],
+  [ill_toRGB([1.00, 1.00, 1.00]), "_C"],
+  [ill_toRGB([1.00, 0.20, 0.20]), "((.OD and ASP) or (.OE and GLU)) and protein"],
+  [ill_toRGB([0.10, 0.70, 1.00]), "((.NZ and LYS) or ((.NH or .NE) and ARG)) or ((.ND or .NE) and HIS)) and protein"],
+  [ill_toRGB([1.00, 0.80, 0.80]), "_O and protein"],
+  [ill_toRGB([0.80, 0.90, 1.00]), ".N and protein"],
+  [ill_toRGB([1.00, 0.80, 0.80]), "_O and protein"],
+  [ill_toRGB([0.60, 0.90, 0.60]), "_C and (ligand and hetero)"],
+  [ill_toRGB([0.40, 0.90, 0.40]), "not _C and (ligand and hetero)"],
 ], "style5");
 
 var schemeId6 = NGL.ColormakerRegistry.addSelectionScheme([
-  [toRGB([1.00, 1.00, 1.00]), "_H"],//1.00, 0.55, 0.55
-  [toRGB([0.50, 0.50, 0.50]), "_C"],//1.00, 0.49, 0.49
-  [toRGB([0.10, 0.70, 1.00]), "_N"],//1.00, 0.65, 0.65
-  [toRGB([1.00, 0.20, 0.20]), "_O"],
-  [toRGB([1.00, 0.90, 0.50]), "_S or _SE or _P"],
-  [toRGB([0.40, 0.90, 0.40]), "(_F or _BR or _CL or _I) and (ligand and hetero)"],
-  [toRGB([1.00, 0.40, 1.00]), "(_MG or _CA or _NA or _K or _FE or _CU or _ZN ) and (ligand and hetero)"]
+  [ill_toRGB([1.00, 1.00, 1.00]), "_H"],//1.00, 0.55, 0.55
+  [ill_toRGB([0.50, 0.50, 0.50]), "_C"],//1.00, 0.49, 0.49
+  [ill_toRGB([0.10, 0.70, 1.00]), "_N"],//1.00, 0.65, 0.65
+  [ill_toRGB([1.00, 0.20, 0.20]), "_O"],
+  [ill_toRGB([1.00, 0.90, 0.50]), "_S or _SE or _P"],
+  [ill_toRGB([0.40, 0.90, 0.40]), "(_F or _BR or _CL or _I) and (ligand and hetero)"],
+  [ill_toRGB([1.00, 0.40, 1.00]), "(_MG or _CA or _NA or _K or _FE or _CU or _ZN ) and (ligand and hetero)"]
 ], "style6");
 
 const illAtomFormat   = 'ATOM  %4s-%3s-%1s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';

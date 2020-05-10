@@ -93,6 +93,7 @@ Outer bacterial membrane: IN � periplasmic space, OUT � extracellular;
 */
 
 var temp_link;
+var debug_data;
 
 var header_index;
 var start_index;
@@ -1366,8 +1367,10 @@ function selectFile(e){
     	  	reader.onload = function(event) {
   	        var data = reader.result;
   	        data = data.replace(/\\n\\r/gm,'newChar');
-  	        var ad = JSON.parse(data);
-  	        var adata = parseCellPackRecipeSerialized(ad);
+			var ad = JSON.parse(data);
+			debug_data = ad;
+			var adata = parseCellPackRecipeSerialized(ad);
+			//debug_data = adata;
   	        if (MERGE) {
               merge_getModal(adata.nodes,adata.links)
               //merge_graph(adata.nodes,adata.links);
@@ -2629,7 +2632,7 @@ function colorNode(d) {
     var scores = graph.nodes.map(d=>(d.data.count!=null && d.data.count!=-1)?d.data.count:0.0 );
     property_mapping[colorby].max = Math.max.apply(null, scores);
     property_mapping[colorby].min = Math.min.apply(null, scores);
-		var color_mapping = d3v4.scaleLinear()
+		var color_mapping = d3v4.scaleSqrt()
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
 			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
 		return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null && d.data[colorby] >= 0.0)?color_mapping(d.data[colorby]):color(d.depth);
@@ -2647,7 +2650,7 @@ function colorNode(d) {
     var scores = graph.nodes.map(d=>(d.data.molarity!=null && d.data.molarity!=-1)?d.data.molarity:null).filter(d=>d!=null);
     property_mapping[colorby].max = Math.max.apply(null, scores);
     property_mapping[colorby].min = Math.min.apply(null, scores);
-		var color_mapping = d3v4.scaleLinear()
+		var color_mapping = d3v4.scaleSqrt() // scaleLinear()
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
 			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
 			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null&& d.data[colorby] >= 0.0)?color_mapping(d.data[colorby]):color(d.depth);
@@ -3263,7 +3266,9 @@ function addLink(){
 					"target":t,
 					"name1":name1,
 					"name2":name2,
-					"pdb1":"","sel1":"","sel2":"",
+					"pdb1":"",
+					"sel1":"",
+					"sel2":"",
 					"coords1":[],
 					"coords2":[],
 					"beads1":[],
@@ -3277,30 +3282,30 @@ function addLink(){
 				UpdateGridFromD3Links([alink],1);
 			}
 			else {
-			//update the grid
-		  gridArray[1].dataView.beginUpdate();
-		  gridArray[1].dataView.addItem(alink);
-	   	 gridArray[1].dataView.endUpdate();
-	    gridArray[1].dataView.setGrouping([])
-	    gridArray[1].render();
-	    gridArray[1].dataView.refresh();
-			//this is not enought ?
-			gridArray[1].resizeCanvas();
-			gridArray[1].autosizeColumns();
-			gridArray[1].render();
-			gridArray[1].dataView.refresh();
-			gridArray[1].resizeCanvas();
-			gridArray[1].autosizeColumns();
-	    //gridArray[1].setSelectedRows([0]);
-	    //gridArray[1].setActiveCell(0,0);
+				//update the grid
+				gridArray[1].dataView.beginUpdate();
+				gridArray[1].dataView.addItem(alink);
+				gridArray[1].dataView.endUpdate();
+				gridArray[1].dataView.setGrouping([])
+				gridArray[1].render();
+				gridArray[1].dataView.refresh();
+				//this is not enought ?
+				gridArray[1].resizeCanvas();
+				gridArray[1].autosizeColumns();
+				gridArray[1].render();
+				gridArray[1].dataView.refresh();
+				gridArray[1].resizeCanvas();
+				gridArray[1].autosizeColumns();
+			//gridArray[1].setSelectedRows([0]);
+			//gridArray[1].setActiveCell(0,0);
+			}
 		}
-	  }
-		}
-		//clear selection
-		node_selected = null;
-		node_selected_indice = -1;
-		nodes_selections=[];
 	}
+	//clear selection
+	node_selected = null;
+	node_selected_indice = -1;
+	nodes_selections=[];
+}
 
 function AddALink(some_link) {
    var newLink = some_link;
@@ -4194,7 +4199,7 @@ function drawCircularText(ctx, text, fontSize, titleFont, centerX, centerY, radi
 function MapLinkToNode(some_nodes,some_links) {
 	console.log(some_links);
 	for (var i=0;i<some_links.length;i++){
-		  var alink = some_links[i];
+		var alink = some_links[i];
 	    for (var j = 0; j < some_nodes.length; j++) {
 	    		//if use name as string
 	        if (alink.source == some_nodes[j].data.name) alink.source = j;

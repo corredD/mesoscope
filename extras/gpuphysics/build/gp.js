@@ -1855,9 +1855,9 @@ var shared = "float Epsilon = 1e-10;\n\
 	            var maxBodies = this.maxBodies;
 	            var bodyIndices = new Float32Array( numVertices );
 	            var pixelData = new Float32Array( 4 * numVertices );
-	            onePointPerBodyGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( numVertices * 3 ), 3 ) );
-	            onePointPerBodyGeometry.addAttribute( 'data', new THREE.BufferAttribute( pixelData, 4 ) );
-	            onePointPerBodyGeometry.addAttribute( 'bodyIndex', new THREE.BufferAttribute( bodyIndices, 1 ) );
+	            onePointPerBodyGeometry.setAttribute( 'position', new THREE.BufferAttribute( new Float32Array( numVertices * 3 ), 3 ) );
+	            onePointPerBodyGeometry.setAttribute( 'data', new THREE.BufferAttribute( pixelData, 4 ) );
+	            onePointPerBodyGeometry.setAttribute( 'bodyIndex', new THREE.BufferAttribute( bodyIndices, 1 ) );
 	            this.setBodyDataMesh = new THREE.Points( onePointPerBodyGeometry, this.materials.setBodyData );
 	            this.scenes.setBodyData = new THREE.Scene();
 	            this.scenes.setBodyData.add( this.setBodyDataMesh );
@@ -1959,7 +1959,7 @@ var shared = "float Epsilon = 1e-10;\n\
 					//console.log("update Grid on GPU",compId,listMetaballs.length,scale);
 					var renderer = this.renderer;
 					var buffers = renderer.state.buffers;
-					var gl = renderer.context;
+					var gl = renderer.getContext();
 					var mat = this.materials.GridCompartment;
 					if(!mat){
 						  console.log("buildMaterial GridCompartment");
@@ -2117,7 +2117,7 @@ var shared = "float Epsilon = 1e-10;\n\
 	        // See http://www.gpgpu.org/static/s2007/slides/15-GPGPU-physics.pdf slide 24
 	        var renderer = this.renderer;
 	        var buffers = renderer.state.buffers;
-	        var gl = renderer.context;
+	        var gl = renderer.getContext();
 					renderer.setRenderTarget(gridTexture);
 					renderer.clear(true, false, true);
 	        //renderer.clearTarget( gridTexture, true, false, true );
@@ -2173,7 +2173,7 @@ var shared = "float Epsilon = 1e-10;\n\
 					renderer.clear(true, false, true);
 	        //renderer.clearTarget( this.textures.grid, true, false, true ); // color, depth, stencil
 	        var buffers = renderer.state.buffers;
-	        var gl = renderer.context;
+	        var gl = renderer.getContext();
 	        buffers.depth.setTest( false );
 	        buffers.depth.setMask( false ); // dont draw depth
 	        buffers.depth.setLocked( true );
@@ -2212,7 +2212,7 @@ var shared = "float Epsilon = 1e-10;\n\
 
 	        var renderer = this.renderer;
 	        var buffers = renderer.state.buffers;
-	        var gl = renderer.context;
+	        var gl = renderer.getContext();
 
 	        var gridTexture = this.textures.grid;
 	        var mat = this.materials.mapParticle;
@@ -2237,8 +2237,8 @@ var shared = "float Epsilon = 1e-10;\n\
 	            for(var i=0; i<size*size; i++){
 	                particleIndices[i] = i; // Need to do this because there's no way to get the vertex index in webgl1 shaders...
 	            }
-	            mapParticleGeometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
-	            mapParticleGeometry.addAttribute( 'particleIndex', new THREE.BufferAttribute( particleIndices, 1 ) );
+	            mapParticleGeometry.setAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+	            mapParticleGeometry.setAttribute( 'particleIndex', new THREE.BufferAttribute( particleIndices, 1 ) );
 	            this.mapParticleToCellMesh = new THREE.Points( mapParticleGeometry, this.materials.mapParticle );
 	            this.scenes.mapParticlesToGrid.add( this.mapParticleToCellMesh );
 	        }
@@ -2257,7 +2257,7 @@ var shared = "float Epsilon = 1e-10;\n\
 	    updateParticleForce: function(){
 	        var renderer = this.renderer;
 	        var buffers = renderer.state.buffers;
-	        var gl = renderer.context;
+	        var gl = renderer.getContext();
 
 	        // Update force material
 	        var forceMaterial = this.materials.force;
@@ -2334,7 +2334,7 @@ var shared = "float Epsilon = 1e-10;\n\
 	    updateParticleTorque: function(){
 	        var renderer = this.renderer;
 	        var buffers = renderer.state.buffers;
-	        var gl = renderer.context;
+	        var gl = renderer.getContext();
 
 	        // Update torque material
 	        var updateTorqueMaterial = this.materials.updateTorque;
@@ -2414,7 +2414,7 @@ var shared = "float Epsilon = 1e-10;\n\
 	    updateBodyForce: function(){
 	        var renderer = this.renderer;
 	        var buffers = renderer.state.buffers;
-	        var gl = renderer.context;
+	        var gl = renderer.getContext();
 
 	        // Add force to body material
 	        var addForceToBodyMaterial = this.materials.addForceToBody;
@@ -2443,9 +2443,9 @@ var shared = "float Epsilon = 1e-10;\n\
 	                particleIndices[i] = particleId;
 	                bodyIndices[i] = this.getBodyId(particleId);
 	            }
-	            mapParticleToBodyGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array(numParticles*numParticles*3), 3 ) );
-	            mapParticleToBodyGeometry.addAttribute( 'particleIndex', new THREE.BufferAttribute( particleIndices, 1 ) );
-	            mapParticleToBodyGeometry.addAttribute( 'bodyIndex', new THREE.BufferAttribute( bodyIndices, 1 ) );
+	            mapParticleToBodyGeometry.setAttribute( 'position', new THREE.BufferAttribute( new Float32Array(numParticles*numParticles*3), 3 ) );
+	            mapParticleToBodyGeometry.setAttribute( 'particleIndex', new THREE.BufferAttribute( particleIndices, 1 ) );
+	            mapParticleToBodyGeometry.setAttribute( 'bodyIndex', new THREE.BufferAttribute( bodyIndices, 1 ) );
 	            this.mapParticleToBodyMesh = new THREE.Points( mapParticleToBodyGeometry, addForceToBodyMaterial );
 	            this.scenes.mapParticlesToBodies.add( this.mapParticleToBodyMesh );
 	        }

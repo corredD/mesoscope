@@ -772,6 +772,8 @@ function OneIngredient(ing_dic, surface) {
   else {
     if ("image" in ing_dic) sprite.image = ing_dic["image"];
   }
+  if (sprite.image == "" ) sprite.image = ing_dic["name"]+".png";
+
   var elem = {
     "name": name,
     "size": size,

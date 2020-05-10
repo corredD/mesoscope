@@ -83,8 +83,6 @@ def print_tree(conn, rootName="BloodHIVMycoRB.1.0"):
             print "<br>"
     print "<br><br>"
 
-
-
 def add_record(ingredName, localisation, state, jsonParser):
     conn = jsonParser.conn
     html_template = """
@@ -135,7 +133,6 @@ def add_record(ingredName, localisation, state, jsonParser):
         '''.format(**locals())
         state='submit'
     return html_template.format(**locals())
-
 
 def print_tree_text(conn, rootName="BloodHIVMycoRB.1.0"):
     #rootName = "BloodHIVMycoRB.1.0" # recipe name - root compartment
@@ -188,7 +185,6 @@ def print_tree_text(conn, rootName="BloodHIVMycoRB.1.0"):
                     name = ingred[1]
                     print ingred
             print ""
-
 
 def getStringdictionarySQL(conn,rootName):
     sql =  """SELECT l1.name l1_name, l2.name l2_name,
@@ -365,10 +361,18 @@ def getStringdictionaryJSON(jsondic):
     return msg
 
 
-import imp
-jsonRecipeDB = imp.load_source("jsonRecipeDB", "../python/jsonRecipeDB.py")
-
-from jsonRecipeDB import  create_connection , list_table_columns, list_table_names, sql_query, add_row, JsonRecipeParser
+try:
+    import imp
+    jsonRecipeDB = imp.load_source("jsonRecipeDB", "    jsonRecipeDB.py")
+    from jsonRecipeDB import  create_connection , list_table_columns, list_table_names, sql_query, add_row, JsonRecipeParser
+except:
+    jsonRecipeDB = None
+    create_connection = None
+    list_table_columns = None
+    list_table_names = None
+    sql_query = None
+    add_row = None
+    JsonRecipeParser = None
 
 def main1():
     form = cgi.FieldStorage()            # parse form data

@@ -709,9 +709,9 @@ function GP_createOneCompartmentMesh(anode) {
   bufferGeometry.dynamic = true;
   var positions = new Float32Array(geo.vertices);
   var normals = new Float32Array(geo.normals);
-  bufferGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3).setDynamic( true ) );
-  bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3).setDynamic( true ) );
-  bufferGeometry.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(geo.uv), 2).setDynamic( true ) );
+  bufferGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3).setDynamic( true ) );
+  bufferGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3).setDynamic( true ) );
+  bufferGeometry.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(geo.uv), 2).setDynamic( true ) );
   bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(geo.faces), 1).setDynamic( true ) );
 
   var wireframeMaterial = new THREE.MeshBasicMaterial({map:texture, wireframe: false });
@@ -1014,13 +1014,13 @@ function createCellVIEW(){
   var tri_mesh = BuildMeshTriangle(1.0);
   var geometry = new THREE.InstancedBufferGeometry();
 	geometry.maxInstancedCount = instances; // set so its initalized for dat.GUI, will be set in first draw otherwise
-	geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( tri_mesh.vertices, 3 ) );
-	geometry.addAttribute( 'uv', new THREE.Float32BufferAttribute( new Float32Array( tri_mesh.uv ), 2 ) );
+	geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( tri_mesh.vertices, 3 ) );
+	geometry.setAttribute( 'uv', new THREE.Float32BufferAttribute( new Float32Array( tri_mesh.uv ), 2 ) );
   geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(tri_mesh.triangles), 1));
   var instanceInfos = new THREE.InstancedBufferAttribute(
     new Float32Array( atomData_mapping_instance.slice(0,instances*2) ), 2, true, 1 );
-  //aGeometry.addAttribute( 'bodyColor', bodyColors );
-  geometry.addAttribute( 'instanceInfos', instanceInfos );
+  //aGeometry.setAttribute( 'bodyColor', bodyColors );
+  geometry.setAttribute( 'instanceInfos', instanceInfos );
   geometry.boundingSphere = null;
 
   var phongShader = THREE.ShaderLib.phong;
@@ -1066,11 +1066,11 @@ function GP_updateMeshGeometry(anode){
   var mid = type_meshs[pid].idmesh;
   var bufferGeometry = new THREE.BufferGeometry();
   var positions = new Float32Array(anode.data.geom.verts);
-  bufferGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+  bufferGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   if (anode.data.geom.normals!==null)
   {
       var normals = new Float32Array(anode.data.geom.normals);
-      bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      bufferGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
   }
   bufferGeometry.scale(ascale,ascale,ascale);
   var meshGeometry = meshMeshs[mid].geometry;
@@ -1150,13 +1150,13 @@ function createOneMesh(anode,start,count) {
   else {//assume raw geo
     bufferGeometry = new THREE.BufferGeometry();
     var positions = new Float32Array(anode.data.geom.verts);
-    bufferGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+    bufferGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     if (anode.data.geom.normals!==null)
     {
       var normals = new Float32Array(anode.data.geom.normals);
-      bufferGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      bufferGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
     }
-   //bufferGeometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
+   //bufferGeometry.setAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
     bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(anode.data.geom.faces), 1));
   }
   bufferGeometry.scale(ascale,ascale,ascale);
@@ -1165,7 +1165,7 @@ function createOneMesh(anode,start,count) {
   var meshGeometry = new THREE.InstancedBufferGeometry();
   meshGeometry.maxInstancedCount = bodyInstances;
   for(var attributeName in bufferGeometry.attributes){
-      meshGeometry.addAttribute( attributeName, bufferGeometry.attributes[attributeName].clone() );
+      meshGeometry.setAttribute( attributeName, bufferGeometry.attributes[attributeName].clone() );
   }
   meshGeometry.setIndex( bufferGeometry.index.clone() );
   var bodyIndices = new THREE.InstancedBufferAttribute( new Float32Array( bodyInstances * 1 ), 1, true, 1 ).setDynamic( true );
@@ -1175,8 +1175,8 @@ function createOneMesh(anode,start,count) {
       //bodyColors.setXYZ(i, i/bodyIndices.count,0,0);// color[0],color[1],color[2]);//rgb of the current anode
       bodyColors.setXYZ(i, color[0],color[1],color[2]);// color[0],color[1],color[2]);//rgb of the current anode
   }
-  meshGeometry.addAttribute( 'bodyColor', bodyColors );
-  meshGeometry.addAttribute( 'bodyIndex', bodyIndices );
+  meshGeometry.setAttribute( 'bodyColor', bodyColors );
+  meshGeometry.setAttribute( 'bodyIndex', bodyIndices );
   meshGeometry.boundingSphere = null;
   return meshGeometry;
 }
@@ -2121,13 +2121,16 @@ function GP_initRenderer(){
   }
   console.log("renderer",dm);
   renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.context.getExtension("EXT_frag_depth");
+  renderer.getContext().getExtension("EXT_frag_depth");
+  renderer.getContext().getExtension("WEBGL_color_buffer_float");
+  renderer.getContext().getExtension("EXT_float_blend");
   renderer.setPixelRatio(window.devicePixelRatio || 1 );
   renderer.setSize( 2048, 2048 );//full size ?
   renderer.shadowMap.enabled = true;
-  renderer.shadowMapEnabled = true;
-  renderer.gammaInput = true;
-  renderer.gammaOutput = true;
+  // renderer.shadowMapEnabled = true;
+  // renderer.gammaInput = true; //Texture.encoding
+  // renderer.outputEncoding = true;
+  // renderer.gammaOutput = true;
   renderer.physicallyBasedShading = false;
   renderer.localClippingEnabled = true;
   clipPlanes = [
@@ -2162,17 +2165,19 @@ function GP_initRenderer(){
   camera = new THREE.PerspectiveCamera( 30, dm.width / dm.height, 0.01, 100 );
   camera.position.set(0,0.6,1.4);
 
-  var groundMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x000000 } );
+  /*var groundMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x000000 } );
   groundMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2000, 2000 ), groundMaterial );
   groundMesh.rotation.x = - Math.PI / 2;
   groundMesh.receiveShadow = true;
   groundMesh.position.set(0.0,-0.5,0.0);
   scene.add( groundMesh );
+  groundMesh.receiveShadow = true;
 
+  */
   var clipMaterial = new THREE.MeshPhongMaterial( { color: 0xff0000, side: THREE.DoubleSide, wireframe:true } );
   clipPlane = new THREE.Mesh( new THREE.PlaneBufferGeometry( 0.75, 0.75 ), clipMaterial );
   //clipPlane.rotation.x = - Math.PI / 2;
-  groundMesh.receiveShadow = true;
+
   clipPlane.position.set(0.0,0.0,0.0);
 
   //clipPlane = new THREE.PlaneHelper( clipPlanesHelper[ 0 ], 0.5, 0xff0000 )
@@ -2249,14 +2254,14 @@ function GP_debugBeadsSpheres(){
     //create the triangle Geometry
     var bufferGeometry = new THREE.BufferGeometry();
     var positions = new Float32Array(tri_mesh.vertices);
-    bufferGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-    bufferGeometry.addAttribute( 'uv', new THREE.BufferAttribute( new Float32Array( tri_mesh.uv ), 2 ) );
+    bufferGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    bufferGeometry.setAttribute( 'uv', new THREE.BufferAttribute( new Float32Array( tri_mesh.uv ), 2 ) );
     bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(tri_mesh.triangles), 1));
 
     var debugGeometry = new THREE.InstancedBufferGeometry();
     debugGeometry.maxInstancedCount = (world.particleCount !==0)? world.particleCount : world.maxParticles;
     for(var attributeName in bufferGeometry.attributes){
-        debugGeometry.addAttribute( attributeName, bufferGeometry.attributes[attributeName].clone() );
+        debugGeometry.setAttribute( attributeName, bufferGeometry.attributes[attributeName].clone() );
     }
     debugGeometry.setIndex( bufferGeometry.index.clone() );
 
@@ -2265,7 +2270,7 @@ function GP_debugBeadsSpheres(){
     for ( var i = 0, ul = instanceInfos.count; i < ul; i++ ) {
         instanceInfos.setX( i, i );
     }
-    debugGeometry.addAttribute( 'instanceInfos', instanceInfos );
+    debugGeometry.setAttribute( 'instanceInfos', instanceInfos );
     debugGeometry.boundingSphere = null;
 
     var phongShader = THREE.ShaderLib.phong;
@@ -2362,14 +2367,14 @@ function init(){
     var debugGeometry = new THREE.InstancedBufferGeometry();
     debugGeometry.maxInstancedCount = instances;
     for(var attributeName in sphereGeometry.attributes){
-        debugGeometry.addAttribute( attributeName, sphereGeometry.attributes[attributeName].clone() );
+        debugGeometry.setAttribute( attributeName, sphereGeometry.attributes[attributeName].clone() );
     }
     debugGeometry.setIndex( sphereGeometry.index.clone() );
     var particleIndices = new THREE.InstancedBufferAttribute( new Float32Array( instances * 1 ), 1,true,  1 );
     for ( var i = 0, ul = particleIndices.count; i < ul; i++ ) {
         particleIndices.setX( i, i );
     }
-    debugGeometry.addAttribute( 'particleIndex', particleIndices );
+    debugGeometry.setAttribute( 'particleIndex', particleIndices );
     debugGeometry.boundingSphere = null;
     */
 
@@ -2404,7 +2409,7 @@ function init(){
     var specularShininess = Math.pow( 2, alpha * 10 );
     var amaterial = new THREE.MeshToonMaterial({
       specular:new THREE.Color( beta * 0.2, beta * 0.2, beta * 0.2 ),
-      reflectivity: beta,
+      //reflectivity: beta,
 			shininess: specularShininess
     });
     //new THREE.MeshPhongMaterial({ color: 0xffffff })
@@ -2738,9 +2743,9 @@ function GP_points(nparticles){
     colors.push( color.r, color.g, color.b );
     indices.push(i);
   }
-  geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( positions, 3 ) );
-  geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
-  geometry.addAttribute( 'indices', new THREE.Float32BufferAttribute( indices, 1 ) );
+  geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( positions, 3 ) );
+  geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+  geometry.setAttribute( 'indices', new THREE.Float32BufferAttribute( indices, 1 ) );
   geometry.computeBoundingSphere();
   //with clipping plane
   //pass the grid data texture

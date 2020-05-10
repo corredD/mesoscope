@@ -23,7 +23,7 @@ var local_host_dev = false;
 if (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") {
   alert("It's a local server!");
   local_host_dev = false;
-  Util_ClientDetection(this);
+  var jscd =Util_ClientDetection(this);
   alert(
     'OS: ' + jscd.os + ' ' + jscd.osVersion + '\n' +
     'Browser: ' + jscd.browser + ' ' + jscd.browserMajorVersion +

@@ -159,7 +159,7 @@
 					child.updateMatrix();
 
 					var tempGeometry = child.geometry.clone();
-					tempGeometry.applyMatrix( child.matrix );
+					tempGeometry.applyMatrix4( child.matrix );
 					child.geometry = tempGeometry;
 
 					child.position.set( 0, 0, 0 );
