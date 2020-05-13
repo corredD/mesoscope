@@ -1810,7 +1810,7 @@ function getcomphtml(anode) {
 		//already has some beads?
 		var mb_options=["None"];
 		var cradius = 500.0;
-    var type = 1;
+   		var type = 1;
 		if ("pos" in anode.data && anode.data.pos.length !== 0 ) {
 			//for each metaball add a radius slider, or use a select ?
 			//and change the radius of the selected bead
@@ -1819,24 +1819,24 @@ function getcomphtml(anode) {
 			var n_mb = anode.data.pos[0].coords.length/3;
 			mb_options = d3v4.range(n_mb);
 			cradius = parseFloat(anode.data.radii[0].radii[0]);//node_selected.data.radii[0].radii[mbi];
-      if (!"types" in anode.data) anode.data.types=[{"types":[type]}];
-      else type = anode.data.types[0].types[0];
+			if (("types" in anode.data)===false) anode.data.types=[{"types":[type]}];
+			else type = anode.data.types[0].types[0];
 		}
 		else {
 			anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
 			anode.data.radii=[{"radii":[500]}];
-      anode.data.types=[{"types":[type]}];
+      		anode.data.types=[{"types":[type]}];
 			mb_options = [0];
 		}
 		htmlStr += getSelect("metaball_elem", "options_elems", "Choose MB",
 													"SetActiveMB(this)", mb_options,0);
 		htmlStr+='<div style="display:flex;"><label>Radius(A):</label>';
-    htmlStr+='<input id="comp_slider" type="range" min="1" max="10000" step="1" value="'+cradius+'"style="width:70%" oninput="updateLabel(this)" onchange="resizeMetaBall(this)"/>';
+    	htmlStr+='<input id="comp_slider" type="range" min="1" max="10000" step="1" value="'+cradius+'"style="width:70%" oninput="updateLabel(this)" onchange="resizeMetaBall(this)"/>';
 		htmlStr+='<input  id="comp_slider_num" min="1" max="10000" type="number" value="'+cradius+'" style="width:30%" oninput="updateLabel(this)" onchange="resizeMetaBall(this)"/></div>';
-    htmlStr+='<div style="display:flex;"><label>Type:</label>';
-    htmlStr+='<input id="comp_slider_type" type="number" min="1" max="4" step="1" value="'+type+'"style="width:70%"  onchange="changeMetaBall(this)"/>';
-    htmlStr+='</div>';
-    htmlStr+= '<button onclick="RemoveMetaball()">Remove Selected MB</button>';
+		htmlStr+='<div style="display:flex;"><label>Type:</label>';
+		htmlStr+='<input id="comp_slider_type" type="number" min="1" max="4" step="1" value="'+type+'"style="width:70%"  onchange="changeMetaBall(this)"/>';
+		htmlStr+='</div>';
+		htmlStr+= '<button onclick="RemoveMetaball()">Remove Selected MB</button>';
 		htmlStr+= '<button onclick="AddMetaball()">Add MB</button>';
 		htmlStr+= '<label> mouse ctrl-left click to drag metaball</label>';
 		htmlStr+= '<div><input type="checkbox"  id="meta_preview" onclick="NGL_ToggleMetaGeom(this)" checked>';
@@ -2475,8 +2475,8 @@ function wakeUpSim(){
 }
 
 function zoomed() {
-  transform = d3v4.event.transform;
-  console.log("scale is transform.k",transform.k);
+  	transform = d3v4.event.transform;
+  	//console.log("scale is transform.k",transform.k);
 	//?clearHighLight();
 	if (d3v4.event.ctrlKey)clearHighLight();
 }

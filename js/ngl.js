@@ -792,7 +792,7 @@ function NGL_Setup() {
       }
       else {
         var mbi = parseInt( (asplit.length>1)? asplit[1]:"0");
-        rad = node_selected.data.radii[0].radii[mbi];
+        if (node_selected.data.radii) rad = node_selected.data.radii[0].radii[mbi];
       }
       var cp = pickingProxy.canvasPosition;
       tooltip.innerText = "Radius: " + rad.toString();
