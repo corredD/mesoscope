@@ -1197,11 +1197,12 @@ function pdbcomp_mouseover_callback(e) {
   if (did !== node_selected.data.uniprot ) did = node_selected.data.uniprot ;
   var ch = e.eventData.elementData.pathData.chain_id;
   if (ch === undefined) {
-    ch = Object.keys(node_selected.data.mapping[did])[1];
+    if (did in node_selected.data.mapping) ch = Object.keys(node_selected.data.mapping[did])[1];
+    else ch = "";
   }
   var resnum = e.eventData.residueNumber;
   console.log("before mapping ",resnum,entityId,did,ch);
-  if (resnum in node_selected.data.mapping[did][ch].mapping)
+  if (did in node_selected.data.mapping && ch in node_selected.data.mapping[did] && resnum in node_selected.data.mapping[did][ch].mapping)
       resnum = node_selected.data.mapping[did][ch].mapping[resnum];
   console.log("after mapping ",resnum);
   NGL_ChangeHighlightResidue(resnum,ch);
