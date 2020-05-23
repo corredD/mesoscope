@@ -1172,6 +1172,7 @@ function pdbcomp_mouseover_callback(e) {
   //if (e.eventData.elementData.elementType === "molecule") return;
   if (!node_selected) return;
   var entityId = e.eventData.entityId;
+  console.log("entityId ", entityId);
   var did = node_selected.data.mapping.unimap[entityId];//
   //compare with the one in the widget.
   if (e.eventData.elementData.elementType ==="uniprot") {
@@ -1179,7 +1180,13 @@ function pdbcomp_mouseover_callback(e) {
     //e.eventData.entryId: "3bc1"
     //e.eventData.residueNumber: 98
     //check if its the uniprot we have in the grid ?
-    if (e.eventData.elementData.domainId !== node_selected.data.uniprot)
+    console.log("e.eventData.elementData.domainId ",e.eventData.elementData.domainId);
+    console.log("node_selected.data.uniprot ",node_selected.data.uniprot);
+    var domainId = e.eventData.elementData.domainId;
+    if (domainId === undefined) {
+      domainId = node_selected.data.uniprot;
+    }
+    if (domainId !== node_selected.data.uniprot)
     {
         node_selected.data.uniprot = e.eventData.elementData.domainId;
         updateCellValue(gridArray[0], "uniprot", current_grid_row, node_selected.data.uniprot);
@@ -1189,6 +1196,9 @@ function pdbcomp_mouseover_callback(e) {
   }
   if (did !== node_selected.data.uniprot ) did = node_selected.data.uniprot ;
   var ch = e.eventData.elementData.pathData.chain_id;
+  if (ch === undefined) {
+    ch = Object.keys(node_selected.data.mapping[did])[1];
+  }
   var resnum = e.eventData.residueNumber;
   console.log("before mapping ",resnum,entityId,did,ch);
   if (resnum in node_selected.data.mapping[did][ch].mapping)
@@ -1460,6 +1470,8 @@ function setupProVista(uniid){
 
 
 helper_setupFibersDictionary();
+
+
 
 /*
 (function () {
