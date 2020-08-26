@@ -332,22 +332,36 @@ var ngl_viewport='' +
     '<div id="viewport" style="width:100%; height:100%;">'+  '</div>'+
   '</div>';
 
+var file_cb = "$('#modelfile_input').trigger('click');";
 var gpu_phy_viewport='' +
   '<div class="GPGPU" id="GPGPU">'+
-    '<button id="preview_button" onclick="GP_initFromNodes(graph.nodes,128,10,false);" style="position:absolute;top:0px;right:50%;z-index:999">Preview</button>' +
     '<div id="gui-container"></div>'+
     '<div id="container" style="width:100%; height:100%;"></div>'+
+    '<button id="preview_button" onclick="GP_initFromNodes(graph.nodes,128,10,false);" style="position:absolute;top:0px;right:50%;z-index:999">Preview</button>' +
+    '<button id="loadmodel_button" onclick="'+file_cb+'" style="position:absolute;top:0px;right:60%;">Load Model</button>' +    
   '</div>';
+
+var file_cb = "$('#modelfile_input2').trigger('click');";
+var mol_star_view=''+
+'<div id="acontainer" >'+
+'<div id="molstar">'+  '</div>'+
+'<div style="position:absolute;top:0px">'+
+'<button id="loadmodel_button" onclick="'+file_cb+'" style="">Load a Model</button>' +//z-index:999,right:5%;
+'<button id="applyAllcolors_button" onclick="MS_applyAllColors()" style="">Apply nodes Colors</button>' +//z-index:999,right:5%;
+'<button id="applyAllcolors_button" onclick="MS_applyRandomColors()" style="">Apply default Colors</button>' +//z-index:999,right:5%;
+'</div>'+
+'</div>';
 
 var ngloptions = '' +
   '<div class="NGLpan">'+
-    '<div style="position:absolute;top:0px;z-index:999"><button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
+    ngl_viewport+
+    '<div style="position:absolute;top:0px">'+//;z-index:999
+    '<button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
     '<button onclick="NextIgredient()" style="">Next Ingredient</button>' +
     '<button onclick="NGL_UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite</button>' +
     '<input type="checkbox" id="ill_style">Coarse Illustration</input>' +
     '<button onclick="NGL_Illustrate()" style="">Illustrate</button>' +
     '<input type="checkbox" id="savethumbnail" checked="true">Save Thumbnail/Sprite</input></div>' +
-    ngl_viewport+
   '</div>';
 
 function getSpinner(spinner_id,callback_close)
@@ -587,7 +601,8 @@ var config = {
                   ]},
                   {type:'stack', content:[
                     get_comp_defintion_ngl(),
-                    get_comp_defintion_gpgpu()
+                    get_new_single_component("Mol-*","Mol-*","molstar",{label: 'molstar'})//,
+                    //get_comp_defintion_gpgpu()
                   ]},
                   {
 										type:'stack',
@@ -629,7 +644,7 @@ var myLayout,
 var usesavedState = true;
 var usesavedSession = true;
 var savedRecipe = localStorage.getItem('savedRecipe');
-var current_version = {"version":1.012};
+var current_version = {"version":1.11};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()
@@ -775,6 +790,31 @@ gpgpuComponent.prototype._Setup = function() {
 gpgpuComponent.prototype._Resize = function() {
     GP_onWindowResize();
 };
+
+
+var molstarcomponent  = function(container, state) {
+  this._container = container;
+  this._container.on('open', this._Setup, this);
+};
+//init also the component for gpu?
+molstarcomponent.prototype._Setup = function() {
+  //this._container.getElement().html( '<div class="NGL" id="NGL"><div id="viewport" style="width:100%; height:100%;"></div></div>');
+  //var ngl = $('<div class="NGL" id="NGL"><div id="viewport" style="width:100%; height:100%;"></div></div>');
+  var optionsDropdown = $(mol_star_view); //$( 'NGLOptionTemplate' ).html() );
+  this._container.getElement().append(optionsDropdown);
+  //this._container.getElement().append(ngl);
+  //initialize molstar wrapper on div id molstar
+  MS_molstart_init();
+  this._container.on('resize', this._Resize, this);
+  this._Resize();
+  all_intialized[1] = true;
+}
+
+molstarcomponent.prototype._Resize = function() {
+    //molstar resize?
+    MS_Resize();
+}; 
+
 
 var nglComponent = function(container, state) {
   this._container = container;
@@ -962,7 +1002,8 @@ myLayout.registerComponent('d3canvas', d3canvasComponent);
 
 myLayout.registerComponent('ngl', nglComponent);
 
-myLayout.registerComponent('gpgpu', gpgpuComponent);
+//myLayout.registerComponent('gpgpu', gpgpuComponent);
+myLayout.registerComponent('molstar',molstarcomponent);
 myLayout.registerComponent('pfv', pfvComponent);
 
 myLayout.registerComponent('slickgrid', slickgridComponent);

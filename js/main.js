@@ -3,7 +3,7 @@
 var DEBUGLOG = false;
 var DEBUGGPU = true;
 var MERGE = false;
-
+var recipe_file;
 var recipe_changed = false; //toggle when change occurs, and autosave/save occurs.
 //how to efficiently save work ?
 var current_mode = 0;//0-view/curate mode, 1-create mode
@@ -142,7 +142,7 @@ var centerX = 0,//width/2,
     centerY = 0;// height/2;
 
 var root;
-var nodes;
+var gp_nodes;
 
 var offx;
 var offy;
@@ -1048,8 +1048,8 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 		molecularweight_index=allfield.molecularweight_index,
 		confidence_index=allfield.confidence_index,
     compartments_index=allfield.compartment_index;
-  console.log("mapping for "+rootName+" is ");
-  console.log(allfield);
+  	console.log("mapping for "+rootName+" is ");
+  	console.log(allfield);
 	var compartments={};
 	var compgraph = getModalCompGraph(rootName) ;//the main graph
 	var newgraph = compgraph.graph ;//the main graph
@@ -1336,12 +1336,12 @@ function forceSelect(e) {
 
 //first/second sheet is the current graph/link, next is the original data -> up to 4 Grid
 function selectFile(e){
-		document.getElementById("addingr").setAttribute("class", "hidden");
-		document.getElementById("addcomp").setAttribute("class", "hidden");
-		document.getElementById("addlink").setAttribute("class", "hidden");
-		if (stage) stage.removeAllComponents();
-	  csv_mapping= false;
-	  comp_column = false;
+	document.getElementById("addingr").setAttribute("class", "hidden");
+	document.getElementById("addcomp").setAttribute("class", "hidden");
+	document.getElementById("addlink").setAttribute("class", "hidden");
+	if (stage) stage.removeAllComponents();
+	csv_mapping= false;
+	comp_column = false;
     var theFiles = e.target.files;
     //alert(theFiles.length);
     //alert(theFiles[0].size);
@@ -1379,7 +1379,8 @@ function selectFile(e){
        	 }
   	  	}
     	  else {
-	    	  reader.onload = function(event) {
+			recipe_file = thefile;
+			reader.onload = function(event) {
   	        var data = reader.result;
   	        data = data.replace(/\\n\\r/gm,'newChar');
   	        var ad = JSON.parse(data);
@@ -1454,8 +1455,8 @@ function selectDBcallback (response,query) {
 	root = d3v4.hierarchy(adata)
 	.sum(function(d) { return d.size; })//this is 10
 	.sort(function(a, b) { return b.value - a.value; });
-	nodes = pack(root).descendants();//this pack and flatten the data
-	nodes = checkAttributes(nodes);
+	gp_nodes = pack(root).descendants();//this pack and flatten the data
+	gp_nodes = checkAttributes(gp_nodes);
 	var links = [];
 	//UpdateGridFromD3Nodes(nodes,"slickGrid","tabs-1");//create or update ?
 	//alert(nodes.length);
@@ -1507,52 +1508,118 @@ function LoadExampleMpn(){
 			      //alert("worked??");
 			      //alert(JSON.stringify(adata));
 			      update_graph(adata.nodes,adata.links);
-            })
+			})
+		MS_LoadExample('MycoplasmaModel.json');
+		//MS_applyAllColors();
 	}
 
   function LoadExampleExosome(){
-  	  stage.removeAllComponents();
-  	  var url = "data/exosome_catalase.json";
-  	  csv_mapping= false;
-  	  comp_column = false;
-      d3v4.json(url, function (json) {
-      	      if (DEBUGLOG) console.log(json);
-  			      var adata = parseCellPackRecipe(json)
-  			      //var alink =[]
-  			      //alert("worked??");
-  			      //alert(JSON.stringify(adata));
-  			      update_graph(adata.nodes,adata.links);
-              })
+		stage.removeAllComponents();
+		var url = "data/exosome_catalase.json";
+		csv_mapping= false;
+		comp_column = false;
+		d3v4.json(url, function (json) {
+				if (DEBUGLOG) console.log(json);
+					var adata = parseCellPackRecipe(json)
+					//var alink =[]
+					//alert("worked??");
+					//alert(JSON.stringify(adata));
+					update_graph(adata.nodes,adata.links);
+				})
+		MS_LoadExample('ExosomeModel.json');
   	}
 
 function LoadExampleHIV(){
-			stage.removeAllComponents();
-		  var url = cellpack_repo+"recipes/BloodPlasma1.0.json";
-		  csv_mapping= false;
-		  comp_column = false;
-
+		stage.removeAllComponents();
+		var url ="data/hivfull_serialized.json";
+		csv_mapping= false;
+		comp_column = false;
 	    d3v4.json(url, function (json) {
-	    	      if (DEBUGLOG) console.log(json);
-				      var adata = parseCellPackRecipe(json)
-				      //var alink =[]
-				      //alert("worked??");
-				      //alert(JSON.stringify(adata));
-				      update_graph(adata.nodes,adata.links);
+				  if (DEBUGLOG) console.log(json);
+				  var adata = parseCellPackRecipeSerialized(json)
+			      update_graph(adata.nodes,adata.links);
 	            })
-		}
+		MS_LoadExample('HIV-1_0.1.6-8_mixed_radii_pdb.cpr');
+}
 
+function LoadExampleInfluenza_envelope(){
+	stage.removeAllComponents();
+	var url = "data/InfluenzaA.json";
+	csv_mapping= false;
+	comp_column = false;
+
+	d3v4.json(url, function (json) {
+			if (DEBUGLOG) console.log(json);
+				var adata = parseCellPackRecipe(json)
+				//var alink =[]
+				//alert("worked??");
+				//alert(JSON.stringify(adata));
+				update_graph(adata.nodes,adata.links);
+		})
+	MS_LoadExample('influenza_model1.json');
+}
+function LoadExampleInfluenza_complete(){
+	stage.removeAllComponents();
+	var url = "data/InfluenzaFull.json";
+	csv_mapping= false;
+	comp_column = false;
+
+	d3v4.json(url, function (json) {
+			if (DEBUGLOG) console.log(json);
+				var adata = parseCellPackRecipe(json)
+				//var alink =[]
+				//alert("worked??");
+				//alert(JSON.stringify(adata));
+				update_graph(adata.nodes,adata.links);
+		})
+	MS_LoadExample('InfluenzaModel2.json');
+}
+
+function LoadExampleHIVimmatureBlood(){
+	stage.removeAllComponents();
+	var url = "data/HIV_immature_blood.json";
+	csv_mapping= false;
+	comp_column = false;
+
+	d3v4.json(url, function (json) {
+			if (DEBUGLOG) console.log(json);
+				var adata = parseCellPackRecipe(json)
+				//var alink =[]
+				//alert("worked??");
+				//alert(JSON.stringify(adata));
+				update_graph(adata.nodes,adata.links);
+		})
+	MS_LoadExample('blood_hiv_immature_inside.json');
+}
+	
+function LoadExampleHIVimmature(){
+	stage.removeAllComponents();
+	var url = "data/HIV_immature.json";
+	csv_mapping= false;
+	comp_column = false;
+
+	d3v4.json(url, function (json) {
+			if (DEBUGLOG) console.log(json);
+			var adata = parseCellPackRecipe(json)
+			update_graph(adata.nodes,adata.links);
+		})
+	MS_LoadExample('HIV_immature_model.json');
+}
+	
 function LoadExampleBlood(){
 		stage.removeAllComponents();
-	  var url = "data/BloodPlasma_serialized.json";
-	  csv_mapping= false;
-	  comp_column = false;
-    d3v4.json(url, function (json) {
+	  	var url = "data/BloodPlasma_serialized.json";
+	  	csv_mapping= false;
+	  	comp_column = false;
+    	d3v4.json(url, function (json) {
 						if (DEBUGLOG) {
 							console.log("json",json);
 						}
 						var adata = parseCellPackRecipeSerialized(json)
 			      update_graph(adata.nodes,adata.links);
-            })
+			})
+		//MS_LoadExample('BloodHIV1.0_mixed_fixed_nc1.cpr');
+		//MS_applyAllColors();		
 }
 
 function LoadExampleBloodHIV(){
@@ -1575,6 +1642,7 @@ function LoadExampleBloodHIV(){
 						//alert(JSON.stringify(adata));
 						update_graph(adata.nodes,adata.links);
 						})
+		MS_LoadExample('BloodHIV1.0_mixed_fixed_nc1.cpr');
 }
 
 function MergeExampleBlood(){
@@ -1629,79 +1697,84 @@ function MergeExampleBloodHIV(){
 }
 
 function checkAttributes(agraph){
-  console.log("checkAttributes ",agraph);
-  if ( !agraph || agraph.length < 2 ) return;
-  property_mapping.molecularweight.min=0;
-  property_mapping.molecularweight.max=0;
+	agraph.mapping_ids={}
+  	console.log("checkAttributes ",agraph);
+	if ( !agraph || agraph.length < 2 ) return;
+	property_mapping.molecularweight.min=0;
+	property_mapping.molecularweight.max=0;
 	property_mapping.size.min = 999999;
-  property_mapping.size.max = 0;
+	property_mapping.size.max = 0;
 	property_mapping.molarity.min =0;
-  property_mapping.molarity.max =0;
+	property_mapping.molarity.max =0;
 	property_mapping.count.min = 0;
-  property_mapping.count.max = 0;
+	property_mapping.count.max = 0;
 	property_mapping.confidence.min = 0.0;
-  property_mapping.confidence.max = 1.0;
+	property_mapping.confidence.max = 1.0;
+	var counter_id = 0;
 	for (var i=0;i<agraph.length;i++){
 		if (!agraph[i].children) {
-		agraph[i].data.nodetype = "ingredient";
-    if (!"cluster" in agraph[i]) agraph[i].cluster=null;
-		if (!("label" in agraph[i].data)) agraph[i].data.label = agraph[i].data.name;
-		if (!("geom" in agraph[i].data)) agraph[i].data.geom = "X";
-		if (!("geom_type" in agraph[i].data)) agraph[i].data.geom_type = "None";
-		//if (agraph[i].children && agraph[i].parent) agraph[i].r = agraph[i].r/2;
-    //agraph[i].r = agraph[i].r/2;
-    if (!("uniprot" in agraph[i].data)) agraph[i].data.uniprot = "";
-		if (!("pcpalAxis" in agraph[i].data)) agraph[i].data.pcpalAxis =[0,0,1];
-		if (!("offset" in agraph[i].data)) agraph[i].data.offset = [0,0,0];
-		if (!("pos" in agraph[i].data)) agraph[i].data.pos = [];
-		if (!("radii" in agraph[i].data)) agraph[i].data.radii = [];
-		if (!("molecularweight" in agraph[i].data)) agraph[i].data.molecularweight = 0.0;
-    else agraph[i].data.molecularweight = parseFloat(agraph[i].data.molecularweight);
-		if (!("confidence" in agraph[i].data) || isNaN(agraph[i].data.confidence) || agraph[i].data.confidence == null ) {
-      if ("source" in agraph[i].data
-      && "pdb" in agraph[i].data.source
-      && agraph[i].data.source.pdb
-      && (agraph[i].data.source.pdb.length === 4))//||agraph[i].data.source.pdb.split("_")[0].length ===4
-      {
-        agraph[i].data.confidence = 1.0;
-      }
-      else agraph[i].data.confidence = -1.0;
-    }
-    else agraph[i].data.confidence = parseFloat(agraph[i].data.confidence);
-    if (!("count" in agraph[i].data)) agraph[i].data.count = 0;
-    else agraph[i].data.count = parseInt(agraph[i].data.count);
-    if (!("molarity" in agraph[i].data)) agraph[i].data.molarity = 0.0;
-    else agraph[i].data.molarity = parseFloat(agraph[i].data.molarity);
-		if (!("color" in agraph[i].data)) agraph[i].data.color = [0,0,0];
-		if (!("ingtype" in agraph[i].data)) agraph[i].data.ingtype = "protein";
-		if (!("buildtype" in agraph[i].data)) agraph[i].data.buildtype = "random";
-    if (!("buildfilename" in agraph[i].data)) agraph[i].data.buildfilename = "";
-		if (!("comments" in agraph[i].data)) agraph[i].data.comments = "";
-		//if (!("color" in agraph[i].data)) agraph[i].data.color = [];
+			agraph[i].data.nodetype = "ingredient";
+			if (!"cluster" in agraph[i]) agraph[i].cluster=null;
+			if (!("label" in agraph[i].data)) agraph[i].data.label = agraph[i].data.name;
+			if (!("geom" in agraph[i].data)) agraph[i].data.geom = "X";
+			if (!("geom_type" in agraph[i].data)) agraph[i].data.geom_type = "None";
+			//if (agraph[i].children && agraph[i].parent) agraph[i].r = agraph[i].r/2;
+			//agraph[i].r = agraph[i].r/2;
+			if (!("uniprot" in agraph[i].data)) agraph[i].data.uniprot = "";
+			if (!("pcpalAxis" in agraph[i].data)) agraph[i].data.pcpalAxis =[0,0,1];
+			if (!("offset" in agraph[i].data)) agraph[i].data.offset = [0,0,0];
+			if (!("pos" in agraph[i].data)) agraph[i].data.pos = [];
+			if (!("radii" in agraph[i].data)) agraph[i].data.radii = [];
+			if (!("molecularweight" in agraph[i].data)) agraph[i].data.molecularweight = 0.0;
+			else agraph[i].data.molecularweight = parseFloat(agraph[i].data.molecularweight);
+			if (!("confidence" in agraph[i].data) || isNaN(agraph[i].data.confidence) || agraph[i].data.confidence == null ) {
+				if ("source" in agraph[i].data
+					&& "pdb" in agraph[i].data.source
+					&& agraph[i].data.source.pdb
+					&& (agraph[i].data.source.pdb.length === 4))//||agraph[i].data.source.pdb.split("_")[0].length ===4
+					{
+						agraph[i].data.confidence = 1.0;
+					}
+				else agraph[i].data.confidence = -1.0;
+			}
+			else agraph[i].data.confidence = parseFloat(agraph[i].data.confidence);
+			if (!("count" in agraph[i].data)) agraph[i].data.count = 0;
+			else agraph[i].data.count = parseInt(agraph[i].data.count);
+			if (!("molarity" in agraph[i].data)) agraph[i].data.molarity = 0.0;
+			else agraph[i].data.molarity = parseFloat(agraph[i].data.molarity);
+			if (!("color" in agraph[i].data)) agraph[i].data.color = [0,0,0];
+			if (!("ingtype" in agraph[i].data)) agraph[i].data.ingtype = "protein";
+			if (!("buildtype" in agraph[i].data)) agraph[i].data.buildtype = "random";
+			if (!("buildfilename" in agraph[i].data)) agraph[i].data.buildfilename = "";
+			if (!("comments" in agraph[i].data)) agraph[i].data.comments = "";
+			//if (!("color" in agraph[i].data)) agraph[i].data.color = [];
 
-    //they have to be number not string
-		if (agraph[i].data.molecularweight > property_mapping.molecularweight.max) property_mapping.molecularweight.max = agraph[i].data.molecularweight;
-		if (agraph[i].data.molecularweight < property_mapping.molecularweight.min) property_mapping.molecularweight.min = agraph[i].data.molecularweight;
+			//they have to be number not string
+			if (agraph[i].data.molecularweight > property_mapping.molecularweight.max) property_mapping.molecularweight.max = agraph[i].data.molecularweight;
+			if (agraph[i].data.molecularweight < property_mapping.molecularweight.min) property_mapping.molecularweight.min = agraph[i].data.molecularweight;
 
-		if (agraph[i].data.size > property_mapping.size.max) property_mapping.size.max = agraph[i].data.size;
-		if (agraph[i].data.size < property_mapping.size.min) property_mapping.size.min = agraph[i].data.size;
+			if (agraph[i].data.size > property_mapping.size.max) property_mapping.size.max = agraph[i].data.size;
+			if (agraph[i].data.size < property_mapping.size.min) property_mapping.size.min = agraph[i].data.size;
 
-		if (agraph[i].data.molarity > property_mapping.molarity.max) property_mapping.molarity.max = agraph[i].data.molarity;
-		if (agraph[i].data.molarity < property_mapping.molarity.min) property_mapping.molarity.min = agraph[i].data.molarity;
+			if (agraph[i].data.molarity > property_mapping.molarity.max) property_mapping.molarity.max = agraph[i].data.molarity;
+			if (agraph[i].data.molarity < property_mapping.molarity.min) property_mapping.molarity.min = agraph[i].data.molarity;
 
-		if (agraph[i].data.count > property_mapping.count.max) property_mapping.count.max = agraph[i].data.count;
-		//if (agraph[i].data.count < property_mapping.count.min) property_mapping.count.min = agraph[i].data.count;
+			if (agraph[i].data.count > property_mapping.count.max) property_mapping.count.max = agraph[i].data.count;
+			//if (agraph[i].data.count < property_mapping.count.min) property_mapping.count.min = agraph[i].data.count;
 
-		//if (agraph[i].data.confidence > property_mapping.confidence.max) property_mapping.confidence.max = agraph[i].data.confidence;
-		//if (agraph[i].data.confidence < property_mapping.confidence.min) property_mapping.confidence.min = agraph[i].data.confidence;
+			//if (agraph[i].data.confidence > property_mapping.confidence.max) property_mapping.confidence.max = agraph[i].data.confidence;
+			//if (agraph[i].data.confidence < property_mapping.confidence.min) property_mapping.confidence.min = agraph[i].data.confidence;
 
-		if (!("visited" in agraph[i].data)) agraph[i].data.visited = false;
-		if (!("include" in agraph[i].data)) agraph[i].data.include = true;
-		if (!("opm" in agraph[i].data)) agraph[i].data.opm = 0;//is it an opm model
+			if (!("visited" in agraph[i].data)) agraph[i].data.visited = false;
+			if (!("include" in agraph[i].data)) agraph[i].data.include = true;
+			if (!("opm" in agraph[i].data)) agraph[i].data.opm = 0;//is it an opm model
 
-    if (!("angle" in agraph[i].data)) agraph[i].data.angle = 25.0;//is it an opm model
-    if (!("ulength" in agraph[i].data)) agraph[i].data.ulength = 34.0;//is it an opm model
-    if (!("tlength" in agraph[i].data)) agraph[i].data.tlength = 100;//is it an opm model
+			if (!("angle" in agraph[i].data)) agraph[i].data.angle = 25.0;//is it an opm model
+			if (!("ulength" in agraph[i].data)) agraph[i].data.ulength = 34.0;//is it an opm model
+			if (!("tlength" in agraph[i].data)) agraph[i].data.tlength = 100;//is it an opm model
+			agraph[i].data.__id = counter_id;
+			agraph.mapping_ids[counter_id]=i;
+			counter_id++;
 		}
 		else {
  			agraph[i].data.nodetype = "compartment";
@@ -1710,7 +1783,7 @@ function checkAttributes(agraph){
 			//if (!("geom" in agraph[i].data )) agraph[i].data.geom = "";
 			//if (!("geom" in agraph[i].data )) agraph[i].data.geom = "";
 		}
-  }
+  	}
 	return agraph;
 	}
 
@@ -1800,7 +1873,7 @@ function getcomphtml(anode) {
 			//htmlStr+=' <input id="comp_slider" style="width:80%" height:"40px" type="range" min="1" max="10000"" step="1" value="500" oninput="updateLabel(this)" onchange="resizeSphere(this)" /> ';
 			//htmlStr+=' <label id="comp_slider_label" for="comp_slider" style="width:20%">10A</label>';
 			var cradius = 500;
-			if (("geom" in anode.data) && ("radius" in anode.data.geom))
+			if (("geom" in anode.data) && (typeof(node_selected.data.geom)!=="string"))
 				 cradius = anode.data.geom.radius;
 			htmlStr+='<div style="display:flex;"><label>Radius(A):</label><input id="comp_slider" type="range" min="1" max="10000" step="1" value="'+cradius+'"style="width:70%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/>';
 		  htmlStr+='<input  id="comp_slider_num" min="1" max="10000" type="number" value="'+cradius+'" style="width:30%" oninput="updateLabel(this)" onchange="resizeSphere(this)"/></div>';
@@ -2300,8 +2373,8 @@ function setupD3(){
 	  var links = [];//root.links();//nodes.slice(1);
 
   	//nodes = checkAttributes(nodes);
-    offx = canvas.parentNode.offsetWidth;
-		offy = canvas.parentNode.offsetHeight;
+	 offx = canvas.parentNode.offsetWidth;
+	 offy = canvas.parentNode.offsetHeight;
 
 	  //nodes = resetAllNodePos(nodes);
  	  graph.nodes = nodes;
@@ -2960,7 +3033,7 @@ function ticked(e) {
     }    //thumbnail with special case for surface
     var snode = node_selected;
     if (snode == null || snode.children) snode = node_over;
-    if (snode !=null && !snode.children && snode.data && snode.data.thumbnail !==null) {
+    if (snode !=null && !snode.children && snode.data && snode.data.thumbnail !==null  && snode.data.name != null) {
       //scale from image size to 150 ?
       context.save();
       context.resetTransform();
@@ -3439,7 +3512,7 @@ function traverseTreeForCompartmentNameUpdate(anode){
 	}
 
 
-function ChangeColorNodeOver(){
+async function ChangeColorNodeOver(){
 	$(".custom-menu-node").hide(100);
 	console.log("change color over",node_over_to_use.data.name);
 	console.log(node_over_to_use);
@@ -3452,13 +3525,18 @@ function ChangeColorNodeOver(){
   //change also in ngl view if geometry is toggled
   if (node_over_to_use === ngl_current_node) {//node_selected
     if  (document.getElementById("showgeom").checked ) {
-      var comp = stage.getComponentsByName("geom_surface");
-      if (comp.list.length)
-        if (comp.list[0].reprList.length)
-          comp.list[0].reprList[0].repr.diffuse = new THREE.Color( acolor[0], acolor[1], acolor[2] );
-          comp.list[0].reprList[0].repr.update();
+      	var comp = stage.getComponentsByName("geom_surface");
+		if (comp.list.length && comp.list[0])
+		{
+			if (comp.list[0].reprList.length)
+			{
+				comp.list[0].reprList[0].repr.diffuse = new THREE.Color( acolor[0], acolor[1], acolor[2] );
+				comp.list[0].reprList[0].repr.update();
+			}
+		}
     }
   }
+  await MS_ChangeColor(node_over_to_use,node_over_to_use.data.color);
 }
 
 function ResizeNodeOver(){
@@ -4218,31 +4296,31 @@ function update_graph(agraph,alink){
     .range([0, 25]);
 
   root = d3v4.hierarchy(agraph)
-    .sum(function(d) { return d.size; })
-    .sort(function(a, b) { return b.value - a.value; });
+    .sum(function(d) { return d.size; });
+  //   .sort(function(a, b) { return b.value - a.value; });
 
   if (DEBUGLOG) console.log("root",root);
-  nodes = pack(root).descendants();//flatten--error ?
+  gp_nodes = pack(root).descendants();//flatten--error ?
 	if (DEBUGLOG) {
-		console.log("nodes",nodes);
+		console.log("nodes",gp_nodes);
   	console.log("alink",alink);
   }
-	alink = MapLinkToNode(nodes,alink);
+	alink = MapLinkToNode(gp_nodes,alink);
 
-  if (!isempty)nodes = checkAttributes(nodes);
-  if (!isempty)nodes = resetAllNodePos(nodes);
-  if (!isempty)nodes = centerAllNodePos(nodes);
-  if (!nodes) nodes =[];
+  if (!isempty)gp_nodes = checkAttributes(gp_nodes);
+  if (!isempty)gp_nodes = resetAllNodePos(gp_nodes);
+  if (!isempty)gp_nodes = centerAllNodePos(gp_nodes);
+  if (!gp_nodes) gp_nodes =[];
   // Returns array of link objects between nodes.
   //links = root.links();//nodes.slice(1);
-  console.log("update with "+nodes.length);
-  UpdateGridFromD3Nodes(nodes,0);
+  console.log("update with "+gp_nodes.length);
+  UpdateGridFromD3Nodes(gp_nodes,0);
   UpdateGridFromD3Links(alink,1);
 
-  if (DEBUGLOG) console.log( nodes );
+  if (DEBUGLOG) console.log( gp_nodes );
 
   graph={};
-  graph.nodes = nodes;
+  graph.nodes = gp_nodes;
   graph.links = alink;
   users = d3v4.nest()
       .key(function(d) { return d.name; })
@@ -4353,17 +4431,17 @@ function merge_graph(agraph,alink){
         }
       }
   });
-  nodes = checkAttributes(nodes);
-  nodes = resetAllNodePos(nodes);
-  nodes = centerAllNodePos(nodes);
+  gp_nodes = checkAttributes(gp_nodes);
+  gp_nodes = resetAllNodePos(gp_nodes);
+  gp_nodes = centerAllNodePos(gp_nodes);
 
   // Returns array of link objects between nodes.
   //links = root.links();//nodes.slice(1);
-  console.log("update with "+nodes.length);
-  UpdateGridFromD3Nodes(nodes,0);
+  console.log("update with "+gp_nodes.length);
+  UpdateGridFromD3Nodes(gp_nodes,0);
   UpdateGridFromD3Links(alink,1);
 
-  if (DEBUGLOG) console.log( nodes );
+  if (DEBUGLOG) console.log( gp_nodes );
 
   users = d3v4.nest()
       .key(function(d) { return d.name; })
@@ -4485,7 +4563,7 @@ function setupGridster() {
 
 		var maxnb = Math.round($(window).width()/50);
 		console.log("max number of column ",maxnb);
-    gridster = $(".gridster > ul").gridster({
+    	gridster = $(".gridster > ul").gridster({
         widget_base_dimensions: [50, 50],
         //shift_widgets_up: false,
         shift_larger_widgets_down: false,
@@ -4546,7 +4624,7 @@ function setupGridster() {
 			height = 200;//nr*50;
 			intialize();
 			NGL_Setup();
-	    setupPFV();
+	   		setupPFV();
 			graph.nodes = centerAllNodePos(graph.nodes);
 			stage.handleResize();
 			//resizeToFitBrowserWindow(gridArray[current_grid], gridIds[current_grid],gridster.$widgets.eq(3));//"BottomPane");// "tabs-"+(current_grid+1));

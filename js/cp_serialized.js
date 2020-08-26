@@ -2,6 +2,7 @@ var ingr_uniq_id;
 var premade_data={};//per ingredient ids or name ?
 var premade_all_data;
 var debugxmldoc;
+var model_file;
 
 class sCompartment {
   constructor(name, static_id) {
@@ -796,7 +797,8 @@ function OneIngredient(ing_dic, surface) {
     "radii": r,
     "nodetype": "ingredient",
     "sprite":sprite,
-    "color": color
+    "color": color,
+    "results": ("results" in ing_dic) ? ing_dic["results"] : ""
   };
   //console.log(JSON.stringify(elem));
   //console.log(elem);
@@ -1062,6 +1064,54 @@ function parseCellPackRecipeXML(xmldoc){
   };
 }
 
+function parse_binary_model(data_buffer){
+  //array start with length.
+  var numbers = new DataView(data_buffer,0, 16)
+  var ninst=numbers.getUint32(0)
+  var ncurve=numbers.getUint32(4)
+  var pos,
+      quat,
+      ctrl_pts,
+      ctrl_normal,
+      ctrl_info;
+  var offset = 8;
+  if (ninst!== 0){
+    pos = new Float32Array(data_buffer,offset,ninst*4*4);offset+=ninst*4*4;
+    quat = new Float32Array(data_buffer,offset,ninst*4*4);offset+=ninst*4*4;
+  }
+  if ( ncurve!= 0 )
+  {
+    ctrl_pts = new Float32Array(data_buffer,offset,ncurve*4*4);offset+=ncurve*4*4;
+    ctrl_normal = new Float32Array(data_buffer,offset,ncurve*4*4);offset+=ncurve*4*4;
+    ctrl_info = new Float32Array(data_buffer,offset,ncurve*4*4);offset+=ncurve*4*4;
+  }
+}
+
+function load_binary_model(e) {
+  var theFiles = e.target.files;
+  //alert(theFiles.length);
+  //alert(theFiles[0].size);
+  var f = theFiles[0];
+  model_file = f;
+  if (!(window.File && window.FileReader && window.FileList && window.Blob))
+      console.log("The File APIs are not fully supported in this browser.");
+  MS_LoadModel(recipe_file, f);
+}
+
+function load_binary_model1(e) {
+  var theFiles = e.target.files;
+  //alert(theFiles.length);
+  //alert(theFiles[0].size);
+  var f = theFiles[0];
+  if (!(window.File && window.FileReader && window.FileList && window.Blob))
+      console.log("The File APIs are not fully supported in this browser.");
+  var reader = new window.FileReader();
+  reader.onload = function(event) {
+      var result = event.target.result;
+      GP_initFromBuffer(result);
+  };
+  reader.readAsArrayBuffer(f);
+}
 
 /* David Goodsell PDB format */
 function OneDefaultIngredient(name,isfiber,isfile){

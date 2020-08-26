@@ -10,7 +10,7 @@
 var DEBUGGPU = false;
 var query;
 var ySpread = 0.1;
-var nodes;
+var gp_nodes;
 var root;
 var gridcolor = 0;
 var pack = d3v4.pack()
@@ -457,19 +457,19 @@ function GP_CombineGrid(){
     master_grid_id[i] = 0.0;//root
     master_grid_field[i*4+3] = 10.0;
   }
-  nodes[0].data.insides = indices;
-  for (var i=0;i<nodes.length;i++){//nodes.length
-    if (!nodes[i].parent)
+  gp_nodes[0].data.insides = indices;
+  for (var i=0;i<gp_nodes.length;i++){//nodes.length
+    if (!gp_nodes[i].parent)
     {
-        nodes[i].data.compId=counter;
-        nodes[i].data.sign = 1;
+        gp_nodes[i].data.compId=counter;
+        gp_nodes[i].data.sign = 1;
         counter+=1;
         continue;
     }
-    else if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+    else if ((gp_nodes[i].children !== null) && (gp_nodes[i].data.nodetype === "compartment")) {
         //normalize the box
-        var bsize = nodes[i].data.mc.data_bound.maxsize*ascale;
-        var center = nodes[i].data.mc.data_bound.center;//*ascale;
+        var bsize = gp_nodes[i].data.mc.data_bound.maxsize*ascale;
+        var center = gp_nodes[i].data.mc.data_bound.center;//*ascale;
         var zPlaneLength = n * n;
         //where it this in the box
         //-boxSize.x
@@ -482,10 +482,10 @@ function GP_CombineGrid(){
                               (center.y*ascale-world.broadphase.position.y)*n,
                               (center.z*ascale-world.broadphase.position.z)*n,bsize*n,n);
 
-        nodes[i].data.mc.bb= bb;
-        nodes[i].data.insides = [];
-        nodes[i].data.compId=counter;
-        nodes[i].data.sign = nodes[i].parent.data.sign * -1;
+        gp_nodes[i].data.mc.bb= bb;
+        gp_nodes[i].data.insides = [];
+        gp_nodes[i].data.compId=counter;
+        gp_nodes[i].data.sign = gp_nodes[i].parent.data.sign * -1;
         counter+=1;
         var x, y, z;
         for (z = bb.min_z; z < bb.max_z; z++) {
@@ -497,9 +497,9 @@ function GP_CombineGrid(){
                     //var q = nodes[i].data.mc.getUfromXYZ( ((x/n-boxSize.x)/ascale),
                     //                                      ((y/n-boxSize.y)/ascale),
                     //                                      ((z/n-boxSize.z)/ascale) );
-                    var q = nodes[i].data.mc.getUfromXYZ( wxyz[0],wxyz[1],wxyz[2] );
+                    var q = gp_nodes[i].data.mc.getUfromXYZ( wxyz[0],wxyz[1],wxyz[2] );
                     if (q<0) continue;
-                    var e = nodes[i].data.mc.field[q]*nodes[i].data.mc.data_bound.maxsize*ascale;//does e need scaling ?
+                    var e = gp_nodes[i].data.mc.field[q]*gp_nodes[i].data.mc.data_bound.maxsize*ascale;//does e need scaling ?
                     //if ( e  >= nodes[i].data.mc.isolation) {//-1 && e < nodes[i].data.mc.isolation+1){
                     //inside is negative
                     //current compId is
@@ -513,7 +513,7 @@ function GP_CombineGrid(){
                       if (ce === 10.0) master_grid_field[u*4+3] = e;
                       else master_grid_field[u*4+3] = Math.min(e,ce);//GP_fOpUnionRound( ce,  e,  round_r);
                     }
-                    else if (lvl === nodes[i].depth){
+                    else if (lvl === gp_nodes[i].depth){
                       //Union
                       //console.log("Union",compIdx,compId,lvl,i,u,ce,e);
                       master_grid_field[u*4+3] = Math.min (ce, e);//GP_fOpUnionRound( ce,  e,  round_r);//Math.min (ce, e);//GP_fOpUnionRound( ce,  e,  round_r);
@@ -525,16 +525,16 @@ function GP_CombineGrid(){
                       //console.log("Diff",compIdx,compId,lvl,i,u,ce,e);
                       master_grid_field[u*4+3] = max(-e,ce);//GP_fOpDifferenceRound( ce,  e,  round_r);//Math.max (-e, ce);//
                     }
-                    var test = (e < nodes[i].data.mc.isolation && Math.abs(e) < Math.abs(ce));
-                    if ( e < nodes[i].data.mc.isolation && nodes[i].data.compId > compId) {//-1 && e < nodes[i].data.mc.isolation+1){
-                      master_grid_id[u] = nodes[i].data.compId + nodes[i].depth/10.0;
+                    var test = (e < gp_nodes[i].data.mc.isolation && Math.abs(e) < Math.abs(ce));
+                    if ( e < gp_nodes[i].data.mc.isolation && gp_nodes[i].data.compId > compId) {//-1 && e < nodes[i].data.mc.isolation+1){
+                      master_grid_id[u] = gp_nodes[i].data.compId + gp_nodes[i].depth/10.0;
                       //console.log("Inside",master_grid_id[u],nodes[i].data.compId,nodes[i].depth,
                       //            " compIdx ",compIdx,compId,lvl,u,ce,e,
                       //            master_grid_field[u*4+3]);
-                      nodes[i].data.insides.push(u);
+                      gp_nodes[i].data.insides.push(u);
                       //console.log("inside");
                       //indices.splice(u,1);
-                      nodes[i].parent.data.insides.splice(u,1);
+                      gp_nodes[i].parent.data.insides.splice(u,1);
                       //we are inside
                       //e = e * nodes[i].parent.data.sign;
                       //master_grid_field[u*4+3] = e;
@@ -577,11 +577,11 @@ function GP_CombineGrid(){
             }
         }
         //
-        nodes[i].data.vol = GP_ComputeVolume(nodes[i].data.insides.length);
+        gp_nodes[i].data.vol = GP_ComputeVolume(gp_nodes[i].data.insides.length);
     }
     else continue;
   }
-  nodes[0].data.vol = GP_ComputeVolume(indices.length);
+  gp_nodes[0].data.vol = GP_ComputeVolume(indices.length);
   //make a texture out of it, do we include normal_cache, or should we recompute it ?
   //lets try both
   world.addCompGrid(master_grid_id,master_grid_field);
@@ -602,22 +602,22 @@ world.updateGridCompartmentMB(compId,listMetaballs);
 function GP_gpuCombineGrid(){
   //reset grid
   //console.log("update Grid on GPU");
-  for (var i=0;i<nodes.length;i++){//nodes.length
-    if (!nodes[i].parent)
+  for (var i=0;i<gp_nodes.length;i++){//nodes.length
+    if (!gp_nodes[i].parent)
       {
         continue;
       }
-    if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+    if ((gp_nodes[i].children !== null) && (gp_nodes[i].data.nodetype === "compartment")) {
         var listMetaballs = [];
-        for (var s=0;s<nodes[i].data.radii[0].radii.length;s++){
+        for (var s=0;s<gp_nodes[i].data.radii[0].radii.length;s++){
           //create one sphere per metaballs as well
           //transform into grid coordinates ?
-          listMetaballs.push(new THREE.Vector4(nodes[i].data.pos[0].coords[s*3]*ascale,
-                                  nodes[i].data.pos[0].coords[s*3+1]*ascale,
-                                  nodes[i].data.pos[0].coords[s*3+2]*ascale,
-                                  nodes[i].data.radii[0].radii[s]*ascale));
+          listMetaballs.push(new THREE.Vector4(gp_nodes[i].data.pos[0].coords[s*3]*ascale,
+                                  gp_nodes[i].data.pos[0].coords[s*3+1]*ascale,
+                                  gp_nodes[i].data.pos[0].coords[s*3+2]*ascale,
+                                  gp_nodes[i].data.radii[0].radii[s]*ascale));
         }
-        var compId = nodes[i].data.compId;
+        var compId = gp_nodes[i].data.compId;
         world.updateGridCompartmentMB(compId,listMetaballs,ascale);
     };
   }
@@ -672,9 +672,9 @@ function GP_createOneCompartmentMesh(anode) {
     aSphereMesh.position.set(anode.data.pos[0].coords[s*3]*ascale,
                             anode.data.pos[0].coords[s*3+1]*ascale,
                             anode.data.pos[0].coords[s*3+2]*ascale);
-    aSphereMesh.scale.set(anode.data.radii[0].radii[s]*ascale/2.0,
-                          anode.data.radii[0].radii[s]*ascale/2.0,
-                          anode.data.radii[0].radii[s]*ascale/2.0);
+    aSphereMesh.scale.set(anode.data.radii[0].radii[s]*ascale,
+                          anode.data.radii[0].radii[s]*ascale,
+                          anode.data.radii[0].radii[s]*ascale);
     aSphereMesh.name = anode.data.name+"_"+s;
     aSphereMesh.castShadow = true;
     aSphereMesh.receiveShadow = true;
@@ -752,8 +752,8 @@ function GP_SetBodyType(anode, pid, start, count){
     anode.data.bodyid = world.bodyTypeCount;
     console.log("addbodytype",s,anode.data.name,count,nbeads,inertia,mass);
     world.addBodyType(count,nbeads, s, anode.data.size*ascale,
-                      up.x, up.y, up.z,
-                      offset.x, offset.y, offset.z,
+                      0,0,1,//up.x, up.y, up.z,
+                      0,0,0,//offset.x, offset.y, offset.z,
                       mass, inertia.x, inertia.y, inertia.z);
   }
   else {
@@ -769,8 +769,8 @@ function GP_SetBodyType(anode, pid, start, count){
     //                  mass, inertia.x, inertia.y, inertia.z);
     anode.data.bodyid = world.bodyTypeCount;
     world.addBodyType(count,nbeads, s, anode.data.size*ascale,
-                      up.x, up.y, up.z,
-                      offset.x, offset.y, offset.z,
+                      0,0,1,//up.x, up.y, up.z,
+                      0,0,0,//offset.x, offset.y, offset.z,
                       mass, inertia.x, inertia.y, inertia.z);
     if (type_meshs[pid].idmesh) {
       var mid = type_meshs[pid].idmesh;
@@ -805,7 +805,7 @@ function GP_GetCount(anode){
 }
 
 function GP_GPUdistributes(){
-  var n = nodes.length;
+  var n = gp_nodes.length;
   var start = 0;
   var startp = 0;
   var total = 0;
@@ -818,15 +818,15 @@ function GP_GPUdistributes(){
   //get the count
   //build master grid with everything? should align with gpu_grid
   for (var i=0;i<n;i++){//nodes.length
-    if (!nodes[i].parent){
+    if (!gp_nodes[i].parent){
       //root
-      body_to_instances[nodes[i].data.name]=[];
+      body_to_instances[gp_nodes[i].data.name]=[];
     }
-    if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+    if ((gp_nodes[i].children !== null) && (gp_nodes[i].data.nodetype === "compartment")) {
         //use NGL to load the object?
-        if (!("mc" in nodes[i].data)) nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
-        else GP_updateMBCompartment(nodes[i]);
-        body_to_instances[nodes[i].data.name]=[];
+        if (!("mc" in gp_nodes[i].data)) gp_nodes[i].data.mesh = GP_createOneCompartmentMesh(gp_nodes[i]);
+        else GP_updateMBCompartment(gp_nodes[i]);
+        body_to_instances[gp_nodes[i].data.name]=[];
     }
   }
   GP_CombineGrid();
@@ -834,43 +834,43 @@ function GP_GPUdistributes(){
     initDebugGrid();
   }
   for (var i=0;i<n;i++){//nodes.length
-    console.log(i,nodes[i].data.name);
-    if (nodes[i].data.ingtype == "fiber") continue;
-    if (nodes[i].children!== null && nodes[i].parent === null) continue;
-    if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+    console.log(i,gp_nodes[i].data.name);
+    if (gp_nodes[i].data.ingtype == "fiber") continue;
+    if (gp_nodes[i].children!== null && gp_nodes[i].parent === null) continue;
+    if ((gp_nodes[i].children !== null) && (gp_nodes[i].data.nodetype === "compartment")) {
         continue;
     };
     //if (!nodes[i].data.surface) continue;
     //if (nodes[i].parent.parent) continue;
-    if (!nodes[i].data.radii) continue;
+    if (!gp_nodes[i].data.radii) continue;
     //if (!nodes[i].data.surface) continue;
-    var pdbname = nodes[i].data.source.pdb;
+    var pdbname = gp_nodes[i].data.source.pdb;
     if (pdbname.startsWith("EMD")
       || pdbname.startsWith("EMDB")
       || pdbname.slice(-4, pdbname.length) === ".map") {
       continue;
     }
-    count = GP_GetCount(nodes[i]);
+    count = GP_GetCount(gp_nodes[i]);
     //count = Util_getRandomInt( copy_number )+1;//remove root
-    console.log(i,nodes[i].data.name,nodes[i].parent.data.name,count);
+    console.log(i,gp_nodes[i].data.name,gp_nodes[i].parent.data.name,count);
     //count is how many body we are going to instanciate
-    GP_SetBodyType(nodes[i], i, start, count)
-    body_to_instances[nodes[i].data.name].push({"count":count,"btype":nodes[i].data.bodyid});
+    GP_SetBodyType(gp_nodes[i], i, start, count)
+    body_to_instances[gp_nodes[i].data.name].push({"count":count,"btype":gp_nodes[i].data.bodyid});
     for (var p=start;p<count;p++)
     {
-      for (var pi=startp;pi<nodes[i].data.radii[0].radii.length;pi++){
-        particles_to_instances.push([pi,p,nodes[i].data.bodyid]);
+      for (var pi=startp;pi<gp_nodes[i].data.radii[0].radii.length;pi++){
+        particles_to_instances.push([pi,p,gp_nodes[i].data.bodyid]);
       }
     }
-    startp= startp + nodes[i].data.radii[0].radii.length;
-    totalp = totalp + nodes[i].data.radii[0].radii.length;
+    startp= startp + gp_nodes[i].data.radii[0].radii.length;
+    totalp = totalp + gp_nodes[i].data.radii[0].radii.length;
     start = start + count;
     total = total + count;
   }
 }
 
-function distributesMesh(){
-  var n = nodes.length;
+function distributesMesh(force_result,results_node){
+  var n = gp_nodes.length;
   num_beads_total = 0;
   var start = 0;
   var total = 0;
@@ -879,15 +879,15 @@ function distributesMesh(){
   //build the compartments
   //general_inertia_mass = GP_getInertiaOneSphere();
   for (var i=0;i<n;i++){//nodes.length
-    if (!nodes[i].parent)
+    if (!gp_nodes[i].parent)
       {
         //nodes[i].data.vol = ComputeVolume(nodes[i]);
         continue;
       }
-    if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+    if ((gp_nodes[i].children !== null) && (gp_nodes[i].data.nodetype === "compartment")) {
         //use NGL to load the object?
-        if (!("mc" in nodes[i].data)) nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
-        else GP_updateMBCompartment(nodes[i]);
+        if (!("mc" in gp_nodes[i].data)) gp_nodes[i].data.mesh = GP_createOneCompartmentMesh(gp_nodes[i]);
+        else GP_updateMBCompartment(gp_nodes[i]);
         compartments_count+=1;
         //remove volume from parent volume
         //nodes[i].parent.data.vol = nodes[i].parent.data.vol - nodes[i].data.vol;
@@ -899,70 +899,86 @@ function distributesMesh(){
   GP_CombineGrid();
   if (!inited) initDebugGrid();
   for (var i=0;i<n;i++){//nodes.length
-    console.log(i,nodes[i].data.name);
-    if (nodes[i].children!== null && nodes[i].parent === null) continue;
-    if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+    console.log(i,gp_nodes[i].data.name);
+    if ( i in results_node) console.log("results",results_node[i]);
+    if (gp_nodes[i].children!== null && gp_nodes[i].parent === null) continue;
+    if ((gp_nodes[i].children !== null) && (gp_nodes[i].data.nodetype === "compartment")) {
         //use NGL to load the object?
         //nodes[i].data.mesh = GP_createOneCompartmentMesh(nodes[i]);
         continue;
     };
     //if (!nodes[i].data.surface) continue;
     //if (nodes[i].parent.parent) continue;
-    if (!nodes[i].data.radii) continue;
+    if (!gp_nodes[i].data.radii) continue;
     //if (!nodes[i].data.surface) continue;
-    var pdbname = nodes[i].data.source.pdb;
+    var pdbname = gp_nodes[i].data.source.pdb;
     if (pdbname && (pdbname.startsWith("EMD")
     || pdbname.startsWith("EMDB")
     || pdbname.slice(-4, pdbname.length) === ".map")) {
       continue;
     }
-    if (nodes[i].data.geom_type !== "raw" && nodes[i].data.geom_type !== "sphere") continue;
-    count = GP_GetCount(nodes[i]);
-    console.log(i, nodes[i].data.name, count);
+    if (gp_nodes[i].data.geom_type !== "raw" && gp_nodes[i].data.geom_type !== "sphere") continue;
+    count = GP_GetCount(gp_nodes[i]);
+    console.log(i, gp_nodes[i].data.name, count);
     //count = Util_getRandomInt( copy_number )+1;//remove root
-    if (nodes[i].data.ingtype == "fiber") {
+    if (gp_nodes[i].data.ingtype == "fiber") {
       //random walk in the grid ?
       //should do this for count number of fiber
       var nfiber = count;
       var totalc = 0;
-      var tlength = parseFloat(nodes[i].data.tlength);//segment number not angstrom
-      var angle = parseFloat(nodes[i].data.angle);//authorise angle
-      var ulength = parseFloat(nodes[i].data.ulength)*ascale;//unit length
+      var tlength = parseFloat(gp_nodes[i].data.tlength);//segment number not angstrom
+      var angle = parseFloat(gp_nodes[i].data.angle);//authorise angle
+      var ulength = parseFloat(gp_nodes[i].data.ulength)*ascale;//unit length
       //check the packing method random or file or supercell
-      if (nodes[i].data.buildtype === "file")
+      if (gp_nodes[i].data.buildtype === "file")
       {
         //if not already loaded , load the file-> get positions
-        nfiber = nodes[i].data.curves.length;
+        nfiber = gp_nodes[i].data.curves.length;
         for (var cp =0; cp < nfiber; cp++){
-          totalc+=nodes[i].data.curves[cp].points.length;
+          totalc+=gp_nodes[i].data.curves[cp].points.length;
         }
       }
       else {
-        if (inited && nodes[i].data.curves)
+        if (inited && gp_nodes[i].data.curves)
         {
-          for (var cp =0; cp < nodes[i].data.curves.length; cp++){
-            if (nodes[i].data.curves[cp].line) scene.remove(nodes[i].data.curves[cp].line);
-            nodes[i].data.curves[cp] = null;
+          for (var cp =0; cp < gp_nodes[i].data.curves.length; cp++){
+            if (gp_nodes[i].data.curves[cp].line) scene.remove(gp_nodes[i].data.curves[cp].line);
+            gp_nodes[i].data.curves[cp] = null;
           }
-          nodes[i].data.curves = [];
+          gp_nodes[i].data.curves = [];
         }
         if (nfiber !==0) {
           for (var cp =0; cp < nfiber; cp++){
-            GP_walk_lattice(i,nodes[i],start,count,angle,ulength,tlength);
+            GP_walk_lattice(i,gp_nodes[i],start,count,angle,ulength,tlength);
             //createInstancesMesh(i,nodes[i],start,tlength);
           }
         }
         totalc = tlength*nfiber;
       }
-      start = createInstancesMeshCurves(i,nodes[i],start,totalc);
+      start = createInstancesMeshCurves(i,gp_nodes[i],start,totalc);
       //start = start + tlength*nfiber;
       total = total + totalc;
     }
     else {
-      if (nodes[i].data.buildtype === "file") count = nodes[i].data.results.positions.length;
-      createInstancesMesh(i,nodes[i],start,count);
-      start = start + count;
-      total = total + count;
+      if ((gp_nodes[i].data.buildtype === "file")||(gp_nodes[i].data.results.length)||force_result) {
+        count = gp_nodes[i].data.results.length;
+        if ( i in results_node) {
+          count = results_node[i].length;
+          gp_nodes[i].results = results_node[i];
+          console.log(gp_nodes[i].results);
+        }
+      }
+      else if ( i in results_node) {
+        count = results_node[i].length;
+        gp_nodes[i].results = results_node[i];
+        console.log(gp_nodes[i].results);
+      }
+      if (count!=0) {
+        console.log(i,gp_nodes[i].data.name,count,gp_nodes[i].data.results.length);
+        createInstancesMesh(i,gp_nodes[i],start,count,results_node[i]);
+        start = start + count;
+        total = total + count;
+      }
     }
   }
   if (atomData_do) createCellVIEW();
@@ -998,6 +1014,33 @@ function distributesMesh(){
   }
   if (inited) GP_updateDebugBeadsSpheres();
   else GP_debugBeadsSpheres();
+}
+
+
+function distributesMeshFromBuffer(){
+  var ninst = graph.data_from_buffer.pos.length/4;
+  var poss = graph.data_from_buffer.pos;
+  var quats = graph.data_from_buffer.quat;
+  var ingr_id;
+  var pid;
+  var results_nodes = {}
+  //create all the bodys then the instance ?
+  for (var i=0;i<ninst;i++)
+  {
+    x = -poss[i*4+0];
+    y =  poss[i*4+1];
+    z =  poss[i*4+2];
+    //q = new THREE.Quaternion(quats[i*4+0],quats[i*4+1],quats[i*4+2],quats[i*4+3]);
+    ingr_id = parseInt(poss[i*4+3]);
+    pid = graph.nodes.mapping_ids[ingr_id];
+    if (!results_nodes[pid]) {
+      results_nodes[pid]=[];
+      //graph.nodes[pid].results=[];
+    }
+    results_nodes[pid].push([[x,y,z],[-quats[i*4+0],quats[i*4+1],quats[i*4+2],-quats[i*4+3]]]);
+    //graph.nodes[pid].results.push([[x,y,z],[quats[i*4+0],quats[i*4+1],quats[i*4+2],quats[i*4+3]]]);
+  }
+  distributesMesh(true,results_nodes);
 }
 
 //when all atoms are loaded
@@ -1059,13 +1102,31 @@ function createCellVIEW(){
   scene.remove(cv_Mesh);
 }
 
-function GP_updateMeshGeometry(anode){
+function GP_updateMeshGeometry(anode,acenter){
   if (!inited) return;
-  var pid = nodes.indexOf(anode);
+  var pid = gp_nodes.indexOf(anode);
   if (!(pid in type_meshs)) return;
   var mid = type_meshs[pid].idmesh;
   var bufferGeometry = new THREE.BufferGeometry();
+  //
+
   var positions = new Float32Array(anode.data.geom.verts);
+  //apply offset and pcp
+  if (anode.data.surface) {
+    var offset = anode.data.offset;
+    var axis = anode.data.pcpalAxis;    
+    var roffset = new THREE.Vector3();
+    roffset.set(anode.data.offset[0],anode.data.offset[1],anode.data.offset[2]);
+    var qaxis = new NGL.Quaternion();
+    qaxis.setFromUnitVectors(new NGL.Vector3(-axis[0], -axis[1], -axis[2]), new NGL.Vector3(0, 0, 1));
+    for (var v = 0;v<positions.length/3;v++){
+      var poff = new THREE.Vector3(positions[v*3]+offset[0],positions[v*3+1]+offset[1],positions[v*3+2]+offset[2]);
+      poff.applyQuaternion( qaxis );
+      positions[v*3]=poff.x;
+      positions[v*3+1]=poff.y;
+      positions[v*3+2]=poff.z;
+    }
+  }
   bufferGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   if (anode.data.geom.normals!==null)
   {
@@ -1085,7 +1146,7 @@ function GP_updateMeshGeometry(anode){
 
 function GP_updateMeshColorGeometry(anode){
   if (!inited) return;
-  var pid = nodes.indexOf(anode);
+  var pid = gp_nodes.indexOf(anode);
   var mid = type_meshs[pid].idmesh;
   var meshGeometry = meshMeshs[mid].geometry;
   var color = [1,0,0];
@@ -1150,6 +1211,21 @@ function createOneMesh(anode,start,count) {
   else {//assume raw geo
     bufferGeometry = new THREE.BufferGeometry();
     var positions = new Float32Array(anode.data.geom.verts);
+    if (anode.data.surface) {
+      var offset = anode.data.offset;
+      var axis = anode.data.pcpalAxis;    
+      var roffset = new THREE.Vector3();
+      roffset.set(anode.data.offset[0],anode.data.offset[1],anode.data.offset[2]);
+      var qaxis = new NGL.Quaternion();
+      qaxis.setFromUnitVectors(new NGL.Vector3(-axis[0], -axis[1], -axis[2]), new NGL.Vector3(0, 0, 1));
+      for (var v = 0;v<positions.length/3;v++){
+        var poff = new THREE.Vector3(positions[v*3]+offset[0],positions[v*3+1]+offset[1],positions[v*3+2]+offset[2]);
+        poff.applyQuaternion( qaxis );
+        positions[v*3]=poff.x;
+        positions[v*3+1]=poff.y;
+        positions[v*3+2]=poff.z;
+      }
+    }
     bufferGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     if (anode.data.geom.normals!==null)
     {
@@ -1185,7 +1261,7 @@ function LoadAllProteins(o){
     //current node has been done
     if (o!==null) {
       //gather atoms
-      count = addAtoms(nodes[current_node_id],current_node_id,current_atom_start,o);
+      count = addAtoms(gp_nodes[current_node_id],current_node_id,current_atom_start,o);
       instance_infosData.needsUpdate = true;
       var data = instance_infosData.image.data;
       var w = instance_infosData.image.width;
@@ -1199,14 +1275,14 @@ function LoadAllProteins(o){
       current_atom_start = current_atom_start + count;
     }
     current_node_id++;
-    if (current_node_id >= nodes.length) {
+    if (current_node_id >= gp_nodes.length) {
       atomData_done=true;
-      distributesMesh();
+      distributesMesh(false,{});
       animate();
       inited = true;
       return;
     }
-    LoadProteinAtoms(nodes[current_node_id],current_node_id,LoadAllProteins)
+    LoadProteinAtoms(gp_nodes[current_node_id],current_node_id,LoadAllProteins)
 }
 
 function LoadProteinAtoms(anode,pid,callback){
@@ -1489,10 +1565,26 @@ function GP_getInertiaMassBeads(anode) {
   if (anode.data.radii) {
     if (anode.data.radii && anode.data.radii.length && "radii" in anode.data.radii[0]) {
       nbeads = anode.data.radii[0].radii.length;
+      var offset = anode.data.offset;
+      var axis = anode.data.pcpalAxis;    
+      var roffset = new THREE.Vector3();
+      roffset.set(anode.data.offset[0],anode.data.offset[1],anode.data.offset[2]);
+      var qaxis = new NGL.Quaternion();
+      qaxis.setFromUnitVectors(new NGL.Vector3(axis[0], axis[1], axis[2]), new NGL.Vector3(0, 0, 1));
       for (var i=0;i<anode.data.radii[0].radii.length;i++){
-        var x=anode.data.pos[0].coords[i*3]*ascale,
-            y=anode.data.pos[0].coords[i*3+1]*ascale,
-            z=anode.data.pos[0].coords[i*3+2]*ascale;
+        var x,y,z;
+        if (anode.data.surface) {
+          var poff = new THREE.Vector3(anode.data.pos[0].coords[i*3]+offset[0],anode.data.pos[0].coords[i*3+1]+offset[1],anode.data.pos[0].coords[i*3+2]+offset[2]);
+          poff.applyQuaternion( qaxis );
+          x=poff.x*ascale;
+          y=poff.y*ascale;
+          z=poff.z*ascale;          
+        }
+        else {
+          x=anode.data.pos[0].coords[i*3]*ascale;
+          y=anode.data.pos[0].coords[i*3+1]*ascale;
+          z=anode.data.pos[0].coords[i*3+2]*ascale;          
+        }
         var b_intertia = GP_getInertiaOneSphere(x,y,z);
         inertia.add(new THREE.Vector3(b_intertia.x,b_intertia.y,b_intertia.z));
         mass+=b_intertia.w;
@@ -1620,7 +1712,7 @@ function createInstancesMeshCurves(pid,anode,start,count) {
   return start;
 }
 
-function createInstancesMesh(pid,anode,start,count) {
+function createInstancesMesh(pid,anode,start,count,resultsnode) {
   var w = world.broadphase.resolution.x * world.radius * 2;
   var h = world.broadphase.resolution.y * world.radius * 2;
   var d = world.broadphase.resolution.z * world.radius * 2;
@@ -1638,46 +1730,49 @@ function createInstancesMesh(pid,anode,start,count) {
   //should do it constrained inside the given compartments
   //var comp = anode.parent;
   //check the buildtype? anode.data.buildtype
-  if (anode.data.buildtype === "supercell") {
-      //count out of the supercellbuilding?
-      var pdburl = LM_getUrlStructure(anode, anode.data.source.pdb);
-      var aradius = anode.data.size;
-      var comp_offset = new THREE.Vector3(0);
-      //node_selected = anode;
 
-      if (anode.parent.data.geom_type === "mb"){
-        if (anode.parent.data.geom.radii){
-          aradius = anode.parent.data.geom.radii[0];
-
-          comp_offset = new THREE.Vector3(anode.parent.data.geom.positions[0],
-                                          anode.parent.data.geom.positions[1],
-                                          anode.parent.data.geom.positions[2]);
-        }
-        else if (anode.parent.data.radii){
-          aradius = anode.parent.data.radii[0].radii[0];
-
-          comp_offset = new THREE.Vector3(anode.parent.data.pos[0].coords[0],
-                                          anode.parent.data.pos[0].coords[1],
-                                          anode.parent.data.pos[0].coords[2]);
-        }
-      }
-      if (!(anode.data.hasOwnProperty("litemol"))) anode.data.litemol = null;
-      NGL_BuildSUPERCELL(anode, pdburl, aradius);//this is async ?
-      //this doesnt work..
-      var safety = 20000;
-      var s =0;
-      while (!(anode.data.litemol)){
-        //wait
-        //console.log(s,anode.data.litemol);
-        s++;
-        if (s>=safety) break;
-      }
-  }
-  else if (anode.data.buildtype === "file")
+  if ((anode.data.buildtype === "file") || (anode.data.results.length ) || (resultsnode.length !== 0))//positions.
   {
-    if (anode.data.results)
-        count = anode.data.results.positions.length;
-  }
+    if  (resultsnode.length !== 0) {
+        anode.data.results = resultsnode;
+    }
+    if (anode.data.results) count = anode.data.results.length;//positions.
+    console.log("use results",count);
+  }else if (anode.data.buildtype === "supercell") {
+    //count out of the supercellbuilding?
+    var pdburl = LM_getUrlStructure(anode, anode.data.source.pdb);
+    var aradius = anode.data.size;
+    var comp_offset = new THREE.Vector3(0);
+    //node_selected = anode;
+
+    if (anode.parent.data.geom_type === "mb"){
+      if (anode.parent.data.geom.radii){
+        aradius = anode.parent.data.geom.radii[0];
+
+        comp_offset = new THREE.Vector3(anode.parent.data.geom.positions[0],
+                                        anode.parent.data.geom.positions[1],
+                                        anode.parent.data.geom.positions[2]);
+      }
+      else if (anode.parent.data.radii){
+        aradius = anode.parent.data.radii[0].radii[0];
+
+        comp_offset = new THREE.Vector3(anode.parent.data.pos[0].coords[0],
+                                        anode.parent.data.pos[0].coords[1],
+                                        anode.parent.data.pos[0].coords[2]);
+      }
+    }
+    if (!(anode.data.hasOwnProperty("litemol"))) anode.data.litemol = null;
+    NGL_BuildSUPERCELL(anode, pdburl, aradius);//this is async ?
+    //this doesnt work..
+    var safety = 20000;
+    var s =0;
+    while (!(anode.data.litemol)){
+      //wait
+      //console.log(s,anode.data.litemol);
+      s++;
+      if (s>=safety) break;
+    }
+ }
   var counter = 0;
   for (var bodyId=start;bodyId<start+count;bodyId++) {
     //if (loading_bar) loading_bar.set(bodyId/start+count);
@@ -1695,7 +1790,16 @@ function createInstancesMesh(pid,anode,start,count) {
     );
     axis.normalize();
     q.setFromAxisAngle(axis, Math.random() * Math.PI * 2);
-    if (anode.data.buildtype === "supercell") {
+    if ((anode.data.buildtype === "file") || (anode.data.results.length )) {
+      x = anode.data.results[counter][0][0]*ascale;
+      y = anode.data.results[counter][0][1]*ascale;
+      z = anode.data.results[counter][0][2]*ascale;
+      q = new THREE.Quaternion(anode.data.results[counter][1][0],anode.data.results[counter][1][1],anode.data.results[counter][1][2],anode.data.results[counter][1][3]);
+      //q.copy(anode.data.results[counter][1]);
+      //q = new THREE.Quaternion(0,0,0,1);
+      //console.log(q);
+      counter+=1;
+    } else if (anode.data.buildtype === "supercell") {
       //need x,y,z qx,qy,qz,qw
       //offset to the center of the parent node ?
       if (counter >= anode.data.litemol.crystal_mat.operators.length) continue;
@@ -1710,13 +1814,6 @@ function createInstancesMesh(pid,anode,start,count) {
       y=(pos.y+comp_offset.y)*ascale;
       z=(pos.z+comp_offset.z)*ascale;
       q.copy(rotation);
-    }
-    else if (anode.data.buildtype === "file") {
-      x = anode.data.results.positions[counter].x;
-      y = anode.data.results.positions[counter].y;
-      z = anode.data.results.positions[counter].z;
-      q.copy(anode.data.results.rotations[counter]);
-      counter+=1;
     }
     else if (anode.data.surface && anode.parent.data.mesh)
     {
@@ -1775,13 +1872,31 @@ function createInstancesMesh(pid,anode,start,count) {
     }
     */
     //add the beads information
+
+    var offset = anode.data.offset;
+    var axis = anode.data.pcpalAxis;    
+    var roffset = new THREE.Vector3();
+    roffset.set(anode.data.offset[0],anode.data.offset[1],anode.data.offset[2]);
+    var qaxis = new NGL.Quaternion();
+    qaxis.setFromUnitVectors(new NGL.Vector3(axis[0], axis[1], axis[2]), new NGL.Vector3(0, 0, 1));
+
     if (anode.data.radii) {
       if (anode.data.radii && "radii" in anode.data.radii[0]) {
         for (var i=0;i<anode.data.radii[0].radii.length;i++){
             //transform beads
-            var x=anode.data.pos[0].coords[i*3]*ascale,
-                y=anode.data.pos[0].coords[i*3+1]*ascale,
-                z=anode.data.pos[0].coords[i*3+2]*ascale;
+            var x,y,z;  
+            if (anode.data.surface){
+              var poff = new THREE.Vector3(anode.data.pos[0].coords[i*3]+offset[0],anode.data.pos[0].coords[i*3+1]+offset[1],anode.data.pos[0].coords[i*3+2]+offset[2]);
+              poff.applyQuaternion( qaxis );
+              x=poff.x*ascale;
+              y=poff.y*ascale;
+              z=poff.z*ascale;                         
+            }
+            else {
+              x=anode.data.pos[0].coords[i*3]*ascale;
+              y=anode.data.pos[0].coords[i*3+1]*ascale;
+              z=anode.data.pos[0].coords[i*3+2]*ascale;              
+            }
             world.addParticle(bodyId, x,y,z);
             /*if ( particle_id_Count >= world.particleCount )
             {    world.addParticle(bodyId, x,y,z);}
@@ -2063,10 +2178,10 @@ function GP_defaultLight(){
   light.shadow.camera.bottom = - d;
   light.shadow.camera.far = 1000;
   light.position.set(1,1,1);
-  scene.add(light);
+  //scene.add(light);
 
   ambientLight = new THREE.AmbientLight( 0xa6a4a4 );
-  //scene.add( ambientLight );
+  scene.add( ambientLight );
   //white ?
 }
 
@@ -2134,12 +2249,12 @@ function GP_initRenderer(){
   renderer.physicallyBasedShading = false;
   renderer.localClippingEnabled = true;
   clipPlanes = [
-    new THREE.Plane( new THREE.Vector3( 0, 0, 1 ), 0 )
+    new THREE.Plane( new THREE.Vector3( 0, 0, -1 ), 0 )
     //new THREE.Plane( new THREE.Vector3( 0, - 1, 0 ), 0 ),
     //new THREE.Plane( new THREE.Vector3( 0, 0, - 1 ), 0 )
   ];
   clipPlanesHelper= [
-    new THREE.Plane( new THREE.Vector3( 0, 0, 1 ), 0 )
+    new THREE.Plane( new THREE.Vector3( 0, 0, -1 ), 0 )
     //new THREE.Plane( new THREE.Vector3( 0, - 1, 0 ), 0 ),
     //new THREE.Plane( new THREE.Vector3( 0, 0, - 1 ), 0 )
   ];
@@ -2157,13 +2272,17 @@ function GP_initRenderer(){
   scene.fog = new THREE.Fog( "rgb(255, 255, 255)", 2000, 3500 );
   //renderer.setClearColor(0x050505, 1.0);
   //renderer.setClearColor(0xffffff, 1.0);//ambientLight.color,
-
-  //Lighting
-  GP_defaultLight();
-  GP_setupLight();
-
+  
   camera = new THREE.PerspectiveCamera( 30, dm.width / dm.height, 0.01, 100 );
   camera.position.set(0,0.6,1.4);
+  GP_defaultLight();
+  //pointLight = new THREE.PointLight( 0xffffff );
+  //pointLight.position.set(1,1,2);
+  camera.add(light);
+  scene.add( camera );
+  //Lighting
+  
+  GP_setupLight();
 
   /*var groundMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x000000 } );
   groundMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2000, 2000 ), groundMaterial );
@@ -2311,7 +2430,7 @@ function GP_debugBeadsSpheres(){
     //scene.add( debugMesh );
 }
 
-function init(){
+function init(use_buffer = false){
   var container = document.getElementById('container');
   container.onmousemove = GP_onDocumentMouseMove;
   container.onmousedown = GP_onDocumentMouseDown;
@@ -2351,9 +2470,8 @@ function init(){
     GP_initRenderer();
     GP_initWorld();
 
-
     // Add bodies
-    console.log("ingredients nodes type",nodes.length);
+    console.log("ingredients nodes type",gp_nodes.length);
     //gather all atoms data
 
     //createCellVIEW();
@@ -2548,11 +2666,11 @@ function init(){
         else if (this.object.ismb) {
             //update the metaball and the grid
             var mb_id = this.object.mb_id;
-            nodes[this.object.comp_id].data.pos[0].coords[mb_id*3]=this.object.position.x/ascale;
-            nodes[this.object.comp_id].data.pos[0].coords[mb_id*3+1]=this.object.position.y/ascale;
-            nodes[this.object.comp_id].data.pos[0].coords[mb_id*3+2]=this.object.position.z/ascale;
+            gp_nodes[this.object.comp_id].data.pos[0].coords[mb_id*3]=this.object.position.x/ascale;
+            gp_nodes[this.object.comp_id].data.pos[0].coords[mb_id*3+1]=this.object.position.y/ascale;
+            gp_nodes[this.object.comp_id].data.pos[0].coords[mb_id*3+2]=this.object.position.z/ascale;
             //need world position coordinate
-            GP_updateMBCompartment(nodes[this.object.comp_id]);
+            GP_updateMBCompartment(gp_nodes[this.object.comp_id]);
             //GP_CombineGrid();
             //use gpu tell update needed
             //GP_gpuCombineGrid();
@@ -2585,8 +2703,9 @@ function init(){
       LoadAllProteins(null);
     }
     else {
-      distributesMesh();
-      GP_WarmUp();
+      if (use_buffer) distributesMeshFromBuffer();
+      else distributesMesh(false,{});
+      //GP_WarmUp();
       animate();
     }
 }
@@ -2942,17 +3061,17 @@ function initGUI(){
         scene.remove(meshMeshs[i]);
       }
     }
-    for (var i=0;i<nodes.length;i++){//nodes.length
-      if (!nodes[i].parent)
+    for (var i=0;i<gp_nodes.length;i++){//nodes.length
+      if (!gp_nodes[i].parent)
         {
           continue;
         }
-      if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+      if ((gp_nodes[i].children !== null) && (gp_nodes[i].data.nodetype === "compartment")) {
           //use NGL to load the object?
-          if (controller.renderSMB && nodes[i].data.comp_geom) scene.add(nodes[i].data.comp_geom);
-          else scene.remove(nodes[i].data.comp_geom);
-          if (controller.renderIsoMB && nodes[i].data.mesh) scene.add(nodes[i].data.mesh);
-          else scene.remove(nodes[i].data.mesh);
+          if (controller.renderSMB && gp_nodes[i].data.comp_geom) scene.add(gp_nodes[i].data.comp_geom);
+          else scene.remove(gp_nodes[i].data.comp_geom);
+          if (controller.renderIsoMB && gp_nodes[i].data.mesh) scene.add(gp_nodes[i].data.mesh);
+          else scene.remove(gp_nodes[i].data.mesh);
       };
     }
     // Shadow rendering
@@ -3116,30 +3235,30 @@ function GP_initFromData(data){
   root = d3v4.hierarchy(data.nodes)
     .sum(function(d) { return d.size; })
     .sort(function(a, b) { return b.value - a.value; });
-  nodes = pack(root).descendants();//flatten--error ?
-  console.log(nodes);
+  gp_nodes = pack(root).descendants();//flatten--error ?
+  console.log(gp_nodes);
   numParticles = query.n ? parseInt(query.n,10) : 128;
   copy_number = query.c ? parseInt(query.c,10) : 10;
   atomData_do = query.atom ? query.atom === 'true' : false;
-  init();
+  init(false);
 }
 
 function GP_initFromNodes(some_nodes,numpart,copy,doatom){
-  nodes = some_nodes;//flatten--error ?
-  console.log(nodes);
+  gp_nodes = some_nodes;//flatten--error ?
+  console.log(gp_nodes);
   numParticles = numpart;
   copy_number = copy;
   atomData_do = doatom;
   if (inited) {
-    nodes = some_nodes;
+    gp_nodes = some_nodes;
     //rb_init = false;
     world.resetData();
     //reset the dataTexture
     //everything already initialize. just update.
-    distributesMesh();
+    distributesMesh(false,{});
     world.updateMapParticleToBodyMesh();
     world.flushData();
-    world.singleStep();
+    //world.singleStep();
     animate();
     //world.bodyCount = num_instances;
     //world.particleCount = particle_id_Count;
@@ -3150,10 +3269,97 @@ function GP_initFromNodes(some_nodes,numpart,copy,doatom){
     return;
   }
   else {
-    init();
+    init(false);
     if (!doatom) inited = true;
     var pbutton = document.getElementById("preview_button");
     pbutton.innerHTML = "Update Preview"
+  }
+}
+
+function getFloatValue(value, offset) {
+  // if the last byte is a negative value (MSB is 1), the final
+  // float should be too
+  const negative = value.getInt8(offset + 2) >>> 31;
+
+  // this is how the bytes are arranged in the byte array/DataView
+  // buffer
+  const [b0, b1, b2, exponent] = [
+      // get first three bytes as unsigned since we only care
+      // about the last 8 bits of 32-bit js number returned by
+      // getUint8().
+      // Should be the same as: getInt8(offset) & -1 >>> 24
+      value.getUint8(offset),
+      value.getUint8(offset + 1),
+      value.getUint8(offset + 2),
+
+      // get the last byte, which is the exponent, as a signed int
+      // since it's already correct
+      value.getInt8(offset + 3)
+  ];
+
+  let mantissa = b0 | (b1 << 8) | (b2 << 16);
+  if (negative) {
+      // need to set the most significant 8 bits to 1's since a js
+      // number is 32 bits but our mantissa is only 24.
+      mantissa |= 255 << 24;
+  }
+
+  return mantissa * Math.pow(10, exponent);
+}
+
+function GP_initFromBuffer(data_buffer){
+  //from binary dont forget to switch -x, and -qx,qy,qz,-qw
+  gp_nodes = graph.nodes;
+  graph.data_buffer = data_buffer;
+  var numbers = new DataView(graph.data_buffer)
+  var ninst=getFloatValue(numbers,0)
+  var ncurve=getFloatValue(numbers,1)
+  var nbyte = ninst*4*4*2+ncurve*4*4*2+8;
+  if (nbyte!==data_buffer.byteLength)ncurve = 0;
+  console.log("ninst",ninst);
+  console.log("ncurve",ncurve);
+  var pos,
+      quat,
+      ctrl_pts,
+      ctrl_normal,
+      ctrl_info;
+  var offset = 8;
+  if (ninst!== 0){
+    pos = new Float32Array(data_buffer,offset,ninst*4);offset+=ninst*4*4;
+    quat = new Float32Array(data_buffer,offset,ninst*4);offset+=ninst*4*4;
+  }
+  if ( ncurve!= 0 )
+  {
+    ctrl_pts = new Float32Array(data_buffer,offset,ncurve*4);offset+=ncurve*4*4;
+    ctrl_normal = new Float32Array(data_buffer,offset,ncurve*4);offset+=ncurve*4*4;
+    ctrl_info = new Float32Array(data_buffer,offset,ncurve*4);offset+=ncurve*4*4;
+  }
+  graph.data_from_buffer = {"pos":pos,"quat":quat,"ctrl_pts":ctrl_pts,"ctrl_normal":ctrl_normal,"ctrl_info":ctrl_info}; 
+  numParticles = 256;
+  copy_number = 10;
+  atomData_do = false; 
+  if (inited) {
+    world.resetData();
+    //reset the dataTexture
+    //everything already initialize. just update.
+    distributesMeshFromBuffer();
+    world.updateMapParticleToBodyMesh();
+    world.flushData();
+    //world.singleStep();
+    animate();
+    //world.bodyCount = num_instances;
+    //world.particleCount = particle_id_Count;
+
+    //need update instead.
+    //or should the update automatic?
+    //for now try to clean everything ?
+    return;    
+  }
+  else {
+    init(true);
+    if (!atomData_do) inited = true;
+    var pbutton = document.getElementById("preview_button");
+    pbutton.innerHTML = "Update Preview"    
   }
 }
 
@@ -3300,7 +3506,7 @@ function GP_onDocumentMouseDown( event ) {
     //event.preventDefault();
     var container = document.getElementById('container');
     var rect = container.getBoundingClientRect();
-    if (!nodes || nodes.length === 0 ) return;
+    if (!gp_nodes || gp_nodes.length === 0 ) return;
     console.log(event.clientX,rect.width,( (event.clientX - rect.left) / rect.width ),( (event.clientX - rect.left) / rect.width ) * 2 - 1);
     console.log(event.clientY,rect.height,( (event.clientY - rect.top) / rect.height ),(-(event.clientY - rect.top) / rect.height ) * 2 + 1);
     gp_mouse.x = ( (event.clientX - rect.left) / rect.width ) * 2 - 1;
@@ -3310,16 +3516,16 @@ function GP_onDocumentMouseDown( event ) {
     raycaster.setFromCamera( gp_mouse, camera );
     var intersects;// = ray.intersectObjects( objects );
     var found=-1;
-    for (var i=0;i<nodes.length;i++){//nodes.length
-      if (!nodes[i].parent)
+    for (var i=0;i<gp_nodes.length;i++){//nodes.length
+      if (!gp_nodes[i].parent)
         {
           continue;
         }
-      if ((nodes[i].children !== null) && (nodes[i].data.nodetype === "compartment")) {
+      if ((gp_nodes[i].children !== null) && (gp_nodes[i].data.nodetype === "compartment")) {
           //use NGL to load the object?
           if (controller && controller.renderSMB)
           {
-            intersects = raycaster.intersectObjects( nodes[i].data.comp_geom.children[0].children );
+            intersects = raycaster.intersectObjects( gp_nodes[i].data.comp_geom.children[0].children );
             if ( intersects.length > 0 ) {
               found = i;
               break;

@@ -14493,7 +14493,7 @@ var _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator 
                 });
                 d3.select(c.input);
                 this.completely = c;
-                new_sel.append('button').attr('class', "button input-close-button").text("×").on('mousedown', function() {
+                new_sel.append('button').attr('class', "button input-close-button").text("ï¿½").on('mousedown', function() {
                     this.hide_dropdown();
                 }.bind(this));
                 this.map = map;
@@ -15564,7 +15564,7 @@ var _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator 
                 })
                 ui.individual_button(button_panel.append('li'), {
                     key: keys.zoom_out,
-                    text: '–',
+                    text: 'ï¿½',
                     icon: 'glyphicon glyphicon-minus-sign',
                     tooltip: 'Zoom out',
                     key_text: (enable_keys ? ' (Ctrl and -)' : null),
@@ -18824,7 +18824,7 @@ var _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator 
                     current = ('map_name' in url_comp) ? url_comp.map_name : null,
                     quick_jump_path = ('quick_jump_path' in url_comp) ? url_comp.quick_jump_path : null,
                     options = ('quick_jump' in url_comp) ? url_comp.quick_jump : [],
-                    default_value = '— Jump to map —',
+                    default_value = 'ï¿½ Jump to map ï¿½',
                     view_options = [default_value].concat(options);
                 if (current !== null) {
                     view_options = view_options.filter(function(o) {
@@ -29927,7 +29927,7 @@ var requirejs, require, define;
                             strokeWidth: 1
                         }),
                         y = "";
-                    void 0 !== b.resolution && (y = " - " + b.resolution / 1e3 + " Å");
+                    void 0 !== b.resolution && (y = " - " + b.resolution / 1e3 + " ï¿½");
                     var z = new Date(b.releaseDate),
                         A = "PDB ID " + b.pdbID + " chain " + b.chainID + " - " + b.desc + " (sequence position: " + n.start + "-" + n.end + ") ";
                     if (void 0 !== n.pdbStart && (A += "(PDB residue: " + n.pdbStart, n.pdbEnd !== n.pdbStart && (A += "-" + n.pdbEnd), A += ") "), A += y + " - " + z.toDateString(), $(x).attr("title", A), this.registerTooltip(x), this.scale > 8)

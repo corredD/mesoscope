@@ -2137,14 +2137,14 @@ function myTimerToGetTHeBuffer(o,aStopFunction,clean) {
               //mesh.normals[v*3]=-mesh.normals[v*3];
               //mesh.normals[v*3+1]=-mesh.normals[v*3+1];
               //mesh.normals[v*3+2]=-mesh.normals[v*3+2];
-        }
+         }
       }
       console.log("MESH:", mesh);
       if (!clean) NGL_ShowMeshVFN(mesh);
       if (o.node) {
         o.node.data.geom = mesh; //v,f,n directly
         o.node.data.geom_type = "raw"; //mean that it provide the v,f,n directly
-        GP_updateMeshGeometry(o.node);
+        GP_updateMeshGeometry(o.node,center);
       }
       //hide or destroy?
       stage.getRepresentationsByName("cms_surface_"+o.name).dispose();
@@ -4019,7 +4019,7 @@ function NGL_buildLoopAsync() {
     dobeads = true;
   }
 
-  if (dobeads )// || docms)
+  if (dobeads || docms)
   {
     var purl = NGL_getUrlStructure(d,pdb);
     console.log("query with ", [pdb, bu, sele, model, thefile], purl);
