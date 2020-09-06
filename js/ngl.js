@@ -466,6 +466,7 @@ function NGL_updateMBcomp() {
   var axis = [pcp_elem[0].value / 100.0, pcp_elem[1].value / 100.0, pcp_elem[2].value / 100.0];
   var offset = [offset_elem[0].value / 1.0, offset_elem[1].value / 1.0, offset_elem[2].value / 1.0];
   var acomp = stage.getComponentsByName("mb").list[0];
+  if (!acomp) return;
   if (node_selected.data.ingtype=="fiber") acomp = stage.getComponentsByName("arrowfiber").list[0];;
   var q = new NGL.Quaternion();
   axis = new NGL.Vector3(axis[0], axis[1], axis[2]);//normalize ?
@@ -994,7 +995,7 @@ function NGL_updateCurrentBeadsLevelClient() {
     //comp.list[0].reprList[0].dispose();
     //comp.list[0].dispose();
   }
-  if (ngl_load_params.beads.rad && ngl_load_params.beads.rad.length != 0) 
+  if (ngl_load_params.beads.rad && ngl_load_params.beads.rad.length != 0 && ngl_load_params.beads.rad[lod]) 
   {
     NGL_RemoveMultiSpheresComp("lod_"+lod.toString()+"_",ngl_load_params.beads.rad[lod].radii.length);
   }
