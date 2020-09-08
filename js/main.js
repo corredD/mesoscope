@@ -3808,7 +3808,14 @@ function MouseMove(x,y) {
           node_over = d;
         }
 		d.highlight=true;
-		if (d.data && d.data.source ) MS_Highlight(d.data.source.pdb);
+		if (d.data && d.data.source ) {
+			var aname = d.data.source.pdb;
+            if (aname.length === 4 ) aname = aname.toUpperCase();
+            else aname = name.replace(".pdb","")
+            //fiber use the ingredient name
+            if (d.data.ingtype === "fiber") aname = d.data.name;
+			MS_Highlight(aname);
+		}
         line_over = null;
       }
       else {
