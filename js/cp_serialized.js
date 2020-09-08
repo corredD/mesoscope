@@ -751,6 +751,29 @@ function OneIngredient(ing_dic, surface) {
   if ((!offset) || offset === 0 || offset === "" || offset === [0] || offset.length === 1) offset = [0, 0, 0];
   var p = ing_dic.positions;
   var r = ing_dic.radii;
+  //transform if previous format
+  if (p && p.length !== 0) {
+    if (!("coords" in p[0])) {
+      var pos = [];
+      var rad = [];
+      for (var lod = 0; lod < p.length; lod++) {
+        pos.push({
+          "coords": []
+        });
+        rad.push({
+          "radii": []
+        });
+        for (var i = 0; i < p[lod].length; i++) {
+          pos[lod].coords.push(p[lod][i][0]);
+          pos[lod].coords.push(p[lod][i][1]);
+          pos[lod].coords.push(p[lod][i][2]);
+          rad[lod].radii.push(r[lod][i]);
+        }
+      }
+      p = pos;
+      r = rad;
+    }
+  }
   //console.log(JSON.stringify(p));
   //console.log(offset);
   //console.log(principalVector);
