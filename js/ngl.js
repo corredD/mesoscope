@@ -4211,6 +4211,8 @@ function NGL_ClearGridMode(){
 }
 
 function NGL_Load(pdbname, bu, sel_str) {
+  //MS_Select(query)
+  MS_Select(pdbname);
   if (ngl_grid_mode) {
     NGL_ClearGridMode();
   }

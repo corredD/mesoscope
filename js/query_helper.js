@@ -1669,6 +1669,7 @@ function download(content, fileName, contentType) {
   //a.click().click();
   //a.trigger('click');
   //window.open(a.href );
+  return file;
 }
 
 function SaveRecipeCellPACK() {
@@ -1688,11 +1689,12 @@ function SaveRecipeCellPACK() {
   var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links);
   console.log(jsondic.recipe.name);
   console.log(JSON.stringify(jdata));
-  download(JSON.stringify(jdata), jsondic.recipe.name + '.json', 'text/plain');
+  recipe_file = download(JSON.stringify(jdata), jsondic.recipe.name + '.json', 'text/plain');
   console.log("saved");
   recipe_changed = false;
   grid_tab_label[0].text ( "" );
 }
+
 
 function SaveRecipeCellPACK_serialized() {
   console.log("save recipe serialized",current_ready_state,totalNbInclude,

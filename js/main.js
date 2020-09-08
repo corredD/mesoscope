@@ -1381,13 +1381,22 @@ function selectFile(e){
     	  else {
 			recipe_file = thefile;
 			reader.onload = function(event) {
-  	        var data = reader.result;
-  	        data = data.replace(/\\n\\r/gm,'newChar');
-  	        var ad = JSON.parse(data);
-  	        var adata = parseCellPackRecipe(ad)
-            if (MERGE) merge_getModal(adata.nodes,adata.links)
-            else update_graph(adata.nodes,adata.links);
-       	 }
+				var data = reader.result;
+				data = data.replace(/\\n\\r/gm,'newChar');
+				var ad = JSON.parse(data);
+				var adata = parseCellPackRecipe(ad)
+				if (MERGE) merge_getModal(adata.nodes,adata.links)
+				else update_graph(adata.nodes,adata.links);
+				//if there is results data in the files load in molstar
+				for (var i=0;i<graph.nodes.length;i++){
+					if (!graph.nodes[i].children) {
+						if (graph.nodes[i].data.results && graph.nodes[i].data.results.length ){
+							MS_LoadModel(recipe_file,null);
+							break;
+						}
+					}
+				}
+			}
     	}
     }
     else if (ext === "xlsx"){
@@ -1531,7 +1540,7 @@ function LoadExampleMpn(){
 
 function LoadExampleHIV(){
 		stage.removeAllComponents();
-		var url ="data/hivfull_serialized.json";
+		var url ="data/HIV_serialized.json";
 		csv_mapping= false;
 		comp_column = false;
 	    d3v4.json(url, function (json) {
@@ -1539,7 +1548,7 @@ function LoadExampleHIV(){
 				  var adata = parseCellPackRecipeSerialized(json)
 			      update_graph(adata.nodes,adata.links);
 	            })
-		MS_LoadExample('HIV-1_0.1.6-8_mixed_radii_pdb.cpr');
+		MS_LoadExample('HIV-1_0.1.6-8_mixed_radii_pdb.json');
 }
 
 function LoadExampleInfluenza_envelope(){
@@ -2428,6 +2437,8 @@ function isKeyPressed(event) {
 	//console.log("keyPressed",event.ctrlKey);
 	if (event.ctrlKey) {ctrlKey=true;}
 	else {ctrlKey=false;}
+	console.log("canvas mouse move 2d");
+	mousein = true;
 	}
 
 function intialize()
@@ -3778,7 +3789,10 @@ function MouseMove(x,y) {
   {
   	clearHighLight();
   }
-  if (!d) {clearHighLight();return;}
+  if (!d) {
+	  clearHighLight();
+	  MS_ClearHighlight();
+	  return;}
   if (!d.parent && !line) clearHighLight();
 //  else {
   	  if (!line)
@@ -3793,7 +3807,8 @@ function MouseMove(x,y) {
         else {
           node_over = d;
         }
-        d.highlight=true;
+		d.highlight=true;
+		if (d.data && d.data.source ) MS_Highlight(d.data.source.pdb);
         line_over = null;
       }
       else {

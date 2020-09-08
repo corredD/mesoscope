@@ -1692,6 +1692,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
             if (ngl_grid_mode) {
               NGL_ClearGridMode();
             }
+            MS_Highlight(arow.pdb)
             if (ngl_current_item_id !== arow.id || !ngl_current_structure ) {
               console.log("update NGL by removing all component");
               stage.removeAllComponents();

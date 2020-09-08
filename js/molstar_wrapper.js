@@ -9,9 +9,96 @@ function MS_molstart_init(){
         //emdbProvider: emdbProvider || 'pdbe',
     });
     BasicMolStarWrapper.setBackground(0xffffff);
+    MS_setupcallback();
     //MS_applyAllColors();
     //BasicMolStarWrapper.coloring.applyCellPACKColor();
     MS_inited = true;
+}
+function MS_setupcallback(){
+  const canvas3d = BasicMolStarWrapper.plugin.canvas3d;
+  //this.suscribe(canvas3d.interaction.hover, e => this.plugin.behaviors.interaction.hover.next(e));
+  canvas3d.input.move.subscribe(({x, y, inside, buttons, button, modifiers }) => {
+      if (mousein) return;
+      if (!inside) return;
+      const pickingId = canvas3d.identify(x, y);
+      //let label = '';
+      if (pickingId) {
+          const reprLoci = canvas3d.getLoci(pickingId);
+          //label = lociLabel(reprLoci.loci);
+          //console.log(reprLoci.loci);
+          if (reprLoci.loci.kind === "element-loci") MS_callback(reprLoci.loci.elements[0].unit.model.entryId);
+          else clearHighLight();   
+      } else {
+          clearHighLight();
+      }
+  });
+  canvas3d.input.click.subscribe(({x, y, buttons, button, modifiers })=> {
+    //this should be a selection
+    if (mousein) return;
+    const pickingId = canvas3d.identify(x, y);
+    if (pickingId) {
+      const reprLoci = canvas3d.getLoci(pickingId);
+      if (reprLoci.loci.kind === "element-loci") MS_callback(reprLoci.loci.elements[0].unit.model.entryId, click = true);
+      else {
+        if (node_selected) node_selected.highlight = false;
+        node_selected = null;
+        clearHighLight();       
+      }
+    }
+    else {
+      if (node_selected) node_selected.highlight = false;
+      node_selected = null;
+      clearHighLight();
+    }
+  });
+}
+
+function MS_callback(entryId, click = false){
+  //console.log("MS_callback "+entryId);
+  var found = false;
+  for (var i=0;i<graph.nodes.length;i++){
+    var d = graph.nodes[i];
+    if (!d.children){
+      var n = d.data.source.pdb;
+      if (n.length === 4 ) n = n.toUpperCase();
+      else n = n.replace(".pdb","")
+      //console.log(n);
+      //console.log(n === entryId);
+      if ( n === entryId ) {
+        //console.log("found");
+        clearHighLight();
+        if (node_selected) node_selected.highlight = false;
+        d.highlight = true;
+        if ( click ) node_selected = d;
+        node_over = d;
+        found = true;
+        break;
+      }
+    }
+  }
+  if(!found) return;
+  if (click) {
+    node_selected.highlight = true;
+    grid_UpdateSelectionPdbFromId(node_selected)
+    NGL_UpdateWithNode(node_selected);
+  }
+}
+
+function MS_ClearHighlight(){
+  if (!MS_inited) return;
+  BasicMolStarWrapper.interactivity.clearHighlight();
+}
+
+function MS_Highlight(query){
+  if (!MS_inited) return;
+  if (query.length === 4 ) query = query.toUpperCase();
+  else query = query.replace(".pdb","")
+  BasicMolStarWrapper.interactivity.highlight(query);
+}
+
+function MS_Select(query){
+  if (!MS_inited) return;
+  BasicMolStarWrapper.interactivity.select(query);
 }
 
 function MS_Load(pdbname, bu, sel_str){
@@ -90,7 +177,7 @@ async function MS_ChangeColor(node,acolor)
     var aname = node.data.source.pdb;
     if (aname.length === 4 ) aname = aname.toUpperCase();
     else aname = aname.replace(".pdb","")
-    console.log(aname,acolor)
+    //console.log(aname,acolor)
     BasicMolStarWrapper.coloring.changeColorStructure(aname,acolor);
     await BasicMolStarWrapper.coloring.applyCellPACKRandom();
     await BasicMolStarWrapper.coloring.applyCellPACKColor();
