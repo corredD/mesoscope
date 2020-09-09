@@ -176,7 +176,7 @@ async function MS_ChangeColor(node,acolor)
     var aname = node.data.source.pdb;
     if (aname.length === 4 ) aname = aname;//.toUpperCase();
     else aname = aname.replace(".pdb","")
-    if (d.data.ingtype === "fiber") aname = d.data.name;
+    if (node.data.ingtype === "fiber") aname = node.data.name;
     //console.log(aname,acolor)
     BasicMolStarWrapper.coloring.changeColorStructure(aname,acolor);
     await BasicMolStarWrapper.coloring.applyCellPACKRandom();
