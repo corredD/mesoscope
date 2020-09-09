@@ -1,4 +1,8 @@
 var MS_inited = false;
+var ms_trace_only = document.getElementById("ms_trace_only");
+var ms_spacefill = document.getElementById("ms_spacefill");
+//.checked
+
 function MS_molstart_init(){
     BasicMolStarWrapper.init('molstar', {
         layoutShowControls: false,
@@ -13,7 +17,10 @@ function MS_molstart_init(){
     //MS_applyAllColors();
     //BasicMolStarWrapper.coloring.applyCellPACKColor();
     MS_inited = true;
+    ms_trace_only = document.getElementById("ms_trace_only");
+    ms_spacefill = document.getElementById("ms_spacefill");
 }
+
 function MS_setupcallback(){
   const canvas3d = BasicMolStarWrapper.plugin.canvas3d;
   //this.suscribe(canvas3d.interaction.hover, e => this.plugin.behaviors.interaction.hover.next(e));
@@ -60,7 +67,7 @@ function MS_callback(entryId, click = false){
     var d = graph.nodes[i];
     if (!d.children){
       var n = d.data.source.pdb;
-      if (n.length === 4 ) n = n;//.toUpperCase();
+      if (n.length === 4 ) n = n.toUpperCase();
       else n = n.replace(".pdb","")
       if ( n === entryId || d.data.name === entryId) {
         //console.log("found");
@@ -93,6 +100,18 @@ function MS_Highlight(query){
   BasicMolStarWrapper.interactivity.highlight(query);
 }
 
+function MS_HighlightNode(anode){
+  if (!MS_inited) return;
+  if (anode.data && anode.data.source ) {
+    var aname = anode.data.source.pdb;
+    if (aname.length === 4 ) aname = aname.toUpperCase();
+    else aname = aname.replace(".pdb","")
+    //fiber use the ingredient name
+    if (anode.data.ingtype === "fiber") aname = anode.data.name;
+    MS_Highlight(aname);
+  }
+}
+
 function MS_Select(query){
   if (!MS_inited) return;
   BasicMolStarWrapper.interactivity.select(query);
@@ -116,7 +135,10 @@ function MS_LoadModel(recipefile,modelfile){
     //how to access cellpack menu ?
     //traceonly 
     //'spacefill', 'gaussian-surface', 'point', 'orientation'
-    BasicMolStarWrapper.loadCellPACK_model(recipefile,modelfile,true,'gaussian-surface');
+    if (ms_spacefill.checked) BasicMolStarWrapper.setPreset('illustrative_spacefill');
+    else BasicMolStarWrapper.setPreset('illustrative');
+    BasicMolStarWrapper.loadCellPACK_model(recipefile,modelfile, ms_trace_only.checked, ms_spacefill.checked ? 'spacefill' : 'gaussian-surface');
+    BasicMolStarWrapper.setPreset('clip_pixel');
 }
 /*
  ['blood_hiv_immature_inside.json', 'Blood HIV immature'],
@@ -132,8 +154,16 @@ function MS_LoadModel(recipefile,modelfile){
 async function MS_LoadExample(example_name){
     //current example
     if (!MS_inited) return;
-    if (example_name === 'influenza_model1.json') await BasicMolStarWrapper.loadCellPACK_example(example_name,false,'spacefill');
-    else await BasicMolStarWrapper.loadCellPACK_example(example_name,false,'gaussian-surface');
+    if (example_name === 'influenza_model1.json') {
+      BasicMolStarWrapper.setPreset('illustrative_spacefill');
+      await BasicMolStarWrapper.loadCellPACK_example(example_name, ms_trace_only.checked,'spacefill');
+    }
+    else {
+      if (ms_spacefill.checked) BasicMolStarWrapper.setPreset('illustrative_spacefill');
+      else BasicMolStarWrapper.setPreset('illustrative');
+      await BasicMolStarWrapper.loadCellPACK_example(example_name, ms_trace_only.checked, ms_spacefill.checked ? 'spacefill' : 'gaussian-surface');
+      if (example_name === 'HIV-1_0.1.6-8_mixed_radii_pdb.json') BasicMolStarWrapper.setPreset('clip_pixel');
+    }
     MS_applyAllColors();
 }
 
@@ -146,7 +176,7 @@ async function MS_mapColorSchem(){
       if (!d.children)
       {
         var aname = d.data.source.pdb;
-        if (aname.length === 4 ) aname = aname;//.toUpperCase();
+        if (aname.length === 4 ) aname = aname.toUpperCase();
         else aname = aname.replace(".pdb","")
         //fiber use the ingredient name
         if (d.data.ingtype === "fiber") aname = d.data.name;
@@ -175,7 +205,7 @@ async function MS_ChangeColor(node,acolor)
 {
     if (!MS_inited) return;
     var aname = node.data.source.pdb;
-    if (aname.length === 4 ) aname = aname;//.toUpperCase();
+    if (aname.length === 4 ) aname = aname.toUpperCase();
     else aname = aname.replace(".pdb","")
     if (node.data.ingtype === "fiber") aname = node.data.name;
     //console.log(aname,acolor)

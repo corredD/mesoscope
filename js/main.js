@@ -3773,55 +3773,43 @@ function dragsubject() {
 }
 
 function MouseMove(x,y) {
-
 	var d = asubject(x,y);
-	//console.log("mousemouve",d);
 	var line = false;
 	if (d && "data" in d) {}//console.log("found "+d.data.name+" at "+x+" "+y);
 	else if (d && "source" in d )
 	{
 		//console.log("found a line");
-	  line = true;
+	  	line = true;
 	}
-	//else console.log("not found");
 	if (!line) clearHighLight();
-  if ((!d || d===null ) )
-  {
-  	clearHighLight();
-  }
-  if (!d) {
+  	if (!d || d===null ) {
 	  clearHighLight();
 	  MS_ClearHighlight();
-	  return;}
-  if (!d.parent && !line) clearHighLight();
-//  else {
-  	  if (!line)
-  	  {
-        if (!node_over){
-          node_over = d ;
-          }
+	  return;
+	}
+  	if (!d.parent && !line) clearHighLight();
+	if (!line)
+	{
+		if (!node_over)
+		{
+			node_over = d ;
+			MS_HighlightNode(d);
+		}
         else if (node_over != d) {
-          node_over.highlight=false;
-          node_over = d;
+			node_over.highlight=false;
+			node_over = d;
+			MS_HighlightNode(d);
         }
         else {
-          node_over = d;
+          	node_over = d;
         }
 		d.highlight=true;
-		if (d.data && d.data.source ) {
-			var aname = d.data.source.pdb;
-            if (aname.length === 4 ) aname = aname;//.toUpperCase();
-            else aname = aname.replace(".pdb","")
-            //fiber use the ingredient name
-            if (d.data.ingtype === "fiber") aname = d.data.name;
-			MS_Highlight(aname);
-		}
         line_over = null;
-      }
-      else {
+	}
+	else {
       	node_over = null;
       	line_over = d;
-      	}
+	}
   //}
   if (simulation.alpha() < 0.01 && HQ) simulation.alphaTarget(1).restart();
   //console.log(simulation.alpha());

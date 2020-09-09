@@ -349,6 +349,8 @@ var mol_star_view=''+
 '<button id="loadmodel_button" onclick="'+file_cb+'" style="">Load a Model</button>' +//z-index:999,right:5%;
 '<button id="applyAllcolors_button" onclick="MS_applyAllColors()" style="">Apply nodes Colors</button>' +//z-index:999,right:5%;
 '<button id="applyAllcolors_button" onclick="MS_applyRandomColors()" style="">Apply default Colors</button>' +//z-index:999,right:5%;
+'<input type="checkbox" id="ms_trace_only">Trace Only</input>' +
+'<input type="checkbox" id="ms_spacefill">Spacefill</input>' +
 '</div>'+
 '</div>';
 

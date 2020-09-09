@@ -1554,7 +1554,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       console.log("clicked on " + node_selected.data.name);
       SetObjectsOptionsDiv(node_selected);
       var aname = arow.pdb;
-      if (aname.length === 4 ) aname = aname;//.toUpperCase();
+      if (aname.length === 4 ) aname = aname.toUpperCase();
       else aname = aname.replace(".pdb","")
       //fiber use the ingredient name
       if (arow.ingtype === "fiber") aname = arow.name;
