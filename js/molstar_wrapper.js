@@ -60,11 +60,9 @@ function MS_callback(entryId, click = false){
     var d = graph.nodes[i];
     if (!d.children){
       var n = d.data.source.pdb;
-      if (n.length === 4 ) n = n.toUpperCase();
+      if (n.length === 4 ) n = n;//.toUpperCase();
       else n = n.replace(".pdb","")
-      //console.log(n);
-      //console.log(n === entryId);
-      if ( n === entryId || n === d.data.name) {
+      if ( n === entryId || d.data.name === entryId) {
         //console.log("found");
         clearHighLight();
         if (node_selected) node_selected.highlight = false;
@@ -91,6 +89,7 @@ function MS_ClearHighlight(){
 
 function MS_Highlight(query){
   if (!MS_inited) return;
+  console.log("MS_Highlight "+query);
   BasicMolStarWrapper.interactivity.highlight(query);
 }
 
@@ -146,8 +145,8 @@ async function MS_mapColorSchem(){
       if (!d.children)
       {
         var aname = d.data.source.pdb;
-        if (aname.length === 4 ) aname = aname.toUpperCase();
-        else aname = name.replace(".pdb","")
+        if (aname.length === 4 ) aname = aname;//.toUpperCase();
+        else aname = aname.replace(".pdb","")
         //fiber use the ingredient name
         if (d.data.ingtype === "fiber") aname = d.data.name;
         if (!d.data.color) d.data.color = [1,0,0];
@@ -175,7 +174,7 @@ async function MS_ChangeColor(node,acolor)
 {
     if (!MS_inited) return;
     var aname = node.data.source.pdb;
-    if (aname.length === 4 ) aname = aname.toUpperCase();
+    if (aname.length === 4 ) aname = aname;//.toUpperCase();
     else aname = aname.replace(".pdb","")
     if (d.data.ingtype === "fiber") aname = d.data.name;
     //console.log(aname,acolor)

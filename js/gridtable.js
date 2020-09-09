@@ -1693,8 +1693,8 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
               NGL_ClearGridMode();
             }
             var aname = arow.pdb;
-            if (aname.length === 4 ) aname = aname.toUpperCase();
-            else aname = name.replace(".pdb","")
+            if (aname.length === 4 ) aname = aname;//.toUpperCase();
+            else aname = aname.replace(".pdb","")
             //fiber use the ingredient name
             if (arow.ingtype === "fiber") aname = arow.name;
             MS_Highlight(aname)
