@@ -2437,7 +2437,7 @@ function isKeyPressed(event) {
 	//console.log("keyPressed",event.ctrlKey);
 	if (event.ctrlKey) {ctrlKey=true;}
 	else {ctrlKey=false;}
-	console.log("canvas mouse move 2d");
+	//console.log("canvas mouse move 2d");
 	mousein = true;
 	}
 

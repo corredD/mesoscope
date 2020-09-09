@@ -89,7 +89,7 @@ function MS_ClearHighlight(){
 
 function MS_Highlight(query){
   if (!MS_inited) return;
-  console.log("MS_Highlight "+query);
+  //console.log("MS_Highlight "+query);
   BasicMolStarWrapper.interactivity.highlight(query);
 }
 
@@ -132,7 +132,8 @@ function MS_LoadModel(recipefile,modelfile){
 async function MS_LoadExample(example_name){
     //current example
     if (!MS_inited) return;
-    await BasicMolStarWrapper.loadCellPACK_example(example_name,false,'gaussian-surface');
+    if (example_name === 'influenza_model1.json') await BasicMolStarWrapper.loadCellPACK_example(example_name,false,'spacefill');
+    else await BasicMolStarWrapper.loadCellPACK_example(example_name,false,'gaussian-surface');
     MS_applyAllColors();
 }
 
