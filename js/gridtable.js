@@ -37,9 +37,7 @@ var countryList = [
 
 function setupSlickGrid() {
   grid_column_elem = document.getElementById("column_type");
-
 }
-
 
 function loadingTemplate() {
   return ''; //<div class="preload">Loading...</div>';
@@ -690,6 +688,8 @@ function CreateOptions() {
     enableCellNavigation: true,
     asyncEditorLoading: false,
     autoEdit: false,
+    showHeaderRow: true,
+    headerRowHeight: 30,
     editCommandHandler: queueAndExecuteCommand,
     //enableColumnReorder: false,
     multiColumnSort: true //,
@@ -949,6 +949,11 @@ function UpdateGrid(cdata, grid_id) {
   gridArray[grid_id].setColumns(cdata.column);
   gridArray[grid_id].dataView.beginUpdate();
   gridArray[grid_id].dataView.setItems(cdata.data);
+  gridArray[grid_id].dataView.setFilterArgs({
+    //percentCompleteThreshold: percentCompleteThreshold,
+    searchString: searchString
+  });
+  gridArray[grid_id].dataView.setFilter(myFilter);
   gridArray[grid_id].dataView.endUpdate();
   gridArray[grid_id].render();
   gridArray[grid_id].dataView.refresh();
@@ -960,6 +965,7 @@ function UpdateGrid(cdata, grid_id) {
   gridArray[grid_id].resizeCanvas();
   gridArray[grid_id].autosizeColumns();
 }
+
 
 
 function updateDataGridRowElem(grid_id, item_id, column_name, new_value) {
@@ -1232,6 +1238,7 @@ function grid_LoadMultiplePDBs(agrid, rowsids) {
   }
 }
 //
+
 function updateCellValue(agrid, acolumn, acellrowindex, avalue) {
   console.log("update using id ", acellrowindex); //undefined ?
   var row = agrid.dataView.getItemById(acellrowindex);
@@ -1274,6 +1281,43 @@ var checkboxSelector = new Slick.CheckboxSelectColumn({
   cssClass: "slick-cell-checkboxsel"
 });
 
+var columnFilters = []
+
+function filter(item) {
+  var grid = gridArray[current_grid]
+  for (var columnId in columnFilters[grid.ind]) {
+    if (columnId !== undefined && columnFilters[grid.ind][columnId] !== "") {
+      var c = grid.getColumns()[grid.getColumnIndex(columnId)];
+      if (item[c.field] != columnFilters[grid.ind][columnId]) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+function myFilter(item, args) {
+  //if (item["percentComplete"] < args.percentCompleteThreshold) {
+  //  return false;
+  //}
+  if (args.searchString != "" && ( item["name"].indexOf(args.searchString) == -1)){// || item["label"].indexOf(args.searchString) == -1) || item["pdb"].indexOf(args.searchString) == -1) ) {
+    return false;
+  }
+  return true;
+}
+
+function toggleFilterRow() {
+  gridArray[current_grid].setTopPanelVisibility(!gridArray[current_grid].getOptions().showTopPanel);
+}
+
+var searchString = "";
+
+function updateFilter() {
+  gridArray[current_grid].dataView.setFilterArgs({
+    searchString: searchString
+  });
+  gridArray[current_grid].dataView.refresh();
+}
 
 function CreateGrid(elementId, parentId, some_data, some_column, some_options, ind) {
   if (!gridArray) {
@@ -1321,8 +1365,13 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
     editable: true
   });
   grid.setOptions({
-    multiColumnSort: false
+    multiColumnSort: false,
+    showHeaderRow: true,
+    headerRowHeight: 30,
+    showPreHeaderPanel: true
   });
+  //showHeaderRow: true,
+  //headerRowHeight: 30,
   //grid.setOptions({autoHeight:true});
   if (ind === 3) grid.setOptions({
     rowHeight: 50
@@ -1478,7 +1527,9 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
         }
       }
     }
+    dataView.updateItem(args.item.id, args.item);
   });
+
   grid.onSelectedRowsChanged.subscribe(function(e, args) {
     var rowsids = grid.getSelectedRows();
     //depends on which grid we are on
@@ -1828,9 +1879,49 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
     grid.render();
 
   });
+  columnFilters[ind] = {};
+  /*
+  $(grid.getHeaderRow()).delegate(":input", "change keyup", function (e) {
+    var columnId = $(this).data("columnId");
+    if (columnId != null) {
+      columnFilters[grid.ind][columnId] = $.trim($(this).val());
+      dataView.refresh();
+    }
+  });
 
+  grid.onHeaderRowCellRendered.subscribe(function(e, args) {
+      $(args.node).empty();
+      $("<input type='text'>")
+         .data("columnId", args.column.id)
+         .val(columnFilters[grid.ind][args.column.id])
+         .appendTo(args.node);
+  });
+  */
+  if (ind === 0) {
+    $("#inlineFilterPanel")
+    .appendTo(grid.getTopPanel())
+    .show();
+
+    $("#txtSearch,#txtSearch2").keyup(function (e) {
+      Slick.GlobalEditorLock.cancelCurrentEdit(); 
+      // clear on Esc
+      if (e.which == 27) {
+        this.value = "";
+      }
+      searchString = this.value;
+      updateFilter();
+    });
+  } 
+
+  
   dataView.beginUpdate();
   if (some_data && some_data.length) dataView.setItems(some_data);
+  //dataView.setFilter(filter);
+  dataView.setFilterArgs({
+    //percentCompleteThreshold: percentCompleteThreshold,
+    searchString: searchString
+  });
+  dataView.setFilter(myFilter);
   dataView.endUpdate();
   dataView.setGrouping([])
   grid.render();

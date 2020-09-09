@@ -163,8 +163,8 @@ var ngl_widget_options = ''+
   '<div class="clusterBtn">' +
     '<button onclick="NGL_CenterView()" style="">Center Camera</button>' +
   '</div>' +
-  '<label id="ProteinId">protein name</label>' +
-  '<label id="pdb_id">pdb id</label>' +
+  '<div><label id="ProteinId">protein name</label></div>' +
+  '<div><label id="pdb_id">pdb id</label></div>' +
   '<div>'+
     '<label for="rep_type">Selection</label>'+
     '<input type="text" id="sel_str" style="width:55%" placeholder="Selection" onchange="NGL_ChangeSelection(this)"/>'+
@@ -253,8 +253,8 @@ var ngl_options= ''+
     '<div class="clusterBtn">' +
       '<button onclick="NGL_CenterView()" style="">Center Camera</button>' +
     '</div>' +
-    '<label id="ProteinId">protein name</label>' +
-    '<label id="pdb_id">pdb id</label>' +
+    '<div><label id="ProteinId">protein name</label></div>' +
+    '<div><label id="pdb_id">pdb id</label></div>' +
     '<div>'+
       '<label for="rep_type">Selection</label>'+
       '<input type="text" id="sel_str" style="width:55%" placeholder="Selection" onchange="NGL_ChangeSelection(this)"/>'+
@@ -421,6 +421,16 @@ var gridoptions = ''
 
 
 //	+'</div>'
+
+var grid_header = '<div id="inlineFilterPanel" style="display:none;background:#dddddd;padding:3px;color:black;">'+
+                  'Show tasks with title including <input type="text" id="txtSearch2">'+
+                  'and % at least &nbsp;'+
+                  '<div style="width:100px;display:inline-block;" id="pcSlider2"></div>'+
+                  '</div>'
+
+var recipe_grid_header = '<div id="inlineFilterPanel" style="display:none;background:#dddddd;padding:3px;color:black;">'+
+'Show ingredient including <input type="text" id="txtSearch2"></div>';
+
 
 var pfvoptions = '' +
   '		<div class="PFV container-fluid" id="PFV">' +
@@ -895,8 +905,11 @@ slickgridComponent.prototype._setupTab = function() {
   //console.log("tab??",this._container.tab.element[0]);//theactual li tab
   var component = this;
   grid_tab_label[component._state.ind-1] = $('<div class="messageTab" id="grid_tab_'+(component._state.ind-1).toString()+'">' + '' + '</div>');
+  var buton = '<span style="float:right" class="ui-icon ui-icon-search" title="Toggle search panel" onclick="toggleFilterRow()"</span>';
   // Add the counter element whenever a tab is created
   this._container.tab.element.append( grid_tab_label[component._state.ind-1] );
+  this._container.tab.element.append( buton );
+
   this._container.tab.element[0].onclick = function(e) {
     console.log(this.title, comp_titles[this.title]);
     changeCurrentGrid(comp_titles[this.title]);
@@ -1012,7 +1025,7 @@ myLayout.registerComponent('slickgrid', slickgridComponent);
 
 //myLayout.registerComponent( 'slickgrid', function( container, state ){});
 myLayout.registerComponent('slickgridoptions', function(container, state) {
-  container.getElement().html(gridoptions);
+  container.getElement().html(gridoptions+recipe_grid_header);
   setupSlickGrid();
 })
 
