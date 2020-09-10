@@ -722,6 +722,7 @@ function Util_download_png(the_image, name) {
     base_image.src = the_image.src;
 };
 
+//this is unsecure for firefox.
 function Util_download_src_png(the_src, name) {
     var canvas = document.createElement('canvas');
     var context = canvas.getContext('2d');

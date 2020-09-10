@@ -175,6 +175,27 @@ function NGL_applyPcp(axis,offset,asyncloop=false) {
   if (node_selected) {
     node_selected.data.pcpalAxis = axis;
     node_selected.data.offset = offset;
+    if (node_selected.data.sprite){
+      if (node_selected.data.sprite.scale2d!==0) {
+          var acomp = stage.getComponentsByName("mb").list[0];
+          var o = new NGL.Vector3(offset[0], offset[1], offset[2]);
+          var off = o.length();
+          if (acomp)
+          {
+            var screen_pos = NGL_getScreenPosition(acomp.position);
+            if (screen_pos.y < viewport.offsetHeight/2) {off = -off;}
+          }          
+          /*
+          var q = new NGL.Quaternion();
+          q.setFromUnitVectors(new NGL.Vector3(0, 0, 1), new NGL.Vector3(axis[0], axis[1], axis[2]));
+          var o = new NGL.Vector3(offset[0], offset[1], offset[2]);
+          var c = ngl_current_structure.gcenter;
+          o.add(c);
+          var d = NGL_getDistanceOnScreen(o,c);
+          */
+          node_selected.data.sprite.offsety = off;
+      }
+    }
     console.log("update node", node_selected);
   } else {
     var arow = gridArray[0].dataView.getItemById(ngl_current_item_id);
@@ -1058,8 +1079,9 @@ function NGL_updateCurrentBeadsLevelClient() {
 
 // server side function for computing beads
 function NGL_updateCurrentBeadsLevelServer() {
-  console.log("update beads", beads_elem.selectedOptions[0].value); //undefined?//lod level
-  console.log("num clusters", slidercluster_elem.value);
+  //console.log("update beads", beads_elem.selectedOptions[0].value); //undefined?//lod level
+  //console.log("num clusters", slidercluster_elem.value);
+  if (beads_elem.selectedOptions[0].value === "None") return;
   var d = node_selected; //or node_selected.data.bu
   var pdb = d.data.source.pdb; //document.getElementById("pdb_str");
   var bu = (d.data.source.bu) ? d.data.source.bu : ""; //document.getElementById("bu_str");
@@ -1159,6 +1181,7 @@ function NGL_updateCurrentBeadsLevel() {
   //client, or server or server coords
   //NGL_updateCurrentBeadsLevelClient();
   //NGL_updateCurrentBeadsLevelServer();
+  if (beads_elem.selectedOptions[0].value === "None") return;
   if (node_selected.data.nodetype === "compartment") {}
   else {
   if ((node_selected.data.source.pdb)&&(node_selected.data.source.pdb!==""))
@@ -1501,10 +1524,10 @@ function NGL_ChangeChainsSelection(an_elem) {
   var aselection = "";
   //check the model
   var checkboxes = document.getElementById("selection_ch_checkboxes");
-  console.log(checkboxes);
-  console.log(sele_elem.value);
+  //console.log(checkboxes);
+  //console.log(sele_elem.value);
   var selection = "";
-  console.log(an_elem);
+  //console.log(an_elem);
   var allcheck = checkboxes.getElementsByTagName("input");
   var all = allcheck.length;
   var countchecked = 0;
@@ -1872,6 +1895,47 @@ function NGL_buildCMS_cb(nglobject){
   }
 }
 
+function NGL_toScreenPosition(obj, camera)
+{
+    var matrix = new Matrix4()
+    var modelViewProjectionMatrix = new Matrix4()
+    var vector = new THREE.Vector3();
+
+    var widthHalf = 0.5*renderer.context.canvas.width;
+    var heightHalf = 0.5*renderer.context.canvas.height;
+
+    obj.updateMatrixWorld();
+    vector.setFromMatrixPosition(obj.matrixWorld);
+    vector.project(camera);
+
+    vector.x = ( vector.x * widthHalf ) + widthHalf;
+    vector.y = - ( vector.y * heightHalf ) + heightHalf;
+
+    return { 
+        x: vector.x,
+        y: vector.y
+    };
+
+};
+
+
+function NGL_getScreenPosition(position) {
+  var w = viewport.offsetWidth;
+  var h = viewport.offsetHeight;
+  var vector = new NGL.Vector3( position.x, position.y, position.z );
+  // model to world
+  var modelMat = stage.viewer.modelGroup.matrixWorld;
+  vector.applyMatrix4(modelMat);
+  //var vector = stage.viewer.camera.localToWorld(new NGL.Vector3( position.x, position.y, position.z ))
+  // world to view and view to NDC
+  vector.project(stage.viewer.camera);
+  // NDC to pixel
+  vector.x = Math.round( (   vector.x + 1 ) * w / 2 );
+  vector.y = Math.round( ( - vector.y + 1 ) * h / 2 );
+  return vector;
+}
+
+
 function NGL_getCurrentScaleOnScreen(){
   var width = viewport.offsetWidth;
   var height = viewport.offsetHeight;
@@ -1879,6 +1943,25 @@ function NGL_getCurrentScaleOnScreen(){
   var widthHalf = width / 2, heightHalf = height / 2;
   var pos1 = new NGL.Vector3(0,0,0);
   var pos2 = new NGL.Vector3(1,0,0);
+  pos1.project(stage.viewer.camera);
+  pos2.project(stage.viewer.camera);
+  pos1.x = ( pos1.x * widthHalf ) + widthHalf;
+  pos1.y = - ( pos1.y * heightHalf ) + heightHalf;
+  pos2.x = ( pos2.x * widthHalf ) + widthHalf;
+  pos2.y = - ( pos2.y * heightHalf ) + heightHalf;
+  var distance_screen = Math.sqrt((pos1.x-pos2.x)*(pos1.x-pos2.x)+(pos1.y-pos2.y)*(pos1.y-pos2.y));
+  return distance_screen;
+}
+
+
+function NGL_getDistanceOnScreen(p1, p2){
+  stage.viewer.camera.getWorldPosition();
+  var width = viewport.offsetWidth;
+  var height = viewport.offsetHeight;
+  //var width = window.innerWidth, height = window.innerHeight;
+  var widthHalf = width / 2, heightHalf = height / 2;
+  var pos1 = new NGL.Vector3(p1[0],p1[1],p1[2]);
+  var pos2 = new NGL.Vector3(p2[0],p2[1],p2[2]);  
   pos1.project(stage.viewer.camera);
   pos2.project(stage.viewer.camera);
   pos1.x = ( pos1.x * widthHalf ) + widthHalf;

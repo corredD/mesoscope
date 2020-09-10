@@ -1657,6 +1657,22 @@ function saveCurrentCSV(){//saveCurrentCVJSON() {
   grid_tab_label[0].text ( "" );
 }
 
+function fs_download(url, name, opts) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', url);
+  xhr.responseType = 'blob';
+
+  xhr.onload = function () {
+    saveAs(xhr.response, name, opts);
+  };
+
+  xhr.onerror = function () {
+    console.error('could not download file');
+  };
+
+  xhr.send();
+}
+
 function download(content, fileName, contentType) {
   var a = document.createElement("a");
   var file = new Blob([content], {

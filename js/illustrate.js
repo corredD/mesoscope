@@ -85,10 +85,11 @@ function ill_writeAtoms(structure) {
       //need to apply the matrix to the selection inside the BU selection ?
       //console.log(o.object.biomolDict[o.assembly].getSelection());
       //build using given selection AND biomolDic selection
-      asele = "(" + o.object.biomolDict[au].getSelection().string + ") AND " + asele;
+      asele = "(" + o.object.biomolDict[au].getSelection().string + ") AND not water";
     }
     if (asele == "" && current_model != null ) asele = "/"+model_elem.value;
-    if (asele === "") asele = "polymer";
+    if (asele === "") asele = "not water";
+
     console.log(asele);
     if (bu && writeBU) {
         //first write the matrix
@@ -101,9 +102,12 @@ function ill_writeAtoms(structure) {
           _records.push("REMARK 350 APPLY THE FOLLOWING TO CHAINS: "+t.join(', '));
           for (var k = 0; k < o.object.biomolDict[au].partList[j].matrixList.length; k++) {
             var mat = o.object.biomolDict[au].partList[j].matrixList[k];
-            _records.push(sprintf(BiomtFormat, 1, k+1,mat.elements[0],-mat.elements[1],-mat.elements[2],mat.elements[12]));//+ - -
-            _records.push(sprintf(BiomtFormat, 2, k+1,-mat.elements[4],mat.elements[5],mat.elements[6],mat.elements[13]));//- + +
-            _records.push(sprintf(BiomtFormat, 3, k+1,-mat.elements[8],mat.elements[9],mat.elements[10],mat.elements[14]));//- + +
+            //_records.push(sprintf(BiomtFormat, 1, k+1,mat.elements[0],-mat.elements[1],-mat.elements[2],mat.elements[12]));//+ - -
+            //_records.push(sprintf(BiomtFormat, 2, k+1,-mat.elements[4],mat.elements[5],mat.elements[6],mat.elements[13]));//- + +
+            //_records.push(sprintf(BiomtFormat, 3, k+1,-mat.elements[8],mat.elements[9],mat.elements[10],mat.elements[14]));//- + +
+            _records.push(sprintf(BiomtFormat, 1, k+1,mat.elements[0],mat.elements[1],mat.elements[2],mat.elements[12]));//+ - -
+            _records.push(sprintf(BiomtFormat, 2, k+1,mat.elements[4],mat.elements[5],mat.elements[6],mat.elements[13]));//- + +
+            _records.push(sprintf(BiomtFormat, 3, k+1,mat.elements[8],mat.elements[9],mat.elements[10],mat.elements[14]));//- + +
           }
           _records.push("REMARK 350END");
         }
