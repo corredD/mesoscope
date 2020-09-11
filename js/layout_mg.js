@@ -458,11 +458,11 @@ var mol_star_view=''+
 '<div id="acontainer" >'+
 '<div id="molstar">'+  '</div>'+
 '<div style="position:absolute;top:0px">'+
-'<button id="loadmodel_button" onclick="'+file_cb+'" style="">Load a Model</button>' +//z-index:999,right:5%;
+'<div><button id="loadmodel_button" onclick="'+file_cb+'" style="">Load a Model</button>' +//z-index:999,right:5%;
 '<button id="applyAllcolors_button" onclick="MS_applyAllColors()" style="">Apply nodes Colors</button>' +//z-index:999,right:5%;
-'<button id="applyAllcolors_button" onclick="MS_applyRandomColors()" style="">Apply default Colors</button>' +//z-index:999,right:5%;
-'<input type="checkbox" id="ms_trace_only">Trace Only</input>' +
-'<input type="checkbox" id="ms_spacefill">Spacefill</input>' +
+'<button id="applyAllcolors_button" onclick="MS_applyRandomColors()" style="">Apply default Colors</button></div>' +//z-index:999,right:5%;
+'<div><input type="checkbox" id="ms_trace_only">Trace Only</input></div>' +
+'<div><input type="checkbox" id="ms_spacefill">Spacefill</input></div>' +
 '</div>'+
 '</div>';
 
@@ -756,6 +756,47 @@ var config = {
     ]
   }]
 };
+
+var config_light = {
+  settings: {
+    showPopoutIcon: false,
+    //      selectionEnabled: true
+  },
+  content: [{
+    type: 'column',
+    content: [{
+        type: 'row',
+        content: [get_comp_definition_d3(),
+                  {type:'stack',content:[
+                    get_new_single_component("NGL Options","ngl viewer options","ngl_options",{label: 'C'}),
+                    get_new_single_component("Object Properties","change object properties","object_properties",{label: 'C'}),
+                    get_new_single_component("Sequence features","show sequence features","seq_feature_viewer",{"entry":"","entity":"1","type":"pdb-seq-viewer"}),
+                    get_new_single_component("protvista","show protvista","protvista",{"entry":"","entity":"1"}),
+                    get_new_single_component("Topology","show topology 2d","topology_viewer",{"entry":"","entity":"1","type":"pdb-topology-viewer"}),
+                    get_new_single_component("Uniprot mapping","show uniprot coverage","uniprot_viewer",{"entry":"","entity":"1","type":"pdb-uniprot-viewer"})                    
+                  ]},
+                  get_comp_defintion_ngl(),
+                  get_new_single_component("Mol-*","Mol-*","molstar",{label: 'molstar'})
+        ]
+      },
+      {
+        type: 'row',
+        content: [
+          get_comp_defintion_options_grid(),
+          {
+            type: 'stack',
+            content: [
+              get_comp_defintion_grid('Recipe table', 0),
+              get_comp_defintion_grid('Interaction table', 1),
+              get_comp_defintion_grid('Uniprot search table', 2),
+              get_comp_defintion_grid('PDB search table', 3)
+            ]
+          }
+        ]
+      }
+    ]
+  }]
+};
 //_onCloseClick
 //for mobile
 var alt_layout = [];
@@ -788,18 +829,18 @@ if (savedState !== null && usesavedState && session_version) {
       myLayout = new window.GoldenLayout(p, $('#layoutContainer'));
     } catch (error) {
       console.error(error);
-      myLayout = new window.GoldenLayout(config, $('#layoutContainer'));
+      myLayout = new window.GoldenLayout(config_light, $('#layoutContainer'));
     }
   }
   else {
     //myLayout = new GoldenLayout( config );
-    myLayout = new window.GoldenLayout(config, $('#layoutContainer'));
+    myLayout = new window.GoldenLayout(config_light, $('#layoutContainer'));
     localStorage.setItem('session_version', JSON.stringify(current_version));
     savedRecipe = null;
   }
 } else {
   //myLayout = new GoldenLayout( config );
-  myLayout = new window.GoldenLayout(config, $('#layoutContainer'));
+  myLayout = new window.GoldenLayout(config_light, $('#layoutContainer'));
   localStorage.setItem('session_version', JSON.stringify(current_version));
 }
 //console.log(myLayout);
@@ -1264,6 +1305,8 @@ $(document).ready(function() {
     evaluate_interval = setInterval(EvaluateCurrentReadyState,10000);//in ms, Do every 10 seconds
     var checkboxes = document.getElementById("selection_ch_checkboxes");
     checkboxes.style.display = "none";
+    layout_HideTabFor(["Interaction table","Object Properties","Sequence features","Topology","Uniprot mapping","Uniprot search table","PDB search table","protvista" ]);
+    //grid_SetDefaultColumn(gridArray[0],["include","name","surface","pdb","bu","selection","compartment","image"]);
     //setupPDBLib();
 		//'use strict';angular.bootstrap(document, ['pdb.component.library']);
   }.bind(this), 20);
@@ -1562,6 +1605,8 @@ function UpdatePDBtopo(entry){
 //if there is too many of them, the website hang...
 function UpdatePDBcomponent(entry)
 {
+  var ispdb = document.getElementById("pdb_component_enable")?document.getElementById("pdb_component_enable").checked : false;
+  if (!ispdb) return;
   //do it for all entity?
   UpdatePDBtopo(entry);
   UpdatePDBseq(entry)
@@ -1651,10 +1696,35 @@ function setupProVista(uniid){
   protvista_tab_lbl.text(uniid);
 }
 
+/*
+0: <li class="lm_tab lm_active" title="Recipe View">​
+1: <li class="lm_tab lm_active" title="NGL Options">​
+2: <li class="lm_tab" title="Object Properties">​
+3: <li class="lm_tab lm_active" title="NGL View">​
+4: <li class="lm_tab" title="Mol-*">​
+5: <li class="lm_tab lm_active" title="Sequence features">​
+6: <li class="lm_tab" title="protvista">​
+7: <li class="lm_tab" title="Topology">​
+8: <li class="lm_tab" title="Uniprot mapping">​
+9: <li class="lm_tab lm_active" title="Table Options">​
+10: <li class="lm_tab lm_active" title="Recipe table">​
+11: <li class="lm_tab" title="Interaction table">​
+12: <li class="lm_tab" title="Uniprot search table">​
+13: <li class="lm_tab" title="PDB search table">
+​*/
 
+function layout_HideTabFor(names){
+  //hide the given tabs name
+  var alltabs = document.getElementsByClassName('lm_tab');
+  //var alltabs = document.querySelectorAll('.klass')
+  $.each(alltabs, function (i, e) {
+    if (names.includes(e.title)){
+        e.style.display = "none";
+    }
+  });
+}
 
 helper_setupFibersDictionary();
-
 
 
 /*

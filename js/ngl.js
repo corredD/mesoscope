@@ -38,7 +38,7 @@ var cluster_avg_radius = false;
 var use_cluster_radius = false;
 var current_annotation;
 var title_annotation = document.getElementById("pdb_title");
-
+var node_to_illustrate;
 
 //var beads_checkbox = document.getElementById("beads_check");
 //var labels_checkbox = document.getElementById("label_check");
@@ -2174,6 +2174,9 @@ function NGL_writeAtoms() {
 function NGL_Illustrate(){
     if(!node_selected) return;
     if (!ngl_current_structure) return;
+    node_to_illustrate = node_selected;
+    //camera position should be reset
+    stage.autoView(1000);
     var nameinput = node_selected.data.name;
     var formData = new FormData();
     formData.append("key", "query");
@@ -2200,6 +2203,7 @@ function NGL_Illustrate(){
     var astructure_file = new Blob([structure_txt], {
       type: 'text/plain'
     });
+    //compress to zip ?
     formData.append("PDBfile",astructure_file);
     formData.append("_id", ill_current_id);
     formData.append("name",nameinput);
@@ -2213,29 +2217,32 @@ function NGL_Illustrate(){
     };
     xhr.onload = function () {
       // do something to response
+      if(this.status == 200) {
+        console.log("onload ");
+      }
       console.log(this.responseText);
       var data = JSON.parse(this.responseText)
-      if (!node_selected.data.thumbnail){
-        node_selected.data.thumbnail = new Image();
-        node_selected.data.thumbnail.done = false;
-        node_selected.data.thumbnail.onload = function() {
+      if (!node_to_illustrate.data.thumbnail){
+        node_to_illustrate.data.thumbnail = new Image();
+        node_to_illustrate.data.thumbnail.done = false;
+        node_to_illustrate.data.thumbnail.onload = function() {
           var height = this.height;
           var width = this.width;
           this.oh = parseFloat(height);
           this.ow = parseFloat(width);
           this.done = true;
         }
-        node_selected.data.thumbnail.onerror = function () {
+        node_to_illustrate.data.thumbnail.onerror = function () {
           this.src = 'images/Warning_icon.png';
           this.done = false;
         };
       }
-      node_selected.data.thumbnail.src = data.image+"?"+new Date();
+      node_to_illustrate.data.thumbnail.src = data.image+"?"+new Date();
       ill_current_id = parseInt(data.id);
       //hide progress bar
       if (document.getElementById("savethumbnail").checked){
-          node_selected.data.sprite.image = node_selected.data.name+".png";
-          Util_download_src_png(node_selected.data.thumbnail.src, node_selected.data.name);
+        node_to_illustrate.data.sprite.image = node_to_illustrate.data.name+".png";
+          Util_download_src_png(node_to_illustrate.data.thumbnail.src, node_to_illustrate.data.name);
       }
       toggleHide(document.getElementById("spinner"));
     };
@@ -3262,6 +3269,8 @@ function NGL_autoBuildBeads(o, center) {
 }
 
 function NGL_UpdatePDBComponent(){
+  var ispdb = document.getElementById("pdb_component_enable")?document.getElementById("pdb_component_enable").checked : false;
+  if (!ispdb) return;
   //use current selection
   if (node_selected) {
     NGL_pdbComponentPost(node_selected.data.source.pdb,node_selected.data.uniprot);

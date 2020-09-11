@@ -87,17 +87,17 @@ function ill_writeAtoms(structure) {
       //build using given selection AND biomolDic selection
       asele = "(" + o.object.biomolDict[au].getSelection().string + ") AND not water";
     }
-    if (asele == "" && current_model != null ) asele = "/"+model_elem.value;
+    if (asele === "" && current_model != null ) asele = "/"+model_elem.value+" AND not water";
     if (asele === "") asele = "not water";
-
+    
     console.log(asele);
     if (bu && writeBU) {
         //first write the matrix
         for (var j = 0; j < o.object.biomolDict[au].partList.length; j++) {
           //REMARK 350 BIOMOLECULE: 1
           //REMARK 350 APPLY THE FOLLOWING TO CHAINS: 1, 2, 3, 4
-          var s= structure.object.biomolDict[au].getSelection()
-          var t = s.selection.rules.map(d=>d.chainname)
+          var s= structure.object.biomolDict[au].getSelection() //max in illustrator is 12
+          var t = s.selection.rules.map(d=> d.chainname )
           _records.push("REMARK 350 BIOMOLECULE: 1");
           _records.push("REMARK 350 APPLY THE FOLLOWING TO CHAINS: "+t.join(', '));
           for (var k = 0; k < o.object.biomolDict[au].partList[j].matrixList.length; k++) {
@@ -118,7 +118,7 @@ function ill_writeAtoms(structure) {
               // Alignment of one-letter atom name such as C starts at column 14,
               // while two-letter atom name such as FE starts at column 13.
               let atomname = a.atomname;
-              if (atomname.length <= 3)
+              if (atomname.length <= 3 && !a.hetero)
               {
                   atomname = ' ' + atomname;
                   _records.push(sprintf(formatString, serial, atomname, a.resname, defaults(a.chainname, ' '), a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
@@ -168,12 +168,13 @@ function ill_writeAtoms(structure) {
             // Alignment of one-letter atom name such as C starts at column 14,
             // while two-letter atom name such as FE starts at column 13.
             let atomname = a.atomname;
-            if (atomname.length <= 3)
+            if (atomname.length <= 3 && !a.hetero)
             {
                 atomname = ' ' + atomname;
                 //if (atomname.length === 1)
                 //    atomname = ' ' + atomname;
-                _records.push(sprintf(formatString, serial, atomname, a.resname, defaults(a.chainname, ' '), a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
+                //defaults(a.chainname, ' ')
+                _records.push(sprintf(formatString, serial, atomname, a.resname, ' ', a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
               defaults(a.element, '')));
             }
             ia += 1;

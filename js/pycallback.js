@@ -68,7 +68,7 @@ function stopAll(){
 	all_xmlhttp.forEach(function(element) {
   	element.abort();
 	});
-  toggleHide(document.getElementById("spinner"));
+  	toggleHide(document.getElementById("spinner"));
 	}
 
 function async_checkExist(url,callback) {

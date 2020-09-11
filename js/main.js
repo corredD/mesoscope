@@ -287,6 +287,7 @@ function CreateNew(){
 	//clear PDB component widget
 	setupProVista(null);
 	UpdatePDBcomponent(null);
+	MS_Clear();
 	}
 
 //we need Stoichiometry=>change of molarity

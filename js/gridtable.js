@@ -1405,7 +1405,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
   });
   //grid.setOptions({autoEdit:false})
   var columnpicker = new Slick.Controls.ColumnPicker(some_column, grid, some_options);
-
+  grid.columnpicker = columnpicker;
   var pager = new Slick.Controls.Pager(dataView, grid, $("#pager-" + ind));
   grid.pager = pager;
   console.log("#pager-" + ind);
@@ -2604,4 +2604,17 @@ function grid_AddColumn(name)
   };
   columns.push( columnDefinition );
   gridArray[current_grid].setColumns(columns);
+}
+
+function grid_SetDefaultColumn(agrid,defaults_names){
+  var columns = agrid.columnpicker.getAllColumns();
+  var visibleColumns = [];
+  $.each(columns, function (i, e) {
+    if (defaults_names.includes(e.name)){
+        visibleColumns.push(columns[i]);
+        //agrid.columnpicker.columnCheckboxes[i].checked = false;
+    }
+  });
+  agrid.setColumns(visibleColumns);
+  agrid.columnpicker.onColumnsChanged.notify({columns: visibleColumns, grid: agrid});
 }

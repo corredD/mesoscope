@@ -2,6 +2,7 @@ var MS_inited = false;
 var ms_trace_only = document.getElementById("ms_trace_only");
 var ms_spacefill = document.getElementById("ms_spacefill");
 //.checked
+var ms_model_loaded = false;
 
 function MS_molstart_init(){
     BasicMolStarWrapper.init('molstar', {
@@ -27,6 +28,7 @@ function MS_setupcallback(){
   canvas3d.input.move.subscribe(({x, y, inside, buttons, button, modifiers }) => {
       if (mousein) return;
       if (!inside) return;
+      if (!ms_model_loaded) return;
       const pickingId = canvas3d.identify(x, y);
       //let label = '';
       if (pickingId) {
@@ -42,6 +44,7 @@ function MS_setupcallback(){
   canvas3d.input.click.subscribe(({x, y, buttons, button, modifiers })=> {
     //this should be a selection
     if (mousein) return;
+    if (!ms_model_loaded) return;
     const pickingId = canvas3d.identify(x, y);
     if (pickingId) {
       const reprLoci = canvas3d.getLoci(pickingId);
@@ -139,6 +142,7 @@ function MS_LoadModel(recipefile,modelfile){
     else BasicMolStarWrapper.setPreset('illustrative');
     BasicMolStarWrapper.loadCellPACK_model(recipefile,modelfile, ms_trace_only.checked, ms_spacefill.checked ? 'spacefill' : 'gaussian-surface');
     BasicMolStarWrapper.setPreset('clip_pixel');
+    ms_model_loaded = true;
 }
 /*
  ['blood_hiv_immature_inside.json', 'Blood HIV immature'],
@@ -165,6 +169,7 @@ async function MS_LoadExample(example_name){
       if (example_name === 'HIV-1_0.1.6-8_mixed_radii_pdb.json') BasicMolStarWrapper.setPreset('clip_pixel');
     }
     MS_applyAllColors();
+    ms_model_loaded = true;
 }
 
 async function MS_mapColorSchem(){
@@ -215,8 +220,15 @@ async function MS_ChangeColor(node,acolor)
 }
 
 async function MS_applyRandomColors(){
+  if (!MS_inited) return;
     await BasicMolStarWrapper.coloring.applyCellPACKRandom();
 }
+
+async function MS_Clear(){
+  ms_model_loaded = false;
+  if (!MS_inited) return;
+  await BasicMolStarWrapper.plugin.clear();
+} 
 
 function MS_Resize(){
     if (!MS_inited) return;
