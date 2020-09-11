@@ -512,19 +512,22 @@ var gridoptions = ''
   '					<select id="column_type" name="column_type" onchange="groupByElem(this)">' +
   '						<option value="All" selected> All </option>' +
   '					</select>' +
-  '<div style="display:flex"><input type="text"" style="width:100%;" placeholder="Uniprot_Query" id="Query_3" onchange="refineQuery(this)"/>' +//class="input-medium form-control"
-  '<button style="width:20%;" id="QueryBtn_3" onclick="refineQuery(this)">search</button></div>'+
-  '<div style="display:flex"><input type="text""  style="width:100%;" placeholder="PDB_Query" id="Query_4" onchange="refineQuery(this)"/>' +
-  '<button style="width:20%;" id="QueryBtn_4" onclick="refineQuery(this)">search</button></div>'+
-  '<div style="display:list-item">'+
-    //'<label for="sequence_search"> Use Sequence Blast PDB Search </label>' +
-    '<div><input type="checkbox" name="sequence_search" id="sequence_search">Use Sequence Blast PDB Search</input></div>' +
-    //'<label for="sequence_mapping"> Setup mapping uniprot-PDB resnum </label>' +
-    '<div><input type="checkbox" name="sequence_mapping" id="sequence_mapping">Setup mapping uniprot-PDB resnum</input></div>' +
-    //'<label for="pdb_component_enable"> Update PDB component library </label>' +
-    '<div><input type="checkbox" name="pdb_component_enable" id="pdb_component_enable"> Update PDB component library</input></div>' +
-    '<div><button id="UpdatePDBcomponent" onclick="NGL_UpdatePDBComponent(this)">Update Component</button></div>'+
+  '<div id="searchtable" style="display: none;">'+
+    '<div style="display:flex"><input type="text"" style="width:100%;" placeholder="Uniprot_Query" id="Query_3" onchange="refineQuery(this)"/>' +//class="input-medium form-control"
+      '<button style="width:20%;" id="QueryBtn_3" onclick="refineQuery(this)">search</button></div>'+
+    '<div style="display:flex"><input type="text""  style="width:100%;" placeholder="PDB_Query" id="Query_4" onchange="refineQuery(this)"/>' +
+      '<button style="width:20%;" id="QueryBtn_4" onclick="refineQuery(this)">search</button></div>'+
   '</div>'+
+  '<div id="sequencefeatures" style="display: none;">'+
+    '<div style="display:list-item">'+
+      //'<label for="sequence_search"> Use Sequence Blast PDB Search </label>' +
+      '<div><input type="checkbox" name="sequence_search" id="sequence_search">Use Sequence Blast PDB Search</input></div>' +
+      //'<label for="sequence_mapping"> Setup mapping uniprot-PDB resnum </label>' +
+      '<div><input type="checkbox" name="sequence_mapping" id="sequence_mapping">Setup mapping uniprot-PDB resnum</input></div>' +
+      //'<label for="pdb_component_enable"> Update PDB component library </label>' +
+      '<div><input type="checkbox" name="pdb_component_enable" id="pdb_component_enable"> Update PDB component library</input></div>' +
+      '<div><button id="UpdatePDBcomponent" onclick="NGL_UpdatePDBComponent(this)">Update Component</button></div>'+
+    '</div>'+
   '</div>'+
   '<label id="LoaderTxt" class="hidden" for="aloader"></label>' +
   '<div class="spinner hidden" id="spinner" style="width:200px;height:20px;" >' +
@@ -779,14 +782,16 @@ var config_light = {
         content: [get_comp_definition_d3(),
                   {type:'stack',content:[
                     get_new_single_component("NGL Options","ngl viewer options","ngl_options",{label: 'C'}),
-                    get_new_single_component("Object Properties","change object properties","object_properties",{label: 'C'}),
+                    get_new_single_component("Object Properties","change object properties","object_properties",{label: 'C'}),               
+                  ]},
+                  get_comp_defintion_ngl(),
+                  {type:'stack',content:[
+                      get_new_single_component("Mol-*","Mol-*","molstar",{label: 'molstar'}),
                     get_new_single_component("Sequence features","show sequence features","seq_feature_viewer",{"entry":"","entity":"1","type":"pdb-seq-viewer"}),
                     get_new_single_component("protvista","show protvista","protvista",{"entry":"","entity":"1"}),
                     get_new_single_component("Topology","show topology 2d","topology_viewer",{"entry":"","entity":"1","type":"pdb-topology-viewer"}),
-                    get_new_single_component("Uniprot mapping","show uniprot coverage","uniprot_viewer",{"entry":"","entity":"1","type":"pdb-uniprot-viewer"})                    
-                  ]},
-                  get_comp_defintion_ngl(),
-                  get_new_single_component("Mol-*","Mol-*","molstar",{label: 'molstar'})
+                    get_new_single_component("Uniprot mapping","show uniprot coverage","uniprot_viewer",{"entry":"","entity":"1","type":"pdb-uniprot-viewer"})
+                ]},                      
         ]
       },
       {
@@ -817,7 +822,7 @@ var myLayout,
 var usesavedState = true;
 var usesavedSession = true;
 var savedRecipe = localStorage.getItem('savedRecipe');
-var current_version = {"version":1.17};
+var current_version = {"version":1.19};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()
@@ -1316,6 +1321,7 @@ $(document).ready(function() {
     var checkboxes = document.getElementById("selection_ch_checkboxes");
     checkboxes.style.display = "none";
     layout_HideTabFor(["Interaction table","Object Properties","Sequence features","Topology","Uniprot mapping","Uniprot search table","PDB search table","protvista" ]);
+    document.getElementById("version_layout").innerHTML = "v"+current_version.version.toString();
     //grid_SetDefaultColumn(gridArray[0],["include","name","surface","pdb","bu","selection","compartment","image"]);
     //setupPDBLib();
 		//'use strict';angular.bootstrap(document, ['pdb.component.library']);
@@ -1722,6 +1728,40 @@ function setupProVista(uniid){
 12: <li class="lm_tab" title="Uniprot search table">​
 13: <li class="lm_tab" title="PDB search table">
 ​*/
+
+
+function layout_toggleSequenceFeatures(){
+    layout_ToggleTabFor(["Sequence features","Topology","Uniprot mapping","protvista" ]);
+    var current_style = document.getElementById('sequencefeatures').style.display;
+    document.getElementById('sequencefeatures').style.display = (current_style == 'none')? 'block' : 'none';
+}
+
+function layout_toggleObjectProperties(){
+  layout_ToggleTabFor(["Object Properties"]);
+}
+
+function layout_toggleInteractionTable(){
+  layout_ToggleTabFor(["Interaction table"]);
+}
+
+function layout_toggleSearchTable(){
+  layout_ToggleTabFor(["Uniprot search table","PDB search table",]);
+  //toggle the search button?
+  var current_style = document.getElementById('searchtable').style.display;
+  document.getElementById('searchtable').style.display = (current_style == 'none')? 'block' : 'none';
+}
+
+function layout_ToggleTabFor(names){
+  //hide the given tabs name
+  var alltabs = document.getElementsByClassName('lm_tab');
+  //var alltabs = document.querySelectorAll('.klass')
+  $.each(alltabs, function (i, e) {
+    if (names.includes(e.title)){
+        if (e.style.display === "none") e.style.display = 'block';
+        else e.style.display = "none";
+    }
+  });
+}
 
 function layout_HideTabFor(names){
   //hide the given tabs name

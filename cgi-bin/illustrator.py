@@ -500,7 +500,7 @@ def processForm(form, returnpage=True, verbose = 0):
         print 'Content-type: application/json\n'
         print "{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(id)+"\"}"
     #displayResult(tmpPDBName,httpfile,httpimg,queryTXT)
-    cleanup(wrkDir, "5 days")
+    cleanup(wrkDir, "1 days")
     return
 
 def displayResult(queryTXT,httpn,htti,valStr,id=-1):
