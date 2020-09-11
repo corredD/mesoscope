@@ -2182,7 +2182,8 @@ function NGL_Illustrate(){
     var formData = new FormData();
     formData.append("key", "query");
     node_selected.data.sprite.scale2d = 6;
-    var input = ill_prepareInput((document.getElementById("ill_style").checked)?1:0,nameinput,6);
+    var style = (document.getElementById("ill_style").checked)?1:0;
+    var input = ill_prepareInput(style,nameinput,6);
     formData.append("input_txt", input);
     console.log(input);//problem with rotation?
     /*if (node_selected.data.source.pdb.length == 4){
@@ -2200,7 +2201,7 @@ function NGL_Illustrate(){
       else formData.append("PDBfile", pathList_[node_selected.data.source.pdb]);
     }
     */
-    structure_txt=ill_writeAtoms(ngl_current_structure);
+    structure_txt=ill_writeAtoms(ngl_current_structure, style);
     var astructure_file = new Blob([structure_txt], {
       type: 'text/plain'
     });

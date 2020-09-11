@@ -86,7 +86,7 @@ var ilHetatmFormat = 'HETATM%4s-%3s-%1s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
 //const AtomFormat = 'ATOM  %5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
 //const HetatmFormat = 'HETATM%5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
 //ngl_current_structure.structure
-function ill_writeAtoms(structure) {
+function ill_writeAtoms(structure,style) {
     const BiomtFormat = 'REMARK 350   BIOMT%1d %3d%10.6f%10.6f%10.6f%15.5f';
     let writeBU = true;
     let ia = 1;
@@ -112,6 +112,10 @@ function ill_writeAtoms(structure) {
     }
     if (asele === "" && current_model != null ) asele = "/"+model_elem.value+" AND not water";
     if (asele === "") asele = "not water";
+    
+    if (style === 1) {
+      asele='('+asele+') and (.CA or .P or .C5)';
+    }
     
     console.log(asele);
     var chnames = []
@@ -151,7 +155,8 @@ function ill_writeAtoms(structure) {
         //then the atoms
         structure.structure.eachAtom((a) => {
               const formatString = a.hetero ? HetatmFormat : AtomFormat;
-              const serial = renumberSerial ? ia : a.serial;
+              var serial = renumberSerial ? ia : a.serial;
+              if (serial > 99999) serial = 99999;
               // Alignment of one-letter atom name such as C starts at column 14,
               // while two-letter atom name such as FE starts at column 13.
               let atomname = a.atomname;
@@ -174,7 +179,8 @@ function ill_writeAtoms(structure) {
                 var new_pos = new NGL.Vector3(a.x, a.y, a.z);//should be uncentered
                 new_pos.applyMatrix4(mat);
                 const formatString = a.hetero ? HetatmFormat : AtomFormat;
-                const serial = renumberSerial ? ia : a.serial;
+                var serial = renumberSerial ? ia : a.serial;
+                if (serial > 99999) serial = 99999;
                 // Alignment of one-letter atom name such as C starts at column 14,
                 // while two-letter atom name such as FE starts at column 13.
                 let atomname = a.atomname;
@@ -201,7 +207,8 @@ function ill_writeAtoms(structure) {
     else {
       structure.structure.eachAtom((a) => {
             const formatString = a.hetero ? HetatmFormat : AtomFormat;
-            const serial = renumberSerial ? ia : a.serial;
+            var serial = renumberSerial ? ia : a.serial;
+            if (serial > 99999) serial = 99999;
             // Alignment of one-letter atom name such as C starts at column 14,
             // while two-letter atom name such as FE starts at column 13.
             let atomname = a.atomname;
@@ -254,6 +261,7 @@ HETATM---------- 0,9999, 1.0,1.0,1.0, 1.5\n";
     else if (style == 1)
     {
         //#open wildcard1
+        //P,C5,CA
         astr+="ATOM  -P---  --- 0,9999 1.00, 1.0, 1.0, 5.0\n\
 ATOM  -C5--  --- 0,9999 1.0,1.0,1.0, 5.0\n\
 ATOM  -P--- D--- 0,9999 1.0,1.0,1.0, 5.0\n\
