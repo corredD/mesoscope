@@ -2590,3 +2590,18 @@ function hideClone(elem) {
 }
 //Slick.Editors.LongText
 //CreateDefaultGrid("slickGrid","tabs-1");
+
+function grid_AddColumn(name)
+{
+  //add the data to nodes ?
+  var columns = gridArray[current_grid].getColumns();
+  var columnDefinition =  {
+    id: name,
+    name: name,
+    field: name,
+    sortable: true,
+    editor: Slick.Editors.Text
+  };
+  columns.push( columnDefinition );
+  gridArray[current_grid].setColumns(columns);
+}

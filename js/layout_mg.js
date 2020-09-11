@@ -182,9 +182,9 @@ var ngl_widget_options = ''+
   getSelect("label_elem", "options_elems", "Label",
                           "NGL_Changelabel(this)", ["None","Chain"],"None")+
 
-  '<div><input type="checkbox"  id="showbox" onclick="NGL_showBox(this)" checked>' +
+  '<div><input type="checkbox"  id="showbox" onclick="NGL_showBox(this)">' +
   '<label for="showbox"> Show Bounding Box </label></div>'+
-  '<div><input type="checkbox"  id="showorigin" onclick="NGL_toggleOrigin(this)" checked>' +
+  '<div><input type="checkbox"  id="showorigin" onclick="NGL_toggleOrigin(this)">' +
   '<label for="showorigin"> Show Origin </label></div>'+
   '<div>'+
     '<input type="checkbox"  id="showgeom" onclick="NGL_showGeomNode(this)" checked>' +
@@ -240,6 +240,117 @@ var ngl_widget_options = ''+
   '<label id="pdb_title">pdb TITLE</label>' +
 '</div>';
 
+var ngl_widget_options_collapsible = ''+
+  '<div class="NGLOptions">'+
+  '<button class="meso_collapsible">Molecule header</button>'+
+  '<div class="meso_content">'+
+  '<div><label id="ProteinId">protein name</label></div>' +
+  '<div><label id="pdb_id">pdb id</label></div>' + 
+  '<div><label id="pdb_title">pdb TITLE</label></div>' +
+  '</div>'+
+  '<button class="meso_collapsible">Molecule options</button>'+
+  '<div class="meso_content">'+
+      '<div>'+
+        '<label for="rep_type">Selection</label>'+
+        '<input type="text" id="sel_str" style="width:55%" placeholder="Selection" onchange="NGL_ChangeSelection(this)"/>'+
+        layout_getMultiSelect("selection_ch_checkboxes") +
+      '</div>'+
+      '<label id="ngl_status"></label>' +
+      getSelect("rep_type", "options_elems", "Representation",
+                            "NGL_ChangeRepresentation(this)", ngl_styles,"cartoon")+
+      getSelect("ass_type", "options_elems", "Assembly",
+                            "NGL_ChangeBiologicalAssembly(this)", ["AU"],"AU")+
+      getSelect("mod_type", "options_elems", "Model",
+                            "NGL_ChangeModel(this)", ["0"],"0")+
+      getSelect("color_type", "options_elems", "Color",
+                            "NGL_ChangeColorScheme(this)", ngl_available_color_schem,"atomindex")+
+      getSelect("label_elem", "options_elems", "Label",
+                            "NGL_Changelabel(this)", ["None","Chain"],"None")+
+  '</div>'+
+  '<div class="hidden" id="surface">' +
+  '<button class="meso_collapsible">Membrane options</button>'+
+  '<div class="meso_content">'+
+    '<div><input type="checkbox"  id="showgeommb" onclick="NGL_showGeomMembrane(this)" checked>' +
+    '<label for="showgeommb"> Show Membrane used </label></div>'+
+    '<label id="pcpLabel">Principal Axis (shift+control left click)</label>' +
+    '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpX" type="range" min="-100" max="100" step="1" style="width:70%" />' +
+    '<input class="inputNumber" id="num1" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
+    '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpY" type="range" min="-100" max="100" step="1" style="width:70%" />' +
+    '<input class="inputNumber" id="num2" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
+    '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpZ" type="range" min="-100" max="100" step="1" style="width:70%"/>' +
+    '<input class="inputNumber" id="num3" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
+    '<label id="offsetLabel">Offset (shift+control right click)</label>' +
+    '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetX" type="range" min="-450" max="450" step="1" style="width:70%" />' +
+    '<input class="inputNumber" id="num4" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
+    '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetY" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
+    '<input class="inputNumber" id="num5" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
+    '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetZ" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
+    '<input class="inputNumber" id="num6" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
+    '</div>' +
+    //'<button onclick="NGL_applyPcp()">Apply To Ingredient</button>' +
+    '<button onclick="NGL_resetPcp()">Reset</button>' +
+    '</div>' +
+  '</div>'+
+  '<button class="meso_collapsible">Beads and Geom options</button>'+
+  '<div class="meso_content">'+
+    '<div>'+
+        '<input type="checkbox"  id="showgeom" onclick="NGL_showGeomNode(this)">' +
+        '<label for="showgeom"> Show Geometry used </label> '+
+        '<button onclick="NGL_buildCMS()">Rebuild Geometry</button>'+getSpinner("stopbuildgeom","stopGeom()")+
+        '<div>'+
+          '<label>Geometry details</label>' +
+          '<input id="slidercl_params2" style="width:70%;display:inline" type="range" min="0.01" max="1.00"" step="0.01" value="0.2" /> ' +
+          '<label id="cl_params2" for="slidercl_params2">0.2</label>' +
+        '</div>'+
+      '</div>' +
+      getSelect("beads_elem", "options_elems", "Show Beads",
+                            "NGL_showBeadsLevel(this)", ["All","0","1","2","None"],"None")+
+      '<div>'+
+        '<label> number of cluster</label>' +
+        '<input id="slidercl_params1" style="width:70%;display:inline" type="range" min="1" max="200"" step="1" value="10" /> ' +
+        '<input class="inputNumber" id="slidercl_params11" min="1" max="200" type="number" value="10" />' +getSpinner("stopkmeans","stopKmeans()")+
+      '</div>'+
+      '<div>'+
+      '<input type="checkbox"  id="toggle_cluster_edit" onclick="NGL_ChangeOpacityMultiSpheresComp_cb(this)">' + 
+      '<label for="toggle_cluster_edit"> Edit beads (ctrl) </label> '+
+      '<input type="checkbox"  id="cl_use_radius" onclick="NGL_toggleUseCurrentBeadsRadius(this)" >' + 
+      '<label for="showgeom"> Overwrite cluster radius</label> '+   
+      '</div>'+
+      '<div>'+
+      '<input id="cl_radius" min="1.0" max="100.0" onchange="NGL_updateCurrentBeadsRadius(this)" type="number" value="1.0" style="width:30%"/>' +
+      '</div>'+
+      '<label id="nbBeads">0 beads</label>' +
+      '<div id="query_search">' +
+        '<label id="heading"></label>' +
+      '</div> ' +
+  '</div>'+
+
+    '<button class="meso_collapsible">Sprites options</button>'+
+    '<div class="meso_content">'+
+    '<div><button onclick="NGL_UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite From NGL</button></div>' +
+    '<div><button onclick="NGL_Illustrate()" style="">Update Thumbnail/Sprite From Illustrate</button>' +
+    '<input type="checkbox" id="ill_style">Coarse Illustration</input></div>' +
+    '<div><input type="checkbox" id="savethumbnail" checked="true">Save Thumbnail/Sprite</input></div>' +    
+    //add offset y
+    '<label id="labeloffsety">sprite 2d Y offset</label>' +
+    '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="2d_yoffset_range" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
+    '<input class="inputNumber" id="2d_yoffset_num" min="-350" max="350" type="number" value="0" style="width:30%"/></div>' +
+    //add the sprites image here ?
+
+    '</div>'+
+    '<button class="meso_collapsible">View options</button>'+
+    '<div class="meso_content">'+
+        '<div class="clusterBtn">' +
+        '<button onclick="NGL_CenterView()" style="">Center Camera</button>' +
+        '</div>' +
+      '<div><input type="checkbox"  id="showbox" onclick="NGL_showBox(this)">' +
+      '<label for="showbox"> Show Bounding Box </label></div>'+
+      '<div><input type="checkbox"  id="showorigin" onclick="NGL_toggleOrigin(this)">' +
+      '<label for="showorigin"> Show Origin </label></div>'+
+    '</div>'+
+  '</div>';
+
+
 var ngl_options= ''+
   '<div class="NGLOptions">'+
   '<button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
@@ -248,6 +359,7 @@ var ngl_options= ''+
   '<input type="checkbox" id="ill_style" checked="false">Coarse Illustration</input>' +
   '<button onclick="NGL_Illustrate()" style="">Illustrate</button>' +
   '<input type="checkbox" id="savethumbnail" checked="true">Save Thumbnail/Sprite</input>' +
+  '<input type="checkbox" id="ngl_scene_control" checked="true">Mouse Control World</input>' +
   '<button class="accordion">NGL options</button>'+
   '<div class="accordion_panel">'+
     '<div class="clusterBtn">' +
@@ -358,13 +470,11 @@ var ngloptions = '' +
   '<div class="NGLpan">'+
     ngl_viewport+
     '<div style="position:absolute;top:0px">'+//;z-index:999
-    '<button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
-    '<button onclick="NextIgredient()" style="">Next Ingredient</button>' +
-    '<button onclick="NGL_UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite</button>' +
-    '<input type="checkbox" id="ill_style">Coarse Illustration</input>' +
-    '<button onclick="NGL_Illustrate()" style="">Illustrate</button>' +
-    '<input type="checkbox" id="savethumbnail" checked="true">Save Thumbnail/Sprite</input></div>' +
+    '<div><button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
+    '<button onclick="NextIgredient()" style="">Next Ingredient</button></div>' +
+    '<div><input type="checkbox" id="ngl_scene_control" checked="true">Mouse Control World</input></div>' +
   '</div>';
+
 
 function getSpinner(spinner_id,callback_close)
 {
@@ -400,9 +510,9 @@ var gridoptions = ''
     //'<label for="sequence_search"> Use Sequence Blast PDB Search </label>' +
     '<div><input type="checkbox" name="sequence_search" id="sequence_search">Use Sequence Blast PDB Search</input></div>' +
     //'<label for="sequence_mapping"> Setup mapping uniprot-PDB resnum </label>' +
-    '<div><input type="checkbox" name="sequence_mapping" id="sequence_mapping" checked>Setup mapping uniprot-PDB resnum</input></div>' +
+    '<div><input type="checkbox" name="sequence_mapping" id="sequence_mapping">Setup mapping uniprot-PDB resnum</input></div>' +
     //'<label for="pdb_component_enable"> Update PDB component library </label>' +
-    '<div><input type="checkbox" name="pdb_component_enable" id="pdb_component_enable" checked> Update PDB component library</input></div>' +
+    '<div><input type="checkbox" name="pdb_component_enable" id="pdb_component_enable"> Update PDB component library</input></div>' +
     '<div><button id="UpdatePDBcomponent" onclick="NGL_UpdatePDBComponent(this)">Update Component</button></div>'+
   '</div>'+
   '</div>'+
@@ -646,7 +756,7 @@ var config = {
     ]
   }]
 };
-
+//_onCloseClick
 //for mobile
 var alt_layout = [];
 
@@ -656,7 +766,7 @@ var myLayout,
 var usesavedState = true;
 var usesavedSession = true;
 var savedRecipe = localStorage.getItem('savedRecipe');
-var current_version = {"version":1.11};
+var current_version = {"version":1.17};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()
@@ -750,7 +860,11 @@ var d3canvasComponent = function(container, state) {
   //  });
 
   this._container.on('open', this._Setup, this);
+  this._container.on('close', this._Close, this);
 };
+d3canvasComponent.prototype._Close = function() {
+  console.log("close ",this);
+}
 
 d3canvasComponent.prototype._Setup = function() {
   this._canvas = document.createElement('canvas');
@@ -1032,7 +1146,7 @@ myLayout.registerComponent('slickgridoptions', function(container, state) {
 myLayout.registerComponent('ngl_options', function(container, state) {
   var el = container.getElement();
   el[0].style.overflow="scroll";
-  el.html(ngl_widget_options);
+  el.html(ngl_widget_options_collapsible);
 })
 
 myLayout.registerComponent('object_properties', function(container, state) {
@@ -1108,6 +1222,19 @@ myLayout.registerComponent('protvista', function(container, state) {
   });
   container.getElement().html('<div id="protvista" class="protvista" style="height:100%;width=100%"></div>');
 })
+
+myLayout.on( 'componentCreated', function( component ){
+    // ...manipulate the component
+    console.log('componentCreated');
+    console.log(component);
+});
+
+myLayout.on( 'close', function( component ){
+  // ...manipulate the component
+  console.log("close event ",component);
+});
+
+
 //myLayout.createDragSource( element, newItemConfig );
 //uniprot_viewer
 var setuped = false;
@@ -1117,7 +1244,7 @@ myLayout.init();
 $(document).ready(function() {
   //nothing is ready here
   console.log("document ready !");
-  console.log(graph);
+  Util_SetupCollapsible();
   //wait for initialisation then
   var interval = setInterval(function() {
     var stylesheetNodes = $('link[rel=stylesheet]'),
@@ -1133,7 +1260,7 @@ $(document).ready(function() {
     }
     clearInterval(interval);
     if (savedRecipe !== null && usesavedState) LoadSaveState(JSON.parse(savedRecipe));
-    else LoadExampleMpn();
+    else LoadExampleInfluenza_envelope();
     evaluate_interval = setInterval(EvaluateCurrentReadyState,10000);//in ms, Do every 10 seconds
     var checkboxes = document.getElementById("selection_ch_checkboxes");
     checkboxes.style.display = "none";
@@ -1467,7 +1594,7 @@ function setupProtVistaEvents()
     //use Mapping
     var start = obj.feature.begin;
     var end = obj.feature.end;
-    var isseq = document.getElementById("sequence_mapping").checked;
+    var isseq = document.getElementById("sequence_mapping")?document.getElementById("sequence_mapping").checked : false;
     var ch="";
     if (isseq) {
         //whats is the uniport id. and the chain

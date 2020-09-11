@@ -16,10 +16,11 @@ var ngl_current_pickingProxy;
 var nlg_preview_isosurface = true;
 var pcp_elem = [];
 var offset_elem = [];
+var yoffset_2d_elem;
 var ngl_geom_opacity = 1.0;
 var use_mglserver_beads = false;
 var ill_style = document.getElementById("ill_style");
-
+var ngl_scene_control = document.getElementById("ngl_scene_control");
 var nLod = 3;
 var slidercluster_elem;
 //var slidercluster_label_elem;
@@ -162,6 +163,10 @@ function NGL_resetPcp()
   NGL_applyPcp(axis,offset);
 }
 
+function NGL_applyOffsetY2D(value){
+    node_selected.data.sprite.offsety = value;
+}
+
 function NGL_applyPcp(axis,offset,asyncloop=false) {
   if (!axis) axis = [pcp_elem[0].value / 100.0, pcp_elem[1].value / 100.0, pcp_elem[2].value / 100.0];
   if (!offset) offset = [offset_elem[0].value / 1.0, offset_elem[1].value / 1.0, offset_elem[2].value / 1.0];
@@ -169,8 +174,8 @@ function NGL_applyPcp(axis,offset,asyncloop=false) {
   ngl_load_params.axis.offset = offset;
   //update table and node
   if (ngl_current_item_id) {
-    updateDataGridRowElem(0, ngl_current_item_id, "pcpalAxis", axis);
-    updateDataGridRowElem(0, ngl_current_item_id, "offset", offset);
+    //updateDataGridRowElem(0, ngl_current_item_id, "pcpalAxis", axis);
+    //updateDataGridRowElem(0, ngl_current_item_id, "offset", offset);
   }
   if (node_selected) {
     node_selected.data.pcpalAxis = axis;
@@ -534,6 +539,33 @@ function NGL_panShapeDrag (stage, deltaX, deltaY) {
     //how to move a shape-> should we use multiple component instead?
 }
 
+function NGL_panDrag(astage, dx, dy){
+    if (ngl_current_pickingProxy === null || ngl_scene_control.checked) astage.trackballControls.pan(dx, dy)
+    else {
+      //only sphere and disck and arrow
+      if (ngl_current_pickingProxy !== null) {
+        if(ngl_current_pickingProxy.sphere || ( ngl_current_pickingProxy.component && ( ngl_current_pickingProxy.component.name==="mb" || ngl_current_pickingProxy.component.name==="arrowfiber" )))
+        {
+          astage.trackballControls.panComponent(dx, dy);
+        }
+      }
+    }
+}
+
+function NGL_rotateDrag(astage, dx, dy){
+  if (ngl_current_pickingProxy === null || ngl_scene_control.checked) astage.trackballControls.rotate(dx, dy);//there is also  .zRotate(dx, dy)
+  else {
+    //only sphere and disck and arrow
+    if (ngl_current_pickingProxy !== null) {
+      if(ngl_current_pickingProxy.sphere || ( ngl_current_pickingProxy.component && ( ngl_current_pickingProxy.component.name==="mb" || ngl_current_pickingProxy.component.name==="arrowfiber" )))
+      {
+          astage.trackballControls.rotateComponent(dx, dy)
+        }
+    }
+  }
+}
+
+
 function NGL_Setup() {
   folder_elem = document.getElementById("file_input");
   rep_elem = document.getElementById("rep_type");
@@ -556,6 +588,8 @@ function NGL_Setup() {
   offset_elem.push(document.getElementById("offsetY"));
   offset_elem.push(document.getElementById("offsetZ"));
 
+  yoffset_2d_elem = document.getElementById("2d_yoffset_range");
+
   /* for (var i=0;i<3;i++){
   			pcp_elem[i].oninput = function(e) {
   					NGL_updateMBcomp();
@@ -568,8 +602,16 @@ function NGL_Setup() {
 
   $('.inputRange, .inputNumber').on('input', function() {
     $(this).siblings('.inputRange, .inputNumber').val(this.value);
-    NGL_updateMBcomp();
-    NGL_applyPcp();
+    console.log(this.id)
+    console.log(this)
+    if (this.id.startsWith("2d_yoffset")) 
+    {
+      NGL_applyOffsetY2D(this.value)
+    }
+    else {
+      NGL_updateMBcomp();
+      NGL_applyPcp();
+    }
   });
   
 
@@ -628,6 +670,7 @@ function NGL_Setup() {
   $('#color_type').val("atomindex");
 
   ngl_force_build_beads = false;
+  ngl_scene_control = document.getElementById("ngl_scene_control");
 
   title_annotation = document.getElementById("pdb_title");
   pcontainer = document.getElementById("NGL") || document.getElementById("NGLpane"); //
@@ -658,66 +701,67 @@ function NGL_Setup() {
     backgroundColor: "white"
   });
   viewport.setAttribute("style", "width:100%; height:100%;");
-  stage.setParameters({cameraType: "orthographic"});
+  //stage.setParameters({cameraType: "orthographic"});//perspective
   stage.mouseControls.add("scroll-ctrl", 
-  //stage.mouseObserver.signals.scrolled.add(
-    function (stage,delta) {
-    console.log("scrolled "+delta.toString());
-    console.log(delta);
-    if (!ngl_current_pickingProxy) return;
-    if (ngl_current_pickingProxy.sphere) {
-      var asplit = ngl_current_pickingProxy.sphere.name.split("_");
-      var name = asplit[0];
-      if (name === "lod" ){
-        //resize beads
-        var lod = parseInt(asplit[1]);
-        var lodid=parseInt(asplit[3]);
-        console.log("lod "+lod.toString()+" "+lodid.toString());
-        //anode should be the current selected node
-        var change = 1.0;
-        var r = parseFloat(node_selected.data.radii[lod].radii[lodid]);
-        var rr = ngl_current_pickingProxy.sphere.radius;
-        if (delta < 0.0) {
-          node_selected.data.radii[lod].radii[lodid] = r-change;       
+    function (stage,delta)
+    {
+      console.log("scrolled "+delta.toString());
+      console.log(delta);
+      if (!ngl_current_pickingProxy) return;
+      if (ngl_current_pickingProxy.sphere) {
+        var asplit = ngl_current_pickingProxy.sphere.name.split("_");
+        var name = asplit[0];
+        if (name === "lod" ){
+          //resize beads
+          var lod = parseInt(asplit[1]);
+          var lodid=parseInt(asplit[3]);
+          console.log("lod "+lod.toString()+" "+lodid.toString());
+          //anode should be the current selected node
+          var change = 1.0;
+          var r = parseFloat(node_selected.data.radii[lod].radii[lodid]);
+          var rr = ngl_current_pickingProxy.sphere.radius;
+          if (delta < 0.0) {
+            node_selected.data.radii[lod].radii[lodid] = r-change;       
+          }
+          else {
+            node_selected.data.radii[lod].radii[lodid] = r+change;
+          }
+          if (node_selected.data.radii[lod].radii[lodid]<0) node_selected.data.radii[lod].radii[lodid] = 1.0;
+          ngl_current_pickingProxy.component.setScale(node_selected.data.radii[lod].radii[lodid]/rr);
         }
         else {
-          node_selected.data.radii[lod].radii[lodid] = r+change;
-        }
-        if (node_selected.data.radii[lod].radii[lodid]<0) node_selected.data.radii[lod].radii[lodid] = 1.0;
-        ngl_current_pickingProxy.component.setScale(node_selected.data.radii[lod].radii[lodid]/rr);
-      }
-      else {
-        //resize metaballs
-        var anode = getNodeByName(name);
-        var mbi = parseInt( (asplit.length>1)? asplit[1]:"0");
-        var change = 1.0;
-        var r = parseFloat(node_selected.data.radii[0].radii[mbi]);
-        var rr = ngl_current_pickingProxy.sphere.radius;
-        if (delta < 0.0) {
-          anode.data.radii[0].radii[mbi] = r-change;       
-        }
-        else {
-          anode.data.radii[0].radii[mbi] = r+change;
-        }
-        if (node_selected.data.radii[0].radii[mbi]<0) node_selected.data.radii[0].radii[mbi] = 1.0;
-        ngl_current_pickingProxy.component.setScale((node_selected.data.radii[0].radii[mbi]/2)/rr);
-        //change the compslider value but no trigger ?
-        comp_slider.value = node_selected.data.radii[0].radii[mbi];
-        comp_slider_num.value = node_selected.data.radii[0].radii[mbi];
-        if (nlg_preview_isosurface) {
-          NGL_updateMetaBalls(anode);
-          var geo = ngl_marching_cube.generateGeometry();
-          //how to update the shape mesh instead of recreating it
-          geo.name = name;
-          NGL_MetaBallsGeom(geo);
+          //resize metaballs
+          var anode = getNodeByName(name);
+          var mbi = parseInt( (asplit.length>1)? asplit[1]:"0");
+          var change = 1.0;
+          var r = parseFloat(node_selected.data.radii[0].radii[mbi]);
+          var rr = ngl_current_pickingProxy.sphere.radius;
+          if (delta < 0.0) {
+            anode.data.radii[0].radii[mbi] = r-change;       
+          }
+          else {
+            anode.data.radii[0].radii[mbi] = r+change;
+          }
+          if (node_selected.data.radii[0].radii[mbi]<0) node_selected.data.radii[0].radii[mbi] = 1.0;
+          ngl_current_pickingProxy.component.setScale((node_selected.data.radii[0].radii[mbi]/2)/rr);
+          //change the compslider value but no trigger ?
+          comp_slider.value = node_selected.data.radii[0].radii[mbi];
+          comp_slider_num.value = node_selected.data.radii[0].radii[mbi];
+          if (nlg_preview_isosurface) {
+            NGL_updateMetaBalls(anode);
+            var geo = ngl_marching_cube.generateGeometry();
+            //how to update the shape mesh instead of recreating it
+            geo.name = name;
+            NGL_MetaBallsGeom(geo);
+          }
         }
       }
-    }
-  });
+    });
   //and shift ?
   //stage.mouseControls.add("drag-ctrl", 
   stage.mouseObserver.signals.dragged.add(
     function (deltaX,deltaY){
+      if (ngl_scene_control.checked) return;
     //update
     //console.log(ngl_current_pickingProxy);
     //console.log(node_selected.data.nodetype);
@@ -826,13 +870,29 @@ function NGL_Setup() {
    else tooltip.style.display = "none";
   });
 
+  //Must contain an event type: "scroll", "drag", "click", "doubleClick", "hover", "clickPick" or "hoverPick". 
+  //Optionally contain one or more (seperated by plus signs) keyboard modifiers: "alt", "ctrl", "meta" or "shift". 
+  //Can contain the mouse button performing the event: "left", "middle" or "right". 
+  //The type, key and button parts must be seperated by dashes.
+
+  //rotateComponentDrag(stage: Stage, dx: Number, dy: Number): undefined
   //stage.mouseControls.remove( "drag-ctrl-right" );
   stage.mouseControls.remove( "drag-ctrl-left" );
-  //stage.mouseControls.add("drag-ctrl-right", NGL_panShapeDrag);
-  //stage.mouseControls.add("drag-ctrl-left", NGL_panShapeDrag);
+  stage.mouseControls.remove( "drag-*" );
+  
+
+  stage.mouseControls.add("drag-right", NGL_panDrag);
+  stage.mouseControls.add("drag-left", NGL_rotateDrag);
 
   //stage.mouseControls.add("drag-ctrl-right", NGL.MouseActions.panComponentDrag);
   stage.mouseControls.add("drag-ctrl-left", NGL.MouseActions.panComponentDrag);
+  //component
+  //panComponentDrag(stage: Stage, dx: Number, dy: Number): undefined
+  //rotateComponentDrag(stage: Stage, dx: Number, dy: Number): undefined
+  //scene
+  //panDrag(stage: Stage, dx: Number, dy: Number): undefined
+  //rotateDrag(stage: Stage, dx: Number, dy: Number): undefined
+  //
   // panComponentDrag
   // remove actions triggered by a scroll event, including
   //   those requiring a key pressed or mouse button used
@@ -1483,6 +1543,7 @@ function NGL_ChangeRepresentation(selectedO) {
       radius: 0.2,
       assembly: assembly_elem.selectedOptions[0].value
     });
+    NGL_showBox(document.getElementById('showbox'));
   //});
 }
 
@@ -1610,6 +1671,7 @@ function NGL_ChangeColorScheme(col_e) {
     name: "polymer",
     assembly: assembly_elem.selectedOptions[0].value
   });
+  //on chrome we loose the current node selected ??
 }
 
 function NGL_ChangeHighlightResidue(resnum,chainId)
@@ -2561,7 +2623,8 @@ function NGL_ShowOrigin() //StructureView
     //compare to the structure getPrincipalAxes?
     var shapeComp = stage.addComponentFromObject(shape)
     shapeComp.addRepresentation("ori");
-  }
+    NGL_toggleOrigin(document.getElementById('showorigin'));
+}
 
 function NGL_ShowAxisOffset(axis, offset, anode) //StructureView
 {
@@ -3288,6 +3351,7 @@ function NGL_ReprensentOne(o,anode){
     showBox: true,
     radius: 0.2
   })
+  NGL_showBox(document.getElementById('showbox'));
   if (rep_elem.selectedOptions[0].value==="cms"){
     o.addRepresentation("surface", {
       //colorScheme: color_elem.selectedOptions[0].value,
@@ -3402,7 +3466,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
     NGL_updatePcpElem();
   }
   if (!purl) return;
-  var isseq = document.getElementById("sequence_mapping").checked;
+  var isseq = document.getElementById("sequence_mapping")?document.getElementById("sequence_mapping").checked : false;
   if (isseq) querySequenceMapping(aname);//async call
   if (!bu) bu="";//default bu will be BU1? if exist
   console.log("load url " + purl + " " + bu + " " + sel_str);
@@ -3608,7 +3672,8 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       else stage.animationControls.rotate(o.structure.getPrincipalAxes().getRotationQuaternion(), 0);
 
       //update PDB components
-      if ( document.getElementById("pdb_component_enable").checked)//sequence_mapping
+      var ispdb = document.getElementById("pdb_component_enable")?document.getElementById("pdb_component_enable").checked : false;
+      if ( ispdb)//sequence_mapping
           NGL_pdbComponentPost(aname,ngl_current_node.data.uniprot);
       else NGL_cleanpdbComponentPost();
     });
@@ -4190,7 +4255,8 @@ function NGL_UpdateWithNode(d, force = false) {
       stage.removeAllComponents();
       NGL_Load(d.data.source.pdb, d.data.source.bu, d.data.source.selection);
     }else {
-      if ( document.getElementById("sequence_mapping").checked)
+      var isseq = document.getElementById("sequence_mapping")?document.getElementById("sequence_mapping").checked : false;
+      if ( isseq)
           NGL_pdbComponentPost(d.data.source.pdb,d.data.uniprot);
       else NGL_cleanpdbComponentPost();
     }

@@ -19,14 +19,46 @@
     background-color: #f9f2f4;
     border-radius: 4px;
   }
-  </style>
-  <style>
   #gui-container {
     position: absolute;
     top: 0px;
     right: 0px;
     z-index: 10;
   }
+  .meso_collapsible {
+    background-color: #777;
+    color: white;
+    cursor: pointer;
+    /*padding: 18px;*/
+    width: 100%;
+    border: none;
+    text-align: left;
+    outline: none;
+    /*font-size: 15px;*/
+  }
+
+  .meso_active, .meso_collapsible:hover {
+    background-color: #555;
+  }
+
+  .meso_collapsible:after {
+    content: '\002B';
+    color: white;
+    font-weight: bold;
+    float: right;
+    margin-left: 5px;
+  }
+
+  .meso_active:after {
+    content: "\2212";
+  }
+  .meso_content {
+    padding: 0 18px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.2s ease-out;
+    background-color: #f1f1f1;
+  }  
   </style>
   <link type="text/css" rel="stylesheet" href="style_dev.css">
   <link rel="stylesheet" href="menu_style.css">

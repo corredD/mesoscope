@@ -739,3 +739,20 @@ function Util_download_src_png(the_src, name) {
     };
     base_image.src = the_src;
 };
+
+//take care of all collapsible
+function Util_SetupCollapsible(){
+  var coll = document.getElementsByClassName("meso_collapsible");
+  var i;
+  for (i = 0; i < coll.length; i++) {
+    coll[i].addEventListener("click", function() {
+      this.classList.toggle("meso_active");
+      var content = this.nextElementSibling;
+      if (content.style.maxHeight){
+        content.style.maxHeight = null;
+      } else {
+        content.style.maxHeight = "100%";//content.scrollHeight + "px";
+      } 
+    });
+  }
+}
