@@ -2099,8 +2099,9 @@ function defaults(value, defaultValue) {
     return value !== undefined ? value : defaultValue;
 }
 
-const AtomFormat = 'ATOM  %5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
-const HetatmFormat = 'HETATM%5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
+
+var AtomFormat = 'ATOM  %5d %-4s %3s%2s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';//'ATOM  %5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
+var HetatmFormat = 'HETATM%5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
 function NGL_writeAtoms() {
     let ia = 1;
     let im = 1;
@@ -2244,9 +2245,9 @@ function NGL_Illustrate(){
         node_to_illustrate.data.sprite.image = node_to_illustrate.data.name+".png";
           Util_download_src_png(node_to_illustrate.data.thumbnail.src, node_to_illustrate.data.name);
       }
-      toggleHide(document.getElementById("spinner"));
+      toggleHide(document.getElementById("spinnerILL"));
     };
-    toggleShow(document.getElementById("spinner"));
+    toggleShow(document.getElementById("spinnerILL"));
     xhr.send(formData);
 }
 

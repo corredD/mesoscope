@@ -43,8 +43,6 @@ var schemeId6 = NGL.ColormakerRegistry.addSelectionScheme([
   [ill_toRGB([1.00, 0.40, 1.00]), "(_MG or _CA or _NA or _K or _FE or _CU or _ZN ) and (ligand and hetero)"]
 ], "style6");
 
-const illAtomFormat   = 'ATOM  %4s-%3s-%1s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
-const ilHetatmFormat = 'HETATM%4s-%3s-%1s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
 
 function ill_defaults(value, defaultValue) {
     return (value !== undefined && value !== "")? value : defaultValue;
@@ -61,7 +59,30 @@ function ill_toRGBf(color){
                 color[1].toString()+","+
                 color[2].toString()+")";
 }
+/*
+COLUMNS        DATA  TYPE    FIELD        DEFINITION
+-------------------------------------------------------------------------------------
+ 1 -  6        Record name   "ATOM  "
+ 7 - 11        Integer       serial       5d Atom  serial number. 
+13 - 16        Atom          name         4s Atom name.            
+17             Character     altLoc       1s Alternate location indicator.
+18 - 20        Residue name  resName      3s Residue name.
+22             Character     chainID      3sChain identifier.
+23 - 26        Integer       resSeq       Residue sequence number.
+27             AChar         iCode        Code for insertion of residues.
+31 - 38        Real(8.3)     x            Orthogonal coordinates for X in Angstroms.
+39 - 46        Real(8.3)     y            Orthogonal coordinates for Y in Angstroms.
+47 - 54        Real(8.3)     z            Orthogonal coordinates for Z in Angstroms.
+55 - 60        Real(6.2)     occupancy    Occupancy.
+61 - 66        Real(6.2)     tempFactor   Temperature  factor.
+77 - 78        LString(2)    element      Element symbol, right-justified.
+79 - 80        LString(2)    charge       Charge  on the atom.
+*/
 
+var illAtomFormat   = 'ATOM  %5d%4s%1s%3s%3s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
+var ilHetatmFormat = 'HETATM%4s-%3s-%1s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
+//const illAtomFormat   = 'ATOM  %4s-%3s-%1s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
+//const ilHetatmFormat = 'HETATM%4s-%3s-%1s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
 //const AtomFormat = 'ATOM  %5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
 //const HetatmFormat = 'HETATM%5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
 //ngl_current_structure.structure
@@ -70,11 +91,13 @@ function ill_writeAtoms(structure) {
     let writeBU = true;
     let ia = 1;
     let im = 1;
-    let renumberSerial = false;
+    let renumberSerial = true;
     let asele="";
     var o = structure;
     var current_model = model_elem.value;
-    _records = [];
+    
+    var nch = structure.structure.getChainnameCount();
+
     if (sele_elem.value&& sele_elem.value!=="") {
       if (asele !== sele_elem.value) asele = sele_elem.value;
     }
@@ -91,13 +114,27 @@ function ill_writeAtoms(structure) {
     if (asele === "") asele = "not water";
     
     console.log(asele);
+    var chnames = []
+    structure.structure.eachChain( chain => {
+      if ( $.inArray(chain.chainname, chnames) === -1 ) chnames.push( chain.chainname)
+    }, new NGL.Selection(asele));
+
+    _records = [];
     if (bu && writeBU) {
         //first write the matrix
         for (var j = 0; j < o.object.biomolDict[au].partList.length; j++) {
           //REMARK 350 BIOMOLECULE: 1
           //REMARK 350 APPLY THE FOLLOWING TO CHAINS: 1, 2, 3, 4
           var s= structure.object.biomolDict[au].getSelection() //max in illustrator is 12
-          var t = s.selection.rules.map(d=> d.chainname )
+          var t = []
+          $.each(s.selection.rules, function (i, e) {
+            if (chnames.includes(e.chainname)){
+                t.push(e.chainname);
+            }
+          });
+          //s.selection.rules.map(function(d) {
+          //  if (chnames.includes(d.chainname)) {return d.chainname;}          
+          //} )
           _records.push("REMARK 350 BIOMOLECULE: 1");
           _records.push("REMARK 350 APPLY THE FOLLOWING TO CHAINS: "+t.join(', '));
           for (var k = 0; k < o.object.biomolDict[au].partList[j].matrixList.length; k++) {
@@ -114,7 +151,7 @@ function ill_writeAtoms(structure) {
         //then the atoms
         structure.structure.eachAtom((a) => {
               const formatString = a.hetero ? HetatmFormat : AtomFormat;
-              const serial = this.renumberSerial ? ia : a.serial;
+              const serial = renumberSerial ? ia : a.serial;
               // Alignment of one-letter atom name such as C starts at column 14,
               // while two-letter atom name such as FE starts at column 13.
               let atomname = a.atomname;
@@ -164,7 +201,7 @@ function ill_writeAtoms(structure) {
     else {
       structure.structure.eachAtom((a) => {
             const formatString = a.hetero ? HetatmFormat : AtomFormat;
-            const serial = this.renumberSerial ? ia : a.serial;
+            const serial = renumberSerial ? ia : a.serial;
             // Alignment of one-letter atom name such as C starts at column 14,
             // while two-letter atom name such as FE starts at column 13.
             let atomname = a.atomname;
@@ -217,7 +254,7 @@ HETATM---------- 0,9999, 1.0,1.0,1.0, 1.5\n";
     else if (style == 1)
     {
         //#open wildcard1
-        astr+="ATOM  -P---  --- 0,9999 1.00, 0.49, 0.49, 5.0\n\
+        astr+="ATOM  -P---  --- 0,9999 1.00, 1.0, 1.0, 5.0\n\
 ATOM  -C5--  --- 0,9999 1.0,1.0,1.0, 5.0\n\
 ATOM  -P--- D--- 0,9999 1.0,1.0,1.0, 5.0\n\
 ATOM  -C5-- D--- 0,9999 1.0,1.0,1.0, 5.0\n\

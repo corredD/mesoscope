@@ -330,6 +330,16 @@ var ngl_widget_options_collapsible = ''+
     '<div><button onclick="NGL_UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite From NGL</button></div>' +
     '<div><button onclick="NGL_Illustrate()" style="">Update Thumbnail/Sprite From Illustrate</button>' +
     '<input type="checkbox" id="ill_style">Coarse Illustration</input></div>' +
+    '<div>'+
+    '<div class="spinner hidden" id="spinnerILL" style="width:200px;height:20px;" >' +
+    '	  <div class="rect1"></div>' +
+    '	  <div class="rect2"></div>' +
+    '	  <div class="rect3"></div>' +
+    '	  <div class="rect4"></div>' +
+    '	  <div class="rect5"></div>' +
+    //'   <button onclick="stopAll()">Stop query search</button>' +
+    '	</div>'+
+    '</div>'+
     '<div><input type="checkbox" id="savethumbnail" checked="true">Save Thumbnail/Sprite</input></div>' +    
     //add offset y
     '<label id="labeloffsety">sprite 2d Y offset</label>' +
