@@ -158,6 +158,15 @@ function oneIngredientSerialized(singr, node) {
   //parse
   //description=label,organism,score,
   //partners_properties
+    //add the custom data
+  singr["custom_data"] = []
+  if (additional_data.length !== 0) {
+    for (var i=0;i<additional_data.length;i++){
+      var key = additional_data[i];
+      singr[key] = node.data[key];
+      singr["custom_data"].push(key);
+    }
+  }
   return singr;
 }
 
@@ -448,6 +457,7 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
     sprite.offsety = ("offsety" in ing_dic["sprite"]) ? ing_dic["sprite"]["offsety"] : 0;
     sprite.scale2d = ("scale2d" in ing_dic["sprite"]) ? ing_dic["sprite"]["scale2d"] : 1;
   }
+
   var elem = {
     "name": name,
     "size": size,
@@ -472,6 +482,15 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
     "sprite":sprite,
     "nodetype": "ingredient"
   }; //,"id":id};
+  if ("custom_data" in ing_dic) {
+    for (var i=0;i<ing_dic.custom_data.length;i++){
+      var key = ing_dic.custom_data[i];
+      elem[key] = ing_dic[key];
+      if (!additional_data.includes(key)){
+        additional_data.push(key);
+      }
+    }
+  }
   return elem;
 }
 
@@ -620,6 +639,7 @@ function parseOneCompartment(compdic, graph, parent_comp, linkdata) {
 }
 
 function parseCellPackRecipeSerialized(jsondic) {
+  additional_data=[]
   //the serialzied is nested
   //need to check how we defined the itneraction
   var graph = {}; //the main graph
@@ -824,6 +844,15 @@ function OneIngredient(ing_dic, surface) {
     "color": color,
     "results": ("results" in ing_dic) ? ing_dic["results"] : ""
   };
+  if ("custom_data" in ing_dic) {
+    for (var i=0;i<ing_dic.custom_data.length;i++){
+      var key = ing_dic.custom_data[i];
+      elem[key] = ing_dic[key];
+      if (!additional_data.includes(key)){
+        additional_data.push(key);
+      }
+    }
+  }
   //console.log(JSON.stringify(elem));
   //console.log(elem);
   return elem;
@@ -844,6 +873,7 @@ function GetIngredientTypeAndBuildType(an_ing_dic) {
 }
 
 function parseCellPackRecipe(jsondic) {
+  additional_data=[]
   var graph = {}; //the main graph
   var interaction = []; //name1,name2,id1,id2,data // pdb, beads, etc...
   var rootName = "root";

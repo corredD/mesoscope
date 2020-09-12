@@ -923,7 +923,7 @@ function UpdateGridFromD3Nodes(agraph, grid_id) {
   var newc=[]
   var cnames = cdata.column.map(d=>d.id);
   $.each(cnames, function (i, e) {
-    if (e.startsWith("custom_")){
+    if (e.startsWith("custom_") || additional_data.includes(e) ){
         cols.push({
           id: e,
           name: e,

@@ -800,12 +800,12 @@ function getModalMapping(data_header,jsondic,rootName) {
 	add_data.onclick = function(cb){
 		var n = additional_data.length;
 		var name = "custom_"+n.toString();
-		allfield[name+"_index"]=-1;
-		allfield_key[name+"_index"]=name;
-		allfield_labels[name+"_index"]="custom user data from spreadsheet";
-		allfield_query[name+"_index"]=[""]
-		additional_data.push(name+"_index");
-		createOneColumnSelect(name+"_index",data_header,item_cont);
+		allfield[name]=-1;
+		allfield_key[name]=name;
+		allfield_labels[name]="custom user data from spreadsheet";
+		allfield_query[name]=[""]
+		additional_data.push(name);
+		createOneColumnSelect(name,data_header,item_cont);
 	}
 
 	//field1name,allfield2,divparent
@@ -1375,6 +1375,7 @@ function forceSelect(e) {
 
 //first/second sheet is the current graph/link, next is the original data -> up to 4 Grid
 function selectFile(e){
+	additional_data = []
 	document.getElementById("addingr").setAttribute("class", "hidden");
 	document.getElementById("addcomp").setAttribute("class", "hidden");
 	document.getElementById("addlink").setAttribute("class", "hidden");
@@ -4366,6 +4367,9 @@ function MapLinkToNode(some_nodes,some_links) {
 }
 
 function update_graph(agraph,alink){
+  canvas_color_options = ["pdb", "pcpalAxis", "offset", "count_molarity", "Beads",
+	"geom", "confidence", "color", "viewed", "size", "count",
+	"molarity", "molecularweight","default"];	
   var isempty= false;
   if ( agraph.length < 1 ) isempty=true;
 	if (DEBUGLOG) console.log("agraph",agraph);

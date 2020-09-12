@@ -857,6 +857,15 @@ function OneCPIngredient(node, surface) {
   aing_dic["confidence"] = node.data.confidence;
   aing_dic["sprite"] = node.data.sprite;
   //description=label,organism,score,
+  //add the custom data
+  aing_dic["custom_data"] = []
+  if (additional_data.length !== 0) {
+    for (var i=0;i<additional_data.length;i++){
+      var key = additional_data[i];
+      aing_dic[key] = node.data[key];
+      aing_dic["custom_data"].push(key);
+    }
+  }
   return aing_dic;
 }
 
@@ -1580,6 +1589,26 @@ function getCurrentNodesAsCP_SER_JSON(some_data) {
   return jsondic;
 }
 
+function ProcessRow(row) {
+  var finalVal = '';
+  for (var j = 0; j < row.length; j++) {
+    var innerValue = (row[j] && row[j] !== null) ? row[j].toString() : '';
+    //if (innerValue.split("object").length > 1) innerValue = "";
+    if (innerValue === "[object Object]") innerValue = "";
+    if (row[j] instanceof Date) {
+      innerValue = row[j].toLocaleString();
+    };
+    var result = innerValue.replace(/"/g, '""');
+    if (result.search(/("|,|;|\n)/g) >= 0)
+      result = '"' + result + '"';
+    if (j > 0)
+      finalVal += ',';
+    finalVal += result;
+  }
+  return finalVal + '\n';
+};
+
+
 function saveCurrentCSV(){//saveCurrentCVJSON() {
   //var nodes ;graph.nodes, graph.links
   var agrid = gridArray[0]; //gridArray[0].dataView
@@ -1630,7 +1659,7 @@ function saveCurrentCSV(){//saveCurrentCVJSON() {
   console.log( rows.length,rows);
   //return;
   for (var i = 0; i < rows.length; i++) {
-    csvFile += processRow(rows[i]);
+    csvFile += ProcessRow(rows[i]);
   }
   console.log(csvFile);
   var filename = graph.nodes[0].data.name + ".csv";
