@@ -43,6 +43,27 @@ function getSelect(select_id, div_class, label, onchange_cb, list_options, defau
   return astr;
 }
 
+function layout_updateSelect(select_id,list_options){
+  var arrOptions = [];
+  for (var i=0, n = list_options.length; i < n; i++) { // looping over the options
+      if (list_options[i]) {
+          arrOptions.push("<option value='" + list_options[i] + "'>" + list_options[i] + "</option>");
+      }
+  }
+  document.getElementById(select_id).innerHTML = arrOptions.join();
+  /* Remove all options from the select list 
+  $(select_id).empty();
+  var aselect = document.createElement(select_id);
+  for (var key in list_options)
+  {
+  var opt = document.createElement('option');
+      opt.text = key;
+      opt.value = key;
+      $(select_id).add(opt, null);
+  }
+  */
+}
+
 function layout_getInputButton(select_id, div_class, label, onchange_cb, list_options, default_options){}
 function layout_getInputCheckbox(select_id, div_class, label, onchange_cb, list_options, default_options){}
 function layout_getInputSlider(select_id, div_class, label, onchange_cb, list_options, default_options){}
@@ -503,22 +524,40 @@ function getSpinner(spinner_id,callback_close)
 var gridoptions = ''
   //+'<div class="hover_div" style="position:absolute; width:25px !important; display:block;z-index:9999">   '
   +
-  '					<button onclick="undo()">UnDo</button>' +
-  '					<button onclick="addRow()">AddRow</button>' +
-  '					<button onclick="removeRow()">RemoveRow</button>' +
-  '					<button onclick="gridArray[current_grid].dataView.setGrouping([])">Clear grouping</button>' +
-  '					<button onclick="groupByCompartmentSurface()">Group by compartment then surface</button>' +
-  '					<label for="column_type">Group By :</label>' +
+  '<button class="meso_collapsible">Row options</button>'+
+  '<div class="meso_content">'+
+  //'					<button onclick="undo()">UnDo</button>' +
+  '					<button onclick="addRow()">Add a Row</button>' +
+  '					<button onclick="removeRow()">Remove selected Row</button>' +
+  '	</div>'+
+  '<button class="meso_collapsible">Column options</button>'+
+  '<div class="meso_content">'+
+  //'					<button onclick="undo()">UnDo</button>' +
+  '					<button onclick="layout_addColumn()">Add a Column with name</button>' +
+  '<input type="text"" style="width:100%;" placeholder="newcolumn" id="ColumnName" onchange=""/>'+
+  '	</div>'+
+  '<button class="meso_collapsible">Grouping options</button>'+
+  '<div class="meso_content">'+
+  '					<div><button onclick="gridArray[current_grid].dataView.setGrouping([])">Clear grouping</button></div>' +
+  '					<div><button onclick="groupByCompartmentSurface()">Group by compartment then surface</button></div>' +
+  '					<div><label for="column_type">Group By :</label>' +
   '					<select id="column_type" name="column_type" onchange="groupByElem(this)">' +
   '						<option value="All" selected> All </option>' +
   '					</select>' +
+  '	</div>'+
+  '	</div>'+
   '<div id="searchtable" style="display: none;">'+
+  '<button class="meso_collapsible">Search options</button>'+
+  '<div class="meso_content">'+
     '<div style="display:flex"><input type="text"" style="width:100%;" placeholder="Uniprot_Query" id="Query_3" onchange="refineQuery(this)"/>' +//class="input-medium form-control"
       '<button style="width:20%;" id="QueryBtn_3" onclick="refineQuery(this)">search</button></div>'+
     '<div style="display:flex"><input type="text""  style="width:100%;" placeholder="PDB_Query" id="Query_4" onchange="refineQuery(this)"/>' +
       '<button style="width:20%;" id="QueryBtn_4" onclick="refineQuery(this)">search</button></div>'+
   '</div>'+
+  '</div>'+
   '<div id="sequencefeatures" style="display: none;">'+
+    '<button class="meso_collapsible">Sequences options</button>'+
+    '<div class="meso_content">'+  
     '<div style="display:list-item">'+
       //'<label for="sequence_search"> Use Sequence Blast PDB Search </label>' +
       '<div><input type="checkbox" name="sequence_search" id="sequence_search">Use Sequence Blast PDB Search</input></div>' +
@@ -529,6 +568,12 @@ var gridoptions = ''
       '<div><button id="UpdatePDBcomponent" onclick="NGL_UpdatePDBComponent(this)">Update Component</button></div>'+
     '</div>'+
   '</div>'+
+  '</div>'+
+  '<button class="meso_collapsible">Automatic tools</button>'+
+  '<div class="meso_content">'+ 
+  ' <button style="display:block;" onclick="query_ClearAll()">Reset Geometry and Beads</button>' + getSpinner("stopbeads","stopBeads()")+
+  ' <button style="display:block;" onclick="query_BuildAll()">AutoFix Recipe (geometry, beads, ...) </button>' + getSpinner("stopbeads","stopBeads()")+
+  '</div>'+
   '<label id="LoaderTxt" class="hidden" for="aloader"></label>' +
   '<div class="spinner hidden" id="spinner" style="width:200px;height:20px;" >' +
   '	  <div class="rect1"></div>' +
@@ -538,9 +583,8 @@ var gridoptions = ''
   '	  <div class="rect5"></div>' +
   '   <button onclick="stopAll()">Stop query search</button>' +
   '	</div>'+
-  ' <img wicth="250" height="250" class="hidden" id="imagepdbclone" src=""/>'+
-  ' <button style="display:block;" onclick="query_ClearAll()">Reset Geometry and Beads</button>' + getSpinner("stopbeads","stopBeads()")+
-  ' <button style="display:block;" onclick="query_BuildAll()">AutoFix Recipe (geometry, beads, ...) </button>' + getSpinner("stopbeads","stopBeads()")
+  ' <img wicth="250" height="250" class="hidden" id="imagepdbclone" src=""/>'
+
 
 
 //	+'</div>'
@@ -1772,6 +1816,10 @@ function layout_HideTabFor(names){
         e.style.display = "none";
     }
   });
+}
+function layout_addColumn(){
+  var name = document.getElementById("ColumnName").value;
+  grid_AddColumn(name);
 }
 
 helper_setupFibersDictionary();

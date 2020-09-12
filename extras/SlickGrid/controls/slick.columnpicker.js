@@ -207,9 +207,14 @@
       return columns;
     }
 
+    function setAllColumns(new_columns){
+      columns = new_columns;
+    }  
+
     init();
 
     return {
+      "setAllColumns": setAllColumns,
       "getAllColumns": getAllColumns,
       "destroy": destroy,
       "onColumnsChanged": onColumnsChanged

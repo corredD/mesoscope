@@ -16,6 +16,7 @@ var comp_column = false;
 var comp_column_names = [];//index,name
 var comp_count = 0;
 var csv_mapping = false; //if true, the column index is the column name
+var additional_data = []
 var canvas_label = document.getElementById("canvas_label");
 var canvas_label_options = ["name", "None", "pdb", "uniprot", "label"];
 
@@ -296,102 +297,104 @@ function CreateNew(){
 //molecularweight
 //confidence - score
 var allfield={
-  		name_index:-1,
-	    source_index:-1,
-	    count_index:-1,
-	    compartment_index:-1,
-	    biological_unit_index:-1,
-	    string_selection_index:-1,
-	    location_index:-1,
-	    model_index:-1,
-	    molarity_index:-1,
-	    uniprot_index:-1,
-	    offset_index:-1,
-	    pcpalvector_index:-1,
-			molecularweight_index:-1,
-			confidence_index:-1,
-			include_index:-1,
-			color_index:-1,
-			comment_index:-1,
-			label_index:-1,
-      image_index:-1,//filnename?
-      offsety_index:-1,
-      scale2d_index:-1,
-	    compartments:-1//special case where one column per comnpartment
-	    };
+	name_index:-1,
+	source_index:-1,
+	count_index:-1,
+	compartment_index:-1,
+	biological_unit_index:-1,
+	string_selection_index:-1,
+	location_index:-1,
+	model_index:-1,
+	molarity_index:-1,
+	uniprot_index:-1,
+	offset_index:-1,
+	pcpalvector_index:-1,
+	molecularweight_index:-1,
+	confidence_index:-1,
+	include_index:-1,
+	color_index:-1,
+	comment_index:-1,
+	label_index:-1,
+	image_index:-1,//filnename?
+	offsety_index:-1,
+	scale2d_index:-1,
+	compartments:-1//special case where one column per comnpartment
+	};
 //key in graph.nodes
 var allfield_key={
-  		name_index:"name",
-	    source_index:"source",
-	    count_index:"count",
-	    compartment_index:"compartment",
-	    biological_unit_index:"bu",
-	    string_selection_index:"selection",
-	    location_index:"surface",
-	    model_index:"model",
-	    molarity_index:"molarity",
-	    uniprot_index:"uniprot",
-	    offset_index:"offset",
-	    pcpalvector_index:"pcpalAxis",
-			molecularweight_index:"molecularweight",
-			confidence_index:"confidence",
-			include_index:"include",
-			color_index:"color",
-			comment_index:"comment",
-			label_index:"label",
-      image_index:"thumbnail",
-      offsety_index:"offsety",
-      scale2d_index:"scale2d",
-	    compartments:"compartments"//special case where one column per comnpartment
-	    };
+	name_index:"name",
+	source_index:"source",
+	count_index:"count",
+	compartment_index:"compartment",
+	biological_unit_index:"bu",
+	string_selection_index:"selection",
+	location_index:"surface",
+	model_index:"model",
+	molarity_index:"molarity",
+	uniprot_index:"uniprot",
+	offset_index:"offset",
+	pcpalvector_index:"pcpalAxis",
+	molecularweight_index:"molecularweight",
+	confidence_index:"confidence",
+	include_index:"include",
+	color_index:"color",
+	comment_index:"comment",
+	label_index:"label",
+	image_index:"thumbnail",
+	offsety_index:"offsety",
+	scale2d_index:"scale2d",
+	compartments:"compartments"//special case where one column per comnpartment
+};
+
 var allfield_labels={
-  		name_index:"protein name",
-	    source_index:"protein structure (PDB,EMD)",
-	    count_index:"protein copy number",
-	    compartment_index:"protein compartment",
-	    biological_unit_index:"protein biological unit / assembly",
-	    string_selection_index:"protein selection (chain name)",
-	    location_index:"protein localisation in the compartment (look for keyword : surface, membrane, x, tm)",
-	    model_index:"protein model number in structure file",
-	    molarity_index:"protein contentration",
-	    uniprot_index:"uniprot mapping",
-	    offset_index:"protein offset along the principal vector",
-	    pcpalvector_index:"protein principal axis which will be align to the compartment surface",
-			molecularweight_index:"protein molecular weight",
-			confidence_index:"overall confidence score",
-			include_index:"include the ingredient (x,null,true,false)",
-			color_index:"predefined color for ingredient (r,g,b)",
-			comment_index:"notes and comments for the ingredient",
-			label_index:"label for the ingredient",
-      image_index:"filename for thumbnail/image",
-      offsety_index:"2d surface protein membrane offset",
-      scale2d_index:"2d surface protein scale (px/A)",
-	    compartments:""//special case where one column per comnpartment
-	    };
+	name_index:"protein name",
+	source_index:"protein structure (PDB,EMD)",
+	count_index:"protein copy number",
+	compartment_index:"protein compartment",
+	biological_unit_index:"protein biological unit / assembly",
+	string_selection_index:"protein selection (chain name)",
+	location_index:"protein localisation in the compartment (look for keyword : surface, membrane, x, tm)",
+	model_index:"protein model number in structure file",
+	molarity_index:"protein contentration",
+	uniprot_index:"uniprot mapping",
+	offset_index:"protein offset along the principal vector",
+	pcpalvector_index:"protein principal axis which will be align to the compartment surface",
+	molecularweight_index:"protein molecular weight",
+	confidence_index:"overall confidence score",
+	include_index:"include the ingredient (x,null,true,false)",
+	color_index:"predefined color for ingredient (r,g,b)",
+	comment_index:"notes and comments for the ingredient",
+	label_index:"label for the ingredient",
+	image_index:"filename for thumbnail/image",
+	offsety_index:"2d surface protein membrane offset",
+	scale2d_index:"2d surface protein scale (px/A)",
+	compartments:""//special case where one column per comnpartment
+	};
+
 var allfield_query={
-  		name_index:["protein","name"],
-	    source_index:["structure","source","pdb"],
-	    count_index:["copy","number","count"],
-	    compartment_index:["compartment"],
-	    biological_unit_index:["biological","bu","assembly","stoichiometry"],
-	    string_selection_index:["selection","chain"],
-	    location_index:["membrane", "localisation","localization","location","surface"],
-	    model_index:["model"],
-	    molarity_index:["contentration","molarity"],
-	    uniprot_index:["uniprot"],
-	    offset_index:["offset"],
-	    pcpalvector_index:["pcpalVector","principalvector","principalaxis","axis","vector"],
-			molecularweight_index:["mw","weight","molecularweight","molecular"],
-			confidence_index:["confidence","score"],
-			include_index:["include"],
-			color_index:["color","rgb"],
-			comment_index:["note","comment"],
-			label_index:["label","description"],
-      image_index:["image","thumbnail","sprite"],
-      offsety_index:["2dy"],
-      scale2d_index:["scale2d"],
-	    compartments:""//special case where one column per comnpartment
-	    };
+	name_index:["protein","name"],
+	source_index:["structure","source","pdb"],
+	count_index:["copy","number","count"],
+	compartment_index:["compartment"],
+	biological_unit_index:["biological","bu","assembly","stoichiometry"],
+	string_selection_index:["selection","chain"],
+	location_index:["membrane", "localisation","localization","location","surface"],
+	model_index:["model"],
+	molarity_index:["contentration","molarity"],
+	uniprot_index:["uniprot"],
+	offset_index:["offset"],
+	pcpalvector_index:["pcpalVector","principalvector","principalaxis","axis","vector"],
+	molecularweight_index:["mw","weight","molecularweight","molecular"],
+	confidence_index:["confidence","score"],
+	include_index:["include"],
+	color_index:["color","rgb"],
+	comment_index:["note","comment"],
+	label_index:["label","description"],
+	image_index:["image","thumbnail","sprite"],
+	offsety_index:["2dy"],
+	scale2d_index:["scale2d"],
+	compartments:""//special case where one column per comnpartment
+};
 
 //need type, editable, min,max, callback
 //default callback take key name, and replace with value
@@ -507,6 +510,7 @@ function findLongestCommonSubstring (string1, string2) {
 }
 
 function GuessColumn(field1name,allfield2){
+	console.log("GuessColumn "+field1name+" "+allfield_query[field1name]);
 	 var tocompare = allfield_query[field1name];//this is an array
 	 var comon;
 	 var aindex=-1;
@@ -546,48 +550,49 @@ function GuessColumnSingle(field1name,allfield2){
 
 function createOneColumnSelect(field1name,allfield2,divparent) {
 		//Create and append select list
-    var elem =  grid_addToModalDiv( divparent, 'modal-content-elem', allfield_labels[field1name]);
+	console.log("createOneColumnSelect "+field1name);
+    var elem = grid_addToModalDiv( divparent, 'modal-content-elem', allfield_labels[field1name]);
     if (MERGE){
-      var checkbox = document.createElement('input');
-      checkbox.type = "checkbox";
-      checkbox.name = field1name;
-      //checkbox.value = true;
-      checkbox.checked = true;
-      checkbox.id = field1name+"_include";
-      elem.prepend(checkbox);
-      merge_field[field1name] = checkbox;
+		var checkbox = document.createElement('input');
+		checkbox.type = "checkbox";
+		checkbox.name = field1name;
+		//checkbox.value = true;
+		checkbox.checked = true;
+		checkbox.id = field1name+"_include";
+		elem.prepend(checkbox);
+		merge_field[field1name] = checkbox;
     }
     var selectList = document.createElement("select");
-		//onchange="myCallback();" onfocus="this.selectedIndex=-1;this.blur();"
-		selectList.id = field1name;
-		elem.appendChild(selectList);
-		//Create and append the options
-		var aind = GuessColumn(field1name,allfield2);
+	//onchange="myCallback();" onfocus="this.selectedIndex=-1;this.blur();"
+	selectList.id = field1name;
+	elem.appendChild(selectList);
+	//Create and append the options
+	var aind = GuessColumn(field1name,allfield2);
     var sopt;
-		for (var i = 0; i < allfield2.length; i++) {
-		    var option = document.createElement("option");
-		    option.value = i;
-		    option.text = allfield2[i];
-		    selectList.appendChild(option);
-		    if (aind===i) sopt = option;
-		}
-		var noption = document.createElement("option");
-		noption.value = allfield2.length;
-		noption.text = "Absent";
-		selectList.appendChild(noption);
-		if (aind!==-1) {
-				selectList.options.selectedIndex = aind;
-				sopt.setAttribute("selected", "selected");
-			  //if (!csv_mapping) allfield[field1name] = aind;
-			  //else allfield[field1name] = sopt.text;
-			  allfield[field1name] = aind;
-			}
-		else {
-				selectList.options.selectedIndex =  allfield2.length;
-				noption.setAttribute("selected", "selected");
-			  allfield[field1name] =  -1;
-	  }
-		selectList.setAttribute("onchange","changeColumnMapping(this)");
+	for (var i = 0; i < allfield2.length; i++) {
+		var option = document.createElement("option");
+		option.value = i;
+		option.text = allfield2[i];
+		selectList.appendChild(option);
+		if (aind===i) sopt = option;
+	}
+	var noption = document.createElement("option");
+	noption.value = allfield2.length;
+	noption.text = "Absent";
+	selectList.appendChild(noption);
+	if (aind!==-1) {
+		selectList.options.selectedIndex = aind;
+		sopt.setAttribute("selected", "selected");
+		//if (!csv_mapping) allfield[field1name] = aind;
+		//else allfield[field1name] = sopt.text;
+		allfield[field1name] = aind;
+	}
+	else {
+		selectList.options.selectedIndex =  allfield2.length;
+		noption.setAttribute("selected", "selected");
+		allfield[field1name] =  -1;
+	}
+	selectList.setAttribute("onchange","changeColumnMapping(this)");
 }
 
 
@@ -697,104 +702,131 @@ function guessCompartmentList(data_header, jsondic, rootName){
 	return loc_comp;
 }
 
+
 function getModalMapping(data_header,jsondic,rootName) {
-	  var modal_cont = document.getElementById("slickdetail");
-  	var item_cont = document.getElementById("modalform");//"slickitems");
+	additional_data=[];//reset
+	var modal_cont = document.getElementById("slickdetail");
+  	var item_cont = document.getElementById("modalform");//"slickitems");//modalform
 		item_cont.innerHTML = "";
-		var canvas_cont = document.getElementById("modalcanvas");//"slickitems");
+	var canvas_cont = document.getElementById("modalcanvas");//"slickitems");
   	var span = document.getElementById("closeslickdetail");
   	var btn1 = document.getElementById("saveDetail");
   	var btn2 = document.getElementById("cancelDetail");
-		//is it brett format with column per compartments
-		var comp_column_graph ={
-			nodetype: "compartment",
-			name: rootName,//"root",
-			size: 10,
-			children: []
-		};
-		var comp_column_graph_key = {};
-		comp_column_names = [];
-		comp_column = false;
-		for (var i = 0; i < data_header.length; i++) {
-			var h = data_header[i];
-			//use the slice ?
-			if ((!h)||(h==="")) continue;
-			if (h.slice(0,2)==="I_"){ //interior
-					comp_column =true;
-					var cname = data_header[i].slice(2,data_header[i].length);
-					//if (!csv_mapping)comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":false});
-					//else comp_column_names.push({"id":data_header[i],"name":data_header[i].slice(2,data_header[i].length),"surface":false});
-					comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":false});
-					if (!(cname in comp_column_graph_key) ) {
-						var cdata = {
-							nodetype: "compartment",
-							name: cname,
-							size: 10,
-							children: []
-						};
-						comp_column_graph.children.push(cdata);
-						comp_column_graph_key[cname] = comp_column_graph.children[comp_column_graph.children.length-1];
-				}
-			}
-			if (h.slice(0,2)==="S_"){ //surface
-					comp_column =true;
-					var cname = data_header[i].slice(2,data_header[i].length);
-					//if (!csv_mapping) comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":true});
-					//else comp_column_names.push({"id":data_header[i],"name":data_header[i].slice(2,data_header[i].length),"surface":true});
-					comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":true});
-					if (!(cname in comp_column_graph_key) ) {
-						var cdata = {
-							nodetype: "compartment",
-							name: cname,
-							size: 10,
-							children: []
-						};
-						comp_column_graph.children.push(cdata);
-						comp_column_graph_key[cname] = comp_column_graph.children[comp_column_graph.children.length-1];
-				}
+	//is it brett format with column per compartments
+	var comp_column_graph ={
+		nodetype: "compartment",
+		name: rootName,//"root",
+		size: 10,
+		children: []
+	};
+	var comp_column_graph_key = {};
+	comp_column_names = [];
+	comp_column = false;
+	for (var i = 0; i < data_header.length; i++) {
+		var h = data_header[i];
+		//use the slice ?
+		if ((!h)||(h==="")) continue;
+		if (h.slice(0,2)==="I_"){ //interior
+			comp_column =true;
+			var cname = data_header[i].slice(2,data_header[i].length);
+			//if (!csv_mapping)comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":false});
+			//else comp_column_names.push({"id":data_header[i],"name":data_header[i].slice(2,data_header[i].length),"surface":false});
+			comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":false});
+			if (!(cname in comp_column_graph_key) ) {
+				var cdata = {
+					nodetype: "compartment",
+					name: cname,
+					size: 10,
+					children: []
+				};
+				comp_column_graph.children.push(cdata);
+				comp_column_graph_key[cname] = comp_column_graph.children[comp_column_graph.children.length-1];
 			}
 		}
-		console.log("found "+comp_column_names.length+" compartments");
+		if (h.slice(0,2)==="S_"){ //surface
+			comp_column =true;
+			var cname = data_header[i].slice(2,data_header[i].length);
+			//if (!csv_mapping) comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":true});
+			//else comp_column_names.push({"id":data_header[i],"name":data_header[i].slice(2,data_header[i].length),"surface":true});
+			comp_column_names.push({"id":i,"name":data_header[i].slice(2,data_header[i].length),"surface":true});
+			if (!(cname in comp_column_graph_key) ) {
+				var cdata = {
+					nodetype: "compartment",
+					name: cname,
+					size: 10,
+					children: []
+				};
+				comp_column_graph.children.push(cdata);
+				comp_column_graph_key[cname] = comp_column_graph.children[comp_column_graph.children.length-1];
+			}
+		}
+	}
+	console.log("found "+comp_column_names.length+" compartments");
 
   	var astr = "found "+comp_column_names.length+" compartments";
-  	for (var c=0;c < comp_column_names.length;c++) {
+	for (var c=0;c < comp_column_names.length;c++) 
+	{
   		astr +="<br>"+comp_column_names[c].name+" surface "+comp_column_names[c].surface;
-  		}
+	}
 
     if (MERGE){
-      var acheckbox = document.createElement('input');
-      acheckbox.type = "checkbox";
-      acheckbox.name = "allfieldtoggle";
-      acheckbox.checked = true;
-      acheckbox.id = "allfieldtoggle_include";
-      acheckbox.onclick = function(cb){
-        for(var k in allfield) {
-            if (k==="compartments") continue;
-            merge_field[k].checked = !merge_field[k].checked;
-        }
-      }
-      var celem =  grid_addToModalDiv( item_cont, 'modal-content-elem', "select all");
-      celem.prepend(acheckbox);
-    }
-    for(var k in allfield) {
+		var acheckbox = document.createElement('input');
+		acheckbox.type = "checkbox";
+		acheckbox.name = "allfieldtoggle";
+		acheckbox.checked = true;
+		acheckbox.id = "allfieldtoggle_include";
+		acheckbox.onclick = function(cb){
+			for(var k in allfield) {
 				if (k==="compartments") continue;
-				createOneColumnSelect(k,data_header,item_cont)
+				merge_field[k].checked = !merge_field[k].checked;
+			}
+		}
+		var celem =  grid_addToModalDiv( item_cont, 'modal-content-elem', "select all");
+		celem.prepend(acheckbox);
     }
-		current_data_header = data_header;
-		current_jsondic = jsondic;
-	  current_rootName = rootName;
-		var loc_comp;
-		if (!(comp_column))
-				loc_comp = guessCompartmentList(data_header, jsondic,rootName);
-		else
-				loc_comp = comp_column_graph;
-		console.log("guessed "+Object.keys(loc_comp).length+" compartments");
-		console.log(loc_comp);
-		astr += "<br>guessed "+Object.keys(loc_comp).length+" compartments";
-		//for (var co in loc_comp) {
-		//	astr +="<br>"+co+" "+loc_comp[co];
-		//}
-		var textelem =  grid_addToModalDiv( item_cont, 'modal-content-elem', astr);
+	for(var k in allfield) 
+	{
+		if (k==="compartments") continue;
+		createOneColumnSelect(k,data_header,item_cont)
+	}
+	//gave the option to add one column from the spread shit
+	//button that will create one new line
+	var add_data = document.createElement('button');
+	add_data.id = "add_data_table";
+	add_data.innerHTML = "add a custom column";
+	
+	//var belem =  grid_addToModalDiv( item_cont, 'modal-content-elem', "custom user data");
+	//belem.append(add_data);
+	add_data.onclick = function(cb){
+		var n = additional_data.length;
+		var name = "custom_"+n.toString();
+		allfield[name+"_index"]=-1;
+		allfield_key[name+"_index"]=name;
+		allfield_labels[name+"_index"]="custom user data from spreadsheet";
+		allfield_query[name+"_index"]=[""]
+		additional_data.push(name+"_index");
+		createOneColumnSelect(name+"_index",data_header,item_cont);
+	}
+
+	//field1name,allfield2,divparent
+	current_data_header = data_header;
+	current_jsondic = jsondic;
+	current_rootName = rootName;
+	var loc_comp;
+	if (!(comp_column))
+		loc_comp = guessCompartmentList(data_header, jsondic,rootName);
+	else
+		loc_comp = comp_column_graph;
+	console.log("guessed "+Object.keys(loc_comp).length+" compartments");
+	console.log(loc_comp);
+	astr += "<br>guessed "+Object.keys(loc_comp).length+" compartments";
+	//for (var co in loc_comp) {
+	//	astr +="<br>"+co+" "+loc_comp[co];
+	//}
+	var textelem =  grid_addToModalDiv( item_cont, 'modal-content-elem', astr);
+	
+	item_cont.append(add_data);
+
 		//textelem.innerHTML+=astr;
     if (MERGE){
       var new_elem =  grid_addToModalDiv( item_cont, 'modal-content-elem', "Create new ingredient upon merge / Only Update");
@@ -810,7 +842,7 @@ function getModalMapping(data_header,jsondic,rootName) {
     }
     modal_cont.style.display = "block";
 
-		SetupCompartmentModalCanvas(canvas_cont,loc_comp);
+	SetupCompartmentModalCanvas(canvas_cont,loc_comp);
 
   	span.onclick = function() {
       modal_cont.style.display = "none";
@@ -1028,27 +1060,26 @@ function getCompartmentDefault(idata,elem){
 
 function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 {
-  var data = getDataFromDic(jsondic);
+  	var data = getDataFromDic(jsondic);
 	//why the key are not working properly?
 	console.log(rootName);
 	//console.log(JSON.parse(jsondic));
 	//parse for getting the headr position
-
 	var name_index=allfield.name_index,
-    source_index=allfield.source_index,
-    count_index=allfield.count_index,
-    //compartment_index=allfield[compartment_index],
-    biological_unit_index=allfield.biological_unit_index,
-    string_selection_index=allfield.string_selection_index,
-    location_index=allfield.location_index,
-    model_index=allfield.model_index,
-    molarity_index=allfield.molarity_index,
-    uniprot_index=allfield.uniprot_index,
-    offset_index=allfield.offset_index,
-    pcpalvector_index=allfield.pcpalvector_index,
+		source_index=allfield.source_index,
+		count_index=allfield.count_index,
+		//compartment_index=allfield[compartment_index],
+		biological_unit_index=allfield.biological_unit_index,
+		string_selection_index=allfield.string_selection_index,
+		location_index=allfield.location_index,
+		model_index=allfield.model_index,
+		molarity_index=allfield.molarity_index,
+		uniprot_index=allfield.uniprot_index,
+		offset_index=allfield.offset_index,
+		pcpalvector_index=allfield.pcpalvector_index,
 		molecularweight_index=allfield.molecularweight_index,
 		confidence_index=allfield.confidence_index,
-    compartments_index=allfield.compartment_index;
+    	compartments_index=allfield.compartment_index;
   	console.log("mapping for "+rootName+" is ");
   	console.log(allfield);
 	var compartments={};
@@ -1057,9 +1088,9 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 	var float_compartments = compgraph.flat;
 
 	var ingr_names=[];///so we can check for duplicate->compartments ?
-  //graph["name"] = rootName;
-  //graph["children"]=[];
-  //graph["nodetype"]="compartment";
+  	//graph["name"] = rootName;
+  	//graph["children"]=[];
+  	//graph["nodetype"]="compartment";
 
 	//setup the graph using the modal
 	/*if ((!comp_column) && (compartments_index==-1)){
@@ -1152,7 +1183,7 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
         var image = (allfield.image_index!==-1)?idata[allfield.image_index]:"";
         var offsety= (allfield.offsety_index!==-1)?idata[allfield.offsety_index]:0;
         var scale2d= (allfield.scale2d_index!==-1)?idata[allfield.scale2d_index]:0;
-        var sprite = {"image":image,"offsety":offsety,"scale2d":scale2d};
+		var sprite = {"image":image,"offsety":offsety,"scale2d":scale2d};
         var elem = {
 					"name":name,"size":25,"molecularweight":mw,"confidence":confidence,"color":color,
         	"source":{"pdb":source,"bu":bu,"selection":sele,"model":model},"count":acount,
@@ -1240,6 +1271,13 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 				//alert(comp_elem.name);
 				elem.surface = IsSurface(loc_comp)
 				console.log("checkforsurface for "+elem.name+" "+loc_comp+" "+elem.surface+" "+comp_elem);
+				//add any additional data
+				if (additional_data.length !==0) {
+					$.each(additional_data, function (i, e) {
+						var custom_data = (allfield[e]!==-1)?idata[allfield[e]]:0;	
+						elem[e] = custom_data;				
+					});
+				}
 				comp_elem["children"].push(elem);
 	}
 
@@ -1720,6 +1758,19 @@ function checkAttributes(agraph){
 	property_mapping.count.max = 0;
 	property_mapping.confidence.min = 0.0;
 	property_mapping.confidence.max = 1.0;
+	if (additional_data.length !== 0) {
+		for (var i=0;i<additional_data.length;i++){
+			var key = additional_data[i];
+			if (!(key in property_mapping)){
+				canvas_color_options.push(key);
+				property_mapping[key] = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
+			}
+			else {
+				property_mapping[key].min=0;
+				property_mapping[key].max=999999;
+			}
+		}
+	}
 	var counter_id = 0;
 	for (var i=0;i<agraph.length;i++){
 		if (!agraph[i].children) {
@@ -1782,6 +1833,12 @@ function checkAttributes(agraph){
 			if (!("angle" in agraph[i].data)) agraph[i].data.angle = 25.0;//is it an opm model
 			if (!("ulength" in agraph[i].data)) agraph[i].data.ulength = 34.0;//is it an opm model
 			if (!("tlength" in agraph[i].data)) agraph[i].data.tlength = 100;//is it an opm model
+			if (additional_data.length !== 0) {
+				for (var j=0;j<additional_data.length;j++){
+					var key = additional_data[j];
+					if (agraph[i].data[key] > property_mapping[key].max) property_mapping[key].max = agraph[i].data[key];
+				}
+			}
 			agraph[i].data.__id = counter_id;
 			agraph.mapping_ids[counter_id]=i;
 			counter_id++;
@@ -1793,7 +1850,10 @@ function checkAttributes(agraph){
 			//if (!("geom" in agraph[i].data )) agraph[i].data.geom = "";
 			//if (!("geom" in agraph[i].data )) agraph[i].data.geom = "";
 		}
-  	}
+	}
+	if (additional_data.length !== 0) {
+		layout_updateSelect("canvas_color",canvas_color_options);
+	}
 	return agraph;
 	}
 
@@ -2575,10 +2635,6 @@ function CenterCanvas()
 
 function ChangeCanvasLabel(e){}
 
-function ChangeCanvasColor(e){
-
-	}
-
 function drawPalette()
 {
 	//palette is the available ingredients/block/compartemtnts!
@@ -2661,7 +2717,7 @@ function colorNode(d) {
 				&& (!d.data.source.pdb || d.data.source.pdb === "None"
 						|| d.data.source.pdb === "null" || d.data.source.pdb === ""))? "red" : color(d.depth);
 	}
-	if (colorby === "geom") {
+	else if (colorby === "geom") {
 				return ( !d.children && "data" in d
 						&& (!d.data.geom || d.data.geom === "None"
 						|| d.data.geom === "null" || d.data.geom === ""))? "red" : color(d.depth);
@@ -2750,7 +2806,7 @@ function colorNode(d) {
 			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
 		return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null&& d.data[colorby] >= 0.0) ? color_mapping(d.data[colorby]):color(d.depth);
 	}
-  else if (colorby === "default") {
+    else if (colorby === "default") {
     if (!d.children && "data" in d && "_color" in d.data)
       return (d.data._color !== null)? 'rgb('+ Math.floor(d.data._color[0]*255)+","
                                  + Math.floor(d.data._color[1]*255)+","
@@ -2763,10 +2819,21 @@ function colorNode(d) {
     }
   }
 	else {
+		if (additional_data.length!==0){
+			var scores = graph.nodes.map(d=>(d.data[colorby]!=null && d.data[colorby]!=-1)?d.data[colorby]:null).filter(d=>d!=null);
+			property_mapping[colorby].max = Math.max.apply(null, scores);
+			property_mapping[colorby].min = Math.min.apply(null, scores);
+			var color_mapping = d3v4.scaleLinear()//d3v4.scaleLinear()
+			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
+			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
+			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null&& d.data[colorby] >= 0.0) ? color_mapping(d.data[colorby]):color(d.depth);		
+		}
+		else {
 						return ( !d.children && "data" in d && "source" in d.data
 				&& "pdb" in d.data.source
 				&& (!d.data.source.pdb || d.data.source.pdb === "None" || d.data.source.pdb === "null"
 				|| d.data.source.pdb === ""))? "red" : color(d.depth);
+		}
 	}
 }
 

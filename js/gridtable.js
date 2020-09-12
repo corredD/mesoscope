@@ -915,9 +915,25 @@ function CreateGridFromD3Links(alinks, elementId, tabId, SheetName) {
   CreateGrid(elementId, parentId, cdata.data, cdata.column, options);
 }
 
+//take in account any imported data in allfields ?
 function UpdateGridFromD3Nodes(agraph, grid_id) {
   var cdata = CreateDataColumnFromD3Nodes(agraph);
-  cdata.column = CreateNodeColumns();
+  //compare columnds for custom data
+  var cols = CreateNodeColumns();
+  var newc=[]
+  var cnames = cdata.column.map(d=>d.id);
+  $.each(cnames, function (i, e) {
+    if (e.startsWith("custom_")){
+        cols.push({
+          id: e,
+          name: e,
+          field: e,
+          sortable: true,
+          editor: Slick.Editors.Text
+        });
+    }
+  });
+  cdata.column = cols;
   UpdateGrid(cdata, grid_id);
 }
 
@@ -2604,6 +2620,12 @@ function grid_AddColumn(name)
   };
   columns.push( columnDefinition );
   gridArray[current_grid].setColumns(columns);
+  gridArray[current_grid].columnpicker.setAllColumns(columns);
+  additional_data.push(name);
+  canvas_color_options.push(name);
+  layout_updateSelect("canvas_color",canvas_color_options);
+  graph.nodes.map(d=>(d.data[name]=0.0));
+  property_mapping[name] = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
 }
 
 function grid_SetDefaultColumn(agrid,defaults_names){
