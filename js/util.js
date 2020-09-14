@@ -756,3 +756,7 @@ function Util_SetupCollapsible(){
     });
   }
 }
+
+function Util_isInt(n) {
+  return n % 1 === 0;
+}

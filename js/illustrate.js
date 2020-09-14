@@ -229,6 +229,147 @@ function ill_writeAtoms(structure,style) {
 }
 
 
+function ill_writeAtoms_cb(structure,style,au,sele_elem,current_model) {
+  var AFormat = 'ATOM  %5d %-4s %3s%2s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';//'ATOM  %5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
+  var HFormat = 'HETATM%5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
+  const BiomtFormat = 'REMARK 350   BIOMT%1d %3d%10.6f%10.6f%10.6f%15.5f';
+  let writeBU = true;
+  let ia = 1;
+  let im = 1;
+  let renumberSerial = true;
+  let asele="";
+  var o = structure;
+  //var current_model = model_elem.value;
+  
+  var nch = structure.structure.getChainnameCount();
+
+  var bu = false;
+  if (au !== "AU" && o.object.biomolDict[au]) bu = true;
+  if (asele === "" && bu) {
+    //need to apply the matrix to the selection inside the BU selection ?
+    //console.log(o.object.biomolDict[o.assembly].getSelection());
+    //build using given selection AND biomolDic selection
+    asele = "(" + o.object.biomolDict[au].getSelection().string + ") AND not water";
+  }
+  if (asele === "" && current_model != null ) asele = "/"+current_model+" AND not water";
+  if (asele === "") asele = "not water";
+  
+  if (style === 1) {
+    asele='('+asele+') and (.CA or .P or .C5)';
+  }
+  
+  console.log(asele);
+  var chnames = []
+  structure.structure.eachChain( chain => {
+    if (!chnames.includes(chain.chainname)) chnames.push( chain.chainname)
+  }, new NGL.Selection(asele));
+
+    
+  _records = [];
+  if (bu && writeBU) {
+      //first write the matrix
+      for (var j = 0; j < o.object.biomolDict[au].partList.length; j++) {
+        //REMARK 350 BIOMOLECULE: 1
+        //REMARK 350 APPLY THE FOLLOWING TO CHAINS: 1, 2, 3, 4
+        var s= structure.object.biomolDict[au].getSelection() //max in illustrator is 12
+        var t = []
+        s.selection.rules.forEach(element => {
+          if (chnames.includes(element.chainname)){
+            t.push(element.chainname);
+        }
+        });
+        //s.selection.rules.map(function(d) {
+        //  if (chnames.includes(d.chainname)) {return d.chainname;}          
+        //} )
+        _records.push("REMARK 350 BIOMOLECULE: 1");
+        _records.push("REMARK 350 APPLY THE FOLLOWING TO CHAINS: "+t.join(', '));
+        for (var k = 0; k < o.object.biomolDict[au].partList[j].matrixList.length; k++) {
+          var mat = o.object.biomolDict[au].partList[j].matrixList[k];
+          //_records.push(sprintf(BiomtFormat, 1, k+1,mat.elements[0],-mat.elements[1],-mat.elements[2],mat.elements[12]));//+ - -
+          //_records.push(sprintf(BiomtFormat, 2, k+1,-mat.elements[4],mat.elements[5],mat.elements[6],mat.elements[13]));//- + +
+          //_records.push(sprintf(BiomtFormat, 3, k+1,-mat.elements[8],mat.elements[9],mat.elements[10],mat.elements[14]));//- + +
+          _records.push(sprintf(BiomtFormat, 1, k+1,mat.elements[0],mat.elements[1],mat.elements[2],mat.elements[12]));//+ - -
+          _records.push(sprintf(BiomtFormat, 2, k+1,mat.elements[4],mat.elements[5],mat.elements[6],mat.elements[13]));//- + +
+          _records.push(sprintf(BiomtFormat, 3, k+1,mat.elements[8],mat.elements[9],mat.elements[10],mat.elements[14]));//- + +
+        }
+        _records.push("REMARK 350END");
+      }
+      //then the atoms
+      structure.structure.eachAtom((a) => {
+            const formatString = a.hetero ? HFormat : AFormat;
+            var serial = renumberSerial ? ia : a.serial;
+            if (serial > 99999) serial = 99999;
+            // Alignment of one-letter atom name such as C starts at column 14,
+            // while two-letter atom name such as FE starts at column 13.
+            let atomname = a.atomname;
+            if (atomname.length <= 3 && !a.hetero)
+            {
+                atomname = ' ' + atomname;
+                _records.push(sprintf(formatString, serial, atomname, a.resname, defaults(a.chainname, ' '), a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
+                        defaults(a.element, '')));
+            }
+            ia += 1;
+        }, new NGL.Selection(asele));
+  }
+  else if(bu)
+  {
+    for (var j = 0; j < o.object.biomolDict[au].partList.length; j++) {
+      for (var k = 0; k < o.object.biomolDict[au].partList[j].matrixList.length; k++) {
+        var mat = o.object.biomolDict[au].partList[j].matrixList[k];
+        //console.log("mat ",j,k);
+        structure.structure.eachAtom((a) => {
+              var new_pos = new NGL.Vector3(a.x, a.y, a.z);//should be uncentered
+              new_pos.applyMatrix4(mat);
+              const formatString = a.hetero ? HFormat : AFormat;
+              var serial = renumberSerial ? ia : a.serial;
+              if (serial > 99999) serial = 99999;
+              // Alignment of one-letter atom name such as C starts at column 14,
+              // while two-letter atom name such as FE starts at column 13.
+              let atomname = a.atomname;
+              if (atomname.length <= 3)
+              {
+                atomname = ' ' + atomname;
+                //if (atomname.length === 1)
+                //    atomname = ' ' + atomname;
+                _records.push(sprintf(formatString, serial, atomname, a.resname,
+                                  defaults(a.chainname, ' '), a.resno, new_pos.x, new_pos.y, new_pos.z,
+                                  defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
+                                  defaults(a.element, '')));
+              }
+              ia += 1;
+          }, new NGL.Selection(asele));
+        //new_pos.applyMatrix4(mat);
+        //pos[pos.length] = new_pos.x - center.x;
+        //pos[pos.length] = new_pos.y - center.y;
+        //pos[pos.length] = new_pos.z - center.z;
+        //rad[rad.length] = radius;
+      }
+    }
+  }
+  else {
+    structure.structure.eachAtom((a) => {
+          const formatString = a.hetero ? HFormat : AFormat;
+          var serial = renumberSerial ? ia : a.serial;
+          if (serial > 99999) serial = 99999;
+          // Alignment of one-letter atom name such as C starts at column 14,
+          // while two-letter atom name such as FE starts at column 13.
+          let atomname = a.atomname;
+          if (atomname.length <= 3 && !a.hetero)
+          {
+              atomname = ' ' + atomname;
+              //if (atomname.length === 1)
+              //    atomname = ' ' + atomname;
+              //defaults(a.chainname, ' ')
+              _records.push(sprintf(formatString, serial, atomname, a.resname, ' ', a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
+            defaults(a.element, '')));
+          }
+          ia += 1;
+      }, new NGL.Selection(asele));
+  }
+  _records.push(sprintf('%-80s', 'END'));
+  return _records.join('\n');
+}
+
 function ill_prepareWildCard(style){
     //ignore hydrogen
     var astr=""

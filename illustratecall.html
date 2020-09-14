@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<HEAD>
+    <script src="https://cdn.rawgit.com/arose/ngl/v2.0.0-dev.24/dist/ngl.js"></script>
+    <script src="js/illustrate.js"></script>
+</HEAD>
+<body>
+<div id="result">
+
+</div>
+
+<script>
+var stage;
+function parseParams(){
+  return location.search
+    .substr(1)
+    .split("&")
+    .map(function(pair){
+      var a = pair.split("=");
+      var o = {};
+      o[a[0]] = a[1];
+      return o;
+    })
+    .reduce(function(a,b){
+      for(var key in b) a[key] = b[key];
+      return a;
+    });
+}
+function defaults(value, defaultValue) {
+    return value !== undefined ? value : defaultValue;
+}
+function xIllustrate(ngl_current_structure,name,bu,sele,model){
+    if (!ngl_current_structure) return;
+    //camera position should be reset
+    stage.autoView(1000);
+    var nameinput = name;
+    var formData = new FormData();
+    formData.append("key", "query");
+    //node_selected.data.sprite.scale2d = 6;
+    var style = 1;
+    var input = ill_prepareInput(style,nameinput,6);
+    formData.append("input_txt", input);
+     structure_txt=ill_writeAtoms_cb(ngl_current_structure, style,bu,sele,model);
+    var astructure_file = new Blob([structure_txt], {
+      type: 'text/plain'
+    });
+    //compress to zip ?
+    formData.append("PDBfile",astructure_file);
+    formData.append("_id", ill_current_id);
+    formData.append("name",nameinput);
+    formData.append("force_pdb",true);
+    var xhr = new XMLHttpRequest();
+    var url = 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py'
+    xhr.open('POST', url);
+    xhr.timeout = 1000000000;
+    xhr.ontimeout = function () {
+      console.error("The request for " + url + " timed out.");
+    };
+    xhr.onload = function () {
+      // do something to response
+      if(this.status == 200) {
+        console.log("onload ");
+      }
+      console.log(this.responseText);
+      var data = JSON.parse(this.responseText)
+      console.log(data)
+      console.log(data.image)
+      document.getElementById("result").innerHTML = data.image;
+    };
+    xhr.send(formData);
+}
+
+var query = parseParams();
+NGL.DatasourceRegistry.add(
+    "data", new NGL.StaticDatasource("//cdn.cdn.rawgit.com/arose/ngl/v0.10.4/data/")
+  );
+stage = new NGL.Stage("viewport", {
+    backgroundColor: "white"
+  });
+var params = {
+      defaultRepresentation: true
+    };
+var assembly = "AU";
+params.assembly = assembly;  
+var purl = "rcsb://" + query.pdbid + ".mmtf"
+var bu = query.bu? query.bu : "BU1";
+var sele = query.selection? query.selection : "";
+var model = query.model? query.model : null;
+stage.loadFile(purl, params).then(function(o) {
+      var ngl_current_structure = o;
+      xIllustrate(ngl_current_structure,"test",bu,sele,model)
+    }); 
+
+    </script>
+</body>

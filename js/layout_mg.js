@@ -289,10 +289,10 @@ var ngl_widget_options_collapsible = ''+
                             "NGL_Changelabel(this)", ["None","Chain"],"None")+
   '</div>'+
   '<div class="hidden" id="surface">' +
-  '<button class="meso_collapsible">Membrane options</button>'+
+  '<button class="meso_collapsible">3D Membrane options</button>'+
   '<div class="meso_content">'+
     '<div><input type="checkbox"  id="showgeommb" onclick="NGL_showGeomMembrane(this)" checked>' +
-    '<label for="showgeommb"> Show Membrane used </label></div>'+
+    '<label for="showgeommb"> Show 3D Membrane used (red:outside, blue:inside) </label></div>'+
     '<label id="pcpLabel">Principal Axis (shift+control left click)</label>' +
     '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpX" type="range" min="-100" max="100" step="1" style="width:70%" />' +
     '<input class="inputNumber" id="num1" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
@@ -363,7 +363,7 @@ var ngl_widget_options_collapsible = ''+
     '</div>'+
     '<div><input type="checkbox" id="savethumbnail" checked="true">Save Thumbnail/Sprite</input></div>' +    
     //add offset y
-    '<label id="labeloffsety">sprite 2d Y offset</label>' +
+    '<label id="labeloffsety">2D membrane Y offset</label>' +
     '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="2d_yoffset_range" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
     '<input class="inputNumber" id="2d_yoffset_num" min="-350" max="350" type="number" value="0" style="width:30%"/></div>' +
     //add the sprites image here ?
@@ -866,7 +866,7 @@ var myLayout,
 var usesavedState = true;
 var usesavedSession = true;
 var savedRecipe = localStorage.getItem('savedRecipe');
-var current_version = {"version":1.19};
+var current_version = {"version":1.20};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()

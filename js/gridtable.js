@@ -729,13 +729,35 @@ function CreateColumnsFromANodes(anode) {
   var thekeys = Object.keys(anode);
   var columns = [];
   for (var i = 0; i < thekeys.length; i++) {
+    var t = typeof(anode[thekeys[i]]);
+    var editor = Slick.Editors.Text;
+    /*if (t == "number")  {
+      if (Util_isInt(anode[thekeys[i]]))
+      {
+        editor = Slick.Editors.Integer;
+      }
+      else 
+      {
+        editor = Slick.Editors.Float;
+      }
+    }
+    else if (t == "boolean")  
+    {
+      editor = Slick.Editors.Checkbox;
+    }
+    else 
+    {
+      editor = Slick.Editors.Text;
+    }
+    console.log(editor);
+    */
     columns.push({
       id: thekeys[i],
       name: thekeys[i],
       field: thekeys[i],
       sortable: true,
-      editor: Slick.Editors.Text
-    }) //, editor: Slick.Editors.Text
+      editor: editor
+    }) 
   }
   return columns;
 }
@@ -922,15 +944,9 @@ function UpdateGridFromD3Nodes(agraph, grid_id) {
   var cols = CreateNodeColumns();
   var newc=[]
   var cnames = cdata.column.map(d=>d.id);
-  $.each(cnames, function (i, e) {
-    if (e.startsWith("custom_") || additional_data.includes(e) ){
-        cols.push({
-          id: e,
-          name: e,
-          field: e,
-          sortable: true,
-          editor: Slick.Editors.Text
-        });
+  $.each(cdata.column, function (i, e) {
+    if (e.id.startsWith("custom_") || additional_data.includes(e.id) ){
+        cols.push(e);
     }
   });
   cdata.column = cols;
