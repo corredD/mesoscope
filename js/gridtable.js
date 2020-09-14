@@ -963,6 +963,7 @@ function UpdateGrid(cdata, grid_id) {
     console.log(cdata.column);
   }
   gridArray[grid_id].setColumns(cdata.column);
+  gridArray[grid_id].columnpicker.setAllColumns(cdata.column);
   gridArray[grid_id].dataView.beginUpdate();
   gridArray[grid_id].dataView.setItems(cdata.data);
   gridArray[grid_id].dataView.setFilterArgs({
