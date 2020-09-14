@@ -44,6 +44,7 @@ function xIllustrate(ngl_current_structure,name,bu,sele,model){
     var astructure_file = new Blob([structure_txt], {
       type: 'text/plain'
     });
+    document.getElementById("result").innerHTML = "illustrating";
     //compress to zip ?
     formData.append("PDBfile",astructure_file);
     formData.append("_id", ill_current_id);
