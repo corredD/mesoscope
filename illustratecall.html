@@ -88,6 +88,7 @@ var bu = query.bu? query.bu : "BU1";
 var sele = query.selection? query.selection : "";
 var model = query.model? query.model : null;
 var name = query.name? query.model : "test";
+ill_current_id = query.qid? query.qid : ill_current_id;
 stage.loadFile(purl, params).then(function(o) {
       var ngl_current_structure = o;
       xIllustrate(ngl_current_structure,name,bu,sele,model)
