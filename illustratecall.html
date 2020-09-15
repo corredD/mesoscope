@@ -29,11 +29,11 @@ function parseParams(){
 function defaults(value, defaultValue) {
     return value !== undefined ? value : defaultValue;
 }
-function xIllustrate(ngl_current_structure,name,bu,sele,model){
+function xIllustrate(ngl_current_structure,aname,bu,sele,model){
     if (!ngl_current_structure) return;
     //camera position should be reset
     stage.autoView(1000);
-    var nameinput = name;
+    var nameinput = aname;
     var formData = new FormData();
     formData.append("key", "query");
     //node_selected.data.sprite.scale2d = 6;
@@ -87,7 +87,7 @@ var purl = "rcsb://" + query.pdbid + ".mmtf"
 var bu = query.bu? query.bu : "BU1";
 var sele = query.selection? query.selection : "";
 var model = query.model? query.model : null;
-var name = query.name? query.model : "test";
+var name = query.name? query.name : "test";
 ill_current_id = query.qid? query.qid : ill_current_id;
 stage.loadFile(purl, params).then(function(o) {
       var ngl_current_structure = o;
