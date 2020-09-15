@@ -1426,7 +1426,7 @@ function getCurrentNodesAsCP_JSON(some_data, some_links) {
   //options dictionary
   //get the bounding box from the different compartment bb
   var rootnode = graph.nodes[0];
-  if (!(rootnode.data.boundingBox)){
+  if (!(rootnode.data.boundingBox)||!(rootnode.data.boundingBox.min)){
       drawCompRec(rootnode);
   }
 
