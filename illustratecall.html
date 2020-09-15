@@ -66,7 +66,10 @@ function xIllustrate(ngl_current_structure,aname,bu,sele,model){
       var data = JSON.parse(this.responseText)
       console.log(data)
       console.log(data.image)
-      document.getElementById("result").innerHTML = data.image;
+      const newDiv = document.createElement("div"); 
+      newDiv.id = 'image_url';
+      newDiv.innerHTML = data.image;
+      document.getElementById("result").appendChild(newDiv);
     };
     xhr.send(formData);
 }
