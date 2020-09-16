@@ -237,7 +237,7 @@ function ill_writeAtoms_cb(structure,style,au,sele_elem,current_model) {
   let ia = 1;
   let im = 1;
   let renumberSerial = true;
-  let asele="";
+  let asele = sele_elem;
   var o = structure;
   //var current_model = model_elem.value;
   
@@ -257,7 +257,7 @@ function ill_writeAtoms_cb(structure,style,au,sele_elem,current_model) {
   if (style === 1) {
     asele='('+asele+') and (.CA or .P or .C5)';
   }
-  
+
   console.log(asele);
   var chnames = []
   structure.structure.eachChain( chain => {
