@@ -5,10 +5,10 @@
     <script src="js/illustrate.js"></script>
 </HEAD>
 <body>
+<div id="viewport" style="width:250px; height:250px;"></div>
 <div id="result">
-
 </div>
-
+<img wicth="250" height="250" id="imagepdb" src=""/>
 <script>
 var stage;
 var ngl_current_structure;
@@ -72,6 +72,7 @@ function xIllustrate(aname,bu,sele,model){
       newDiv.id = 'image_url';
       newDiv.innerHTML = data.image;
       document.getElementById("result").appendChild(newDiv);
+      document.getElementById("imagepdb").src = data.image;
     };
     xhr.send(formData);
 }
@@ -83,21 +84,30 @@ NGL.DatasourceRegistry.add(
 stage = new NGL.Stage("viewport", {
     backgroundColor: "white"
   });
-var params = {
-      defaultRepresentation: true
-    };
-var assembly = "AU";
-params.assembly = assembly;  
 var purl = "rcsb://" + query.pdbid + ".mmtf"
+var purl_opm = "https://storage.googleapis.com/opm-assets/pdb/" + query.pdbid + ".pdb"
 var bu = query.bu? query.bu : "BU1";
 var sele = query.selection? query.selection : "";
 var model = query.model? query.model : null;
 var name = query.name? query.name : "test";
+var isopm = query.opm? query.opm : false;
+if (isopm) {
+  purl = purl_opm;
+}
+if (model!==null) sele+="and /"+model;
+var params = {
+    defaultRepresentation: true,
+    name: name,
+    assembly: bu,
+    sele: sele
+  };
+
 ill_current_id = query.qid? query.qid : ill_current_id;
 stage.loadFile(purl, params).then(function(o) {
       ngl_current_structure = o;
+    }).then(function() {
+      stage.animationControls.rotate(ngl_current_structure.structure.getPrincipalAxes().getRotationQuaternion(), 0)
       xIllustrate(name,bu,sele,model)
     }); 
-
     </script>
 </body>
