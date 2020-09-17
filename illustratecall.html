@@ -94,7 +94,7 @@ var isopm = query.opm? query.opm : false;
 if (isopm) {
   purl = purl_opm;
 }
-if (model!==null) sele+="and /"+model;
+//if (model!==null) sele+="and /"+model;
 var params = {
     defaultRepresentation: true,
     name: name,
@@ -106,8 +106,53 @@ ill_current_id = query.qid? query.qid : ill_current_id;
 stage.loadFile(purl, params).then(function(o) {
       ngl_current_structure = o;
     }).then(function() {
-      stage.animationControls.rotate(ngl_current_structure.structure.getPrincipalAxes().getRotationQuaternion(), 0)
-      xIllustrate(name,bu,sele,model)
+      /*var axis = ngl_current_structure.structure.getPrincipalAxes();
+      var LA = axis.endA.sub(axis.begA);
+      var LB = axis.endB.sub(axis.begB);
+      var LC = axis.endC.sub(axis.begC);
+      //find the max
+      var negateVector = new NGL.Vector3(-1, -1, -1)
+      var naxis = [axis.normVecB, axis.normVecA, axis.normVecC];
+      var t = [new NGL.Vector3(1,0,0),new NGL.Vector3(0,1,0),new NGL.Vector3(0,0,1)];
+      var lev = [axis.vecB,axis.vecA,axis.vecC];//B,A,C
+      var le = [axis.vecB.length(),axis.vecA.length(),axis.vecC.length()];
+      var mle = Math.max(Math.max(le[0],le[1]),le[2]);
+      var ind = le.indexOf(mle);
+      var v = lev[ind];
+      var basis = new NGL.Matrix4();
+      var xi = 0;
+      var zi = 2;
+      if (ind == 0) {xi=1;zi=2;}
+      if (ind == 1) {xi=0;zi=2;}
+      if (ind == 2) {xi=0;zi=1;}
+      basis.makeBasis(naxis[ind], naxis[zi], naxis[xi]);
+      if (basis.determinant() < 0) {
+        basis.scale(negateVector)
+      }
+      var bsize = ngl_current_structure.structure.boundingBox.getSize();
+      var mle2 = Math.max(Math.max(bsize.x,bsize.y),bsize.z);
+      var ind2 = bsize.toArray().indexOf(mle2);
+      var q = new NGL.Quaternion();
+      q.setFromRotationMatrix(basis);
+      console.log(q);
+      q.setFromUnitVectors(new NGL.Vector3(0, 1, 0),t[ind2]);      
+      */
+     var asele=sele;
+      if (asele === "" && bu!== "AU") {
+        //need to apply the matrix to the selection inside the BU selection ?
+        //console.log(o.object.biomolDict[o.assembly].getSelection());
+        //build using given selection AND biomolDic selection
+        asele = "(" + ngl_current_structure.object.biomolDict[bu].getSelection().string + ") AND not water";
+      }
+      if (asele === "" && model != null ) asele = "/"+model+" AND not water";
+      if (asele === "") asele = "not water";
+      
+      asele='('+asele+') and (.CA or .P or .C5)';
+      console.log(asele);
+      var axis = ngl_current_structure.structureView.getPrincipalAxes(new NGL.Selection(asele));
+      var qaxis = axis.getRotationQuaternion()
+      //stage.animationControls.rotate(q,0);
+      stage.animationControls.rotate(qaxis, 0)
     }); 
     </script>
 </body>
