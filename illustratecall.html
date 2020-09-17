@@ -152,7 +152,8 @@ stage.loadFile(purl, params).then(function(o) {
       var axis = ngl_current_structure.structureView.getPrincipalAxes(new NGL.Selection(asele));
       var qaxis = axis.getRotationQuaternion()
       //stage.animationControls.rotate(q,0);
-      stage.animationControls.rotate(qaxis, 0)
+      stage.animationControls.rotate(qaxis, 0);
+      xIllustrate(name,bu,sele,model);
     }); 
     </script>
 </body>
