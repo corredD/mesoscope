@@ -240,10 +240,10 @@ def getPDBString(p,selection,bu,model):
         _records+="REMARK 350 APPLY THE FOLLOWING TO CHAINS: "+', '.join(chains)+"\n";
         for k,t in enumerate(p.assemblies[bu]["transformations"]) :
             m = t["matrix"]
-            p = t["vector"]
-            _records+=BiomtFormat.format(1,k+1,m[0][0],m[0][1],m[0][2],p[0])+"\n";
-            _records+=BiomtFormat.format(2,k+1,m[1][0],m[1][1],m[1][2],p[1])+"\n";
-            _records+=BiomtFormat.format(3,k+1,m[2][0],m[2][1],m[2][2],p[2])+"\n";
+            c = t["vector"]
+            _records+=BiomtFormat.format(1,k+1,m[0][0],m[0][1],m[0][2],c[0])+"\n";
+            _records+=BiomtFormat.format(2,k+1,m[1][0],m[1][1],m[1][2],c[1])+"\n";
+            _records+=BiomtFormat.format(3,k+1,m[2][0],m[2][1],m[2][2],c[2])+"\n";
         _records+="REMARK 350END\n";
         #loop over the atoms of the given chain selection
         for r in p.models[model].residues() :
@@ -279,8 +279,9 @@ def FetchProtein(pdb_id,bu,selection,model):
     sel_chains = []
     p = atomium.fetch(pdb_id)
     if bu != "AU" and bu != "" :
-        bu = int(bu[1:])-1
-    else : bu = -1
+        bu = int(bu)-1
+    elif bu =="AU" : bu = -1
+    else : bu = 0
     asele = [""]
     if selection != None and selection != "" :
         asele = selection
@@ -323,7 +324,7 @@ def queryForm(form, verbose = 0):
     wrkDir = "/var/www/html/data/tmp/ILL/"+qid
     illdir = "/var/www/html/beta/cgi-bin/illustrator"
     curentD = os.path.abspath(os.curdir)
-    #wrkDir = curentD+"/../tmp/"+qid
+    wrkDir = curentD+"/../tmp/"+qid
     #print (wrkDir+"<br><br><br>"+curentD)
     #printDebug(wrkDir+"<br><br><br>"+curentD);
     if not os.path.isdir(wrkDir):
