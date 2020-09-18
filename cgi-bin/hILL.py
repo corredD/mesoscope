@@ -246,15 +246,17 @@ def getPDBString(p,selection,bu,model):
             _records+=BiomtFormat.format(3,k+1,m[2][0],m[2][1],m[2][2],c[2])+"\n";
         _records+="REMARK 350END\n";
         #loop over the atoms of the given chain selection
-        for r in p.models[model].residues() :
-            at = r.atom(name='CA')
-            serial = ia;
-            if (serial > 99999): serial = 99999;
-            if (at == None): at = r.atom(name='P')
-            if (at == None): at = r.atom(name='C5')
-            if (at == None): continue
-            if (r.chain.internal_id in chains):
-                _records+=AFormat.format(serial,at.name,r.name,r.chain.internal_id,ir,
+        #this loop is not ordered
+        for ch in p.models[model].chains():
+            if (ch.internal_id not in chains): continue;
+            for r in ch.residues() :
+                at = r.atom(name='CA')
+                serial = ia;
+                if (serial > 99999): serial = 99999;
+                if (at == None): at = r.atom(name='P')
+                if (at == None): at = r.atom(name='C5')
+                if (at == None): continue
+                _records+=AFormat.format(serial,at.name,r.name,ch.internal_id,ir,
                     at.location[0], at.location[1], at.location[2], 1.0,0.0,'','C')+"\n";
                 ir = ir + 1
                 ia = ia + 1
@@ -316,7 +318,7 @@ def queryForm(form, verbose = 0):
         idprovided = True
     else :
         qid = mkRand()
-    pdbid = "1crn"
+    pdbid = "2plv"
     bu = ""
     selection = ""
     model = ""
@@ -324,7 +326,7 @@ def queryForm(form, verbose = 0):
     wrkDir = "/var/www/html/data/tmp/ILL/"+qid
     illdir = "/var/www/html/beta/cgi-bin/illustrator"
     curentD = os.path.abspath(os.curdir)
-    #wrkDir = curentD+"/../tmp/"+qid
+    wrkDir = curentD+"/../tmp/"+qid
     #print (wrkDir+"<br><br><br>"+curentD)
     #printDebug(wrkDir+"<br><br><br>"+curentD);
     if not os.path.isdir(wrkDir):
