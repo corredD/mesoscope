@@ -410,11 +410,11 @@ def queryForm(form, verbose = 0):
     #cmd+="/bin/convert "+proj_name+".pnm -transparent \"rgb(254,254,254)\" "+proj_name+".png>/dev/null;"
     #composite with ngl_geom_opacit
     cmd+="/bin/composite -compose copy_opacity opacity.pnm "+proj_name+".pnm "+proj_name+".png >> "+proj_name+".log;"
-    print(cmd)
+    #print(cmd)
     os.system(cmd)
 
-    httpfile="https://mesoscope.scripps.edu/data/tmp/ILL/"+qid+"/"+proj_name+".pdb"
-    httpimg="https://mesoscope.scripps.edu/data/tmp/ILL/"+qid+"/"+proj_name+".png"
+    httpfile="https://mesoscope.scripps.edu/data/tmp/ILL/"+str(qid)+"/"+proj_name+".pdb"
+    httpimg="https://mesoscope.scripps.edu/data/tmp/ILL/"+str(qid)+"/"+proj_name+".png"
 
     print ("Access-Control-Allow-Origin: *")
     print ('Content-type: application/json\n')
