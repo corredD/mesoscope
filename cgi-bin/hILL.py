@@ -261,13 +261,9 @@ def GetPrincipalAxis(coordinates) :
     eigVecs = np.linalg.eig(A)[1]
     eigVals = np.diag(np.linalg.eig(A)[0])
     imax = eigVals.argmax()%3
-    qalign = R.align_vectors([eigVecs[imax]],[[0,1,0]])
-    if imax == 0 :
-        r = R.from_matrix([eigVecs[1],eigVecs[0],eigVecs[2]])
-    elif imax == 1 :
-        r = R.from_matrix([eigVecs[0],eigVecs[1],eigVecs[2]])
-    else :
-        r = R.from_matrix([eigVecs[2],eigVecs[0],eigVecs[1]])
+    L = np.argsort(-eigVals.flatten())%3
+    qalign = R.align_vectors([eigVecs[L[0]],eigVecs[L[1]],eigVecs[L[2]]],[[0,1,0],[1,0,0],[0,0,1]])
+    #r = R.from_matrix([eigVecs[L[0]],eigVecs[L[1]],eigVecs[L[2]]])
     return qalign#r.as_quat(), r.inv().as_euler('zxy', degrees=True)
 
 #as we get the PDB string accumulate the coordinates and calculate the oriented bouding box
