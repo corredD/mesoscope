@@ -318,7 +318,7 @@ def queryForm(form, verbose = 0):
     pdbid = "1crn"
     bu = ""
     selection = ""
-    model = 0
+    model = ""
     proj_name = "illustrated"
     wrkDir = "/var/www/html/data/tmp/ILL/"+qid
     illdir = "/var/www/html/beta/cgi-bin/illustrator"
@@ -354,7 +354,7 @@ def queryForm(form, verbose = 0):
         queryTXT = form["pdbid"].value
         fetch = True
         tmpPDBName = wrkDir+"/"+proj_name+".pdb"
-        if not form.has_key("name") :
+        if not "name" in form :
             proj_name = queryTXT
     elif "PDBtxt" in form  :
         queryTXT = form["PDBtxt"].value
@@ -377,6 +377,7 @@ def queryForm(form, verbose = 0):
             #f.write(queryTXT)
             #f.close()
         queryTXT = proj_name
+
     #prepare input
     redirectURL = "https://mesoscope.scripps.edu/data/tmp/ILL/"+qid+"/illustrator.html"
     #print "<html>Hello World</html>"
