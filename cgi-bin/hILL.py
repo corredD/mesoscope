@@ -293,6 +293,7 @@ def getPDBString(p,selection,bu,model):
         #this loop is not ordered
         for ch in p.models[model].chains():
             if (ch.internal_id not in chains): continue;
+            if len(selection) and (ch.internal_id not in selection) : continue;
             for r in ch.residues() :
                 at = r.atom(name='CA')
                 serial = ia;
@@ -306,18 +307,20 @@ def getPDBString(p,selection,bu,model):
                 ir = ir + 1
                 ia = ia + 1
     else :
-        for r in p.models[model].residues() :
-            at = r.atom(name='CA')
-            serial = ia;
-            if (serial > 99999): serial = 99999;
-            if (at == None): at = r.atom(name='P')
-            if (at == None): at = r.atom(name='C5')
-            if (at == None): continue
-            _records+=AFormat.format(serial,at.name,r.name,' ',ir,
-                    at.location[0], at.location[1], at.location[2], 1.0,0.0,'','C')+"\n";
-            all_coords.append([at.location[0], at.location[1], at.location[2]])
-            ir = ir + 1
-            ia = ia + 1        
+        for ch in p.models[model].chains():
+            if len(selection) and (ch.internal_id not in selection) : continue;
+            for r in ch.residues() :
+                at = r.atom(name='CA')
+                serial = ia;
+                if (serial > 99999): serial = 99999;
+                if (at == None): at = r.atom(name='P')
+                if (at == None): at = r.atom(name='C5')
+                if (at == None): continue
+                _records+=AFormat.format(serial,at.name,r.name,' ',ir,
+                        at.location[0], at.location[1], at.location[2], 1.0,0.0,'','C')+"\n";
+                all_coords.append([at.location[0], at.location[1], at.location[2]])
+                ir = ir + 1
+                ia = ia + 1        
     bounding_box = []#oriented_bounding_box_numpy(all_coords);
     r = GetPrincipalAxis(all_coords)
     return _records,bounding_box,all_coords,r
