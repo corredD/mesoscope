@@ -225,7 +225,7 @@ def DefaultValue(avalue,defaultValue):
         return defaultValue
 
 def getPDBString(p,selection,bu,model):
-    AFormat = 'ATOM  {:5d} {:4s} {:3s}{:2s}{:4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:2s}';#//'ATOM  %5d :-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
+    AFormat = 'ATOM  {:5d}  {:3s} {:3s}{:2s}{:4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}       {:4s}{:2s}';#//'ATOM  %5d :-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
     BiomtFormat = 'REMARK 350   BIOMT{:1d} {:3d}{:10.6f}{:10.6f}{:10.6f}{:15.5f}';
     writeBU = True;
     ia = 1;
@@ -255,7 +255,7 @@ def getPDBString(p,selection,bu,model):
             if (at == None): continue
             if (r.chain.internal_id in chains):
                 _records+=AFormat.format(serial,at.name,r.name,r.chain.internal_id,ir,
-                    at.location[0], at.location[1], at.location[2], 1.0,0.0,'','')+"\n";
+                    at.location[0], at.location[1], at.location[2], 1.0,0.0,'','C')+"\n";
                 ir = ir + 1
                 ia = ia + 1
     else :
@@ -267,7 +267,7 @@ def getPDBString(p,selection,bu,model):
             if (at == None): at = r.atom(name='C5')
             if (at == None): continue
             _records+=AFormat.format(serial,at.name,r.name,' ',ir,
-                    at.location[0], at.location[1], at.location[2], 1.0,0.0,'','')+"\n";
+                    at.location[0], at.location[1], at.location[2], 1.0,0.0,'','C')+"\n";
             ir = ir + 1
             ia = ia + 1        
     return _records
@@ -323,7 +323,7 @@ def queryForm(form, verbose = 0):
     wrkDir = "/var/www/html/data/tmp/ILL/"+qid
     illdir = "/var/www/html/beta/cgi-bin/illustrator"
     curentD = os.path.abspath(os.curdir)
-    #wrkDir = curentD+"/../tmp/"+qid
+    wrkDir = curentD+"/../tmp/"+qid
     print (wrkDir+"<br><br><br>"+curentD)
     printDebug(wrkDir+"<br><br><br>"+curentD);
     if not os.path.isdir(wrkDir):
@@ -450,3 +450,4 @@ if __name__=='__main__':
     else :
         #queryForm(form)
         TestCGI()
+        queryForm(form)
