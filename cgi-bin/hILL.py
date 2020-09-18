@@ -1,6 +1,6 @@
 #!/bin/python3
-#!/usr/bin/env python
-#!python3
+##!/usr/bin/env python
+##!python3
 import os
 import json
 import cgi
@@ -321,6 +321,7 @@ def queryForm(form, verbose = 0):
     model = 0
     proj_name = "illustrated"
     wrkDir = "/var/www/html/data/tmp/ILL/"+qid
+    illdir = "/var/www/html/beta/cgi-bin/illustrator"
     curentD = os.path.abspath(os.curdir)
     #wrkDir = curentD+"/../tmp/"+qid
     #print (wrkDir+"<br><br><br>"+curentD)
@@ -404,7 +405,7 @@ def queryForm(form, verbose = 0):
         print (pdb_txt+"<br>")
         #printDebug(pdb_txt+"<br><br>"+inpstring)
         #return
-    cmd+= curentD+"/illustrator < "+proj_name+".inp>/dev/null;"
+    cmd+= illdir+" < "+proj_name+".inp>/dev/null;"
     #cmd+="/bin/convert "+proj_name+".pnm -transparent \"rgb(254,254,254)\" "+proj_name+".png>/dev/null;"
     #composite with ngl_geom_opacit
     cmd+="/bin/composite -compose copy_opacity opacity.pnm "+proj_name+".pnm "+proj_name+".png;"
@@ -445,4 +446,5 @@ if __name__=='__main__':
         #printDebug(p.model.chains())
         queryForm(form)
     else :
+        #queryForm(form)
         TestCGI()
