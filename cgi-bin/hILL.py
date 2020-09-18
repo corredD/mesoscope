@@ -323,9 +323,9 @@ def queryForm(form, verbose = 0):
     wrkDir = "/var/www/html/data/tmp/ILL/"+qid
     illdir = "/var/www/html/beta/cgi-bin/illustrator"
     curentD = os.path.abspath(os.curdir)
-    wrkDir = curentD+"/../tmp/"+qid
-    print (wrkDir+"<br><br><br>"+curentD)
-    printDebug(wrkDir+"<br><br><br>"+curentD);
+    #wrkDir = curentD+"/../tmp/"+qid
+    #print (wrkDir+"<br><br><br>"+curentD)
+    #printDebug(wrkDir+"<br><br><br>"+curentD);
     if not os.path.isdir(wrkDir):
         os.mkdir(wrkDir)
     #printDebug ("test testestest <br>")
@@ -353,9 +353,9 @@ def queryForm(form, verbose = 0):
     if "pdbid" in form :
         queryTXT = form["pdbid"].value
         fetch = True
-        tmpPDBName = wrkDir+"/"+proj_name+".pdb"
         if not "name" in form :
             proj_name = queryTXT
+        tmpPDBName = wrkDir+"/"+proj_name+".pdb"
     elif "PDBtxt" in form  :
         queryTXT = form["PDBtxt"].value
         tmpPDBName = wrkDir+"/"+proj_name+".pdb"
