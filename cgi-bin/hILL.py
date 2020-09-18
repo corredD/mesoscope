@@ -324,8 +324,8 @@ def queryForm(form, verbose = 0):
     illdir = "/var/www/html/beta/cgi-bin/illustrator"
     curentD = os.path.abspath(os.curdir)
     #wrkDir = curentD+"/../tmp/"+qid
-    #print (wrkDir+"<br><br><br>"+curentD)
-    #printDebug(wrkDir+"<br><br><br>"+curentD);
+    print (wrkDir+"<br><br><br>"+curentD)
+    printDebug(wrkDir+"<br><br><br>"+curentD);
     if not os.path.isdir(wrkDir):
         os.mkdir(wrkDir)
     #printDebug ("test testestest <br>")
@@ -409,7 +409,7 @@ def queryForm(form, verbose = 0):
     cmd+= illdir+" < "+proj_name+".inp> "+proj_name+".log;"
     #cmd+="/bin/convert "+proj_name+".pnm -transparent \"rgb(254,254,254)\" "+proj_name+".png>/dev/null;"
     #composite with ngl_geom_opacit
-    cmd+="/bin/composite -compose copy_opacity opacity.pnm "+proj_name+".pnm "+proj_name+".png;"
+    cmd+="/bin/composite -compose copy_opacity opacity.pnm "+proj_name+".pnm "+proj_name+".png >> "+proj_name+".log;"
     print(cmd)
     os.system(cmd)
 
