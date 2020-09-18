@@ -390,7 +390,7 @@ def queryForm(form, verbose = 0):
         inpstring = form["input_txt"].value
     else :
         inpstring = ill_prepareInput(proj_name,form)
-    print (inpstring+"<br>")
+    #print (inpstring+"<br>")
     f = open(inpfile, "w")
     f.write(inpstring)
     f.close()
@@ -403,13 +403,14 @@ def queryForm(form, verbose = 0):
         f.close()
         #cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
         #cmd+= "mv "+queryTXT+".pdb "+tmpPDBName+";"
-        print (pdb_txt+"<br>")
+        #print (pdb_txt+"<br>")
         #printDebug(pdb_txt+"<br><br>"+inpstring)
         #return
-    cmd+= illdir+" < "+proj_name+".inp>/dev/null;"
+    cmd+= illdir+" < "+proj_name+".inp> "+proj_name+".log;"
     #cmd+="/bin/convert "+proj_name+".pnm -transparent \"rgb(254,254,254)\" "+proj_name+".png>/dev/null;"
     #composite with ngl_geom_opacit
     cmd+="/bin/composite -compose copy_opacity opacity.pnm "+proj_name+".pnm "+proj_name+".png;"
+    print(cmd)
     os.system(cmd)
 
     httpfile="https://mesoscope.scripps.edu/data/tmp/ILL/"+qid+"/"+proj_name+".pdb"
