@@ -21,6 +21,7 @@ from numpy import sum
 
 from scipy.spatial import ConvexHull
 from scipy.linalg import solve
+from scipy.spatial.transform import Rotation as R
 
 global atomic_outlines_params
 global subunit_outlines_params
@@ -70,7 +71,7 @@ def world_to_local_coordinates_numpy(frame, xyz):
     True
     """
     origin = frame[0]
-    uvw = [frame[1], frame[2], cross_vectors(frame[1], frame[2])]
+    uvw = [frame[1], frame[2], np.cross(frame[1], frame[2])]
     uvw = asarray(uvw).T
     xyz = asarray(xyz).T - asarray(origin).reshape((-1, 1))
     rst = solve(uvw, xyz)
@@ -100,7 +101,7 @@ def local_to_world_coordinates_numpy(frame, rst):
     True
     """
     origin = frame[0]
-    uvw = [frame[1], frame[2], cross_vectors(frame[1], frame[2])]
+    uvw = [frame[1], frame[2], np.cross(frame[1], frame[2])]
 
     uvw = asarray(uvw).T
     rst = asarray(rst).T
@@ -109,6 +110,7 @@ def local_to_world_coordinates_numpy(frame, rst):
 
 #from https://compas.dev/compas/_modules/compas/geometry/bbox/bbox_numpy.html
 def oriented_bounding_box_numpy(points):
+    #return XYZ coordinates of 8 points defining a box. bot and top
     points = asarray(points)
     n, dim = points.shape
     assert 2 < dim, "The point coordinates should be at least 3D: %i" % dim
@@ -224,7 +226,53 @@ def DefaultValue(avalue,defaultValue):
     else :
         return defaultValue
 
+def ComputeCovarianceMatrix(cluster):
+    C = np.zeros((3,3));
+    mu = np.zeros(3);
+    cl = np.array(cluster)
+    mu = cl.mean(axis=0);
+    #// loop over the points again to build the 
+    #// covariance matrix.  Note that we only have
+    #// to build terms for the upper trianglular 
+    #// portion since the matrix is symmetric
+    cxx = 0.0
+    cxy = 0.0
+    cxz = 0.0
+    cyy = 0.0
+    cyz = 0.0
+    czz = 0.0
+    for i in range(len(cl)):
+        p = cl[i];
+        cxx += p[0] * p[0] - mu[0] * mu[0];
+        cxy += p[0] * p[1] - mu[0] * mu[1];
+        cxz += p[0] * p[2] - mu[0] * mu[2];
+        cyy += p[1] * p[1] - mu[1] * mu[1];
+        cyz += p[1] * p[2] - mu[1] * mu[2];
+        czz += p[2] * p[2] - mu[2] * mu[2];
+    #// now build the covariance matrix
+    C[0, 0] = cxx; C[0, 1] = cxy; C[0, 2] = cxz;
+    C[1, 0] = cxy; C[1, 1] = cyy; C[1, 2] = cyz;
+    C[2, 0] = cxz; C[2, 1] = cyz; C[2, 2] = czz;
+    return C;
+
+def GetPrincipalAxis(coordinates) :
+    A = np.cov(coordinates)
+    A = ComputeCovarianceMatrix(coordinates)
+    eigVecs = np.linalg.eig(A)[1]
+    eigVals = np.diag(np.linalg.eig(A)[0])
+    imax = eigVals.argmax()%3
+    qalign = R.align_vectors([eigVecs[imax]],[[0,1,0]])
+    if imax == 0 :
+        r = R.from_matrix([eigVecs[1],eigVecs[0],eigVecs[2]])
+    elif imax == 1 :
+        r = R.from_matrix([eigVecs[0],eigVecs[1],eigVecs[2]])
+    else :
+        r = R.from_matrix([eigVecs[2],eigVecs[0],eigVecs[1]])
+    return qalign#r.as_quat(), r.inv().as_euler('zxy', degrees=True)
+
+#as we get the PDB string accumulate the coordinates and calculate the oriented bouding box
 def getPDBString(p,selection,bu,model):
+    all_coords=[]
     AFormat = 'ATOM  {:5d}  {:3s} {:3s}{:>2s}{:4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}       {:4s}{:2s}';#//'ATOM  %5d :-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
     BiomtFormat = 'REMARK 350   BIOMT{:1d} {:3d}{:10.6f}{:10.6f}{:10.6f}{:15.5f}';
     writeBU = True;
@@ -258,6 +306,7 @@ def getPDBString(p,selection,bu,model):
                 if (at == None): continue
                 _records+=AFormat.format(serial,at.name,r.name,ch.internal_id,ir,
                     at.location[0], at.location[1], at.location[2], 1.0,0.0,'','C')+"\n";
+                all_coords.append([at.location[0], at.location[1], at.location[2]])
                 ir = ir + 1
                 ia = ia + 1
     else :
@@ -270,9 +319,13 @@ def getPDBString(p,selection,bu,model):
             if (at == None): continue
             _records+=AFormat.format(serial,at.name,r.name,' ',ir,
                     at.location[0], at.location[1], at.location[2], 1.0,0.0,'','C')+"\n";
+            all_coords.append([at.location[0], at.location[1], at.location[2]])
             ir = ir + 1
             ia = ia + 1        
-    return _records
+    bounding_box = []#oriented_bounding_box_numpy(all_coords);
+    r = GetPrincipalAxis(all_coords)
+    all_coords=[]
+    return _records,bounding_box,all_coords,r
 
 def FetchProtein(pdb_id,bu,selection,model):
     if model == None or model == "":
@@ -288,8 +341,17 @@ def FetchProtein(pdb_id,bu,selection,model):
     if selection != None and selection != "" :
         asele = selection
         sel_chains = asele.split(",")
-    pdb_txt = getPDBString(p,sel_chains,bu,model)
-    return pdb_txt
+    return getPDBString(p,sel_chains,bu,model)
+
+def GetOrientation(Box):
+    #from the box get 
+    #4 points base Box[0:4]
+    #4 points top  Box[4:8]
+    #measure the edge length.
+    #need euler from quaternion.inverse from Matrix of the bounding box
+    r = R.from_matrix([[0, -1, 0],
+                   [1, 0, 0],
+                   [0, 0, 1]])
 
 def printDebug(data):
     print("Content-type: text/html")
@@ -318,7 +380,7 @@ def queryForm(form, verbose = 0):
         idprovided = True
     else :
         qid = mkRand()
-    pdbid = "2plv"
+    pdbid = "1crn"
     bu = ""
     selection = ""
     model = ""
@@ -326,7 +388,7 @@ def queryForm(form, verbose = 0):
     wrkDir = "/var/www/html/data/tmp/ILL/"+qid
     illdir = "/var/www/html/beta/cgi-bin/illustrator"
     curentD = os.path.abspath(os.curdir)
-    #wrkDir = curentD+"/../tmp/"+qid
+    wrkDir = curentD+"/../tmp/"+qid
     #print (wrkDir+"<br><br><br>"+curentD)
     #printDebug(wrkDir+"<br><br><br>"+curentD);
     if not os.path.isdir(wrkDir):
@@ -385,6 +447,25 @@ def queryForm(form, verbose = 0):
     redirectURL = "https://mesoscope.scripps.edu/data/tmp/ILL/"+qid+"/illustrator.html"
     #print "<html>Hello World</html>"
     #did the user send in the input file?
+    trans=[0,0,0]
+    rotation=[0,0,0]
+    cmd = "cd "+wrkDir+";"
+    if fetch and (not os.path.isfile(tmpPDBName) or force_pdb):
+        tmpPDBName = wrkDir+"/"+proj_name+".pdb"
+        pdb_txt,bounding_box,all_coords,r = FetchProtein(queryTXT,bu,selection,model)
+        f = open(tmpPDBName, "w")
+        f.write(pdb_txt)
+        f.close()
+        if (len(r)):
+            if len(r[0]):
+                rotation = r[0][0].as_euler('xyz', degrees=True)
+        #compute camera position from bounding_box
+        #cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
+        #cmd+= "mv "+queryTXT+".pdb "+tmpPDBName+";"
+        #print (pdb_txt+"<br>")
+        #printDebug(pdb_txt+"<br><br>"+inpstring)
+        #return
+
     inpfile = wrkDir+"/"+proj_name+".inp"
     if "input_file" in form:
         filename = cgi.escape(form["input_file"].filename)
@@ -392,23 +473,12 @@ def queryForm(form, verbose = 0):
     elif "input_txt" in form:
         inpstring = form["input_txt"].value
     else :
-        inpstring = ill_prepareInput(proj_name,form)
+        inpstring = ill_prepareInput(proj_name,form,trans=trans,rotation=rotation)
     #print (inpstring+"<br>")
     f = open(inpfile, "w")
     f.write(inpstring)
     f.close()
-    cmd = "cd "+wrkDir+";"
-    if fetch and (not os.path.isfile(tmpPDBName) or force_pdb):
-        tmpPDBName = wrkDir+"/"+proj_name+".pdb"
-        pdb_txt = FetchProtein(queryTXT,bu,selection,model)
-        f = open(tmpPDBName, "w")
-        f.write(pdb_txt)
-        f.close()
-        #cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
-        #cmd+= "mv "+queryTXT+".pdb "+tmpPDBName+";"
-        #print (pdb_txt+"<br>")
-        #printDebug(pdb_txt+"<br><br>"+inpstring)
-        #return
+
     cmd+= illdir+" < "+proj_name+".inp> "+proj_name+".log;"
     #cmd+="/bin/convert "+proj_name+".pnm -transparent \"rgb(254,254,254)\" "+proj_name+".png>/dev/null;"
     #composite with ngl_geom_opacit
