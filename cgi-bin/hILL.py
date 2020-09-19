@@ -326,6 +326,7 @@ def getPDBString(p,selection,bu,model):
                 ia = ia + 1        
     bounding_box = []#oriented_bounding_box_numpy(all_coords);
     r = GetPrincipalAxis(all_coords)
+    print (_records)
     return _records,bounding_box,all_coords,r
 
 def FetchProtein(pdb_id,bu,selection,model):
@@ -381,7 +382,7 @@ def queryForm(form, verbose = 0):
         idprovided = True
     else :
         qid = mkRand()
-    pdbid = "1crn"
+    pdbid = "3bna"
     bu = ""
     selection = ""
     model = ""
