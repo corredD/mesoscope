@@ -271,7 +271,7 @@ def getPDBString(p,selection,bu,model):
     #https://cupnet.net/pdb-format/
     all_coords=[]
     #AFormat = 'ATOM  {:5d} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}'
-    AFormat =  'ATOM  {:5d} {:^4s} {:3s} {:1s}{:4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}'
+    AFormat =  'ATOM  {:5d} {:^4s} {:>3s} {:1s}{:4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}'
     #AFormat = 'ATOM  {:5d}  {:3s} {:3s}{:>2s}{:4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}       {:4s}{:2s}';#//'ATOM  %5d :-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
     BiomtFormat = 'REMARK 350   BIOMT{:1d} {:3d}{:10.6f}{:10.6f}{:10.6f}{:15.5f}';
     writeBU = True;
@@ -326,6 +326,7 @@ def getPDBString(p,selection,bu,model):
                 ia = ia + 1        
     bounding_box = []#oriented_bounding_box_numpy(all_coords);
     r = GetPrincipalAxis(all_coords)
+    #print (_records)
     return _records,bounding_box,all_coords,r
 
 def FetchProtein(pdb_id,bu,selection,model):
