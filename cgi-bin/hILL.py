@@ -287,7 +287,7 @@ def getPDBString(p,selection,bu,model):
     renumberSerial = True;
     _records=""
     #(.CA or .P or .C5)
-    if (bu!=-1) :
+    if (bu!=-1 and len(p.assemblies)) :
         chains = p.assemblies[bu]["transformations"][0]["chains"]
         _records+="REMARK 350 BIOMOLECULE: 1\n";
         _records+="REMARK 350 APPLY THE FOLLOWING TO CHAINS: "+', '.join(chains)+"\n";
@@ -456,7 +456,7 @@ def queryForm(form, verbose = 0):
         f.close()
         if (len(r)):
             if len(r[0]):
-                rotation = r[0][0].inv().as_euler('xyz', degrees=True)
+                rotation = r[0][0].as_euler('xyz', degrees=True)
         #compute camera position from bounding_box
         #cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
         #cmd+= "mv "+queryTXT+".pdb "+tmpPDBName+";"
