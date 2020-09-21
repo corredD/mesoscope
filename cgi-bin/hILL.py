@@ -256,14 +256,20 @@ def ComputeCovarianceMatrix(cluster):
     return C;
 
 def GetPrincipalAxis(coordinates) :
-    A = np.cov(coordinates)
-    A = ComputeCovarianceMatrix(coordinates)
+    cl = np.array(coordinates)
+    n, m = cl.shape
+    mu = cl.mean(axis=0);
+    cl = cl-mu
+    A = np.dot(cl.T, cl) / (n-1)
     eigVecs = np.linalg.eig(A)[1]
     eigVals = np.diag(np.linalg.eig(A)[0])
     imax = eigVals.argmax()%3
     L = np.argsort(-eigVals.flatten())%3
-    qalign = R.align_vectors([eigVecs[L[0]],eigVecs[L[1]],eigVecs[L[2]]],[[0,1,0],[1,0,0],[0,0,1]])
+    qalign = R.align_vectors([eigVecs[:,L[0]]],[[0,1,0]])
+    #qalign = R.align_vectors([eigVecs[:,L[0]],eigVecs[:,L[1]]],[[0,1,0],[1,0,0]])
+    #qalign = R.align_vectors([eigVecs[:,L[0]],eigVecs[:,L[1]],eigVecs[:,L[2]]],[[0,1,0],[1,0,0],[0,0,1]])
     #r = R.from_matrix([eigVecs[L[0]],eigVecs[L[1]],eigVecs[L[2]]])
+    # stage.animationControls.rotate(new NGL.Quaternion(  0.6629315 , -0.3361487 , -0.18151894,  0.64387635).inverse(), 0);
     return qalign#r.as_quat(), r.inv().as_euler('zxy', degrees=True)
 
 #as we get the PDB string accumulate the coordinates and calculate the oriented bouding box
@@ -344,16 +350,6 @@ def FetchProtein(pdb_id,bu,selection,model):
         asele = selection
         sel_chains = asele.split(",")
     return getPDBString(p,sel_chains,bu,model)
-
-def GetOrientation(Box):
-    #from the box get 
-    #4 points base Box[0:4]
-    #4 points top  Box[4:8]
-    #measure the edge length.
-    #need euler from quaternion.inverse from Matrix of the bounding box
-    r = R.from_matrix([[0, -1, 0],
-                   [1, 0, 0],
-                   [0, 0, 1]])
 
 def printDebug(data):
     print("Content-type: text/html")
@@ -460,7 +456,7 @@ def queryForm(form, verbose = 0):
         f.close()
         if (len(r)):
             if len(r[0]):
-                rotation = r[0][0].as_euler('xyz', degrees=True)
+                rotation = r[0][0].inv().as_euler('xyz', degrees=True)
         #compute camera position from bounding_box
         #cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
         #cmd+= "mv "+queryTXT+".pdb "+tmpPDBName+";"
