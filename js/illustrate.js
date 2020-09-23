@@ -152,7 +152,7 @@ function ill_writeAtoms(structure,style) {
               counter = 41;
             }
             if (i === nchain-1) {
-              r = " "+c
+              r = " "+t[i];
             } //#last chain
             _records.push(r);
             counter+=r.length;
