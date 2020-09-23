@@ -159,17 +159,23 @@ HETATMH--------- 0,9999, 1.1,1.1,1.1, 0.0\n\
 ATOM  -H-------- 0,9999, 1.1,1.1,1.1, 0.0\n\
 ATOM  H--------- 0,9999, 1.1,1.1,1.1, 0.0\n\
 "
-    astr+="ATOM  -P---  --- 0,9999 1.00, 1.0, 1.0, 5.0\n\
-ATOM  -C5--  --- 0,9999 1.0,1.0,1.0, 5.0\n\
-ATOM  -P--- D--- 0,9999 1.0,1.0,1.0, 5.0\n\
-ATOM  -C5-- D--- 0,9999 1.0,1.0,1.0, 5.0\n\
-ATOM  -CA------- 0,9999 1.0,1.0,1.0, 5.0\n\
-HETATM-C-------- 0,9999 1.0,1.0,1.0, 1.6\n\
-HETATM---------- 0,9999 1.0,1.0,1.0, 1.5\n";
+    #astr+="ATOM  -P---  --- 0,9999 1.00, 1.0, 1.0, 5.0\n\
+    #ATOM  -C5--  --- 0,9999 1.0,1.0,1.0, 5.0\n\
+    #ATOM  -P--- D--- 0,9999 1.0,1.0,1.0, 5.0\n\
+    #ATOM  -C5-- D--- 0,9999 1.0,1.0,1.0, 5.0\n\
+    #ATOM  -CA------- 0,9999 1.0,1.0,1.0, 5.0\n\
+    #HETATM-C-------- 0,9999 1.0,1.0,1.0, 1.6\n\
+    #HETATM---------- 0,9999 1.0,1.0,1.0, 1.5\n";
+    astr+="ATOM  -P-------- 0,9999 1.00, 1.0, 1.0, 5.0\n\
+ATOM  -C1'------ 0,9999 1.0, 1.0, 1.0, 5.0\n\
+HETATM-P-------- 0,9999 1.0, 1.0, 1.0, 5.0\n\
+HETATM-C1'------ 0,9999 1.00, 1.00, 1.00, 5.0\n\
+ATOM  -CA------- 0,9999 1.0, 1.0, 1.0, 5.0\n\
+HETATM-C-------- 0,9999 1.0, 1.0, 1.0, 1.6\n\
+HETATM---------- 0,9999 1.0, 1.0, 1.0, 1.5\n";
     chain_outlines_params[2] = "6000.0";
     astr+="END\n"
     return astr
-
 def ill_prepareInput(nameinput,form,scale=6,center=True,trans=[0,0,0],rotation=[0,0,0]):
     global atomic_outlines_params
     global subunit_outlines_params
@@ -346,7 +352,7 @@ def getPDBString(p,selection,bu,model):
                 if (ir >= 9999) : ir = 9999
                 if (serial > 99999): serial = 99999;
                 if (at == None): at = r.atom(name='P')
-                if (at == None): at = r.atom(name='C5')
+                if (at == None): at = r.atom(name="C1'")
                 if (at == None): continue
                 if (at.het.name == 'UNK' or at.het == None ) : continue
                 _records+=AFormat.format(serial,at.name,r.name,ch.internal_id,ir,
@@ -363,8 +369,9 @@ def getPDBString(p,selection,bu,model):
                 if (ir >= 9999): ir = 9999
                 if (serial > 99999): serial = 99999;
                 if (at == None): at = r.atom(name='P')
-                if (at == None): at = r.atom(name='C5')
+                if (at == None): at = r.atom(name="C1'")
                 if (at == None): continue
+                if (at.het.name == 'UNK' or at.het == None ) : continue
                 _records+=AFormat.format(serial,at.name,r.name,' ',ir,
                         at.location[0], at.location[1], at.location[2], 1.0,0.0,'','C')+"\n";
                 all_coords.append([at.location[0], at.location[1], at.location[2]])
