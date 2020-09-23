@@ -343,7 +343,7 @@ def getPDBString(p,selection,bu,model):
             for r in ch.residues() :
                 at = r.atom(name='CA')
                 serial = ia;
-                if (ir >= 9999) ir = 9999
+                if (ir >= 9999) : ir = 9999
                 if (serial > 99999): serial = 99999;
                 if (at == None): at = r.atom(name='P')
                 if (at == None): at = r.atom(name='C5')
@@ -360,7 +360,7 @@ def getPDBString(p,selection,bu,model):
             for r in ch.residues() :
                 at = r.atom(name='CA')
                 serial = ia;
-                if (ir >= 9999) ir = 9999
+                if (ir >= 9999): ir = 9999
                 if (serial > 99999): serial = 99999;
                 if (at == None): at = r.atom(name='P')
                 if (at == None): at = r.atom(name='C5')
