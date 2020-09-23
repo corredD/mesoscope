@@ -275,7 +275,7 @@ def GetPrincipalAxis(coordinates) :
     #qalign = R.align_vectors([eigVecs[:,L[0]],eigVecs[:,L[1]]],[[0,1,0],[1,0,0]])
     #qalign = R.align_vectors([eigVecs[:,L[0]],eigVecs[:,L[1]],eigVecs[:,L[2]]],[[0,1,0],[1,0,0],[0,0,1]])
     #r = R.from_matrix([eigVecs[L[0]],eigVecs[L[1]],eigVecs[L[2]]])
-    # stage.animationControls.rotate(new NGL.Quaternion(  0.6629315 , -0.3361487 , -0.18151894,  0.64387635).inverse(), 0);
+    # stage.animationControls.rotate(new NGL.Quaternion(  -0.44752089, -0.3509433 , -0.50757132, -0.64725205), 0);
     return qalign#r.as_quat(), r.inv().as_euler('zxy', degrees=True)
 
 #1-4 “ATOM”
@@ -445,6 +445,9 @@ def queryForm(form, verbose = 0):
     fetch=True
     inpfile = ""
     tmpPDBName = ""
+    inverse_rotation = False
+    if "inverse" in form :
+        inverse_rotation = form["inverse"].value
     #no more than 20character
     force_pdb = True
     if "force_pdb" in form:
@@ -502,7 +505,10 @@ def queryForm(form, verbose = 0):
         f.close()
         if (len(r)):
             if len(r[0]):
-                rotation = r[0][0].as_euler('xyz', degrees=True)
+                if inverse_rotation : 
+                    rotation = r[0][0].inv().as_euler('xyz', degrees=True)
+                else :
+                    rotation = r[0][0].as_euler('xyz', degrees=True)
         #compute camera position from bounding_box
         #cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
         #cmd+= "mv "+queryTXT+".pdb "+tmpPDBName+";"
