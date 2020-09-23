@@ -3125,7 +3125,7 @@ function ticked(e) {
       context.rect(x,y, w,h);
       context.stroke();
       context.fillText(snode.data["name"].replace(/,? and /g, ' & '),x,y);
-      drawThumbnailInCanvas(snode,x,y, w,h);//scale sized ?
+	  if (snode.data.ingtype !== "fiber") drawThumbnailInCanvas(snode,x,y, w,h);//scale sized ?
       //if surface draw a line representing the membrane
       if (snode.data.surface) {
         var thickness = 42.0/2.0;//angstrom
@@ -3161,8 +3161,8 @@ function ticked(e) {
         var sc2d = parseFloat(snode.data.sprite.scale2d)*canvas_scale;
         var leny = -parseFloat(snode.data.sprite.lengthy)*sc2d;//sc2d is angstrom to pixels
 		//draw two other thumbnail around
-		drawThumbnailInCanvas(snode,x-leny,y, w,h);//scale sized ?
-		drawThumbnailInCanvas(snode,x+leny,y, w,h);//scale sized ?
+		drawThumbnailInCanvas(snode,x-leny/2.0,y, w,h);//scale sized ?
+		drawThumbnailInCanvas(snode,x+leny/2.0,y, w,h);//scale sized ?
 	  }
       // Restore the default state
       context.restore();
