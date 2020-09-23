@@ -447,7 +447,7 @@ def queryForm(form, verbose = 0):
     tmpPDBName = ""
     inverse_rotation = False
     if "inverse" in form :
-        if (form["inverse"].value == "true") :
+        if (form["inverse"].value == 'true') :
             inverse_rotation = True
     #no more than 20character
     force_pdb = True
@@ -510,6 +510,7 @@ def queryForm(form, verbose = 0):
                     rotation = r[0][0].inv().as_euler('xyz', degrees=True)
                 else :
                     rotation = r[0][0].as_euler('xyz', degrees=True)
+        #printDebug(str(inverse_rotation));return;
         #compute camera position from bounding_box
         #cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
         #cmd+= "mv "+queryTXT+".pdb "+tmpPDBName+";"
