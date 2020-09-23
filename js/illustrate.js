@@ -114,7 +114,7 @@ function ill_writeAtoms(structure,style) {
     if (asele === "") asele = "not water";
     
     if (style === 1) {
-      asele='('+asele+') and (.CA or .P or .C5)';
+      asele="("+asele+") and (.CA or .P or .C1')";
     }
     
     console.log(asele);
@@ -272,7 +272,7 @@ function ill_writeAtoms_cb(structure,style,au,sele_elem,current_model) {
   if (asele === "") asele = "not water";
   
   if (style === 1) {
-    asele='('+asele+') and (.CA or .P or .C5)';
+    asele="("+asele+") and (.CA or .P or .C1')";
   }
 
   console.log(asele);
@@ -420,10 +420,10 @@ HETATM---------- 0,9999, 1.0,1.0,1.0, 1.5\n";
     {
         //#open wildcard1
         //P,C5,CA
-        astr+="ATOM  -P---  --- 0,9999 1.00, 1.0, 1.0, 5.0\n\
-ATOM  -C5--  --- 0,9999 1.0,1.0,1.0, 5.0\n\
-ATOM  -P--- D--- 0,9999 1.0,1.0,1.0, 5.0\n\
-ATOM  -C5-- D--- 0,9999 1.0,1.0,1.0, 5.0\n\
+        astr+="ATOM  -P-------- 0,9999 1.00, 1.0, 1.0, 5.0\n\
+ATOM  -C1'------ 0,9999 1.0,1.0,1.0, 5.0\n\
+HETATM-P-------- 0,9999 1.0, 1.0, 1.0, 5.0\n\
+HETATM-C1'------ 0,9999 1.00, 1.00, 1.00, 5.0\n\
 ATOM  -CA------- 0,9999 1.0,1.0,1.0, 5.0\n\
 HETATM-C-------- 0,9999 1.0,1.0,1.0, 1.6\n\
 HETATM---------- 0,9999 1.0,1.0,1.0, 1.5\n";
