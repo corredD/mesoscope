@@ -272,12 +272,32 @@ def GetPrincipalAxis(coordinates) :
     # stage.animationControls.rotate(new NGL.Quaternion(  0.6629315 , -0.3361487 , -0.18151894,  0.64387635).inverse(), 0);
     return qalign#r.as_quat(), r.inv().as_euler('zxy', degrees=True)
 
+#1-4 “ATOM”
+#7-11# Atom serial number justify right {:>5d}
+#13-16 Atom name          justify left  {:<4s}
+#17 Alternate location indicator         
+#18-20§ Residue name right              {:>3s}
+#22 Chain identifier character          {:>2s}   
+#23-26  Residue sequence number right   {:4d}
+#27 Code for insertions of residues
+#31-38 X orthogonal Å coordinate right real (8.3)
+#39-46 Y orthogonal Å coordinate  right real (8.3)
+#47-54 Z orthogonal Å coordinate right real (8.3)
+#55-60 Occupancy right real (6.2)
+#61-66  Temperature factor right real (6.2)
+#73-76 Segment identifier¶ left character
+#77-78 Element symbol right character
 #as we get the PDB string accumulate the coordinates and calculate the oriented bouding box
+#'         1         2         3         4         5         6         7         8
+#'12345678901234567890123456789012345678901234567890123456789012345678901234567890
+#'ATOM      1  N   HIS A   1      49.668  24.248  10.436  1.00 25.00           N
+#'ATOM  {:>5d} {:^4s} {:>3s}{:>2s}{:>4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}'.format(1,"CA","TYR","WA",1,284.823,267.301,188.865,1.00,0.00,'',"C")
+#'ATOM  {:5d} {:^4s} {:>3s} {:1s}{:4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}'.format(25,"CA","MET","A",125,284.823,267.301,188.865,1.00,0.00,'',"C")
 def getPDBString(p,selection,bu,model):
     #https://cupnet.net/pdb-format/
     all_coords=[]
     #AFormat = 'ATOM  {:5d} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}'
-    AFormat =  'ATOM  {:5d} {:^4s} {:>3s} {:1s}{:4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}'
+    AFormat =  'ATOM  {:>5d} {:^4s} {:>3s}{:>2s}{:>4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}         {:>2s}{:2s}'
     #AFormat = 'ATOM  {:5d}  {:3s} {:3s}{:>2s}{:4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}       {:4s}{:2s}';#//'ATOM  %5d :-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
     BiomtFormat = 'REMARK 350   BIOMT{:1d} {:3d}{:10.6f}{:10.6f}{:10.6f}{:15.5f}';
     writeBU = True;
@@ -289,8 +309,25 @@ def getPDBString(p,selection,bu,model):
     #(.CA or .P or .C5)
     if (bu!=-1 and len(p.assemblies)) :
         chains = p.assemblies[bu]["transformations"][0]["chains"]
+        n = len(chains)
         _records+="REMARK 350 BIOMOLECULE: 1\n";
-        _records+="REMARK 350 APPLY THE FOLLOWING TO CHAINS: "+', '.join(chains)+"\n";
+        #check the size of the chains string. No more than 80c
+        #only 27c for the chains but limited at 68
+        #thats 9 chains single caracters
+        #if not single caracter....
+        linemax = 68# 41+27.0
+        _records+="REMARK 350 APPLY THE FOLLOWING TO CHAINS:"
+        counter = 41
+        for i,c in enumerate(chains) :
+            r = " "+c+","
+            if counter + len(r) >= linemax :
+                _records+="\n"
+                _records+="REMARK 350                    AND CHAINS:"
+                counter = 41
+            if i == n-1 : #last chain
+                r = " "+c
+            _records+=r
+            counter+=len(r)
         for k,t in enumerate(p.assemblies[bu]["transformations"]) :
             m = t["matrix"]
             c = t["vector"]
@@ -306,10 +343,12 @@ def getPDBString(p,selection,bu,model):
             for r in ch.residues() :
                 at = r.atom(name='CA')
                 serial = ia;
+                if (ir >= 9999) ir = 9999
                 if (serial > 99999): serial = 99999;
                 if (at == None): at = r.atom(name='P')
                 if (at == None): at = r.atom(name='C5')
                 if (at == None): continue
+                if (at.het.name == 'UNK' or at.het == None ) : continue
                 _records+=AFormat.format(serial,at.name,r.name,ch.internal_id,ir,
                     at.location[0], at.location[1], at.location[2], 1.0,0.0,'','C')+"\n";
                 all_coords.append([at.location[0], at.location[1], at.location[2]])
@@ -321,6 +360,7 @@ def getPDBString(p,selection,bu,model):
             for r in ch.residues() :
                 at = r.atom(name='CA')
                 serial = ia;
+                if (ir >= 9999) ir = 9999
                 if (serial > 99999): serial = 99999;
                 if (at == None): at = r.atom(name='P')
                 if (at == None): at = r.atom(name='C5')
@@ -378,7 +418,7 @@ def queryForm(form, verbose = 0):
         idprovided = True
     else :
         qid = mkRand()
-    pdbid = "3bna"
+    pdbid = "6b8h" #"3bna"
     bu = ""
     selection = ""
     model = ""
@@ -386,7 +426,7 @@ def queryForm(form, verbose = 0):
     wrkDir = "/var/www/html/data/tmp/ILL/"+qid
     illdir = "/var/www/html/beta/cgi-bin/illustrator"
     curentD = os.path.abspath(os.curdir)
-    #wrkDir = curentD+"/../tmp/"+qid
+    wrkDir = curentD+"/../tmp/"+qid
     #print (wrkDir+"<br><br><br>"+curentD)
     #printDebug(wrkDir+"<br><br><br>"+curentD);
     if not os.path.isdir(wrkDir):
