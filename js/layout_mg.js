@@ -366,7 +366,10 @@ var ngl_widget_options_collapsible = ''+
     '<label id="labeloffsety">2D membrane Y offset</label>' +
     '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="2d_yoffset_range" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
     '<input class="inputNumber" id="2d_yoffset_num" min="-350" max="350" type="number" value="0" style="width:30%"/></div>' +
-    //add the sprites image here ?
+
+    '<label id="labellengthy">2D fiber X length</label>' +
+    '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="2d_length_range" type="range" min="0" max="450" step="1" style="width:70%"/>' +
+    '<input class="inputNumber" id="2d_length_num" min="0" max="450" type="number" value="0" style="width:30%"/></div>' +
 
     '</div>'+
     '<button class="meso_collapsible">View options</button>'+

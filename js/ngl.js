@@ -17,6 +17,7 @@ var nlg_preview_isosurface = true;
 var pcp_elem = [];
 var offset_elem = [];
 var yoffset_2d_elem;
+var ylength_2d_elem;
 var ngl_geom_opacity = 1.0;
 var use_mglserver_beads = false;
 var ill_style = document.getElementById("ill_style");
@@ -165,6 +166,10 @@ function NGL_resetPcp()
 
 function NGL_applyOffsetY2D(value){
     node_selected.data.sprite.offsety = value;
+}
+
+function NGL_applyLengthY2D(value){
+    node_selected.data.sprite.lengthy = value;
 }
 
 function NGL_applyPcp(axis,offset,asyncloop=false) {
@@ -589,7 +594,7 @@ function NGL_Setup() {
   offset_elem.push(document.getElementById("offsetZ"));
 
   yoffset_2d_elem = document.getElementById("2d_yoffset_range");
-
+  ylength_2d_elem  = document.getElementById("2d_length_range");
   /* for (var i=0;i<3;i++){
   			pcp_elem[i].oninput = function(e) {
   					NGL_updateMBcomp();
@@ -607,6 +612,10 @@ function NGL_Setup() {
     if (this.id.startsWith("2d_yoffset")) 
     {
       NGL_applyOffsetY2D(this.value)
+    }
+    else if (this.id.startsWith("2d_length")) 
+    {
+      NGL_applyLengthY2D(this.value)
     }
     else {
       NGL_updateMBcomp();

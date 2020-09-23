@@ -450,12 +450,14 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
   var sprite = {
     "image": "",
     "offsety": 0,
-    "scale2d": 1
+    "scale2d": 1,
+    "lengthy":0
   };
   if ("sprite" in ing_dic) {
     sprite.image = ("image" in ing_dic["sprite"]) ? ing_dic["sprite"]["image"] : null;
     sprite.offsety = ("offsety" in ing_dic["sprite"]) ? ing_dic["sprite"]["offsety"] : 0;
     sprite.scale2d = ("scale2d" in ing_dic["sprite"]) ? ing_dic["sprite"]["scale2d"] : 1;
+    sprite.lengthy = ("lengthy" in ing_dic["sprite"]) ? ing_dic["sprite"]["lengthy"] : 0;
   }
 
   var elem = {
@@ -807,12 +809,14 @@ function OneIngredient(ing_dic, surface) {
   var sprite = {
     "image": "",
     "offsety": 0,
-    "scale2d": 1
+    "scale2d": 1,
+    "lengthy" :0
   };
   if ("sprite" in ing_dic) {
     sprite.image = ("image" in ing_dic["sprite"]) ? ing_dic["sprite"]["image"] : null;
     sprite.offsety = ("offsety" in ing_dic["sprite"]) ? ing_dic["sprite"]["offsety"] : 0;
     sprite.scale2d = ("scale2d" in ing_dic["sprite"]) ? ing_dic["sprite"]["scale2d"] : 1;
+    sprite.lengthy = ("lengthy" in ing_dic["sprite"]) ? ing_dic["sprite"]["lengthy"] : 0;
   }
   else {
     if ("image" in ing_dic) sprite.image = ing_dic["image"];
@@ -1069,7 +1073,8 @@ function OneIngredientXML(ing_dic){
     var sprite = {
       "image": "",
       "offsety": 0,
-      "scale2d": 1
+      "scale2d": 1,
+      "lengthy":0
     };
     var elem = {
       "name": name,

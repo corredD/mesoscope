@@ -1183,7 +1183,7 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
         var image = (allfield.image_index!==-1)?idata[allfield.image_index]:"";
         var offsety= (allfield.offsety_index!==-1)?idata[allfield.offsety_index]:0;
         var scale2d= (allfield.scale2d_index!==-1)?idata[allfield.scale2d_index]:0;
-		var sprite = {"image":image,"offsety":offsety,"scale2d":scale2d};
+		var sprite = {"image":image,"offsety":offsety,"scale2d":scale2d,"lengthy":0};
         var elem = {
 					"name":name,"size":25,"molecularweight":mw,"confidence":confidence,"color":color,
         	"source":{"pdb":source,"bu":bu,"selection":sele,"model":model},"count":acount,
@@ -1830,7 +1830,7 @@ function checkAttributes(agraph){
 			if (!("visited" in agraph[i].data)) agraph[i].data.visited = false;
 			if (!("include" in agraph[i].data)) agraph[i].data.include = true;
 			if (!("opm" in agraph[i].data)) agraph[i].data.opm = 0;//is it an opm model
-
+			
 			if (!("angle" in agraph[i].data)) agraph[i].data.angle = 25.0;//is it an opm model
 			if (!("ulength" in agraph[i].data)) agraph[i].data.ulength = 34.0;//is it an opm model
 			if (!("tlength" in agraph[i].data)) agraph[i].data.tlength = 100;//is it an opm model
@@ -3120,7 +3120,7 @@ function ticked(e) {
       var ratio = (snode.data.thumbnail)? snode.data.thumbnail.width/snode.data.thumbnail.height:1.0;// 0.5;
       var w = 150;//(snode.data.thumbnail)?snode.data.thumbnail.width:150;
       var h = w/ratio;//(snode.data.thumbnail)?snode.data.thumbnail.height:150;
-      var x = canvas.width-w-10;
+      var x = canvas.width/2.0-w-10;
       var y = canvas.height-h-10;
       context.rect(x,y, w,h);
       context.stroke();
@@ -3155,7 +3155,15 @@ function ticked(e) {
         context.lineTo(x+w,y+h/2.0-offy+thickness*sc2d);
         context.strokeStyle = "blue";
         context.stroke();
-      }
+	  }
+	  if (snode.data.ingtype === "fiber") {
+		var canvas_scale = w/snode.data.thumbnail.width;
+        var sc2d = parseFloat(snode.data.sprite.scale2d)*canvas_scale;
+        var leny = -parseFloat(snode.data.sprite.lengthy)*sc2d;//sc2d is angstrom to pixels
+		//draw two other thumbnail around
+		drawThumbnailInCanvas(snode,x-leny,y, w,h);//scale sized ?
+		drawThumbnailInCanvas(snode,x+leny,y, w,h);//scale sized ?
+	  }
       // Restore the default state
       context.restore();
     }
