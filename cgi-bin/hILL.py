@@ -331,7 +331,7 @@ def getPDBString(p,selection,bu,model):
                 _records+="REMARK 350                    AND CHAINS:"
                 counter = 41
             if i == n-1 : #last chain
-                r = " "+c
+                r = " "+c+"\n"
             _records+=r
             counter+=len(r)
         for k,t in enumerate(p.assemblies[bu]["transformations"]) :
