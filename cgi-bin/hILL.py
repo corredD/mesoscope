@@ -447,7 +447,8 @@ def queryForm(form, verbose = 0):
     tmpPDBName = ""
     inverse_rotation = False
     if "inverse" in form :
-        inverse_rotation = form["inverse"].value
+        if (form["inverse"].value == "true") :
+            inverse_rotation = True
     #no more than 20character
     force_pdb = True
     if "force_pdb" in form:
