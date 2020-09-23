@@ -136,11 +136,28 @@ function ill_writeAtoms(structure,style) {
                 t.push(e.chainname);
             }
           });
+          var nchain = t.length;
           //s.selection.rules.map(function(d) {
           //  if (chnames.includes(d.chainname)) {return d.chainname;}          
           //} )
           _records.push("REMARK 350 BIOMOLECULE: 1");
-          _records.push("REMARK 350 APPLY THE FOLLOWING TO CHAINS: "+t.join(', '));
+          var linemax = 68;// 41+27.0;
+          _records.push("REMARK 350 APPLY THE FOLLOWING TO CHAINS:");
+          var counter = 41;
+          for (var i=0;i<nchain;i++){
+            var r = " "+t[i]+",";
+            if (counter + r.length >= linemax){
+              _records.push("\n");
+              _records.push("REMARK 350                    AND CHAINS:");
+              counter = 41;
+            }
+            if (i === nchain-1) {
+              r = " "+c
+            } //#last chain
+            _records.push(r);
+            counter+=r.length;
+          }
+          //_records.push("REMARK 350 APPLY THE FOLLOWING TO CHAINS: "+t.join(', '));
           for (var k = 0; k < o.object.biomolDict[au].partList[j].matrixList.length; k++) {
             var mat = o.object.biomolDict[au].partList[j].matrixList[k];
             //_records.push(sprintf(BiomtFormat, 1, k+1,mat.elements[0],-mat.elements[1],-mat.elements[2],mat.elements[12]));//+ - -
