@@ -343,9 +343,9 @@ def getPDBString(p,selection,bu,model,use_authid=True):
         #loop over the atoms of the given chain selection
         #this loop is not ordered
         for ch in p.models[model].chains():
-            cid = ch.internal_id
-            if not use_authid :
-                cid = ch.id
+            cid = ch.id
+            if use_authid :
+                cid = ch.internal_id
             if (cid not in chains): 
                 continue;
             if len(selection) and (cid not in selection) : 
@@ -370,6 +370,9 @@ def getPDBString(p,selection,bu,model,use_authid=True):
                 ia = ia + 1
     else :
         for ch in p.models[model].chains():
+            cid = ch.id
+            if use_authid :
+                cid = ch.internal_id
             if len(selection) and (cid not in selection) : continue;
             for r in ch.residues() :
                 at = r.atom(name='CA')
