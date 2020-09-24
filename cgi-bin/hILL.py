@@ -1,6 +1,7 @@
 #!/bin/python3
 ##!/usr/bin/env python
 ##!python3
+import sys
 import os
 import json
 import cgi
@@ -429,6 +430,9 @@ def mkRand():
     return tmp
 
 def queryForm(form, verbose = 0):
+    print ("Content-type: text/html")
+    print ()
+    sys.stderr = sys.stdout
     qid = 0
     idprovided = False
     if "qid" in form  and int(form["qid"].value) != -1:
@@ -560,9 +564,9 @@ def queryForm(form, verbose = 0):
     result +="\"force_pdb\":\""+str(force_pdb)+"\",\"proj_name\":\""+str(proj_name)+"\",\"bu\":\""+str(bu)+"\","
     result +="\"model\":\""+str(model)+"\",\"pdbid\":\""+str(pdbid)
     result +="\"}"
-    print ("Access-Control-Allow-Origin: *")
-    print ('Content-type: application/json\n')
-    print ()
+    #print ("Access-Control-Allow-Origin: *")
+    #print ('Content-type: application/json\n')
+    #print ()
     print (result)
     #displayResult(tmpPDBName,httpfile,httpimg,queryTXT)
     #cleanup(wrkDir, "1 days")
