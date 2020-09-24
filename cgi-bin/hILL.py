@@ -28,6 +28,9 @@ global atomic_outlines_params
 global subunit_outlines_params
 global chain_outlines_params
 global ao_params
+
+DEBUG = False
+
 atomic_outlines_params=["3.0","10.0","4","0.0","5.0"]
 subunit_outlines_params=["3.0","10.0"]
 chain_outlines_params=["3.0","10.0","6.0"]
@@ -302,10 +305,11 @@ def GetPrincipalAxis(coordinates) :
 #'ATOM  {:5d} {:^4s} {:>3s} {:1s}{:4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}'.format(25,"CA","MET","A",125,284.823,267.301,188.865,1.00,0.00,'',"C")
 def getPDBString(p,selection,bu,model,use_authid=False):
     #https://cupnet.net/pdb-format/
-    print ("<br> use_authid "+str(use_authid))
-    print ("<br> selection "+str(selection))
-    print ("<br> bu "+str(bu))
-    print ("<br> model "+str(model))
+    if DEBUG :
+        print ("<br> use_authid "+str(use_authid))
+        print ("<br> selection "+str(selection))
+        print ("<br> bu "+str(bu))
+        print ("<br> model "+str(model))
     all_coords=[]
     #AFormat =  'ATOM  {:>5d} {:^4s} {:>3s}{:>2s}{:>4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}         {:>2s}{:2s}'
     AFormat =  'ATOM  {:>5d}  {:<4s}{:>3s}{:>2s}{:>4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}         {:>2s}{:2s}'
@@ -348,16 +352,18 @@ def getPDBString(p,selection,bu,model,use_authid=False):
         #loop over the atoms of the given chain selection
         #this loop is not ordered
         for ch in p.models[model].chains():
-            cid = '%s' % ch.id
+            cid = ch.id
             if use_authid :
-                cid = '%s' % ch.internal_id
+                cid = ch.internal_id
             #debug the chain
-            print ("<br> chain used "+cid+" "+ch.id+" auth "+ch.internal_id)
+            if DEBUG :
+                print ("<br> chain used "+cid+" "+ch.id+" auth "+ch.internal_id)
             if (cid not in chains): 
                 continue;
             if len(selection) and (cid not in selection) : 
                 continue;
-            print (" chain selected ")
+            if DEBUG :
+                print (" chain selected ")
             for r in ch.residues() :
                 at = r.atom(name='CA')
                 serial = ia;
@@ -378,13 +384,15 @@ def getPDBString(p,selection,bu,model,use_authid=False):
                 ia = ia + 1
     else :
         for ch in p.models[model].chains():
-            cid = '%s' % ch.id
+            cid = ch.id
             if use_authid :
-                cid = '%s' % ch.internal_id
+                cid = ch.internal_id
             #debug the chain
-            print ("<br> chain used "+cid+" "+ch.id+" auth "+ch.internal_id)                
+            if DEBUG :
+                print ("<br> chain used "+cid+" "+ch.id+" auth "+ch.internal_id)                
             if len(selection) and (cid not in selection) : continue;
-            print (" chain selected ")
+            if DEBUG :
+                print (" chain selected ")
             for r in ch.residues() :
                 at = r.atom(name='CA')
                 serial = ia;
@@ -440,8 +448,11 @@ def mkRand():
     return tmp
 
 def queryForm(form, verbose = 0):
-    print ("Content-type: text/html")
-    print ()
+    if "debug" in form :
+        DEBUG = (form["debug"].value == 'true')
+    if DEBUG :
+        print ("Content-type: text/html")
+        print ()
     sys.stderr = sys.stdout
     qid = 0
     idprovided = False
@@ -474,11 +485,10 @@ def queryForm(form, verbose = 0):
     tmpPDBName = ""
     inverse_rotation = False
     if "inverse" in form :
-        if (form["inverse"].value == 'true') :
-            inverse_rotation = True
+        inverse_rotation = (form["inverse"].value == 'true')
     #no more than 20character
     if "use_authid" in form :
-        use_authid = form["use_authid"].value
+        use_authid = (form["inverse"].value == 'true')
     force_pdb = True
     if "force_pdb" in form:
         force_pdb = form["force_pdb"].value
@@ -533,7 +543,8 @@ def queryForm(form, verbose = 0):
         f = open(tmpPDBName, "w")
         f.write(pdb_txt)
         f.close()
-        print ("<br> inverse_rotation "+str(inverse_rotation))
+        if DEBUG :
+            print ("<br> inverse_rotation "+str(inverse_rotation))
         if (len(r)):
             if len(r[0]):
                 if inverse_rotation : 
@@ -571,13 +582,15 @@ def queryForm(form, verbose = 0):
     httpfile="https://mesoscope.scripps.edu/data/tmp/ILL/"+str(qid)+"/"+proj_name+".pdb"
     httpimg="https://mesoscope.scripps.edu/data/tmp/ILL/"+str(qid)+"/"+proj_name+".png"
     result = "{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(qid)+"\","
-    result +="\"use_authid\":\""+str(use_authid)+"\",\"inverse_rotation\":\""+str(inverse_rotation)+"\",\"selection\":\""+str(selection)+"\","
-    result +="\"force_pdb\":\""+str(force_pdb)+"\",\"proj_name\":\""+str(proj_name)+"\",\"bu\":\""+str(bu)+"\","
-    result +="\"model\":\""+str(model)+"\",\"pdbid\":\""+str(pdbid)
-    result +="\"}"
-    #print ("Access-Control-Allow-Origin: *")
-    #print ('Content-type: application/json\n')
-    #print ()
+    if DEBUG :
+        result +="\"use_authid\":\""+str(use_authid)+"\",\"inverse_rotation\":\""+str(inverse_rotation)+"\",\"selection\":\""+str(selection)+"\","
+        result +="\"force_pdb\":\""+str(force_pdb)+"\",\"proj_name\":\""+str(proj_name)+"\",\"bu\":\""+str(bu)+"\","
+        result +="\"model\":\""+str(model)+"\",\"pdbid\":\""+str(pdbid)
+        result +="\"}"
+    else :
+        print ("Access-Control-Allow-Origin: *")
+        print ('Content-type: application/json\n')
+        print ()
     print (result)
     #displayResult(tmpPDBName,httpfile,httpimg,queryTXT)
     #cleanup(wrkDir, "1 days")
