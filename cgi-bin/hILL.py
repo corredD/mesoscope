@@ -299,7 +299,7 @@ def GetPrincipalAxis(coordinates) :
 #'ATOM      1  N   HIS A   1      49.668  24.248  10.436  1.00 25.00           N
 #'ATOM  {:>5d}  {:<4s}{:>3s}{:>2s}{:>4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}         {:>2s}{:2s}'.format(1,"CA","TYR","WA",1,284.823,267.301,188.865,1.00,0.00,'',"C")
 #'ATOM  {:5d} {:^4s} {:>3s} {:1s}{:4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}'.format(25,"CA","MET","A",125,284.823,267.301,188.865,1.00,0.00,'',"C")
-def getPDBString(p,selection,bu,model):
+def getPDBString(p,selection,bu,model,use_authid=True):
     #https://cupnet.net/pdb-format/
     all_coords=[]
     #AFormat =  'ATOM  {:>5d} {:^4s} {:>3s}{:>2s}{:>4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}         {:>2s}{:2s}'
@@ -343,8 +343,13 @@ def getPDBString(p,selection,bu,model):
         #loop over the atoms of the given chain selection
         #this loop is not ordered
         for ch in p.models[model].chains():
-            if (ch.internal_id not in chains): continue;
-            if len(selection) and (ch.internal_id not in selection) : continue;
+            cid = ch.internal_id
+            if not use_authid :
+                cid = ch.id
+            if (cid not in chains): 
+                continue;
+            if len(selection) and (cid not in selection) : 
+                continue;
             for r in ch.residues() :
                 at = r.atom(name='CA')
                 serial = ia;
@@ -352,16 +357,20 @@ def getPDBString(p,selection,bu,model):
                 if (serial > 99999): serial = 99999;
                 if (at == None): at = r.atom(name='P')
                 if (at == None): at = r.atom(name="C1'")
-                if (at == None): continue
-                if (at.het.name == 'UNK' or at.het == None ) : continue
-                _records+=AFormat.format(serial,at.name,r.name,ch.internal_id,ir,
+                if (at == None): 
+                    print ("atom is none")
+                    continue
+                if (at.het.name == 'UNK' or at.het == None ) : 
+                    print ("at.het is none")
+                    continue
+                _records+=AFormat.format(serial,at.name,r.name,cid,ir,
                     at.location[0], at.location[1], at.location[2], 1.0,0.0,'','C')+"\n";
                 all_coords.append([at.location[0], at.location[1], at.location[2]])
                 ir = ir + 1
                 ia = ia + 1
     else :
         for ch in p.models[model].chains():
-            if len(selection) and (ch.internal_id not in selection) : continue;
+            if len(selection) and (cid not in selection) : continue;
             for r in ch.residues() :
                 at = r.atom(name='CA')
                 serial = ia;
@@ -381,7 +390,7 @@ def getPDBString(p,selection,bu,model):
     #print (_records)
     return _records,bounding_box,all_coords,r
 
-def FetchProtein(pdb_id,bu,selection,model):
+def FetchProtein(pdb_id,bu,selection,model,use_authid=True):
     if model == None or model == "":
         model = 0
     lchains_id = []
@@ -395,7 +404,7 @@ def FetchProtein(pdb_id,bu,selection,model):
     if selection != None and selection != "" :
         asele = selection
         sel_chains = asele.split(",")
-    return getPDBString(p,sel_chains,bu,model)
+    return getPDBString(p,sel_chains,bu,model,use_authid)
 
 def printDebug(data):
     print("Content-type: text/html")
@@ -424,11 +433,12 @@ def queryForm(form, verbose = 0):
         idprovided = True
     else :
         qid = mkRand()
-    pdbid = "6b8h" #"3bna"
+    pdbid = "1crn"
     bu = ""
     selection = ""
     model = ""
     proj_name = "illustrated"
+    use_authid = True
     wrkDir = "/var/www/html/data/tmp/ILL/"+qid
     illdir = "/var/www/html/beta/cgi-bin/illustrator"
     curentD = os.path.abspath(os.curdir)
@@ -450,6 +460,8 @@ def queryForm(form, verbose = 0):
         if (form["inverse"].value == 'true') :
             inverse_rotation = True
     #no more than 20character
+    if "use_authid" in form :
+        use_authid = form["use_authid"].value
     force_pdb = True
     if "force_pdb" in form:
         force_pdb = form["force_pdb"].value
@@ -500,7 +512,7 @@ def queryForm(form, verbose = 0):
     cmd = "cd "+wrkDir+";"
     if fetch and (not os.path.isfile(tmpPDBName) or force_pdb):
         tmpPDBName = wrkDir+"/"+proj_name+".pdb"
-        pdb_txt,bounding_box,all_coords,r = FetchProtein(queryTXT,bu,selection,model)
+        pdb_txt,bounding_box,all_coords,r = FetchProtein(queryTXT,bu,selection,model,use_authid)
         f = open(tmpPDBName, "w")
         f.write(pdb_txt)
         f.close()
