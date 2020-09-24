@@ -472,7 +472,7 @@ def queryForm(form, verbose = 0):
     wrkDir = "/var/www/html/data/tmp/ILL/"+qid
     illdir = "/var/www/html/beta/cgi-bin/illustrator"
     curentD = os.path.abspath(os.curdir)
-    #wrkDir = curentD+"/../tmp/"+qid
+    wrkDir = curentD+"/../tmp/"+qid
     #print (wrkDir+"<br><br><br>"+curentD)
     #printDebug(wrkDir+"<br><br><br>"+curentD);
     if not os.path.isdir(wrkDir):
@@ -612,6 +612,7 @@ def TestCGI():
     </body></html>""" % (localvars_table))
 
 if __name__=='__main__':
+    DEBUG = False
     form = cgi.FieldStorage()
     try:
         statuskey = form["pdbid"].value
@@ -620,6 +621,8 @@ if __name__=='__main__':
     if statuskey != None and statuskey != "":
         #p = FetchProtein(statuskey)
         #printDebug(p.model.chains())
+        if "debug" in form :
+            DEBUG = (form["debug"].value == 'true')        
         queryForm(form)
     else :
         #queryForm(form)
