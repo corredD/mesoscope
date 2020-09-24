@@ -557,7 +557,7 @@ def queryForm(form, verbose = 0):
     httpimg="https://mesoscope.scripps.edu/data/tmp/ILL/"+str(qid)+"/"+proj_name+".png"
     result = "{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(qid)+"\","
     result +="\"use_authid\":\""+str(use_authid)+"\",\"inverse_rotation\":\""+str(inverse_rotation)+"\",\"selection\":\""+str(selection)+"\","
-    result +="\"force_pdb\":\""+str(force_pdb)+"\",\"name\":\""+str(name)+"\",\"bu\":\""+str(bu)+"\","
+    result +="\"force_pdb\":\""+str(force_pdb)+"\",\"proj_name\":\""+str(proj_name)+"\",\"bu\":\""+str(bu)+"\","
     result +="\"model\":\""+str(model)+"\",\"pdbid\":\""+str(pdbid)
     result +="\"}"
     print ("Access-Control-Allow-Origin: *")
