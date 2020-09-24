@@ -300,7 +300,7 @@ def GetPrincipalAxis(coordinates) :
 #'ATOM      1  N   HIS A   1      49.668  24.248  10.436  1.00 25.00           N
 #'ATOM  {:>5d}  {:<4s}{:>3s}{:>2s}{:>4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}         {:>2s}{:2s}'.format(1,"CA","TYR","WA",1,284.823,267.301,188.865,1.00,0.00,'',"C")
 #'ATOM  {:5d} {:^4s} {:>3s} {:1s}{:4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}'.format(25,"CA","MET","A",125,284.823,267.301,188.865,1.00,0.00,'',"C")
-def getPDBString(p,selection,bu,model,use_authid=True):
+def getPDBString(p,selection,bu,model,use_authid=False):
     #https://cupnet.net/pdb-format/
     all_coords=[]
     #AFormat =  'ATOM  {:>5d} {:^4s} {:>3s}{:>2s}{:>4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}         {:>2s}{:2s}'
@@ -343,6 +343,7 @@ def getPDBString(p,selection,bu,model,use_authid=True):
         _records+="REMARK 350END\n";
         #loop over the atoms of the given chain selection
         #this loop is not ordered
+        print ("<br> use_authid "+str(use_authid))
         for ch in p.models[model].chains():
             cid = ch.id
             if use_authid :
@@ -414,7 +415,7 @@ def FetchProtein(pdb_id,bu,selection,model,use_authid=True):
     if selection != None and selection != "" :
         asele = selection
         sel_chains = asele.split(",")
-    return getPDBString(p,sel_chains,bu,model,use_authid)
+    return getPDBString(p,sel_chains,bu,model,use_authid=use_authid)
 
 def printDebug(data):
     print("Content-type: text/html")
@@ -525,10 +526,11 @@ def queryForm(form, verbose = 0):
     cmd = "cd "+wrkDir+";"
     if fetch and (not os.path.isfile(tmpPDBName) or force_pdb):
         tmpPDBName = wrkDir+"/"+proj_name+".pdb"
-        pdb_txt,bounding_box,all_coords,r = FetchProtein(queryTXT,bu,selection,model,use_authid)
+        pdb_txt,bounding_box,all_coords,r = FetchProtein(queryTXT,bu,selection,model,use_authid=use_authid)
         f = open(tmpPDBName, "w")
         f.write(pdb_txt)
         f.close()
+        print ("<br> inverse_rotation "+str(inverse_rotation))
         if (len(r)):
             if len(r[0]):
                 if inverse_rotation : 
