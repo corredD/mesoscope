@@ -29,10 +29,6 @@ global subunit_outlines_params
 global chain_outlines_params
 global ao_params
 
-global DEBUG
-
-DEBUG = False
-
 atomic_outlines_params=["3.0","10.0","4","0.0","5.0"]
 subunit_outlines_params=["3.0","10.0"]
 chain_outlines_params=["3.0","10.0","6.0"]
@@ -305,10 +301,9 @@ def GetPrincipalAxis(coordinates) :
 #'ATOM      1  N   HIS A   1      49.668  24.248  10.436  1.00 25.00           N
 #'ATOM  {:>5d}  {:<4s}{:>3s}{:>2s}{:>4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}         {:>2s}{:2s}'.format(1,"CA","TYR","WA",1,284.823,267.301,188.865,1.00,0.00,'',"C")
 #'ATOM  {:5d} {:^4s} {:>3s} {:1s}{:4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}'.format(25,"CA","MET","A",125,284.823,267.301,188.865,1.00,0.00,'',"C")
-def getPDBString(p,selection,bu,model,use_authid=False):
-    global DEBUG
+def getPDBString(p,selection,bu,model,use_authid=False,debug=False):
     #https://cupnet.net/pdb-format/
-    if DEBUG :
+    if debug :
         print ("<br> use_authid "+str(use_authid))
         print ("<br> selection "+str(selection))
         print ("<br> bu "+str(bu))
@@ -359,13 +354,13 @@ def getPDBString(p,selection,bu,model,use_authid=False):
             if use_authid :
                 cid = ch.internal_id
             #debug the chain
-            if DEBUG :
+            if debug :
                 print ("<br> chain used "+cid+" "+ch.id+" auth "+ch.internal_id)
             if (cid not in chains): 
                 continue;
             if len(selection) and (cid not in selection) : 
                 continue;
-            if DEBUG :
+            if debug :
                 print (" chain selected ")
             for r in ch.residues() :
                 at = r.atom(name='CA')
@@ -389,10 +384,10 @@ def getPDBString(p,selection,bu,model,use_authid=False):
             if use_authid :
                 cid = ch.internal_id
             #debug the chain
-            if DEBUG :
+            if debug :
                 print ("<br> chain used "+cid+" "+ch.id+" auth "+ch.internal_id)                
             if len(selection) and (cid not in selection) : continue;
-            if DEBUG :
+            if debug :
                 print (" chain selected ")
             for r in ch.residues() :
                 at = r.atom(name='CA')
@@ -449,10 +444,10 @@ def mkRand():
     return tmp
 
 def queryForm(form, verbose = 0):
-    global DEBUG
+    debug = False
     if "debug" in form :
-        DEBUG = (form["debug"].value == 'true')
-    if DEBUG :
+        debug = (form["debug"].value == 'true')
+    if debug :
         print ("Content-type: text/html")
         print ()
     sys.stderr = sys.stdout
@@ -545,7 +540,7 @@ def queryForm(form, verbose = 0):
         f = open(tmpPDBName, "w")
         f.write(pdb_txt)
         f.close()
-        if DEBUG :
+        if debug :
             print ("<br> inverse_rotation "+str(inverse_rotation))
         if (len(r)):
             if len(r[0]):
@@ -553,13 +548,6 @@ def queryForm(form, verbose = 0):
                     rotation = r[0][0].inv().as_euler('xyz', degrees=True)
                 else :
                     rotation = r[0][0].as_euler('xyz', degrees=True)
-        #printDebug(str(inverse_rotation));return;
-        #compute camera position from bounding_box
-        #cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
-        #cmd+= "mv "+queryTXT+".pdb "+tmpPDBName+";"
-        #print (pdb_txt+"<br>")
-        #printDebug(pdb_txt+"<br><br>"+inpstring)
-        #return
 
     inpfile = wrkDir+"/"+proj_name+".inp"
     if "input_file" in form:
@@ -583,16 +571,16 @@ def queryForm(form, verbose = 0):
 
     httpfile="https://mesoscope.scripps.edu/data/tmp/ILL/"+str(qid)+"/"+proj_name+".pdb"
     httpimg="https://mesoscope.scripps.edu/data/tmp/ILL/"+str(qid)+"/"+proj_name+".png"
-    result = "{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(qid)+"\","
-    if DEBUG :
-        result +="\"use_authid\":\""+str(use_authid)+"\",\"inverse_rotation\":\""+str(inverse_rotation)+"\",\"selection\":\""+str(selection)+"\","
+    result = "{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(qid)
+    if debug :
+        result +=",\"use_authid\":\""+str(use_authid)+"\",\"inverse_rotation\":\""+str(inverse_rotation)+"\",\"selection\":\""+str(selection)+"\","
         result +="\"force_pdb\":\""+str(force_pdb)+"\",\"proj_name\":\""+str(proj_name)+"\",\"bu\":\""+str(bu)+"\","
         result +="\"model\":\""+str(model)+"\",\"pdbid\":\""+str(pdbid)
-        result +="\"}"
     else :
         print ("Access-Control-Allow-Origin: *")
         print ('Content-type: application/json\n')
         print ()
+    result +="\"}"
     print (result)
     #displayResult(tmpPDBName,httpfile,httpimg,queryTXT)
     #cleanup(wrkDir, "1 days")
@@ -612,17 +600,12 @@ def TestCGI():
     </body></html>""" % (localvars_table))
 
 if __name__=='__main__':
-    DEBUG = False
     form = cgi.FieldStorage()
     try:
         statuskey = form["pdbid"].value
     except:
         statuskey = None
     if statuskey != None and statuskey != "":
-        #p = FetchProtein(statuskey)
-        #printDebug(p.model.chains())
-        if "debug" in form :
-            DEBUG = (form["debug"].value == 'true')        
         queryForm(form)
     else :
         #queryForm(form)
