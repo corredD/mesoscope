@@ -302,6 +302,10 @@ def GetPrincipalAxis(coordinates) :
 #'ATOM  {:5d} {:^4s} {:>3s} {:1s}{:4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}'.format(25,"CA","MET","A",125,284.823,267.301,188.865,1.00,0.00,'',"C")
 def getPDBString(p,selection,bu,model,use_authid=False):
     #https://cupnet.net/pdb-format/
+    print ("<br> use_authid "+str(use_authid))
+    print ("<br> selection "+str(selection))
+    print ("<br> bu "+str(bu))
+    print ("<br> model "+str(model))
     all_coords=[]
     #AFormat =  'ATOM  {:>5d} {:^4s} {:>3s}{:>2s}{:>4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}         {:>2s}{:2s}'
     AFormat =  'ATOM  {:>5d}  {:<4s}{:>3s}{:>2s}{:>4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}         {:>2s}{:2s}'
@@ -343,13 +347,12 @@ def getPDBString(p,selection,bu,model,use_authid=False):
         _records+="REMARK 350END\n";
         #loop over the atoms of the given chain selection
         #this loop is not ordered
-        print ("<br> use_authid "+str(use_authid))
         for ch in p.models[model].chains():
-            cid = ch.id
+            cid = '%s' % ch.id
             if use_authid :
-                cid = ch.internal_id
+                cid = '%s' % ch.internal_id
             #debug the chain
-            print ("<br> chain used "+cid+" "+ch.id+" "+ch.internal_id)
+            print ("<br> chain used "+cid+" "+ch.id+" auth "+ch.internal_id)
             if (cid not in chains): 
                 continue;
             if len(selection) and (cid not in selection) : 
@@ -375,11 +378,11 @@ def getPDBString(p,selection,bu,model,use_authid=False):
                 ia = ia + 1
     else :
         for ch in p.models[model].chains():
-            cid = ch.id
+            cid = '%s' % ch.id
             if use_authid :
-                cid = ch.internal_id
+                cid = '%s' % ch.internal_id
             #debug the chain
-            print ("<br> chain used "+cid+" "+ch.id+" "+ch.internal_id)                
+            print ("<br> chain used "+cid+" "+ch.id+" auth "+ch.internal_id)                
             if len(selection) and (cid not in selection) : continue;
             print (" chain selected ")
             for r in ch.residues() :
