@@ -29,8 +29,9 @@ global subunit_outlines_params
 global chain_outlines_params
 global ao_params
 
-DEBUG = False
+global DEBUG
 
+DEBUG = False
 atomic_outlines_params=["3.0","10.0","4","0.0","5.0"]
 subunit_outlines_params=["3.0","10.0"]
 chain_outlines_params=["3.0","10.0","6.0"]
@@ -304,6 +305,7 @@ def GetPrincipalAxis(coordinates) :
 #'ATOM  {:>5d}  {:<4s}{:>3s}{:>2s}{:>4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}         {:>2s}{:2s}'.format(1,"CA","TYR","WA",1,284.823,267.301,188.865,1.00,0.00,'',"C")
 #'ATOM  {:5d} {:^4s} {:>3s} {:1s}{:4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}'.format(25,"CA","MET","A",125,284.823,267.301,188.865,1.00,0.00,'',"C")
 def getPDBString(p,selection,bu,model,use_authid=False):
+    global DEBUG
     #https://cupnet.net/pdb-format/
     if DEBUG :
         print ("<br> use_authid "+str(use_authid))
@@ -448,6 +450,7 @@ def mkRand():
     return tmp
 
 def queryForm(form, verbose = 0):
+    global DEBUG
     if "debug" in form :
         DEBUG = (form["debug"].value == 'true')
     if DEBUG :
