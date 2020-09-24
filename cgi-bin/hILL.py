@@ -347,10 +347,13 @@ def getPDBString(p,selection,bu,model,use_authid=True):
             cid = ch.id
             if use_authid :
                 cid = ch.internal_id
+            #debug the chain
+            print ("<br> chain used "+cid+" "+ch.id+" "+ch.internal_id)
             if (cid not in chains): 
                 continue;
             if len(selection) and (cid not in selection) : 
                 continue;
+            print (" chain selected ")
             for r in ch.residues() :
                 at = r.atom(name='CA')
                 serial = ia;
@@ -374,7 +377,10 @@ def getPDBString(p,selection,bu,model,use_authid=True):
             cid = ch.id
             if use_authid :
                 cid = ch.internal_id
+            #debug the chain
+            print ("<br> chain used "+cid+" "+ch.id+" "+ch.internal_id)                
             if len(selection) and (cid not in selection) : continue;
+            print (" chain selected ")
             for r in ch.residues() :
                 at = r.atom(name='CA')
                 serial = ia;
