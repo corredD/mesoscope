@@ -32,6 +32,7 @@ global ao_params
 global DEBUG
 
 DEBUG = False
+
 atomic_outlines_params=["3.0","10.0","4","0.0","5.0"]
 subunit_outlines_params=["3.0","10.0"]
 chain_outlines_params=["3.0","10.0","6.0"]
@@ -374,10 +375,8 @@ def getPDBString(p,selection,bu,model,use_authid=False):
                 if (at == None): at = r.atom(name='P')
                 if (at == None): at = r.atom(name="C1'")
                 if (at == None): 
-                    print ("atom is none")
                     continue
                 if (at.het.name == 'UNK' or at.het == None ) : 
-                    print ("at.het is none")
                     continue
                 _records+=AFormat.format(serial,at.name,r.name,cid,ir,
                     at.location[0], at.location[1], at.location[2], 1.0,0.0,'','C')+"\n";
