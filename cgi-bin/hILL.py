@@ -472,7 +472,7 @@ def queryForm(form, verbose = 0):
     wrkDir = "/var/www/html/data/tmp/ILL/"+qid
     illdir = "/var/www/html/beta/cgi-bin/illustrator"
     curentD = os.path.abspath(os.curdir)
-    wrkDir = curentD+"/../tmp/"+qid
+    #wrkDir = curentD+"/../tmp/"+qid
     #print (wrkDir+"<br><br><br>"+curentD)
     #printDebug(wrkDir+"<br><br><br>"+curentD);
     if not os.path.isdir(wrkDir):
