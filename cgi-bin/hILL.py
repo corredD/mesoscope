@@ -485,7 +485,7 @@ def queryForm(form, verbose = 0):
         inverse_rotation = (form["inverse"].value == 'true')
     #no more than 20character
     if "use_authid" in form :
-        use_authid = (form["inverse"].value == 'true')
+        use_authid = (form["use_authid"].value == 'true')
     force_pdb = True
     if "force_pdb" in form:
         force_pdb = form["force_pdb"].value
@@ -571,11 +571,10 @@ def queryForm(form, verbose = 0):
 
     httpfile="https://mesoscope.scripps.edu/data/tmp/ILL/"+str(qid)+"/"+proj_name+".pdb"
     httpimg="https://mesoscope.scripps.edu/data/tmp/ILL/"+str(qid)+"/"+proj_name+".png"
-    result = "{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(qid)
-    if debug :
-        result +=",\"use_authid\":\""+str(use_authid)+"\",\"inverse_rotation\":\""+str(inverse_rotation)+"\",\"selection\":\""+str(selection)+"\","
-        result +="\"force_pdb\":\""+str(force_pdb)+"\",\"proj_name\":\""+str(proj_name)+"\",\"bu\":\""+str(bu)+"\","
-        result +="\"model\":\""+str(model)+"\",\"pdbid\":\""+str(pdbid)
+    result = "{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(qid)+"\","
+    result +="\"use_authid\":\""+str(use_authid)+"\",\"inverse_rotation\":\""+str(inverse_rotation)+"\",\"selection\":\""+str(selection)+"\","
+    result +="\"force_pdb\":\""+str(force_pdb)+"\",\"proj_name\":\""+str(proj_name)+"\",\"bu\":\""+str(bu)+"\","
+    result +="\"model\":\""+str(model)+"\",\"pdbid\":\""+str(pdbid)
     else :
         print ("Access-Control-Allow-Origin: *")
         print ('Content-type: application/json\n')
