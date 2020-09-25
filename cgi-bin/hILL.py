@@ -450,7 +450,7 @@ def queryForm(form, verbose = 0):
     if debug :
         print ("Content-type: text/html")
         print ()
-    sys.stderr = sys.stdout
+        sys.stderr = sys.stdout
     qid = 0
     idprovided = False
     if "qid" in form  and int(form["qid"].value) != -1:
