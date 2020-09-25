@@ -326,7 +326,9 @@ def getPDBString(p,selection,bu,model,use_authid=False,debug=False):
             cid = ch.id
             if use_authid :
                 cid = ch.internal_id
-            chains.append(cid)    
+            if (ch.internal_id in chains_internal_ids) :
+                if len(selection) and (cid not in selection) : continue
+                chains.append(cid)    
         n = len(chains)
         _records+="REMARK 350 BIOMOLECULE: 1\n";
         #check the size of the chains string. No more than 80c
