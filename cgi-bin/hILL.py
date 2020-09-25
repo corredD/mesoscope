@@ -575,7 +575,7 @@ def queryForm(form, verbose = 0):
     result +="\"use_authid\":\""+str(use_authid)+"\",\"inverse_rotation\":\""+str(inverse_rotation)+"\",\"selection\":\""+str(selection)+"\","
     result +="\"force_pdb\":\""+str(force_pdb)+"\",\"proj_name\":\""+str(proj_name)+"\",\"bu\":\""+str(bu)+"\","
     result +="\"model\":\""+str(model)+"\",\"pdbid\":\""+str(pdbid)
-    else :
+    if not debug :
         print ("Access-Control-Allow-Origin: *")
         print ('Content-type: application/json\n')
         print ()
