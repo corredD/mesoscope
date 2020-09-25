@@ -320,7 +320,13 @@ def getPDBString(p,selection,bu,model,use_authid=False,debug=False):
     _records=""
     #(.CA or .P or .C5)
     if (bu!=-1 and len(p.assemblies)) :
-        chains = p.assemblies[bu]["transformations"][0]["chains"]
+        chains_internal_ids = p.assemblies[bu]["transformations"][0]["chains"] # internal_id?
+        chains = []
+        for ch in p.models[model].chains():
+            cid = ch.id
+            if use_authid :
+                cid = ch.internal_id
+            chains.append(cid)    
         n = len(chains)
         _records+="REMARK 350 BIOMOLECULE: 1\n";
         #check the size of the chains string. No more than 80c
@@ -404,7 +410,9 @@ def getPDBString(p,selection,bu,model,use_authid=False,debug=False):
                 ir = ir + 1
                 ia = ia + 1        
     bounding_box = []#oriented_bounding_box_numpy(all_coords);
-    r = GetPrincipalAxis(all_coords)
+    r=[]
+    if (len(all_coords)!=0):
+        r = GetPrincipalAxis(all_coords)
     #print (_records)
     return _records,bounding_box,all_coords,r
 
