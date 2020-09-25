@@ -716,13 +716,34 @@ function Util_download_png(the_image, name) {
         //context.fillRect(0, 0, canvas.width, canvas.height);
         context.drawImage(base_image, 0, 0, canvas.width, canvas.height);
         canvas.toBlob(function(blob) {
-            saveAs(blob, name + ".png");
+            //Util_download_click_cb(blob, name + ".png");
+            FSsaveAs(blob, name + ".png");
         });
     };
     base_image.src = the_image.src;
 };
 
-//this is unsecure for firefox.
+//download attribute is limited to Chrome, Firefox and Opera?
+function Util_download_click_url_cb(url, name){
+  var link = document.createElement("a");
+  var url = url;
+  link.setAttribute("href", url);
+  link.setAttribute("download", name);
+  link.setAttribute("target","_blank");
+  link.setAttribute("type","application/octet-stream");
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function Util_download_click_cb(blob, name){
+  var url = URL.createObjectURL(blob);
+  Util_download_click_url_cb(url,name);
+}
+
+
+//this is unsecure for firefox in local mode
 function Util_download_src_png(the_src, name) {
     var canvas = document.createElement('canvas');
     var context = canvas.getContext('2d');
@@ -734,7 +755,8 @@ function Util_download_src_png(the_src, name) {
         //context.fillRect(0, 0, canvas.width, canvas.height);
         context.drawImage(base_image, 0, 0, canvas.width, canvas.height);
         canvas.toBlob(function(blob) {
-            saveAs(blob, name + ".png");
+          //Util_download_click_cb(blob, name + ".png");
+          FSsaveAs(blob, name + ".png");
         });
     };
     base_image.src = the_src;

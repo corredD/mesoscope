@@ -1762,6 +1762,25 @@ function NGL_ChangeHighlight(pdbStart, pdbEnd, color, chainId)
 
 function NGL_CenterView() {
   stage.autoView(1000);
+  if (node_selected) {
+    var a = node_selected.data.pcpalAxis;
+    var ax = new NGL.Vector3(a[0], a[1], a[2]);
+    var q = new NGL.Quaternion();
+    if (node_selected.data.surface) 
+    {
+      q.setFromUnitVectors(ax,new NGL.Vector3(0,1,0));
+    }
+    else if (node_selected.data.ingtype == "fiber" )
+    {
+      q.setFromUnitVectors(ax,new NGL.Vector3(1,0,0))
+    }
+    else {
+      q = ngl_current_structure.structure.getPrincipalAxes().getRotationQuaternion();
+    }
+    stage.animationControls.rotate(q, 0);
+  }
+  //if current is fiber align on pcp on X
+  //if current is surface align on pcp on Y
 }
 
 // Handle window resizing
@@ -2249,10 +2268,11 @@ function NGL_Illustrate(){
         };
       }
       node_to_illustrate.data.thumbnail.src = data.image+"?"+new Date();
+      node_to_illustrate.data.sprite.image = node_to_illustrate.data.name+".png";
       ill_current_id = parseInt(data.id);
       //hide progress bar
       if (document.getElementById("savethumbnail").checked){
-        node_to_illustrate.data.sprite.image = node_to_illustrate.data.name+".png";
+          //Util_download_click_url_cb(data.image,node_to_illustrate.data.name+".png");     
           Util_download_src_png(node_to_illustrate.data.thumbnail.src, node_to_illustrate.data.name);
       }
       toggleHide(document.getElementById("spinnerILL"));
@@ -3677,10 +3697,11 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
           }
       }
       //title_annotation = o.addAnnotation(p,(o.structure.title)?o.structure.title:o.name);
-      o.autoView();
       //console.log(p);
       //console.log(o);
-      if (align_axis) {
+      NGL_CenterView();
+      /*if (align_axis) {
+        NGL_CenterView();
         var a = ngl_load_params.axis.axis;
         var ax = new NGL.Vector3(a[0], a[1], a[2]);
         ax.cross(new NGL.Vector3(0, 1, 0));
@@ -3690,7 +3711,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
         stage.animationControls.rotate(q, 0);
       } //stage.animationControls.rotate(ngl_load_params.axis.axis.getRotationQuaternion(), 0);
       else stage.animationControls.rotate(o.structure.getPrincipalAxes().getRotationQuaternion(), 0);
-
+      */
       //update PDB components
       var ispdb = document.getElementById("pdb_component_enable")?document.getElementById("pdb_component_enable").checked : false;
       if ( ispdb)//sequence_mapping
