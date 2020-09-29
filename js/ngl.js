@@ -2275,6 +2275,11 @@ function NGL_Illustrate(){
           //Util_download_click_url_cb(data.image,node_to_illustrate.data.name+".png");     
           Util_download_src_png(node_to_illustrate.data.thumbnail.src, node_to_illustrate.data.name);
       }
+      //ad to the list of files
+      fetch(data.image)
+        .then(function(response) {
+          _pathList[node_to_illustrate.data.sprite.image] = response.blob();
+        });
       toggleHide(document.getElementById("spinnerILL"));
     };
     toggleShow(document.getElementById("spinnerILL"));

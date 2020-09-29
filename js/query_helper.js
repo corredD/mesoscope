@@ -1766,4 +1766,26 @@ function SaveRecipeCellPACK_serialized() {
   recipe_changed = false;
   grid_tab_label[0].text ( "" );
 }
+
+
+function SaveAllSprites(){
+  //go through all sprites and add them to a zip file
+  var zip = new JSZip();
+  zip.file("Hello.txt", "Hello World\n");
+  //var img = zip.folder("images");
+  //img.file("README", "a folder with photos");
+  //img.file("smile.gif", imgData, {base64: true});
+  graph.nodes.forEach(function(d){
+    if (!d.children && ( d.data.image !=null || d.data.thumbnail !==null) ) {
+        var value = aNode.data.sprite.image;
+        var imgData = pathList_[value];
+        zip.file(value, imgData, {base64: true});
+    }
+  });  
+  zip.generateAsync({type:"blob"})
+    .then(function(content) {
+    // see FileSaver.js
+    saveAs(content, "sprites.zip");
+  });
+}
 //var jdata = serializedRecipe(graph.nodes, graph.links);download(JSON.stringify(jdata), jdata.name + '_serialized.json', 'text/plain');
