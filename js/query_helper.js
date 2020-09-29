@@ -1777,7 +1777,7 @@ function SaveAllSprites(){
   //img.file("smile.gif", imgData, {base64: true});
   graph.nodes.forEach(function(d){
     if (!d.children && ( d.data.image !=null || d.data.thumbnail !==null) ) {
-        var value = aNode.data.sprite.image;
+        var value = d.data.sprite.image;
         var imgData = pathList_[value];
         zip.file(value, imgData, {base64: true});
     }

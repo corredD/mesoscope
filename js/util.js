@@ -782,3 +782,13 @@ function Util_SetupCollapsible(){
 function Util_isInt(n) {
   return n % 1 === 0;
 }
+
+const blobToBase64 = blob => {
+  const reader = new FileReader();
+  reader.readAsDataURL(blob);
+  return new Promise(resolve => {
+    reader.onloadend = () => {
+      resolve(reader.result);
+    };
+  });
+};
