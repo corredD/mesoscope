@@ -1369,6 +1369,10 @@ function query_BuildAll() {
   //build beads
 }
 
+function query_IllustrateAll() {
+  //query NGL_illustrate for all nodes
+}
+
 function as_clearNode(anode){
     if (anode.data.ingtype !== "compartment")
     {
@@ -1771,10 +1775,10 @@ function SaveRecipeCellPACK_serialized() {
 function SaveAllSprites(){
   //go through all sprites and add them to a zip file
   var zip = new JSZip();
-  zip.file("Hello.txt", "Hello World\n");
-  //var img = zip.folder("images");
-  //img.file("README", "a folder with photos");
-  //img.file("smile.gif", imgData, {base64: true});
+  zip.file("README.txt", "Load the recipe into cellpaint\n");
+  //add the recipe
+  var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links);
+  zip.file(jsondic.recipe.name + '.json',JSON.stringify(jdata));
   graph.nodes.forEach(function(d){
     if (!d.children && ( d.data.image !=null || d.data.thumbnail !==null) ) {
         var value = d.data.sprite.image;
