@@ -2276,12 +2276,14 @@ function NGL_Illustrate(){
           Util_download_src_png(node_to_illustrate.data.thumbnail.src, node_to_illustrate.data.name);
       }
       //ad to the list of files
-      fetch(data.image)
+      /*fetch(data.image)
         .then(res => res.blob())
         .then(blobToBase64)
         .then(finalResult => { 
           pathList_[node_to_illustrate.data.sprite.image] = finalResult;
-        });
+        });*/
+      fetch(data.image)
+        .then(res => pathList_[node_to_illustrate.data.sprite.image] = res.blob());
       toggleHide(document.getElementById("spinnerILL"));
     };
     toggleShow(document.getElementById("spinnerILL"));

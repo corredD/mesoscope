@@ -1779,7 +1779,7 @@ function SaveAllSprites(){
     if (!d.children && ( d.data.image !=null || d.data.thumbnail !==null) ) {
         var value = d.data.sprite.image;
         var imgData = pathList_[value];
-        zip.file(value, imgData, {base64: true});
+        zip.file(value, imgData);//, {base64: true});
     }
   });  
   zip.generateAsync({type:"blob"})

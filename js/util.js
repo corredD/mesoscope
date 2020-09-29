@@ -417,7 +417,7 @@ function Util_selectFolder(e) {
    gridArray[0].render();
    gridArray[0].dataView.refresh();
    FOLDER_UPDATED = true;
- }
+}
 
 function Util_stringToArray(bufferString) {
  	let uint8Array = new TextEncoder("utf-8").encode(bufferString);
