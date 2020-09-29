@@ -1491,24 +1491,6 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
         n.parent = pnode;
         n.depth = depth;
       }
-      /*
-      n.data.name = arow.name;
-      n.data.size = arow.size;
-      n.data.count = arow.count;
-      n.data.molarity = arow.molarity;
-      n.data.label = arow.label;
-      //n.data.geom = arow.geom;
-      n.data.bu = arow.bu;
-      n.data.selection = arow.selection;
-      n.data.uniprot = arow.uniprot;
-
-
-      n.data.pcpalAxis = (Array.isArray(arow.pcpalAxis)) ? arow.pcpalAxis : arow.pcpalAxis.split(",").map(function(d) {
-        return parseFloat(d);
-      });
-      n.data.offset = (Array.isArray(arow.offset)) ? arow.offset : arow.offset.split(",").map(function(d) {
-        return parseFloat(d);
-      });*/
       //update with only the changed data
       console.log("updateAttributesNode ",cid);
       n = updateAttributesNode(n,arow,cid);
@@ -1560,7 +1542,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
         }
       }
     }
-    dataView.updateItem(args.item.id, args.item);
+    grid.dataView.updateItem(args.item.id, args.item);
   });
 
   grid.onSelectedRowsChanged.subscribe(function(e, args) {
