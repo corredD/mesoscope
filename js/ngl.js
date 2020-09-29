@@ -2278,7 +2278,7 @@ function NGL_Illustrate(){
       //ad to the list of files
       fetch(data.image)
         .then(function(response) {
-          _pathList[node_to_illustrate.data.sprite.image] = response.blob();
+          pathList_[node_to_illustrate.data.sprite.image] = response.blob();
         });
       toggleHide(document.getElementById("spinnerILL"));
     };
