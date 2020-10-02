@@ -5,7 +5,7 @@ var ao_params=[0.0023,2.0,1.0,0.7];
 var ill_current_id=-1;
 var ignore_h = true;
 var ill_by_chain = true;
-var lower_grey = 0.6;
+var lower_grey = 0.2;
 
 var schemeId2 = NGL.ColormakerRegistry.addSelectionScheme([
   ["rgb(255,140,140)", "_O and nucleic"],//1.00, 0.55, 0.55
@@ -422,32 +422,32 @@ ATOM  H--------- 0,9999, 1.1,1.1,1.1, 0.0\n\
       if (style == 0)
       {
           astr+="ATOM  -C-------- 0,9999, 1.0,1.0,1.0, 1.6\n\
-  ATOM  C--------- 0,9999, 1.0,1.0,1.0, 1.6\n\
-  ATOM  -S-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
-  ATOM  -P-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
-  ATOM  -N-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
-  ATOM  -O-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
-  ATOM  ---------- 0,9999, 1.0,1.0,1.0, 1.5\n\
-  HETATM-H-------- 0,9999, 1.0,1.0,1.0, 0.0\n\
-  HETATMH--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
-  HETATM-C-------- 0,9999, 1.0,1.0,1.0, 1.6\n\
-  HETATM-S-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
-  HETATM-P-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
-  HETATM-N-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
-  HETATM-O-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
-  HETATM---------- 0,9999, 1.0,1.0,1.0, 1.5\n";
+ATOM  C--------- 0,9999, 1.0,1.0,1.0, 1.6\n\
+ATOM  -S-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
+ATOM  -P-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
+ATOM  -N-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+ATOM  -O-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+ATOM  ---------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+HETATM-H-------- 0,9999, 1.0,1.0,1.0, 0.0\n\
+HETATMH--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
+HETATM-C-------- 0,9999, 1.0,1.0,1.0, 1.6\n\
+HETATM-S-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
+HETATM-P-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
+HETATM-N-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+HETATM-O-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+HETATM---------- 0,9999, 1.0,1.0,1.0, 1.5\n";
       }
       else if (style == 1)
       {
           //#open wildcard1
           //P,C5,CA
           astr+="ATOM  -P-------- 0,9999 1.00, 1.0, 1.0, 5.0\n\
-  ATOM  -C1'------ 0,9999 1.0,1.0,1.0, 5.0\n\
-  HETATM-P-------- 0,9999 1.0, 1.0, 1.0, 5.0\n\
-  HETATM-C1'------ 0,9999 1.00, 1.00, 1.00, 5.0\n\
-  ATOM  -CA------- 0,9999 1.0,1.0,1.0, 5.0\n\
-  HETATM-C-------- 0,9999 1.0,1.0,1.0, 1.6\n\
-  HETATM---------- 0,9999 1.0,1.0,1.0, 1.5\n";
+ATOM  -C1'------ 0,9999 1.0,1.0,1.0, 5.0\n\
+HETATM-P-------- 0,9999 1.0, 1.0, 1.0, 5.0\n\
+HETATM-C1'------ 0,9999 1.00, 1.00, 1.00, 5.0\n\
+ATOM  -CA------- 0,9999 1.0,1.0,1.0, 5.0\n\
+HETATM-C-------- 0,9999 1.0,1.0,1.0, 1.6\n\
+HETATM---------- 0,9999 1.0,1.0,1.0, 1.5\n";
           chain_outlines_params[2] = 6000;
       }
     }
@@ -584,7 +584,7 @@ function ill_prepareWildCardChains(structure,style){
                               Ill_defaults(c1[1], 0.0),
                               Ill_defaults(c1[2], 0.0),
                               Ill_defaults("", 1.6) ) );
-          if (style == 1)_records.push(sprintf(IllAtomFormat,
+          if (style == 1) _records.push(sprintf(IllAtomFormat,
                               Ill_defaults("----", '----'),
                               Ill_defaults("", '---'),
                               Ill_defaults(chain.chainname, '--'),
@@ -620,6 +620,8 @@ function ill_prepareWildCardChains(structure,style){
   astr = _records.join('\n')+"\n";
   return astr;
 }
+
+//same function but entity ?
 
 function ill_prepareInput(astyle,nameinput,ascale=12){
     var q = stage.animationControls.controls.rotation;
