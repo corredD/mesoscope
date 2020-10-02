@@ -586,7 +586,7 @@ def queryForm(form, verbose = 0):
     f.write(inpstring)
     f.close()
 
-    cmd+= illdir+" < "+proj_name+".inp> "+proj_name+".log;"
+    cmd+= illdir+" < "+proj_name+".inp > "+proj_name+".log;"
     #cmd+="/bin/convert "+proj_name+".pnm -transparent \"rgb(254,254,254)\" "+proj_name+".png>/dev/null;"
     #composite with ngl_geom_opacit
     cmd+="/bin/composite -compose copy_opacity opacity.pnm "+proj_name+".pnm "+proj_name+".png >> "+proj_name+".log;"
