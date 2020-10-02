@@ -23,7 +23,7 @@ var canvas_label_options = ["name", "None", "pdb", "uniprot", "label"];
 var canvas_color = document.getElementById("canvas_color");
 var canvas_color_options = ["pdb", "pcpalAxis", "offset", "count_molarity", "Beads",
                             "geom", "confidence", "color", "viewed", "size", "count",
-                            "molarity", "molecularweight","default"];
+                            "molarity", "molecularweight","default","automatic"];
 var canvas_node_clusters = ["none","pdb", "pcpalAxis", "offset", "count_molarity", "Beads",
                           "geom", "confidence", "color", "viewed", "size", "count",
                             "molarity", "molecularweight","default"];
@@ -35,7 +35,8 @@ property_mapping.molecularweight = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%,
 property_mapping.molarity = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
 property_mapping.count = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
 property_mapping.confidence = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
-
+var color_palette = {};
+var comp_colors = {};
 var current_scale = 1;
 //extracellular
 var localisation_tag = ["cytosol", "periplasm", "inner_membrane", "outer_membrane", "membrane", "cytoplasm", "lumen"];
@@ -2670,8 +2671,71 @@ function drawPalette()
 
 	}
 
+function GenerateNColor(ncolors){
+	// Generate colors (as Chroma.js objects)
+	var colors = paletteGenerator.generate(
+		ncolors, // Colors
+		function(color){ // This function filters valid colors
+		var hcl = color.hcl();
+		return hcl[0]>=0 && hcl[0]<=360
+		&& hcl[1]>=30 && hcl[1]<=80
+		&& hcl[2]>=35 && hcl[2]<=80;
+	},
+		false, // Using Force Vector instead of k-Means
+		50, // Steps (quality)
+		false, // Ultra precision
+		'Default' // Color distance type (colorblindness)
+	);
+	// Sort colors by differenciation first
+	colors = paletteGenerator.diffSort(colors, 'Default');
+	return colors;
+	}
+	
+function GenerateOneColorRangePalette(rgb,ncolors){
+	// Generate colors (as Chroma.js objects)
+	var hcl = chroma.rgb(rgb[0],rgb[1],rgb[2]).hcl();
+	var start = hcl[0]-25;
+	var end = hcl[0]+25;
+	var colors = paletteGenerator.generate(
+		ncolors, // Colors
+		function(color){ // This function filters valid colors
+		var hcl = color.hcl();
+		return hcl[0]>=start && hcl[0]<=end
+			&& hcl[1]>=38.82 && hcl[1]<=100
+			&& hcl[2]>=38.04 && hcl[2]<=100;
+		},
+		false, // Using Force Vector instead of k-Means
+		50, // Steps (quality)
+		false, // Ultra precision
+		'Default' // Color distance type (colorblindness)
+	);
+	// Sort colors by differenciation first
+	colors = paletteGenerator.diffSort(colors, 'Default');
+	return colors;
+}
+
 function ChangeCanvasColor(e){
   var colorby = canvas_color.selectedOptions[0].value;
+  if (colorby == "automatic") {
+	  //automatic color generation with palette.
+	  //generate one color per compartment
+	  //generate one color range per compartment
+	  var nComp = 0;
+	  graph.nodes.forEach(function(d){
+		if (d.children && d.depth != 0){
+			nComp++;
+		}
+	  });
+	  var theColor = GenerateNColor(nComp);
+	  nComp = 0;
+	  graph.nodes.forEach(function(d){
+		if (d.children && d.depth != 0){
+			comp_colors[d.data.name] = theColor[nComp];
+			color_palette[d.data.name] = GenerateOneColorRangePalette(theColor[nComp].rgb(),d.children.length);
+			nComp++;
+		}
+	  });
+  }
   if (!(colorby in property_mapping)) return;
   var cmin = d3v4.color(property_mapping[colorby].cmin).rgb();
   var cmax = d3v4.color(property_mapping[colorby].cmax).rgb();
@@ -2683,6 +2747,7 @@ function ChangeCanvasColor(e){
 
 function ChangeMinColor(e){
   var colorby = canvas_color.selectedOptions[0].value;
+  if (colorby == "automatic") return;
   var min_color = Util_getRGB(e.value);
   //var dmcolor = d3v4.color(min_color);
   //canvas_mincolor=min_color.rgb;
@@ -2691,6 +2756,7 @@ function ChangeMinColor(e){
 
 function ChangeMaxColor(e){
   var colorby = canvas_color.selectedOptions[0].value;
+  if (colorby == "automatic") return;
   var max_color = Util_getRGB(e.value);
   //var dmcolor = d3v4.color(max_color);
   //canvas_maxcolor = max_color.rgb;
@@ -2806,6 +2872,18 @@ function colorNode(d) {
 			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
 			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
 		return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null&& d.data[colorby] >= 0.0) ? color_mapping(d.data[colorby]):color(d.depth);
+	}
+	else if (colorby == "automatic") {
+		if (!d.children) {
+			var pname = d.parent.data.name;
+			var id = d.parent.children.indexOf(d);
+			var c1 = color_palette[pname][id].rgb()
+			return 'rgb('+ c1[0]+","+c1[1]+","+c1[2]+')';
+		}
+		else if (d.children && d.depth != 0){
+			var c1 = comp_colors[d.data.name].rgb();
+			return 'rgb('+ c1[0]+","+c1[1]+","+c1[2]+')';
+		}
 	}
     else if (colorby === "default") {
     if (!d.children && "data" in d && "_color" in d.data)
@@ -4377,7 +4455,7 @@ function MapLinkToNode(some_nodes,some_links) {
 function update_graph(agraph,alink){
   canvas_color_options = ["pdb", "pcpalAxis", "offset", "count_molarity", "Beads",
 	"geom", "confidence", "color", "viewed", "size", "count",
-	"molarity", "molecularweight","default"];	
+	"molarity", "molecularweight","default","automatic"];	
   var isempty= false;
   if ( agraph.length < 1 ) isempty=true;
 	if (DEBUGLOG) console.log("agraph",agraph);
