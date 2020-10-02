@@ -557,6 +557,9 @@ def queryForm(form, verbose = 0):
     #did the user send in the input file?
     trans=[0,0,0]
     rotation=[0,0,0]
+    scale = 6
+    if "pscale" in form :
+        scale =  float(form["pscale"].value)
     cmd = "cd "+wrkDir+";"
     if fetch and (not os.path.isfile(tmpPDBName) or force_pdb):
         tmpPDBName = wrkDir+"/"+proj_name+".pdb"
@@ -580,7 +583,7 @@ def queryForm(form, verbose = 0):
     elif "input_txt" in form:
         inpstring = form["input_txt"].value
     else :
-        inpstring = ill_prepareInput(proj_name,form,color_bychain=color_bychain,trans=trans,rotation=rotation)
+        inpstring = ill_prepareInput(proj_name,form,scale=scale,color_bychain=color_bychain,trans=trans,rotation=rotation)
     #print (inpstring+"<br>")
     f = open(inpfile, "w")
     f.write(inpstring)
@@ -598,6 +601,7 @@ def queryForm(form, verbose = 0):
     result = "{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(qid)+"\","
     result +="\"use_authid\":\""+str(use_authid)+"\",\"inverse_rotation\":\""+str(inverse_rotation)+"\",\"selection\":\""+str(selection)+"\","
     result +="\"force_pdb\":\""+str(force_pdb)+"\",\"proj_name\":\""+str(proj_name)+"\",\"bu\":\""+str(bu)+"\","
+    result +="\"scale\":\""+str(scale)+"\",\"color_bychain\":\""+str(color_bychain)+"\","
     result +="\"model\":\""+str(model)+"\",\"pdbid\":\""+str(pdbid)
     if not debug :
         print ("Access-Control-Allow-Origin: *")
