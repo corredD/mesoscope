@@ -479,6 +479,7 @@ def queryForm(form, verbose = 0):
         idprovided = True
     else :
         qid = mkRand()
+    resize = 0.0
     pdbid = "1crn"
     bu = ""
     selection = ""
@@ -503,6 +504,8 @@ def queryForm(form, verbose = 0):
     inpfile = ""
     tmpPDBName = ""
     inverse_rotation = False
+    if "resize" in form:
+        resize = float(form["resize"].value)
     if "inverse" in form :
         inverse_rotation = (form["inverse"].value == 'true')
     #no more than 20character
@@ -593,6 +596,10 @@ def queryForm(form, verbose = 0):
     #cmd+="/bin/convert "+proj_name+".pnm -transparent \"rgb(254,254,254)\" "+proj_name+".png>/dev/null;"
     #composite with ngl_geom_opacit
     cmd+="/bin/composite -compose copy_opacity opacity.pnm "+proj_name+".pnm "+proj_name+".png >> "+proj_name+".log;"
+    #downsize ? 
+    if resize !=0.0 :
+        cmd+="/bin/convert "+proj_name+".png -resize "+str(resize)+"% "+proj_name+".png;"
+
     #print(cmd)
     os.system(cmd)
 
@@ -601,7 +608,7 @@ def queryForm(form, verbose = 0):
     result = "{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(qid)+"\","
     result +="\"use_authid\":\""+str(use_authid)+"\",\"inverse_rotation\":\""+str(inverse_rotation)+"\",\"selection\":\""+str(selection)+"\","
     result +="\"force_pdb\":\""+str(force_pdb)+"\",\"proj_name\":\""+str(proj_name)+"\",\"bu\":\""+str(bu)+"\","
-    result +="\"scale\":\""+str(scale)+"\",\"color_bychain\":\""+str(color_bychain)+"\","
+    result +="\"scale\":\""+str(scale)+"\",\"color_bychain\":\""+str(color_bychain)+"\",\"resize\":\""+str(resize)+"\","
     result +="\"model\":\""+str(model)+"\",\"pdbid\":\""+str(pdbid)
     if not debug :
         print ("Access-Control-Allow-Origin: *")
