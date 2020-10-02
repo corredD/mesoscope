@@ -463,6 +463,7 @@ def processForm(form, returnpage=True, verbose = 0):
     f.write(inpstring)
     f.close()
 
+    #what about resize?
     tmpPDBName = wrkDir+"/"+queryTXT+".pdb"
     cmd = "cd "+wrkDir+";"
     if not os.path.isfile(tmpPDBName):

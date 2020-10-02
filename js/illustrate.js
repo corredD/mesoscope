@@ -4,6 +4,8 @@ var chain_outlines_params=[3.,10.,6.];
 var ao_params=[0.0023,2.0,1.0,0.7];
 var ill_current_id=-1;
 var ignore_h = true;
+var ill_by_chain = true;
+var lower_grey = 0.6;
 
 var schemeId2 = NGL.ColormakerRegistry.addSelectionScheme([
   ["rgb(255,140,140)", "_O and nucleic"],//1.00, 0.55, 0.55
@@ -59,6 +61,20 @@ function ill_toRGBf(color){
                 color[1].toString()+","+
                 color[2].toString()+")";
 }
+
+function Ill_defaults(value, defaultValue) {
+    return (value !== undefined && value !== "")? value : defaultValue;
+}
+
+function ill_OnCard(atom,residue,chain,color){
+  var card ={};
+  card.atom = atom;
+  card.residue = residue;
+  card.chain = chain;
+  card.color = color;
+  return card;
+}
+
 /*
 COLUMNS        DATA  TYPE    FIELD        DEFINITION
 -------------------------------------------------------------------------------------
@@ -236,7 +252,7 @@ function ill_writeAtoms(structure,style) {
                 //if (atomname.length === 1)
                 //    atomname = ' ' + atomname;
                 //defaults(a.chainname, ' ')
-                _records.push(sprintf(formatString, serial, atomname, a.resname, ' ', a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
+                _records.push(sprintf(formatString, serial, atomname, a.resname, defaults(a.chainname, ' '), a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
               defaults(a.element, '')));
             }
             ia += 1;
@@ -399,39 +415,210 @@ ATOM  -H-------- 0,9999, 1.1,1.1,1.1, 0.0\n\
 ATOM  H--------- 0,9999, 1.1,1.1,1.1, 0.0\n\
 ";
     }
-    if (style == 0)
-    {
-        astr+="ATOM  -C-------- 0,9999, 1.0,1.0,1.0, 1.6\n\
-ATOM  C--------- 0,9999, 1.0,1.0,1.0, 1.6\n\
-ATOM  -S-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
-ATOM  -P-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
-ATOM  -N-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
-ATOM  -O-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
-ATOM  ---------- 0,9999, 1.0,1.0,1.0, 1.5\n\
-HETATM-H-------- 0,9999, 1.0,1.0,1.0, 0.0\n\
-HETATMH--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
-HETATM-C-------- 0,9999, 1.0,1.0,1.0, 1.6\n\
-HETATM-S-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
-HETATM-P-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
-HETATM-N-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
-HETATM-O-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
-HETATM---------- 0,9999, 1.0,1.0,1.0, 1.5\n";
+    if (ill_by_chain) {
+      astr+=ill_prepareWildCardChains(ngl_current_structure,style)
     }
-    else if (style == 1)
-    {
-        //#open wildcard1
-        //P,C5,CA
-        astr+="ATOM  -P-------- 0,9999 1.00, 1.0, 1.0, 5.0\n\
-ATOM  -C1'------ 0,9999 1.0,1.0,1.0, 5.0\n\
-HETATM-P-------- 0,9999 1.0, 1.0, 1.0, 5.0\n\
-HETATM-C1'------ 0,9999 1.00, 1.00, 1.00, 5.0\n\
-ATOM  -CA------- 0,9999 1.0,1.0,1.0, 5.0\n\
-HETATM-C-------- 0,9999 1.0,1.0,1.0, 1.6\n\
-HETATM---------- 0,9999 1.0,1.0,1.0, 1.5\n";
-        chain_outlines_params[2] = 6000;
+    else {
+      if (style == 0)
+      {
+          astr+="ATOM  -C-------- 0,9999, 1.0,1.0,1.0, 1.6\n\
+  ATOM  C--------- 0,9999, 1.0,1.0,1.0, 1.6\n\
+  ATOM  -S-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
+  ATOM  -P-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
+  ATOM  -N-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+  ATOM  -O-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+  ATOM  ---------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+  HETATM-H-------- 0,9999, 1.0,1.0,1.0, 0.0\n\
+  HETATMH--------- 0,9999, 1.0,1.0,1.0, 0.0\n\
+  HETATM-C-------- 0,9999, 1.0,1.0,1.0, 1.6\n\
+  HETATM-S-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
+  HETATM-P-------- 0,9999, 1.0,1.0,1.0, 1.8\n\
+  HETATM-N-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+  HETATM-O-------- 0,9999, 1.0,1.0,1.0, 1.5\n\
+  HETATM---------- 0,9999, 1.0,1.0,1.0, 1.5\n";
+      }
+      else if (style == 1)
+      {
+          //#open wildcard1
+          //P,C5,CA
+          astr+="ATOM  -P-------- 0,9999 1.00, 1.0, 1.0, 5.0\n\
+  ATOM  -C1'------ 0,9999 1.0,1.0,1.0, 5.0\n\
+  HETATM-P-------- 0,9999 1.0, 1.0, 1.0, 5.0\n\
+  HETATM-C1'------ 0,9999 1.00, 1.00, 1.00, 5.0\n\
+  ATOM  -CA------- 0,9999 1.0,1.0,1.0, 5.0\n\
+  HETATM-C-------- 0,9999 1.0,1.0,1.0, 1.6\n\
+  HETATM---------- 0,9999 1.0,1.0,1.0, 1.5\n";
+          chain_outlines_params[2] = 6000;
+      }
     }
     astr+="END\n"
     return astr
+}
+
+function GenerateOneColorRangePalette(rgb,ncolors){
+  // Generate colors (as Chroma.js objects)
+  var hcl = chroma.rgb(rgb[0],rgb[1],rgb[2]).hcl();
+  var start = hcl[0]-25;
+  var end = hcl[0]+25;
+  var colors = paletteGenerator.generate(
+    ncolors, // Colors
+    function(color){ // This function filters valid colors
+      var hcl = color.hcl();
+      return hcl[0]>=start && hcl[0]<=end
+        && hcl[1]>=38.82 && hcl[1]<=100
+        && hcl[2]>=38.04 && hcl[2]<=100;
+    },
+    false, // Using Force Vector instead of k-Means
+    50, // Steps (quality)
+    false, // Ultra precision
+    'Default' // Color distance type (colorblindness)
+  );
+  // Sort colors by differenciation first
+  colors = paletteGenerator.diffSort(colors, 'Default');
+  return colors;
+}
+
+const IllAtomFormat   = 'ATOM  %4s-%3s%2s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
+const IllHetatmFormat = 'HETATM%4s-%3s%2s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
+function ill_prepareWildCardChains(structure,style){
+  //one input color?
+  //handle HETATOM
+  let asele="";
+  var o = structure;
+  var current_model = model_elem.value;
+
+  if (sele_elem.value&& sele_elem.value!=="") {
+    if (asele !== sele_elem.value) asele = sele_elem.value;
+  }
+  var bu = false;
+  var au=assembly_elem.selectedOptions[0].value;//Options[0].value;
+  if (au !== "AU" && o.object.biomolDict[au]) bu = true;
+  if (asele === "" && bu) {
+    //need to apply the matrix to the selection inside the BU selection ?
+    //console.log(o.object.biomolDict[o.assembly].getSelection());
+    //build using given selection AND biomolDic selection
+    asele = "(" + o.object.biomolDict[au].getSelection().string + ") AND not water";
+  }
+  if (asele === "" && current_model != null ) asele = "/"+model_elem.value+" AND not water";
+  if (asele === "") asele = "not water";
+  
+  if (style === 1) {
+    asele="("+asele+") and (.CA or .P or .C1')";
+  }
+  
+  console.log(asele);
+  var chnames = []
+  structure.structure.eachChain( chain => {
+    if ( $.inArray(chain.chainname, chnames) === -1 ) chnames.push( chain.chainname)
+  }, new NGL.Selection(asele));
+  console.log(chnames);
+  var _records=[];
+  var nchains = chnames.length;
+  console.log(nchains);
+  var natom;//_C and not _C
+  //schemeGeneral
+  //range of grey
+  var cmax = [1.0,1.0,1.0];
+  var cmin = [0.1,0.1,0.1];
+  var step = lower_grey/nchains;
+  var counter = 0;
+  structure.structure.eachChain(chain=>{
+    var is_protein = false;
+    var cid = 0;
+    var chain_is_protein = false;
+    var found = false;
+    if ( chnames.includes(chain.chainname ) ) {
+        cid = chnames.indexOf(chain.chainname);
+        //var atom_colors = GenerateOneColorRangePalette(chain_colors[cid].rgb(),2);
+        var c1 = [cmax[0]-step*counter,cmax[1]-step*counter,cmax[2]-step*counter];
+        var c2 = c1;
+        console.log(chain.chainname,cid,counter,step*counter);
+        //cid+=1;
+        chain.eachResidue(r =>{
+          var res = r.resname;
+          if (r.moleculeType == 4 || r.moleculeType == 5) {
+            //break;
+            if (!found) {
+              chain_is_protein = false;
+              found = true;
+            }
+          }
+          else if (r.moleculeType == 3) {
+            if (!found) {
+              chain_is_protein = true;
+              found = true;
+            }
+          }
+        });
+        if (chain_is_protein) {
+          if (style == 0) _records.push(sprintf(IllAtomFormat,
+                                Ill_defaults("----", '----'),
+                                Ill_defaults("", '---'),
+                                Ill_defaults(chain.chainname, '--'),
+                                0,
+                                9999,
+                                Ill_defaults(c1[0], 1.0),
+                                Ill_defaults(c1[1], 0.0),
+                                Ill_defaults(c1[2], 0.0),
+                                Ill_defaults("", 1.6) ) );
+          if (style == 1)  _records.push(sprintf(IllAtomFormat,
+                                Ill_defaults("----", '----'),
+                                Ill_defaults("", '---'),
+                                Ill_defaults(chain.chainname, '--'),
+                                0,
+                                9999,
+                                Ill_defaults(c2[0], 1.0),
+                                Ill_defaults(c2[1], 0.0),
+                                Ill_defaults(c2[2], 0.0),
+                                Ill_defaults("", 5.0) ) );
+
+        }
+        else {
+          if (style == 0) _records.push(sprintf(IllAtomFormat,
+                              Ill_defaults("----", '----'),
+                              Ill_defaults("", '---'),
+                              Ill_defaults(chain.chainname, '--'),
+                              0,
+                              9999,
+                              Ill_defaults(c1[0], 1.0),
+                              Ill_defaults(c1[1], 0.0),
+                              Ill_defaults(c1[2], 0.0),
+                              Ill_defaults("", 1.6) ) );
+          if (style == 1)_records.push(sprintf(IllAtomFormat,
+                              Ill_defaults("----", '----'),
+                              Ill_defaults("", '---'),
+                              Ill_defaults(chain.chainname, '--'),
+                              0,
+                              9999,
+                              Ill_defaults(c2[0], 1.0),
+                              Ill_defaults(c2[1], 0.0),
+                              Ill_defaults(c2[2], 0.0),
+                              Ill_defaults("", 5.0) ) );
+
+        }
+        counter++;
+      }
+    });
+  /*  var hetatm_p_color_templates=[
+      ill_OnCard("-C--","","",[0.60, 0.90, 0.60, 1.5]),
+      ill_OnCard("----","","",[0.40, 0.90, 0.40, 1.5])
+    ];
+    //add hetatm
+  for (var d in hetatm_p_color_templates) {
+    var templ = hetatm_p_color_templates[d];
+    _records.push(sprintf(IllHetatmFormat,
+                        Ill_defaults(templ.atom, '----'),
+                        Ill_defaults(templ.residue, '---'),
+                        Ill_defaults(templ.chain, '-'),
+                        0,
+                        9999,
+                        Ill_defaults(templ.color[0], 1.0),
+                        Ill_defaults(templ.color[1], 0.0),
+                        Ill_defaults(templ.color[2], 0.0),
+                        Ill_defaults(templ.color[3], 1.5) ) );
+  }*/
+  astr = _records.join('\n')+"\n";
+  return astr;
 }
 
 function ill_prepareInput(astyle,nameinput,ascale=12){

@@ -2131,6 +2131,8 @@ function defaults(value, defaultValue) {
 var AtomFormat = 'ATOM  %5d %-4s %3s%2s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';//'ATOM  %5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
 var HetatmFormat = 'HETATM%5d %-4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s';
 function NGL_writeAtoms() {
+    var style = (document.getElementById("ill_style").checked)?1:0;
+    let writeBU = true;
     let ia = 1;
     let im = 1;
     let renumberSerial = false;
@@ -2149,9 +2151,76 @@ function NGL_writeAtoms() {
       //build using given selection AND biomolDic selection
       asele = "(" + o.object.biomolDict[au].getSelection().string + ") AND " + asele;
     }
-    if (asele === "") asele = "polymer";
+    if (asele === "") asele = "not water";
+    if (style === 1) {
+      asele="("+asele+") and (.CA or .P or .C1')";
+    }
     console.log(asele);
-    if(bu)
+    var chnames = []
+    structure.structure.eachChain( chain => {
+      if ( $.inArray(chain.chainname, chnames) === -1 ) chnames.push( chain.chainname)
+    }, new NGL.Selection(asele));
+
+    if (bu && writeBU) {
+      //first write the matrix
+      for (var j = 0; j < o.object.biomolDict[au].partList.length; j++) {
+        //REMARK 350 BIOMOLECULE: 1
+        //REMARK 350 APPLY THE FOLLOWING TO CHAINS: 1, 2, 3, 4
+        var s= structure.object.biomolDict[au].getSelection() //max in illustrator is 12
+        var t = []
+        $.each(s.selection.rules, function (i, e) {
+          if (chnames.includes(e.chainname)){
+              t.push(e.chainname);
+          }
+        });
+        var nchain = t.length;
+        //s.selection.rules.map(function(d) {
+        //  if (chnames.includes(d.chainname)) {return d.chainname;}          
+        //} )
+        _records.push("REMARK 350 BIOMOLECULE: 1");
+        var linemax = 68;// 41+27.0;
+        var _chain_str = "REMARK 350 APPLY THE FOLLOWING TO CHAINS:";
+        var counter = 41;
+        for (var i=0;i<nchain;i++){
+          var r = " "+t[i]+",";
+          if (counter + r.length >= linemax){
+            _chain_str+="\n";
+            _chain_str+="REMARK 350                    AND CHAINS:";
+            counter = 41;
+          }
+          if (i === nchain-1) {
+            r = " "+t[i];
+          } //#last chain
+          _chain_str+=r;
+          counter+=r.length;
+        }
+        _records.push(_chain_str)
+        for (var k = 0; k < o.object.biomolDict[au].partList[j].matrixList.length; k++) {
+          var mat = o.object.biomolDict[au].partList[j].matrixList[k];
+          _records.push(sprintf(BiomtFormat, 1, k+1,mat.elements[0],mat.elements[1],mat.elements[2],mat.elements[12]));//+ - -
+          _records.push(sprintf(BiomtFormat, 2, k+1,mat.elements[4],mat.elements[5],mat.elements[6],mat.elements[13]));//- + +
+          _records.push(sprintf(BiomtFormat, 3, k+1,mat.elements[8],mat.elements[9],mat.elements[10],mat.elements[14]));//- + +
+        }
+        _records.push("REMARK 350END");
+      }
+      //then the atoms
+      structure.structure.eachAtom((a) => {
+            const formatString = a.hetero ? HetatmFormat : AtomFormat;
+            const serial = this.renumberSerial ? ia : a.serial;
+            if (serial > 99999) serial = 99999;
+            // Alignment of one-letter atom name such as C starts at column 14,
+            // while two-letter atom name such as FE starts at column 13.
+            let atomname = a.atomname;
+            if (atomname.length <= 3)
+            {
+                atomname = ' ' + atomname;
+                _records.push(sprintf(formatString, serial, atomname, a.resname, defaults(a.chainname, ' '), a.resno, a.x, a.y, a.z, defaults(a.occupancy, 1.0), defaults(a.bfactor, 0.0), '', // segid
+                        defaults(a.element, '')));
+            }
+            ia += 1;
+        }, new NGL.Selection(asele));
+  }
+  else if(bu)
     {
       for (var j = 0; j < o.object.biomolDict[au].partList.length; j++) {
         for (var k = 0; k < o.object.biomolDict[au].partList[j].matrixList.length; k++) {
@@ -2185,6 +2254,7 @@ function NGL_writeAtoms() {
       ngl_current_structure.structure.eachAtom((a) => {
             const formatString = a.hetero ? HetatmFormat : AtomFormat;
             const serial = this.renumberSerial ? ia : a.serial;
+            if (serial > 99999) serial = 99999;
             // Alignment of one-letter atom name such as C starts at column 14,
             // while two-letter atom name such as FE starts at column 13.
             let atomname = a.atomname;
@@ -2211,6 +2281,7 @@ function NGL_Illustrate(){
     formData.append("key", "query");
     node_selected.data.sprite.scale2d = 6;
     var style = (document.getElementById("ill_style").checked)?1:0;
+    ill_by_chain = (document.getElementById("ill_chain").checked)?1:0;
     var input = ill_prepareInput(style,nameinput,6);
     formData.append("input_txt", input);
     console.log(input);//problem with rotation?

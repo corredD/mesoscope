@@ -349,8 +349,9 @@ var ngl_widget_options_collapsible = ''+
     '<button class="meso_collapsible">Sprites options</button>'+
     '<div class="meso_content">'+
     '<div><button onclick="NGL_UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite From NGL</button></div>' +
-    '<div><button onclick="NGL_Illustrate()" style="">Update Thumbnail/Sprite From Illustrate</button>' +
-    '<input type="checkbox" id="ill_style">Coarse Illustration</input></div>' +
+    '<div><button onclick="NGL_Illustrate()" style="">Update Thumbnail/Sprite From Illustrate</button></div>' +
+    '<div><input type="checkbox" id="ill_style" checked="true">Coarse Illustration</input></div>' +
+    '<div><input type="checkbox" id="ill_chain" checked="true">Color by chains (Grey)</input></div>' +    
     '<div>'+
     '<div class="spinner hidden" id="spinnerILL" style="width:200px;height:20px;" >' +
     '	  <div class="rect1"></div>' +
