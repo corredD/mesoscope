@@ -28,7 +28,10 @@ global atomic_outlines_params
 global subunit_outlines_params
 global chain_outlines_params
 global ao_params
-
+global all_chains
+global lower_grey
+lower_grey = 0.2
+all_chains=[]
 atomic_outlines_params=["3.0","10.0","4","0.0","5.0"]
 subunit_outlines_params=["3.0","10.0"]
 chain_outlines_params=["3.0","10.0","6.0"]
@@ -153,22 +156,26 @@ def oriented_bounding_box_numpy(points):
     return bbox
 
 
-def ill_prepareWildCard():
+def ill_prepareWildCard(color_bychain):
     global chain_outlines_params
+    global all_chains
+    global lower_grey
+    nchains = len(all_chains)
     astr=""
     astr+="HETATM-H-------- 0,9999, 1.1,1.1,1.1, 0.0\n\
 HETATMH--------- 0,9999, 1.1,1.1,1.1, 0.0\n\
 ATOM  -H-------- 0,9999, 1.1,1.1,1.1, 0.0\n\
 ATOM  H--------- 0,9999, 1.1,1.1,1.1, 0.0\n\
 "
-    #astr+="ATOM  -P---  --- 0,9999 1.00, 1.0, 1.0, 5.0\n\
-    #ATOM  -C5--  --- 0,9999 1.0,1.0,1.0, 5.0\n\
-    #ATOM  -P--- D--- 0,9999 1.0,1.0,1.0, 5.0\n\
-    #ATOM  -C5-- D--- 0,9999 1.0,1.0,1.0, 5.0\n\
-    #ATOM  -CA------- 0,9999 1.0,1.0,1.0, 5.0\n\
-    #HETATM-C-------- 0,9999 1.0,1.0,1.0, 1.6\n\
-    #HETATM---------- 0,9999 1.0,1.0,1.0, 1.5\n";
-    astr+="ATOM  -P-------- 0,9999 1.00, 1.0, 1.0, 5.0\n\
+    if (color_bychain and nchains!=0) : 
+        step = lower_grey/nchains
+        cmax = [1.0,1.0,1.0];
+        for i in range(nchains):
+            c1 = [cmax[0]-step*i,cmax[1]-step*i,cmax[2]-step*i]
+            c=all_chains[i]
+            astr+='ATOM  --------{:2s} 0,9999, {:1.2f}, {:1.2f}, {:1.2f}, {:1.2f}\n'.format(c,cmax[0]-step*i,cmax[1]-step*i,cmax[2]-step*i,5.0)           
+    else :
+        astr+="ATOM  -P-------- 0,9999 1.00, 1.0, 1.0, 5.0\n\
 ATOM  -C1'------ 0,9999 1.0, 1.0, 1.0, 5.0\n\
 HETATM-P-------- 0,9999 1.0, 1.0, 1.0, 5.0\n\
 HETATM-C1'------ 0,9999 1.00, 1.00, 1.00, 5.0\n\
@@ -178,7 +185,8 @@ HETATM---------- 0,9999 1.0, 1.0, 1.0, 1.5\n";
     chain_outlines_params[2] = "6000.0";
     astr+="END\n"
     return astr
-def ill_prepareInput(nameinput,form,scale=6,center=True,trans=[0,0,0],rotation=[0,0,0]):
+
+def ill_prepareInput(nameinput,form, color_bychain =False, scale=6,center=True,trans=[0,0,0],rotation=[0,0,0]):
     global atomic_outlines_params
     global subunit_outlines_params
     global chain_outlines_params
@@ -197,7 +205,7 @@ def ill_prepareInput(nameinput,form,scale=6,center=True,trans=[0,0,0],rotation=[
     sao = True;
     astr="read\n"
     astr+=nameinput+".pdb\n"
-    astr+=ill_prepareWildCard();
+    astr+=ill_prepareWildCard(color_bychain);
     astr+="center\n"
     astr+="auto\n"
     astr+="trans\n"
@@ -226,7 +234,6 @@ def ill_prepareInput(nameinput,form,scale=6,center=True,trans=[0,0,0],rotation=[
     astr+="calculate\n"
     astr+=nameinput+".pnm\n"
     return astr;
-
 
 def DefaultValue(avalue,defaultValue):
     if avalue != None :
@@ -302,6 +309,7 @@ def GetPrincipalAxis(coordinates) :
 #'ATOM  {:>5d}  {:<4s}{:>3s}{:>2s}{:>4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}         {:>2s}{:2s}'.format(1,"CA","TYR","WA",1,284.823,267.301,188.865,1.00,0.00,'',"C")
 #'ATOM  {:5d} {:^4s} {:>3s} {:1s}{:4d}    {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}'.format(25,"CA","MET","A",125,284.823,267.301,188.865,1.00,0.00,'',"C")
 def getPDBString(p,selection,bu,model,use_authid=False,debug=False):
+    global all_chains
     #https://cupnet.net/pdb-format/
     if debug :
         print ("<br> use_authid "+str(use_authid))
@@ -318,6 +326,7 @@ def getPDBString(p,selection,bu,model,use_authid=False,debug=False):
     ir = 1;
     renumberSerial = True;
     _records=""
+    all_chains=[]
     #(.CA or .P or .C5)
     if (bu!=-1 and len(p.assemblies)) :
         chains_internal_ids = p.assemblies[bu]["transformations"][0]["chains"] # internal_id?
@@ -330,6 +339,7 @@ def getPDBString(p,selection,bu,model,use_authid=False,debug=False):
                 if len(selection) and (cid not in selection) : continue
                 chains.append(cid)    
         n = len(chains)
+        all_chains = chains[:]
         _records+="REMARK 350 BIOMOLECULE: 1\n";
         #check the size of the chains string. No more than 80c
         #only 27c for the chains but limited at 68
@@ -395,6 +405,7 @@ def getPDBString(p,selection,bu,model,use_authid=False,debug=False):
             if debug :
                 print ("<br> chain used "+cid+" "+ch.id+" auth "+ch.internal_id)                
             if len(selection) and (cid not in selection) : continue;
+            all_chains.append(cid)
             if debug :
                 print (" chain selected ")
             for r in ch.residues() :
@@ -474,6 +485,7 @@ def queryForm(form, verbose = 0):
     model = ""
     proj_name = "illustrated"
     use_authid = False
+    color_bychain = False
     wrkDir = "/var/www/html/data/tmp/ILL/"+qid
     illdir = "/var/www/html/beta/cgi-bin/illustrator"
     curentD = os.path.abspath(os.curdir)
@@ -496,6 +508,8 @@ def queryForm(form, verbose = 0):
     #no more than 20character
     if "use_authid" in form :
         use_authid = (form["use_authid"].value == 'true')
+    if "bychain" in form :
+        color_bychain = (form["bychain"].value == 'true')
     force_pdb = True
     if "force_pdb" in form:
         force_pdb = form["force_pdb"].value
@@ -566,7 +580,7 @@ def queryForm(form, verbose = 0):
     elif "input_txt" in form:
         inpstring = form["input_txt"].value
     else :
-        inpstring = ill_prepareInput(proj_name,form,trans=trans,rotation=rotation)
+        inpstring = ill_prepareInput(proj_name,form,color_bychain=color_bychain,trans=trans,rotation=rotation)
     #print (inpstring+"<br>")
     f = open(inpfile, "w")
     f.write(inpstring)
