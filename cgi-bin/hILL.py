@@ -173,7 +173,7 @@ ATOM  H--------- 0,9999, 1.1,1.1,1.1, 0.0\n\
         for i in range(nchains):
             c1 = [cmax[0]-step*i,cmax[1]-step*i,cmax[2]-step*i]
             c=all_chains[i]
-            astr+='ATOM  --------{:2s} 0,9999, {:1.2f}, {:1.2f}, {:1.2f}, {:1.2f}\n'.format(c,cmax[0]-step*i,cmax[1]-step*i,cmax[2]-step*i,5.0)           
+            astr+='ATOM  --------{:>2s} 0,9999, {:1.2f}, {:1.2f}, {:1.2f}, {:1.2f}\n'.format(c,cmax[0]-step*i,cmax[1]-step*i,cmax[2]-step*i,5.0)           
     else :
         astr+="ATOM  -P-------- 0,9999 1.00, 1.0, 1.0, 5.0\n\
 ATOM  -C1'------ 0,9999 1.0, 1.0, 1.0, 5.0\n\
