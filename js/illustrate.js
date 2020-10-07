@@ -478,8 +478,8 @@ function GenerateOneColorRangePalette(rgb,ncolors){
   return colors;
 }
 
-const IllAtomFormat   = 'ATOM  %4s-%3s%2s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
-const IllHetatmFormat = 'HETATM%4s-%3s%2s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
+const IllAtomFormat   = 'ATOM  %4s-%3s%2s %d,%4d  %1.3f, %1.3f, %1.3f, %1.1f';
+const IllHetatmFormat = 'HETATM%4s-%3s%2s %d,%4d  %1.3f, %1.3f, %1.3f, %1.1f';
 function ill_prepareWildCardChains(structure,style){
   //one input color?
   //handle HETATOM
@@ -522,6 +522,7 @@ function ill_prepareWildCardChains(structure,style){
   var cmin = [0.1,0.1,0.1];
   var step = lower_grey/nchains;
   var counter = 0;
+  var chain_done = [];
   structure.structure.eachChain(chain=>{
     var is_protein = false;
     var cid = 0;
@@ -529,29 +530,57 @@ function ill_prepareWildCardChains(structure,style){
     var found = false;
     if ( chnames.includes(chain.chainname ) ) {
         cid = chnames.indexOf(chain.chainname);
-        //var atom_colors = GenerateOneColorRangePalette(chain_colors[cid].rgb(),2);
-        var c1 = [cmax[0]-step*counter,cmax[1]-step*counter,cmax[2]-step*counter];
-        var c2 = c1;
-        console.log(chain.chainname,cid,counter,step*counter);
-        //cid+=1;
-        chain.eachResidue(r =>{
-          var res = r.resname;
-          if (r.moleculeType == 4 || r.moleculeType == 5) {
-            //break;
-            if (!found) {
-              chain_is_protein = false;
-              found = true;
+        if (chain_done.includes(chain.chainname)) {console.log("already added");}
+        else 
+        {
+          chain_done.push(chain.chainname);
+          //var atom_colors = GenerateOneColorRangePalette(chain_colors[cid].rgb(),2);
+          var c1 = [cmax[0]-step*counter,cmax[1]-step*counter,cmax[2]-step*counter];
+          var c2 = c1;
+
+          console.log(chain.chainname,cid,counter,step*counter);
+          //cid+=1;
+          chain.eachResidue(r =>{
+            var res = r.resname;
+            if (r.moleculeType == 4 || r.moleculeType == 5) {
+              //break;
+              if (!found) {
+                chain_is_protein = false;
+                found = true;
+              }
             }
-          }
-          else if (r.moleculeType == 3) {
-            if (!found) {
-              chain_is_protein = true;
-              found = true;
+            else if (r.moleculeType == 3) {
+              if (!found) {
+                chain_is_protein = true;
+                found = true;
+              }
             }
+          });
+          if (chain_is_protein) {
+            if (style == 0) _records.push(sprintf(IllAtomFormat,
+                                  Ill_defaults("----", '----'),
+                                  Ill_defaults("", '---'),
+                                  Ill_defaults(chain.chainname, '--'),
+                                  0,
+                                  9999,
+                                  Ill_defaults(c1[0], 1.0),
+                                  Ill_defaults(c1[1], 0.0),
+                                  Ill_defaults(c1[2], 0.0),
+                                  Ill_defaults("", 1.6) ) );
+            if (style == 1)  _records.push(sprintf(IllAtomFormat,
+                                  Ill_defaults("----", '----'),
+                                  Ill_defaults("", '---'),
+                                  Ill_defaults(chain.chainname, '--'),
+                                  0,
+                                  9999,
+                                  Ill_defaults(c2[0], 1.0),
+                                  Ill_defaults(c2[1], 0.0),
+                                  Ill_defaults(c2[2], 0.0),
+                                  Ill_defaults("", 5.0) ) );
+
           }
-        });
-        if (chain_is_protein) {
-          if (style == 0) _records.push(sprintf(IllAtomFormat,
+          else {
+            if (style == 0) _records.push(sprintf(IllAtomFormat,
                                 Ill_defaults("----", '----'),
                                 Ill_defaults("", '---'),
                                 Ill_defaults(chain.chainname, '--'),
@@ -561,7 +590,7 @@ function ill_prepareWildCardChains(structure,style){
                                 Ill_defaults(c1[1], 0.0),
                                 Ill_defaults(c1[2], 0.0),
                                 Ill_defaults("", 1.6) ) );
-          if (style == 1)  _records.push(sprintf(IllAtomFormat,
+            if (style == 1) _records.push(sprintf(IllAtomFormat,
                                 Ill_defaults("----", '----'),
                                 Ill_defaults("", '---'),
                                 Ill_defaults(chain.chainname, '--'),
@@ -572,31 +601,9 @@ function ill_prepareWildCardChains(structure,style){
                                 Ill_defaults(c2[2], 0.0),
                                 Ill_defaults("", 5.0) ) );
 
+          }
+          counter++;
         }
-        else {
-          if (style == 0) _records.push(sprintf(IllAtomFormat,
-                              Ill_defaults("----", '----'),
-                              Ill_defaults("", '---'),
-                              Ill_defaults(chain.chainname, '--'),
-                              0,
-                              9999,
-                              Ill_defaults(c1[0], 1.0),
-                              Ill_defaults(c1[1], 0.0),
-                              Ill_defaults(c1[2], 0.0),
-                              Ill_defaults("", 1.6) ) );
-          if (style == 1) _records.push(sprintf(IllAtomFormat,
-                              Ill_defaults("----", '----'),
-                              Ill_defaults("", '---'),
-                              Ill_defaults(chain.chainname, '--'),
-                              0,
-                              9999,
-                              Ill_defaults(c2[0], 1.0),
-                              Ill_defaults(c2[1], 0.0),
-                              Ill_defaults(c2[2], 0.0),
-                              Ill_defaults("", 5.0) ) );
-
-        }
-        counter++;
       }
     });
   /*  var hetatm_p_color_templates=[

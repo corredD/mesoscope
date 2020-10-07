@@ -2361,6 +2361,97 @@ function NGL_Illustrate(){
     xhr.send(formData);
 }
 
+function NGL_Illustrate_new(){
+  if(!node_selected) return;
+  if (!ngl_current_structure) return;
+  node_to_illustrate = node_selected;
+  //camera position should be reset
+  stage.autoView(1000);
+  var nameinput = node_selected.data.name;
+  var formData = new FormData();
+  formData.append("key", "query");
+  node_selected.data.sprite.scale2d = 6;
+  var style = (document.getElementById("ill_style").checked)?1:0;
+  ill_by_chain = (document.getElementById("ill_chain").checked)?1:0;
+  var input = ill_prepareInput(style,nameinput,6);
+  formData.append("input_txt", input);
+  console.log(input);//problem with rotation?
+  /*if (node_selected.data.source.pdb.length == 4){
+    if (sele_elem.value!="" || assembly_elem.selectedOptions[0].value!="AU"){
+        structure_txt=NGL_writeAtoms();
+        formData.append("PDBtxt",structure_txt);
+    }
+    else formData.append("PDBID", node_selected.data.source.pdb);
+  }
+  else {
+    if (sele_elem.value!="" || assembly_elem.selectedOptions[0].value!="AU"){
+        structure_txt=NGL_writeAtoms();
+        formData.append("PDBtxt",structure_txt);
+    }
+    else formData.append("PDBfile", pathList_[node_selected.data.source.pdb]);
+  }
+  */
+  structure_txt=ill_writeAtoms(ngl_current_structure, style);
+  var astructure_file = new Blob([structure_txt], {
+    type: 'text/plain'
+  });
+  //compress to zip ?
+  formData.append("PDBfile",astructure_file);
+  formData.append("_id", ill_current_id);
+  formData.append("name",nameinput);
+  formData.append("force_pdb",true);
+  var xhr = new XMLHttpRequest();
+  var url = 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py'
+  xhr.open('POST', url);
+  xhr.timeout = 1000000000;
+  xhr.ontimeout = function () {
+    console.error("The request for " + url + " timed out.");
+  };
+  xhr.onload = function () {
+    // do something to response
+    if(this.status == 200) {
+      console.log("onload ");
+    }
+    console.log(this.responseText);
+    var data = JSON.parse(this.responseText)
+    if (!node_to_illustrate.data.thumbnail){
+      node_to_illustrate.data.thumbnail = new Image();
+      node_to_illustrate.data.thumbnail.done = false;
+      node_to_illustrate.data.thumbnail.onload = function() {
+        var height = this.height;
+        var width = this.width;
+        this.oh = parseFloat(height);
+        this.ow = parseFloat(width);
+        this.done = true;
+      }
+      node_to_illustrate.data.thumbnail.onerror = function () {
+        this.src = 'images/Warning_icon.png';
+        this.done = false;
+      };
+    }
+    node_to_illustrate.data.thumbnail.src = data.image+"?"+new Date();
+    node_to_illustrate.data.sprite.image = node_to_illustrate.data.name+".png";
+    ill_current_id = parseInt(data.id);
+    //hide progress bar
+    if (document.getElementById("savethumbnail").checked){
+        //Util_download_click_url_cb(data.image,node_to_illustrate.data.name+".png");     
+        Util_download_src_png(node_to_illustrate.data.thumbnail.src, node_to_illustrate.data.name);
+    }
+    //ad to the list of files
+    /*fetch(data.image)
+      .then(res => res.blob())
+      .then(blobToBase64)
+      .then(finalResult => { 
+        pathList_[node_to_illustrate.data.sprite.image] = finalResult;
+      });*/
+    fetch(data.image)
+      .then(res => pathList_[node_to_illustrate.data.sprite.image] = res.blob());
+    toggleHide(document.getElementById("spinnerILL"));
+  };
+  toggleShow(document.getElementById("spinnerILL"));
+  xhr.send(formData);
+}
+
 function myTimerToGetTHeBuffer(o,aStopFunction,clean) {
     console.log("cms_surface_"+o.name);
     var arep = stage.getRepresentationsByName("cms_surface_"+o.name).list[0];

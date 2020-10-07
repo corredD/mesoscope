@@ -1979,7 +1979,7 @@ function getcomphtml(anode) {
     	htmlStr+='<input id="comp_slider" type="range" min="1" max="10000" step="1" value="'+cradius+'"style="width:70%" oninput="updateLabel(this)" onchange="resizeMetaBall(this)"/>';
 		htmlStr+='<input  id="comp_slider_num" min="1" max="10000" type="number" value="'+cradius+'" style="width:30%" oninput="updateLabel(this)" onchange="resizeMetaBall(this)"/></div>';
 		htmlStr+='<div style="display:flex;"><label>Type:</label>';
-		htmlStr+='<input id="comp_slider_type" type="number" min="1" max="4" step="1" value="'+type+'"style="width:70%"  onchange="changeMetaBall(this)"/>';
+		htmlStr+='<input id="comp_slider_type" type="number" min="0" max="4" step="1" value="'+type+'"style="width:70%"  onchange="changeMetaBall(this)"/>';
 		htmlStr+='</div>';
 		htmlStr+= '<button onclick="RemoveMetaball()">Remove Selected MB</button>';
 		htmlStr+= '<button onclick="AddMetaball()">Add MB</button>';
@@ -2722,14 +2722,14 @@ function ChangeCanvasColor(e){
 	  //generate one color range per compartment
 	  var nComp = 0;
 	  graph.nodes.forEach(function(d){
-		if (d.children && d.depth != 0){
+		if (d.children){// && d.depth != 0){
 			nComp++;
 		}
 	  });
 	  var theColor = GenerateNColor(nComp);
 	  nComp = 0;
 	  graph.nodes.forEach(function(d){
-		if (d.children && d.depth != 0){
+		if (d.children){// && d.depth != 0){
 			comp_colors[d.data.name] = theColor[nComp];
 			color_palette[d.data.name] = GenerateOneColorRangePalette(theColor[nComp].rgb(),d.children.length);
 			nComp++;
@@ -2880,7 +2880,7 @@ function colorNode(d) {
 			var c1 = color_palette[pname][id].rgb()
 			return 'rgb('+ c1[0]+","+c1[1]+","+c1[2]+')';
 		}
-		else if (d.children && d.depth != 0){
+		else if (d.children){
 			var c1 = comp_colors[d.data.name].rgb();
 			return 'rgb('+ c1[0]+","+c1[1]+","+c1[2]+')';
 		}
@@ -4513,6 +4513,7 @@ function update_graph(agraph,alink){
   simulation.alpha(1);
   //ticked();
   //saveCurrentState();
+  ChangeCanvasColor(null);
 }
 
 function merge_node(cnode,newnode){
