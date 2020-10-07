@@ -547,8 +547,8 @@ function readWildCard(filename){
 //ATOM  HCCC-RES-A 0,9999  0.00, 0.00, 0.00, 1.6
 //HETATMHCCC-RES-A 0,9999  0.00, 0.00, 0.00, 1.6
 //HETATM----------
-const IllAtomFormat   = 'ATOM  %4s-%3s-%1s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
-const IllHetatmFormat = 'HETATM%4s-%3s-%1s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
+const IllAtomFormat   = 'ATOM  %4s-%3s%2s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
+const IllHetatmFormat = 'HETATM%4s-%3s%2s %d,%4d  %1.2f, %1.2f, %1.2f, %1.1f';
 
 function Ill_defaults(value, defaultValue) {
     return (value !== undefined && value !== "")? value : defaultValue;
@@ -1592,7 +1592,7 @@ function writeAtoms() {
         //then the atoms
         structure.structure.eachAtom((a) => {
               const formatString = a.hetero ? HetatmFormat : AtomFormat;
-              const serial = this.renumberSerial ? ia : a.serial;
+              var serial = this.renumberSerial ? ia : a.serial;
               if (serial > 99999) serial = 99999;
               // Alignment of one-letter atom name such as C starts at column 14,
               // while two-letter atom name such as FE starts at column 13.
@@ -1616,7 +1616,7 @@ function writeAtoms() {
                 var new_pos = new NGL.Vector3(a.x, a.y, a.z);//should be uncentered
                 new_pos.applyMatrix4(mat);
                 const formatString = a.hetero ? HetatmFormat : AtomFormat;
-                const serial = renumberSerial ? ia : a.serial;
+                var serial = renumberSerial ? ia : a.serial;
                 if (serial > 99999) serial = 99999;
                 // Alignment of one-letter atom name such as C starts at column 14,
                 // while two-letter atom name such as FE starts at column 13.
@@ -1639,7 +1639,7 @@ function writeAtoms() {
     else {
       structure.structure.eachAtom((a) => {
             const formatString = a.hetero ? HetatmFormat : AtomFormat;
-            const serial = this.renumberSerial ? ia : a.serial;
+            var serial = this.renumberSerial ? ia : a.serial;
             if (serial > 99999) serial = 99999;
             // Alignment of one-letter atom name such as C starts at column 14,
             // while two-letter atom name such as FE starts at column 13.
@@ -1727,9 +1727,9 @@ function onClick(){
       formData.append("ao_params",  JSON.stringify(new NGL.Quaternion(ao_params1.value,ao_params2.value,ao_params3.value,ao_params4.value)));
       formData.append("style", ill_style.value);
     }*/
-    console.log("submit to server");
+    console.log("submit to server ",_id);
     console.log(changed_selection);
-    console.log(formData);
+    //console.log(formData);
     //show progress bar
     var xhr = new XMLHttpRequest();
     var url = 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py'
@@ -1738,6 +1738,7 @@ function onClick(){
     xhr.ontimeout = function () {
       console.error("The request for " + url + " timed out.");
     };
+    xhr.upload.onprogress = function (evt) {console.log("add upload event-listener" + evt.loaded + "/" + evt.total);};
     xhr.onload = function () {
       // do something to response
       console.log(this.responseText);
