@@ -410,7 +410,7 @@ def queryForm(form, verbose = 0):
     if fetch and (not os.path.isfile(tmpPDBName) or force_pdb):
         cmd+= "wget https://files.rcsb.org/download/"+queryTXT+".pdb >/dev/null;"
         cmd+= "mv "+queryTXT+".pdb "+tmpPDBName+";"
-    cmd+= curentD+"/illustrator < "+proj_name+".inp>/dev/null;"
+    cmd+= curentD+"/illustrator < "+proj_name+".inp > "+proj_name+".log;"
     #cmd+="/bin/convert "+proj_name+".pnm -transparent \"rgb(254,254,254)\" "+proj_name+".png>/dev/null;"
     #composite with ngl_geom_opacit
     cmd+="/bin/composite -compose copy_opacity opacity.pnm "+proj_name+".pnm "+proj_name+".png;"
