@@ -1663,6 +1663,7 @@ function onClick(){
     nameinput.value = nameinput.value.slice(0, 80-4)//max char is 80
     img.style.display = "none";
     document.getElementById("loader").style.display = "block";
+    document.getElementById("aprogress").style.display = "block";
     clearTimeout();
     var q = stage.animationControls.controls.rotation;
     var rotation = new NGL.Euler().setFromQuaternion( q);
@@ -1738,7 +1739,9 @@ function onClick(){
     xhr.ontimeout = function () {
       console.error("The request for " + url + " timed out.");
     };
-    xhr.upload.onprogress = function (evt) {console.log("add upload event-listener" + evt.loaded + "/" + evt.total);};
+    xhr.upload.onprogress = function (evt) {
+      document.getElementById("aprogress").value = (evt.loaded / evt.total) * 100;
+      console.log("add upload event-listener" + evt.loaded + "/" + evt.total);};
     xhr.onload = function () {
       // do something to response
       console.log(this.responseText);
@@ -1747,6 +1750,7 @@ function onClick(){
       _id = parseInt(data.id);
       //hide progress bar
       document.getElementById("loader").style.display = "none";
+      document.getElementById("aprogress").style.display = "none";
       img.style.display = "block";
       linkimg.href = data.image;
       current_query.innerHTML="<h4>Current PDB and working Id :"+PDBID+" <a href='https://mesoscope.scripps.edu/data/tmp/ILL/"+_id+"'> "+_id+"</a></h4>";

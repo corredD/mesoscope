@@ -275,7 +275,9 @@
         <wired-button style="width: max-content;" onclick='onClick()'>Illustrate</wired-button>
       </div>
     </div>
-    <div><div id="loader" class="loader"></div><a id="linkimg" href="" target="blanck"><img id="result" src="" style="width:300px"></img></a></div>
+    <div>
+      <progress id="aprogress" value="0" max="100" style="display: none">Sending to server</progress>
+      <div id="loader" class="loader"></div><a id="linkimg" href="" target="blanck"><img id="result" src="" style="width:300px"></img></a></div>
   </div>
 </div>
   <script src="extras/chroma.min.js"></script>
