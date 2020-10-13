@@ -405,7 +405,7 @@ def getPDBString(p,selection,bu,model,use_authid=False,debug=False):
             if debug :
                 print ("<br> chain used "+cid+" "+ch.id+" auth "+ch.internal_id)                
             if len(selection) and (cid not in selection) : continue;
-            all_chains.append(cid)
+            #all_chains.append(cid)
             if debug :
                 print (" chain selected ")
             for r in ch.residues() :
@@ -417,7 +417,7 @@ def getPDBString(p,selection,bu,model,use_authid=False,debug=False):
                 if (at == None): at = r.atom(name="C1'")
                 if (at == None): continue
                 if (at.het.name == 'UNK' or at.het == None ) : continue
-                _records+=AFormat.format(serial,at.name,r.name,' ',ir,
+                _records+=AFormat.format(serial,at.name,r.name,cid,ir,
                         at.location[0], at.location[1], at.location[2], 1.0,0.0,'','C')+"\n";
                 all_coords.append([at.location[0], at.location[1], at.location[2]])
                 ir = ir + 1
@@ -432,6 +432,8 @@ def getPDBString(p,selection,bu,model,use_authid=False,debug=False):
 def FetchProtein(pdb_id,bu,selection,model,use_authid=True):
     if model == None or model == "":
         model = 0
+    else :
+        model = int(model)
     lchains_id = []
     sel_chains = []
     p = atomium.fetch(pdb_id)

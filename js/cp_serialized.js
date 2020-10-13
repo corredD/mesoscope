@@ -380,7 +380,7 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
     "model": "",
     "selection": ""
   };
-  if ("source" in ing_dic) { //} && pdb === "None") {
+  if ("source" in ing_dic && ing_dic["source"] != null) { //} && pdb === "None") {
     source = ing_dic["source"];
     if (!("pdb" in source)) source.pdb = "None";
     if (!("bu" in source)) source.bu = "BU1";
@@ -388,8 +388,8 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
     if (!("model" in source)) source.model = "";
     if (!("selection" in source)) source.selection = "";
     if ('emdb' in source) source.pdb = "EMD-" + source.emdb + ".map"; //"EMD-5241.map"
-    if ('transform' in ing_dic["source"])
-      if ('offset' in ing_dic["source"].transform)
+    if ('transform' in source)
+      if ('offset' in source.transform)
         offset = ing_dic.source.transform.offset;
   }
 
