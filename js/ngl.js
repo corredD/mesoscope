@@ -4607,7 +4607,7 @@ function NGL_Load(pdbname, bu, sel_str) {
     }
     else {
       //what about emdb
-      if (folder_elem && folder_elem.files.length != "" && pdbname in pathList_) {
+      if ( pdbname in pathList_ ) {
         //alert(pathList_[d.data.source]),
         NGL_LoadOneProtein(pathList_[pdbname], pdbname, bu, sel_str);
       }

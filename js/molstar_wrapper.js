@@ -140,9 +140,26 @@ function MS_LoadModel(recipefile,modelfile){
     //'spacefill', 'gaussian-surface', 'point', 'orientation'
     if (ms_spacefill.checked) BasicMolStarWrapper.setPreset('illustrative_spacefill');
     else BasicMolStarWrapper.setPreset('illustrative');
-    BasicMolStarWrapper.loadCellPACK_model(recipefile,modelfile, ms_trace_only.checked, ms_spacefill.checked ? 'spacefill' : 'gaussian-surface');
+    var ingredients_files = [];
+    Object.keys(pathList_).forEach(function(key) {
+      console.log(key, pathList_[key]);
+      ingredients_files.push(pathList_[key]);
+    });
+    BasicMolStarWrapper.loadCellPACK_model(recipefile,modelfile,ingredients_files, ms_trace_only.checked, ms_spacefill.checked ? 'spacefill' : 'gaussian-surface');
     BasicMolStarWrapper.setPreset('clip_pixel');
     ms_model_loaded = true;
+}
+
+async function loadCellPACK_model(recipe_file, model_file, traceOnly, representation ){
+  await BasicMolStarWrapper.plugin.clear();
+  const params = LoadCellPackModel.createDefaultParams(BasicMolStarWrapper.plugin.state.data.root.obj, this.plugin);
+  params.membrane = false;
+  params.source.name = 'file';
+  params.source.params = Asset.File(new File([recipe_file],'recipe.json'));
+  params.results = (model_file)?Asset.File(new File([model_file],'model.bin')) : null;
+  params.preset.traceOnly = traceOnly;//check file size ?
+  params.preset.representation = representation;
+  return this.plugin.runTask(this.plugin.state.data.applyAction(LoadCellPackModel,params));
 }
 /*
  ['blood_hiv_immature_inside.json', 'Blood HIV immature'],

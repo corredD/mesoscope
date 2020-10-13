@@ -1416,7 +1416,10 @@ function selectFile(e){
               merge_getModal(adata.nodes,adata.links)
               //merge_graph(adata.nodes,adata.links);
             }
-            else update_graph(adata.nodes,adata.links);
+			else update_graph(adata.nodes,adata.links);
+			var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links);
+			let blob = new Blob([JSON.stringify(jdata)], {type: 'text/plain'});
+			recipe_file = blob;
        	 }
   	  	}
     	  else {
@@ -1445,11 +1448,11 @@ function selectFile(e){
     	    reader.onload = function(event) {
     	    	var data = reader.result;
     	    	//data = new Uint8Array(data);
-						var workbook = XLSX.read(data, {type:  'binary'});
-						if(!workbook.Props) workbook.Props = {};
-            workbook.Props.Title = thefile.name;
-						var adata = process_wb(workbook);
-						//alert(JSON.stringify(adata));
+				var workbook = XLSX.read(data, {type:  'binary'});
+				if(!workbook.Props) workbook.Props = {};
+            	workbook.Props.Title = thefile.name;
+				var adata = process_wb(workbook);
+				//alert(JSON.stringify(adata));
     	    }
     }
     else if (ext==="csv"){
@@ -1484,13 +1487,94 @@ function selectFile(e){
         if (MERGE) merge_getModal(adata.nodes,adata.links)
         else update_graph(adata.nodes,adata.links);
       }
-    }
+	}
+	else if (ext==="zip"){
+		//open the zip loop through file
+		//store them in pathList_
+		unzipAndLoad( thefile );
+	}
     else {
       alert('Extension not supported '+ext);
     }
-    if (ext === "xlsx") reader.readAsBinaryString(thefile);
+	if (ext === "xlsx") reader.readAsBinaryString(thefile);
+	else if (ext === "zip") {}
     else reader.readAsText(thefile, 'UTF-8');
 	}
+
+async function unzipAndLoad( zipFile ) {
+	var zip = await JSZip.loadAsync(zipFile);
+	var recipe_data = null;
+	var recipe_data_serialized = null;
+	var recipe_model = null;
+	// you now have every files contained in the loaded zip
+	console.log(zip.files);
+	for(filename in zip.files) {
+		var ext = filename.split('.').pop();
+		//remove folder name ?
+		if (ext === "json"){
+			var comon = findLongestCommonSubstring(filename,"serialized");
+			var blob = await zip.files[filename].async('blob');
+			if (comon.length <= 9) {
+				recipe_file = blob;
+				recipe_data = await blob.text();;
+			}
+			else {
+				recipe_data_serialized = await blob.text();;
+			}
+			//await zip.files[filename].async('string').then(function (fileData) {
+			//	if (comon.length >= 9) recipe_data_serialized = fileData; // These are your file contents 
+			//	else recipe_data = fileData;
+			//  })
+		}
+		else if (ext === "bin") {
+			recipe_model = await zip.files[filename].async('blob');
+			//await zip.files[filename].async('uint8array').then(function (fileData) {
+			//	recipe_model = fileData; // These are your file contents      
+			//  })
+		}
+		else {
+			var blob = await zip.files[filename].async("blob");
+			var fname = filename.split('/').pop()
+			if (fname !== "" )
+				pathList_[fname] = new File([blob], fname, { type: blob.type });
+		}
+	}
+	if (recipe_data != null) {
+		var data = recipe_data.replace(/\\n\\r/gm,'newChar');
+		var ad = JSON.parse(data);
+		debug_data = ad;
+		var adata = parseCellPackRecipe(ad)
+		if (MERGE) merge_getModal(adata.nodes,adata.links)
+		else update_graph(adata.nodes,adata.links);	
+		for (var i=0;i<graph.nodes.length;i++){
+			if (!graph.nodes[i].children) {
+				if (graph.nodes[i].data.results && graph.nodes[i].data.results.length ){
+					MS_LoadModel(recipe_file,null);
+					break;
+				}
+			}
+		}									
+	}
+	if (recipe_data_serialized != null) {
+		var data = recipe_data_serialized.replace(/\\n\\r/gm,'newChar');
+		var ad = JSON.parse(data);
+		debug_data = ad;
+		var adata = parseCellPackRecipeSerialized(ad);
+		//debug_data = adata;
+		if (MERGE) {
+		  merge_getModal(adata.nodes,adata.links)
+		  //merge_graph(adata.nodes,adata.links);
+		}
+		else update_graph(adata.nodes,adata.links);
+		var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links);
+		let blob = new Blob([JSON.stringify(jdata)], {type: 'text/plain'});
+		recipe_file = blob;					
+	}
+	if (recipe_model != null) {
+		MS_LoadModel(recipe_file,recipe_model);
+	}
+}
+
 
 function selectMergeFile(e){
     MERGE = true;

@@ -1150,6 +1150,11 @@ function load_binary_model(e) {
   var theFiles = e.target.files;
   //alert(theFiles.length);
   //alert(theFiles[0].size);
+  if ( recipe_file == null || recipe_changed) {
+    var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links);
+    let blob = new Blob([JSON.stringify(jdata)], {type: 'text/plain'});
+    recipe_file = blob;    
+  }
   var f = theFiles[0];
   model_file = f;
   if (!(window.File && window.FileReader && window.FileList && window.Blob))
