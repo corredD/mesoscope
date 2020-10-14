@@ -64,14 +64,17 @@ function MS_setupcallback(){
 }
 
 function MS_callback(entryId, click = false){
-  //console.log("MS_callback "+entryId);
+  console.log("MS_callback "+entryId,click);
   var found = false;
   for (var i=0;i<graph.nodes.length;i++){
     var d = graph.nodes[i];
     if (!d.children){
       var n = d.data.source.pdb;
       if (n.length === 4 ) n = n.toUpperCase();
-      else n = n.replace(".pdb","")
+      else {
+        if (!entryId.endsWith(".pdb"))
+          n = n.replace(".pdb","")
+      }
       if ( n === entryId || d.data.name === entryId) {
         //console.log("found");
         clearHighLight();
@@ -107,10 +110,12 @@ function MS_HighlightNode(anode){
   if (!MS_inited) return;
   if (anode.data && anode.data.source ) {
     var aname = anode.data.source.pdb;
-    if (aname.length === 4 ) aname = aname.toUpperCase();
-    else aname = aname.replace(".pdb","")
+    if (aname.length === 4 ) {
+      aname = aname.toUpperCase();
+    } 
+    //else aname = aname.replace(".pdb","")
     //fiber use the ingredient name
-    if (anode.data.ingtype === "fiber") aname = anode.data.name;
+    //if (anode.data.ingtype === "fiber") aname = anode.data.name;
     MS_Highlight(aname);
   }
 }
@@ -197,15 +202,21 @@ async function MS_mapColorSchem(){
     graph.nodes.forEach(function(d){
       if (!d.children)
       {
-        var aname = d.data.source.pdb;
-        if (aname.length === 4 ) aname = aname.toUpperCase();
-        else aname = aname.replace(".pdb","")
-        //fiber use the ingredient name
-        if (d.data.ingtype === "fiber") aname = d.data.name;
         if (!d.data.color) d.data.color = [1,0,0];
         var node_color = d.data.color ;
-        color_mapping_js[aname]=node_color;
-        MS_ChangeColor(d,node_color)
+        
+        var aname = d.data.source.pdb;
+        if (aname.length === 4 ) {
+          aname = aname.toUpperCase();
+          color_mapping_js[aname]=node_color;
+        }
+        else {
+          color_mapping_js[aname]=node_color;
+          //color_mapping_js[aname.replace(".pdb","")]=node_color;
+        }
+        //fiber use the ingredient name
+        //if (d.data.ingtype === "fiber") aname = d.data.name;
+        //MS_ChangeColor(d,node_color)
       }
       else {
         //compartment inner and outer membrane if specified?
@@ -221,24 +232,36 @@ async function MS_applyAllColors(){
     //pass the nodes to the wrapper
     var color_mapping = await MS_mapColorSchem();
     await BasicMolStarWrapper.coloring.applyNodesColors(color_mapping);
+    //BasicMolStarWrapper.coloring.applyCellPACKRandom().catch(alert);
+    let pr = BasicMolStarWrapper.coloring.applyCellPACKRandom();
+    let ppr = await pr;    
+    let p = BasicMolStarWrapper.coloring.applyCellPACKColor();
+    let pp = await p;
+    console.log(p,pp)
 }
 
 async function MS_ChangeColor(node,acolor)
 {
     if (!MS_inited) return;
     var aname = node.data.source.pdb;
-    if (aname.length === 4 ) aname = aname.toUpperCase();
-    else aname = aname.replace(".pdb","")
-    if (node.data.ingtype === "fiber") aname = node.data.name;
-    //console.log(aname,acolor)
+    if (aname.length === 4 ) {
+      aname = aname.toUpperCase();
+    }
     BasicMolStarWrapper.coloring.changeColorStructure(aname,acolor);
-    await BasicMolStarWrapper.coloring.applyCellPACKRandom();
-    await BasicMolStarWrapper.coloring.applyCellPACKColor();
+    //if (node.data.ingtype === "fiber") aname = node.data.name;
+    //console.log(aname,acolor)
+    let pr = BasicMolStarWrapper.coloring.applyCellPACKRandom();
+    let ppr = await pr;    
+    let p = BasicMolStarWrapper.coloring.applyCellPACKColor();
+    let pp = await p;
+    console.log(p,pp)
 }
 
 async function MS_applyRandomColors(){
   if (!MS_inited) return;
-    await BasicMolStarWrapper.coloring.applyCellPACKRandom();
+  let p = BasicMolStarWrapper.coloring.applyCellPACKRandom();
+  let pp = await p;
+  console.log(p,pp)    
 }
 
 async function MS_Clear(){

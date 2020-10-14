@@ -492,12 +492,12 @@ var file_cb = "$('#modelfile_input2').trigger('click');";
 var mol_star_view=''+
 '<div id="acontainer" >'+
 '<div id="molstar">'+  '</div>'+
-'<div style="position:absolute;top:0px">'+
+'<div style="position:absolute;bottom:0px">'+
 '<div><button id="loadmodel_button" onclick="'+file_cb+'" style="">Load a Model</button>' +//z-index:999,right:5%;
 '<button id="applyAllcolors_button" onclick="MS_applyAllColors()" style="">Apply nodes Colors</button>' +//z-index:999,right:5%;
-'<button id="applyAllcolors_button" onclick="MS_applyRandomColors()" style="">Apply default Colors</button></div>' +//z-index:999,right:5%;
-'<div><input type="checkbox" id="ms_trace_only">Trace Only</input></div>' +
-'<div><input type="checkbox" id="ms_spacefill">Spacefill</input></div>' +
+'<button id="applyAllcolors_button" onclick="MS_applyRandomColors()" style="">Apply default Colors</button>' +//z-index:999,right:5%;
+'<input type="checkbox" id="ms_trace_only">Trace Only</input>' +
+'<input type="checkbox" id="ms_spacefill">Spacefill</input></div>' +
 '</div>'+
 '</div>';
 

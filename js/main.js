@@ -4026,7 +4026,10 @@ function MouseMove(x,y) {
 	  MS_ClearHighlight();
 	  return;
 	}
-  	if (!d.parent && !line) clearHighLight();
+  	if (!d.parent && !line) {
+		  clearHighLight();
+		  MS_ClearHighlight();
+	}
 	if (!line)
 	{
 		if (!node_over)
@@ -4047,7 +4050,8 @@ function MouseMove(x,y) {
 	}
 	else {
       	node_over = null;
-      	line_over = d;
+		  line_over = d;
+		  MS_ClearHighlight();
 	}
   //}
   if (simulation.alpha() < 0.01 && HQ) simulation.alphaTarget(1).restart();
