@@ -328,13 +328,19 @@ var ngl_widget_options_collapsible = ''+
                             "NGL_showBeadsLevel(this)", ["All","0","1","2","None"],"None")+
       '<div>'+
         '<label> number of cluster</label>' +
-        '<input id="slidercl_params1" style="width:70%;display:inline" type="range" min="1" max="200"" step="1" value="10" /> ' +
-        '<input class="inputNumber" id="slidercl_params11" min="1" max="200" type="number" value="10" />' +getSpinner("stopkmeans","stopKmeans()")+
+        '<input id="slidercl_params1" style="width:70%;display:inline" type="range" min="1" max="2000"" step="1" value="10" /> ' +
+        '<input class="inputNumber" id="slidercl_params11" min="1" max="2000" type="number" value="10" />' +getSpinner("stopkmeans","stopKmeans()")+
       '</div>'+
       '<div>'+
-      '<input type="checkbox"  id="toggle_cluster_edit" onclick="NGL_ChangeOpacityMultiSpheresComp_cb(this)">' + 
+      '<input type="checkbox"  id="toggle_cluster_auto" onclick="NGL_ChangeClusterNb_cb(this)" />' +
+      '<label for="toggle_cluster_auto"> Auto number of beads</label> '+
+      '</div>'+
+      '<div>'+
+      '<input type="checkbox"  id="toggle_cluster_edit" onclick="NGL_ChangeOpacityMultiSpheresComp_cb(this)" />' + 
       '<label for="toggle_cluster_edit"> Edit beads (ctrl) </label> '+
-      '<input type="checkbox"  id="cl_use_radius" onclick="NGL_toggleUseCurrentBeadsRadius(this)" >' + 
+      '</div>'+
+      '<div>'+
+      '<input type="checkbox"  id="cl_use_radius" onclick="NGL_toggleUseCurrentBeadsRadius(this)" />' + 
       '<label for="showgeom"> Overwrite cluster radius</label> '+   
       '</div>'+
       '<div>'+
@@ -576,7 +582,8 @@ var gridoptions = ''
   '<button class="meso_collapsible">Automatic tools</button>'+
   '<div class="meso_content">'+ 
   ' <button style="display:block;" onclick="query_ClearAll()">Reset Geometry and Beads</button>' + getSpinner("stopbeads","stopBeads()")+
-  ' <button style="display:block;" onclick="query_BuildAll()">AutoFix Recipe (geometry, beads, ...) </button>' + getSpinner("stopbeads","stopBeads()")+
+  ' <button style="display:block;" onclick="query_BuildAll(true)">AutoFix Recipe geometry and beads </button>' + getSpinner("stopbeads","stopBeads()")+
+  ' <button style="display:block;" onclick="query_BuildAll(false)">AutoFix Recipe only beads </button>' + getSpinner("stopbeads","stopBeads()")+
   '</div>'+
   '<label id="LoaderTxt" class="hidden" for="aloader"></label>' +
   '<div class="spinner hidden" id="spinner" style="width:200px;height:20px;" >' +
@@ -947,6 +954,7 @@ myLayout.on('stateChanged', function() {
   saveCurrentState();
 });
 
+///this should be migrate to indexDB, localstorage is too limited
 function saveCurrentState() {
   var jdata = serializedRecipe(graph.nodes, graph.links);
   //var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links); //Links?

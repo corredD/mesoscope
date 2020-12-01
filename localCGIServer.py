@@ -5,7 +5,10 @@ as executable python cgi scripts.'''
 
 #import http.server
 import sys, os
-import BaseHTTPServer, CGIHTTPServer
+try :
+    import BaseHTTPServer, CGIHTTPServer
+except:
+    from http.server import BaseHTTPRequestHandler,HTTPServer, CGIHTTPServer
 
 class CGIExtHTTPRequestHandler(CGIHTTPServer.CGIHTTPRequestHandler):
     '''This request handler mimics the Loyola server, which looks for CGI files

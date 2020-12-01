@@ -847,12 +847,15 @@ function OneCPIngredient(node, surface) {
   aing_dic["packingMode"] = node.data.buildtype; //random, file etc...
   aing_dic["comments"] = node.data.comments;
   if (node.data.color) aing_dic["color"] = node.data.color;
+
   if (node.data.ingtype === "fiber"){
     //support dna, rna peptide, actine etc...
     //this should be available in the ingredient properties panel
     aing_dic = helper_getFiberIngredientDescription(aing_dic);
     console.log(aing_dic);
   }
+  aing_dic["source"] = node.data.source; 
+  aing_dic["ingtype"] = node.data.ingtype;
   aing_dic["uniprot"] = node.data.uniprot;
   aing_dic["confidence"] = node.data.confidence;
   aing_dic["sprite"] = node.data.sprite;
@@ -1142,25 +1145,26 @@ function NextComputeIgredient() {
       found = false;
       break;
     }
+    var lod = parseInt(beads_elem.selectedOptions[0].value);
     if ((!d.children && "data" in d &&
         (!d.data.geom || d.data.geom === "None" ||
           d.data.geom === "null" || d.data.geom === "")) || (!d.children && "data" in d &&
         (!d.data.pos || d.data.pos === "None" ||
-          d.data.pos === "null" || d.data.pos.length === 0 ||
+          d.data.pos === "null" || d.data.pos.length <= lod ||
           d.data.pos === ""))) {
       //if (!graph.nodes[i].children){
-      if ("pdb" in d.data.source && d.data.source.pdb !== null & d.data.source.pdb !== "") {
-        var fileExt = d.data.source.pdb.split('.').pop();
-        if (fileExt !== "map") {
-          found = true;
-          current_compute_index = i;
-          current_compute_node = graph.nodes[i];
-        }
-        else {
-          d.data.geom_type = "file";
-          d.data.geom = d.data.source.pdb;
-        }
-    }
+        if ("pdb" in d.data.source && d.data.source.pdb !== null & d.data.source.pdb !== "") {
+          var fileExt = d.data.source.pdb.split('.').pop();
+          if (fileExt !== "map") {
+            found = true;
+            current_compute_index = i;
+            current_compute_node = graph.nodes[i];
+          }
+          else {
+            d.data.geom_type = "file";
+            d.data.geom = d.data.source.pdb;
+          }
+      }
     }
   }
   console.log("return found ", found, current_compute_index, current_compute_node);
@@ -1353,8 +1357,13 @@ function BuildDefaultCompartmentsRep() {
   console.log
 }
 
-function query_BuildAll() {
+
+//need a function to build only beads or only geometry.
+//if only beeds : automatic size vs automtic number fixed number of beads etc...
+//
+function query_BuildAll(cms) {
   //show the stop button
+  force_do_cms = cms;
   stop_current_compute = false;
   document.getElementById('stopbeads').setAttribute("class", "spinner");
   document.getElementById("stopbeads_lbl").setAttribute("class", "show");

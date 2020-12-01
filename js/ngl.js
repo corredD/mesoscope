@@ -1066,9 +1066,9 @@ function NGL_updateCurrentBeadsLevelClient() {
   var ngl_sele = new NGL.Selection(asele);
   var center = NGL_GetGeometricCenter(ngl_current_structure, ngl_sele).center;
   ngl_current_structure.ngl_sele = ngl_sele;
-  var lod = beads_elem.selectedOptions[0].value;
-  var comp = stage.getComponentsByName("beads_" + lod);
-  var rep = stage.getRepresentationsByName("beads_" + lod);
+  var lod = parseInt(beads_elem.selectedOptions[0].value);
+  var comp = stage.getComponentsByName("beads_" + lod.toString());
+  var rep = stage.getRepresentationsByName("beads_" + lod.toString());
   var assembly = assembly_elem.selectedOptions[0].value;
   if (!assembly || assembly === "") assembly = "AU";
   ngl_current_structure.assembly = assembly;
@@ -1189,9 +1189,9 @@ function NGL_updateCurrentBeadsLevelServer() {
   //formData.append(name, value);
   console.log([pdb, bu, sele, model, thefile]);
   console.log(formData);
-  var lod = beads_elem.selectedOptions[0].value;
-  var comp = stage.getComponentsByName("beads_" + lod);
-  var rep = stage.getRepresentationsByName("beads_" + lod);
+  var lod = parseInt(beads_elem.selectedOptions[0].value);
+  var comp = stage.getComponentsByName("beads_" + lod.toString());
+  var rep = stage.getRepresentationsByName("beads_" + lod.toString());
   var assembly = assembly_elem.selectedOptions[0].value;
   if (!assembly || assembly === "") assembly = "AU";
   ngl_current_structure.assembly = assembly;
@@ -3028,13 +3028,12 @@ function NGL_GetAtomDataSet(pdb,struture_object){
     });
   }*/
   o.structure.eachAtom(function(ap) {
-    if (ap.atomname ==="CA" || ap.atomname==="C4'" || ap.atomname==="C4*" || nAtom < 20000) {//problem with DNA no CA why || nAtom < 20000 ?
+    if (ap.atomname ==="CA" || ap.atomname==="C3'" || ap.atomname==="C4'" || ap.atomname==="C4*" || nAtom < 20000) {//problem with DNA no CA why || nAtom < 20000 ?
       dataset.push([ap.x, ap.y, ap.z]);
       //console.log(ap.modelIndex,ap.index);
     }
   }, new NGL.Selection(asele));
-
-  console.log("dataset is ", dataset.length, dataset);
+  //console.log("dataset is ", dataset.length, dataset);
   return dataset;
 }
 
@@ -3232,6 +3231,11 @@ function buildWithDBScan(o, center) {
   console.log(clusters); //cluster  is the list of cluster and indices. need a sphere for them
   return clusters;
 }
+
+function NGL_ChangeClusterNb_cb(e){
+    ngl_cluster_automatic = e.checked;
+}
+
 //https://github.com/EtixLabs/clustering
 function buildWithKmeans(o, center, ncluster) {
   //slow ?
@@ -3262,8 +3266,8 @@ function buildWithKmeans(o, center, ncluster) {
     var Vproxy = 4*Math.PI*(proxy_radius*proxy_radius*proxy_radius)/3.0;
     var nAtom = dataset.length*2;
     var V = nAtom * 10.0 * 1.21
-    var R = o.viewer.bRadius;//Math.max.apply(null, biszea) / 4; //beads0.radius
-    V = 4*Math.PI*(R*R*R)/3.0;
+    //var R = o.viewer.bRadius;//Math.max.apply(null, biszea) / 4; //beads0.radius
+    //V = 4*Math.PI*(R*R*R)/3.0;
     var nProxy = parseInt(Math.round(V/Vproxy));
     if (nProxy < 3) nProxy = 3
     ncluster = nProxy;
@@ -3980,7 +3984,7 @@ function NGL_ChangeOpacityMultiSpheresComp(name,count,value){
 
 function NGL_ChangeOpacityMultiSpheresComp_cb(e)
 {
-  var lod = beads_elem.selectedOptions[0].value;
+  var lod = parseInt(beads_elem.selectedOptions[0].value);
   var count = ngl_load_params.beads.rad[lod].radii.length
   if (e.checked) NGL_ChangeOpacityMultiSpheresComp("lod_"+lod.toString()+"_",count,1.0);
   else NGL_ChangeOpacityMultiSpheresComp("lod_"+lod.toString()+"_",count,0.6);
@@ -4283,7 +4287,7 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
       //var ats = o.structure.atomStore;
       //var nAtom = ats.count;
       console.log("before kmeans ?");
-      var _cluster_coords = buildWithKmeans(o, center, 10);
+      var _cluster_coords = buildWithKmeans(o, center, parseInt(slidercluster_elem.value));
       console.log("after kmeans ?",_cluster_coords);
       var _pos = {
         "coords": _cluster_coords.pos
@@ -4291,9 +4295,10 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
       var _rad = {
         "radii": _cluster_coords.rad
       };
-      anode.data.pos[0] = JSON.parse(JSON.stringify(_pos));
-      anode.data.radii[0] = JSON.parse(JSON.stringify(_rad));
-      console.log("kmeans done with 10 cluster ",anode.data.pos);
+      var lod = parseInt(beads_elem.selectedOptions[0].value);
+      anode.data.pos[lod] = JSON.parse(JSON.stringify(_pos));
+      anode.data.radii[lod] = JSON.parse(JSON.stringify(_rad));
+      //console.log("kmeans done with 10 cluster ",anode.data.pos);
       //build the CMS Representation
       if (force_do_cms) var rep = o.addRepresentation("surface", {
           //colorScheme: color_elem.selectedOptions[0].value,
@@ -4370,16 +4375,15 @@ function NGL_buildLoopAsync() {
     (!d.data.geom || d.data.geom === "None" ||
       d.data.geom === "null" || d.data.geom === "")) {
     //formData.append("cms", true);
-     docms = true;
+     if (force_do_cms) docms = true;
   }
-
+  var lod = parseInt(beads_elem.selectedOptions[0].value);
   if (!d.children && "data" in d &&
     (!d.data.pos || d.data.pos === "None" ||
-      d.data.pos === "null" || d.data.pos.length === 0 ||
+      d.data.pos === "null" || d.data.pos.length <= lod ||
       d.data.pos === "")) {
     dobeads = true;
   }
-
   if (dobeads || docms)
   {
     var purl = NGL_getUrlStructure(d,pdb);

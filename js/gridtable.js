@@ -1333,7 +1333,7 @@ function myFilter(item, args) {
   //if (item["percentComplete"] < args.percentCompleteThreshold) {
   //  return false;
   //}
-  if (args.searchString != "" && ( item["name"].indexOf(args.searchString) == -1)){// || item["label"].indexOf(args.searchString) == -1) || item["pdb"].indexOf(args.searchString) == -1) ) {
+  if (args.searchString != "" && ( ( item["name"].indexOf(args.searchString) == -1) && (item["label"].indexOf(args.searchString) == -1) && (item["pdb"].indexOf(args.searchString) == -1))){// || item["label"].indexOf(args.searchString) == -1) || item["pdb"].indexOf(args.searchString) == -1) ) {
     return false;
   }
   return true;

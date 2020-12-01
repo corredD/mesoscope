@@ -1741,7 +1741,9 @@ function onClick(){
     };
     xhr.upload.onprogress = function (evt) {
       document.getElementById("aprogress").value = (evt.loaded / evt.total) * 100;
-      console.log("add upload event-listener" + evt.loaded + "/" + evt.total);};
+      console.log("add upload event-listener" + evt.loaded + "/" + evt.total);
+      //if done change text 
+    };
     xhr.onload = function () {
       // do something to response
       console.log(this.responseText);

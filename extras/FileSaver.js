@@ -179,7 +179,7 @@
     }
   });
   _global.saveAs = saveAs.saveAs = saveAs;
-
+  _global.FileSaverSaveAs = saveAs.saveAs = saveAs;
   if (typeof module !== 'undefined') {
     module.exports = saveAs;
   }

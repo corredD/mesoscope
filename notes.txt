@@ -31,4 +31,4 @@ git push beta master
 git push beta_virtual master
 
 alternative could be to use the hook directly on origin but for a particular branch
-#python3 -m http.server --cgi
+#python -m http.server --cgi
