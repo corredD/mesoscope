@@ -388,6 +388,8 @@ var ngl_widget_options_collapsible = ''+
       '<label for="showbox"> Show Bounding Box </label></div>'+
       '<div><input type="checkbox"  id="showorigin" onclick="NGL_toggleOrigin(this)">' +
       '<label for="showorigin"> Show Origin </label></div>'+
+      '<div><input type="checkbox"  id="showaxis" onclick="NGL_toggleAxisVisibilityControl(this)">' +
+      '<label for="showaxis"> Show Principal Axis </label></div>'+      
     '</div>'+
   '</div>';
 
