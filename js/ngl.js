@@ -32,6 +32,7 @@ var nbBeads_elem;
 var ngl_force_build_beads = false;
 var slidercl_params2;
 var ngl_cluster_automatic = false;
+var ngl_cluser_sequence = false;
 var toggle_cluster_edit;
 var force_do_cms = true;
 var cluster_force_radius = -1.0;
@@ -3269,6 +3270,36 @@ function NGL_ChangeClusterNb_cb(e){
     ngl_cluster_automatic = e.checked;
 }
 
+function NGL_pcpTest(){
+  var sele = new NGL.Selection(ngl_current_structure.sele);
+  var axedata = stage.getRepresentationsByName("axes").list[0].repr.getAxesData(ngl_current_structure.structureView) 
+  var off = 6*3; 
+  var c1 = new NGL.Vector3(axedata.vertex.position[off],axedata.vertex.position[off+1],axedata.vertex.position[off+2])
+  off = 6*3 + 4*3
+  var c2 = new NGL.Vector3(axedata.vertex.position[off],axedata.vertex.position[off+1],axedata.vertex.position[off+2])
+  console.log(sele,sele.string);
+  var pcpr = stage.getRepresentationsByName("axes").list[0].repr.getPrincipalAxes(sele);
+  var pcp = ngl_current_structure.structureView.getPrincipalAxes(sele);
+  const {d1a, d2a, d3a, d1b, d2b, d3b} = pcp.getProjectedScaleForAtoms(ngl_current_structure.structure)
+  var bvol1 = pcp.vecA.length()*2.0*pcp.vecB.length()*2.0*pcp.vecC.length()*2.0;
+  var bvol2 = pcpr.vecA.length()*2.0*pcpr.vecB.length()*2.0*pcpr.vecC.length()*2.0;  
+  var bvol3 = (c1.x-c2.x)*(c1.y-c2.y)*(c1.z-c2.z);
+  var bvol4 = (d1b-d1a)*(d2b-d2a)*(d3b-d3a);
+  var proxy_radius=parseFloat(cluster_force_radius);
+  var Vproxy = 4*Math.PI*(proxy_radius*proxy_radius*proxy_radius)/3.0;
+  //var nAtom = dataset.length*2;
+  //var V = nAtom * 10.0 * 1.21
+  //var R = o.viewer.bRadius;//Math.max.apply(null, biszea) / 4; //beads0.radius
+  //V = 4*Math.PI*(R*R*R)/3.0;
+  var nProxy1 = parseInt(Math.ceil(bvol1/Vproxy));
+  var nProxy2 = parseInt(Math.ceil(bvol2/Vproxy));
+  var nProxy3 = parseInt(Math.ceil(bvol3/Vproxy));
+  var nProxy4 = parseInt(Math.ceil(bvol4/Vproxy));
+  //if (nProxy < 3) nProxy = 3
+  //ncluster = nProxy;
+  console.log("ncluster "+ nProxy1.toString()+" "+nProxy2.toString()+" "+nProxy3.toString()+" "+nProxy4.toString())
+}
+
 //https://github.com/EtixLabs/clustering
 function buildWithKmeans(o, center, ncluster) {
   //slow ?
@@ -3290,28 +3321,60 @@ function buildWithKmeans(o, center, ncluster) {
   }
   console.log("Kmeans selection", asele);
   var dataset = NGL_GetAtomDataSet(null,o);
+  console.log("Kmeans selection length", dataset.length);
   if (dataset.length === 0 ) return null;
   
   if (ngl_cluster_automatic)
   {
-
-    var proxy_radius=cluster_force_radius;
+    var nsele = new NGL.Selection(asele);
+    //var pcp = stage.getRepresentationsByName("axes").list[0].repr.getPrincipalAxes();
+    var pcp = stage.getRepresentationsByName("axes").list[0].repr.getPrincipalAxes(sele);
+    //var pcp = ngl_current_structure.structureView.getPrincipalAxes(nsele);
+    //const {d1a, d2a, d3a, d1b, d2b, d3b} = pcp.getProjectedScaleForAtoms(ngl_current_structure.structureView)
+    var bvol = pcp.vecA.length()*2.0*pcp.vecB.length()*2.0*pcp.vecC.length()*2.0;
+    //var bvol = (d1b-d1a)*(d2b-d2a)*(d3b-d3a);
+    var proxy_radius=parseFloat(cluster_force_radius);
     var Vproxy = 4*Math.PI*(proxy_radius*proxy_radius*proxy_radius)/3.0;
-    var nAtom = dataset.length*2;
-    var V = nAtom * 10.0 * 1.21
+    //var nAtom = dataset.length*2;
+    //var V = nAtom * 10.0 * 1.21
     //var R = o.viewer.bRadius;//Math.max.apply(null, biszea) / 4; //beads0.radius
     //V = 4*Math.PI*(R*R*R)/3.0;
-    var nProxy = parseInt(Math.round(V/Vproxy));
+    var nProxy = parseInt(Math.ceil(bvol/Vproxy));
     if (nProxy < 3) nProxy = 3
+    else nProxy = nProxy + 2 // padding
     ncluster = nProxy;
     console.log("ncluster "+ nProxy.toString()+" "+nAtom.toString())
   }
+  var clusters = [];
+  if (ngl_cluser_sequence) {
+    clusters = [[]];
+    var clusters_xyz = [];
+    var cl_tmp = [];
+    //build custer along residues every cluster_force_radius
+    var start = new NGL.Vector3(dataset[0][0], dataset[0][1], dataset[0][2]); 
+    var cli = 0;
+    for (var i=1;i<dataset.length;i++){
+      clusters[cli].push(i);
+      var current = new NGL.Vector3(dataset[i][0], dataset[i][1], dataset[i][2]); 
+      const d = current.distanceTo( start );
+      if (d >= parseFloat(cluster_force_radius)*1.75) {
+        //add a cluster
+        var cluster = new NGL.Vector3(0, 0, 0);
+        cluster.subVectors(start,current)
+        cluster.multiplyScalar(0.5);
+        clusters_xyz.push([cluster.x,cluster.y,cluster.z]);
+        start = current;
+        clusters.push([]);
+        cli++;
+      }
+    }
+    ncluster = clusters.length;
+  }
+  else {
+    console.log("cluster!!", ncluster, dataset.length);
+    clusters = kmeans.run(dataset, ncluster);
+  }
 
-  console.log("cluster!!", ncluster, dataset.length);
-  //should we use a worker ?
-  // parameters: 3 - number of clusters
-  //center the selection?
-  var clusters = kmeans.run(dataset, ncluster);
   //center = o.position;//negatif?
   console.log(bu, clusters,o.assembly,o.node.data.buildtype);
   if (!bu) {
@@ -3678,8 +3741,9 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
     if (aname.length === 4){
       aname  = aname.toLowerCase();
       if (ngl_current_node.data.opm === 1){
-      //replace purl
-          purl = cellpack_repo+"opm/" + aname + ".mmtf";
+          //replace purl
+          //purl = cellpack_repo+"opm/" + aname + ".mmtf";
+          purl = opm_url+ aname +".pdb"
       }
       else if (ngl_current_node.data.opm === 0)
       {
@@ -3696,6 +3760,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
             ngl_current_node.data.opm = -1;
           }
           //check if exist in opm..doesnt work
+          //var search_url = "https://opm.phar.umich.edu/proteins/2171"
           //var search_url = "http://opm.phar.umich.edu/protein.php?search="+aname//1l7v
           //var results = syncCall(search_url);
           //var parser = new DOMParser();
@@ -4113,7 +4178,7 @@ function LM_getUrlStructure(anode,pdbname){
     {
       if (anode.data.opm === 1){
       //replace purl
-          return cellpack_repo+"opm/" + pdbname + ".mmtf";
+          return opm_url+ pdbname +".pdb";//cellpack_repo+"opm/" + pdbname + ".mmtf";
       }
       else if (anode.data.opm === 0)
       {
@@ -4182,7 +4247,8 @@ function NGL_getUrlStructure(anode,pdbname){
     {
       if (anode.data.opm === 1){
       //replace purl
-          return cellpack_repo+"opm/" + pdbname + ".mmtf";
+          return opm_url + pdbname +".pdb"
+          //return cellpack_repo+"opm/" + pdbname + ".mmtf";
       }
       else if (anode.data.opm === 0)
       {
@@ -4245,11 +4311,13 @@ function NGL_getUrlStructure(anode,pdbname){
 
 function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
     console.log("headless load ?",purl,aname,sel_str);
+    stage.getRepresentationsByName("axes").dispose();
     if (anode.data.surface) {
       if (aname.length === 4){
         if (anode.data.opm === 1){
         //replace purl
-            purl = cellpack_repo+"opm/" + aname + ".mmtf";
+            purl = opm_url + aname +".pdb"
+            //purl = cellpack_repo+"opm/" + aname + ".mmtf";
         }
         else if (anode.data.opm === 0)
         {
@@ -4315,6 +4383,13 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
       //center molecule
       o.setPosition([-center.x, -center.y, -center.z]);
       o.ngl_sele = new NGL.Selection(sele);
+      o.addRepresentation("axes", {
+        sele: sele,
+        showAxes: true,
+        showBox: true,
+        radius: 0.2,
+        assembly: assembly
+      })
       //build a surface and extract the mesh ?
       //build the kmeans
       //var ats = o.structure.atomStore;
