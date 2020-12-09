@@ -233,6 +233,8 @@ function AddPartnerSerialized(ingdic, node, some_links) {
         var partner = new sPartnersProperties(some_links[l].target.data.name);
         var binding = new sBindingSite(some_links[l].beads1,some_links[l].coords1);
         partner.addBindingSite(binding);
+        var binding2 = new sBindingSite(some_links[l].beads2,some_links[l].coords2);
+        partner.addBindingSite(binding2);
         ingdic.addPartner(partner);
       }
     }
@@ -248,6 +250,8 @@ function AddPartnerSerialized(ingdic, node, some_links) {
         var partner = new sPartnersProperties(some_links[l].source.data.name);
         var binding = new sBindingSite(some_links[l].beads2,some_links[l].coords2);
         partner.addBindingSite(binding);
+        var binding2 = new sBindingSite(some_links[l].beads1,some_links[l].coords1);
+        partner.addBindingSite(binding2);        
         ingdic.addPartner(partner);
       }
     }
@@ -510,12 +514,16 @@ function OneIngredientDeserializedPartner(ing_dic, linkdata) {
       if (linkdata[j].name1 === pproperty[i].partner_name && linkdata[j].name2 === ing_dic.name){
         linkdata[j].coords2 = pproperty[i].binding_site_lod[0].coords;
         linkdata[j].beads2 = pproperty[i].binding_site_lod[0].binding_site;
+        linkdata[j].coords1 = pproperty[i].binding_site_lod[1].coords;
+        linkdata[j].beads1 = pproperty[i].binding_site_lod[1].binding_site;
         found=true;
         break;
       }
       else if (linkdata[j].name2 === pproperty[i].partner_name && linkdata[j].name1 === ing_dic.name){
         linkdata[j].coords1 = pproperty[i].binding_site_lod[0].coords;
         linkdata[j].beads1 = pproperty[i].binding_site_lod[0].binding_site;
+        linkdata[j].coords2 = pproperty[i].binding_site_lod[1].coords;
+        linkdata[j].beads2 = pproperty[i].binding_site_lod[1].binding_site;        
         found=true;
         break;
       }
@@ -532,12 +540,20 @@ function OneIngredientDeserializedPartner(ing_dic, linkdata) {
         "pdb1": "",
         "sel1": "",
         "sel2": "",
-        "coords1":pproperty[i].binding_site_lod[0].coords,
+        "coords1":[],
         "coords2":[],
-        "beads1":pproperty[i].binding_site_lod[0].binding_site,
+        "beads1":[],
         "beads2":[],
         "id": linkdata.length
       };
+      if (pproperty[i].binding_site_lod.length==1){
+        alink["coords1"]=(pproperty[i].binding_site_lod[0].coords.count!=0)?pproperty[i].binding_site_lod[0].coords:[];
+        alink["beads1"]=(pproperty[i].binding_site_lod[0].binding_site.count!=0)?pproperty[i].binding_site_lod[0].binding_site:[];
+      }
+      if (pproperty[i].binding_site_lod.length==2){
+        alink["coords2"]=(pproperty[i].binding_site_lod[1].coords.count!=0)?pproperty[i].binding_site_lod[1].coords:[];
+        alink["beads2"]=(pproperty[i].binding_site_lod[1].binding_site.count!=0)?pproperty[i].binding_site_lod[1].binding_site:[];
+      }
       linkdata.push(alink);
     }
   }
@@ -670,6 +686,15 @@ function checkPartners(ing_dic, currentId) {
       var pdb1 = "";
       var sel1 = "";
       var sel2 = "";
+      var beads1=[];
+      var beads2=[];
+      if ("properties" in ing_dic) {
+        pdb1 = ing_dic["properties"]["pdb1"];
+        sel1 = ing_dic["properties"]["sel1"];
+        sel2 = ing_dic["properties"]["sel2"];
+        beads1 = ing_dic["properties"]["beads1"];
+        beads2 = ing_dic["properties"]["beads2"];
+      }
       var id = currentId;
       var alink = {
         "source": name1,
@@ -679,9 +704,12 @@ function checkPartners(ing_dic, currentId) {
         "pdb1": pdb1,
         "sel1": sel1,
         "sel2": sel2,
+				"coords1":[],
+				"coords2":[],
+				"beads1":beads1,
+				"beads2":beads2,        
         "id": id
       };
-
       partners.push(alink);
       currentId++;
     }
@@ -707,6 +735,10 @@ function checkProperties(ing_dic, currentId) {
         "pdb1": pdb1,
         "sel1": sel1,
         "sel2": sel2,
+				"coords1":[],
+				"coords2":[],
+				"beads1":[],
+				"beads2":[],           
         "id": id
       };
     }

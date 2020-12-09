@@ -1944,42 +1944,42 @@ function checkAttributes(agraph){
 	}
 
 function updateAttributesNode(anode,new_data,akey) {
-		for (var key in new_data) {
-			 //if(!(key in anode.data)) continue;
-			 if (akey !== key) continue;
-			 console.log("update ",key,anode.data[key],new_data[key]);
-			 if (key === "offset"){
-				 anode.data.offset = (Array.isArray(new_data.offset)) ? new_data.offset : new_data.offset.split(",").map(function(d) {
-	         		return parseFloat(d);
-	       		});
-			 }
-			 else if (key ==="pcpalAxis") {
-				 anode.data.pcpalAxis = (Array.isArray(new_data.pcpalAxis)) ? new_data.pcpalAxis : new_data.pcpalAxis.split(",").map(function(d) {
-	         		return parseFloat(d);
-	       		});
-			 }
-			 else if (key === "pdb") {
-				 if (!anode.data.source) anode.data.source={};
-				 anode.data.source.pdb = new_data.pdb;
-			 }
-			 else if (key === "bu") {
+	for (var key in new_data) {
+			//if(!(key in anode.data)) continue;
+			if (akey !== key) continue;
+			console.log("update ",key,anode.data[key],new_data[key]);
+			if (key === "offset"){
+				anode.data.offset = (Array.isArray(new_data.offset)) ? new_data.offset : new_data.offset.split(",").map(function(d) {
+				return parseFloat(d);
+			});
+			}
+			else if (key ==="pcpalAxis") {
+				anode.data.pcpalAxis = (Array.isArray(new_data.pcpalAxis)) ? new_data.pcpalAxis : new_data.pcpalAxis.split(",").map(function(d) {
+				return parseFloat(d);
+			});
+			}
+			else if (key === "pdb") {
 				if (!anode.data.source) anode.data.source={};
-				anode.data.source.bu = new_data.bu;
+				anode.data.source.pdb = new_data.pdb;
 			}
-			else if (key === "model") {
-				if (!anode.data.source) anode.data.source={};
-				anode.data.source.model = new_data.model;
-			}
-			else if (key === "selection") {
-				if (!anode.data.source) anode.data.source={};
-				anode.data.source.selection = new_data.selection;
-			}
-			else {
-				 if(key in anode.data)
-				 		anode.data[key] = new_data[key];
-			}
+			else if (key === "bu") {
+			if (!anode.data.source) anode.data.source={};
+			anode.data.source.bu = new_data.bu;
 		}
-		return anode;
+		else if (key === "model") {
+			if (!anode.data.source) anode.data.source={};
+			anode.data.source.model = new_data.model;
+		}
+		else if (key === "selection") {
+			if (!anode.data.source) anode.data.source={};
+			anode.data.source.selection = new_data.selection;
+		}
+		else {
+				if(key in anode.data)
+					anode.data[key] = new_data[key];
+		}
+	}
+	return anode;
 }
 
 function getcomphtml(anode) {
@@ -4384,17 +4384,17 @@ function getOffsetTwoNode(d1,d2) {
 	}
 
 function drawLink(acontext,d) {
-	 acontext.beginPath();
-	 var aoffset = getOffsetLink(d);
-   acontext.moveTo(aoffset.sx, aoffset.sy);
-   acontext.lineTo(aoffset.tx, aoffset.ty);
+	acontext.beginPath();
+	var aoffset = getOffsetLink(d);
+   	acontext.moveTo(aoffset.sx, aoffset.sy);
+   	acontext.lineTo(aoffset.tx, aoffset.ty);
 }
 
 function drawLinkTwoNode(d1,d2) {
-	 context.beginPath();
-	 var aoffset = getOffsetTwoNode(d1,d2);
-   context.moveTo(aoffset.sx, aoffset.sy);
-   context.lineTo(aoffset.tx, aoffset.ty);
+	context.beginPath();
+	var aoffset = getOffsetTwoNode(d1,d2);
+   	context.moveTo(aoffset.sx, aoffset.sy);
+   	context.lineTo(aoffset.tx, aoffset.ty);
 }
 
 

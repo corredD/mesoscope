@@ -1008,6 +1008,7 @@ function updateDataGridRowElem(grid_id, item_id, column_name, new_value) {
   //elem column
   //row[grid.getColumns()[args.cell].field] = a.msg;
   console.log(gridArray.length + " before");
+  console.log("updateDataGridRowElem ",grid_id, item_id, column_name);
   gridArray[grid_id].dataView.beginUpdate();
   gridArray[grid_id].invalidateRow(item_id);
   var arow = gridArray[grid_id].dataView.getItemById(item_id);
@@ -1470,11 +1471,11 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
     var cell = args.cell; //grid.getCellFromEvent(e);
     console.log(cell)
     var arow = grid.dataView.getItem(args.row);
-    var ni = parseInt(arow.id.split("_")[1]);
-    console.log(ni);
-    var cid = grid.getColumns()[cell].id;//"pdb"?
-    console.log(cid);
     if (grid.gname === "grid_recipe") {
+      var ni = parseInt(arow.id.split("_")[1]);
+      console.log(ni);
+      var cid = grid.getColumns()[cell].id;//"pdb"?
+      console.log(cid);      
       console.log(ni); //11
       var n = graph.nodes[ni];
       console.log(n);
@@ -1513,6 +1514,10 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       if (cid==="pdb") NGL_UpdateWithNode(n,true);//arow.pdb)
       //NGL_Load(arow.pdb,arow.bu,arow.selection);	also update pcp and offset
     } else if (grid.gname === "grid_uniprot") {
+      var ni = parseInt(arow.id.split("_")[1]);
+      console.log(ni);
+      var cid = grid.getColumns()[cell].id;//"pdb"?
+      console.log(cid);      
       //is it the picked  checkbox
       if (cid === "picked") {
         if (uni_picked !== ni) {
@@ -1530,6 +1535,10 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       }
     } else if (grid.gname === "grid_pdb") {
       //is it the picked  checkbox
+      var ni = parseInt(arow.id.split("_")[1]);
+      console.log(ni);
+      var cid = grid.getColumns()[cell].id;//"pdb"?
+      console.log(cid);      
       if (cid === "picked") {
         if (pdb_picked !== ni) {
           //uncheck
@@ -1540,6 +1549,17 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
           console.log(arow);
           updateCellValue(gridArray[0], "pdb", item.id, arow["structureId"]);
         }
+      }
+    } else if (grid.gname === "grid_interaction")
+    {
+      var cid = grid.getColumns()[cell].id;//"pdb"?
+      console.log(cid);//name of the column
+      var lk = graph.links[arow.id];
+      lk[cid] = args.item[cid];
+      if (cid === "beads1" || cid === "beads2"){
+        lk[cid] = args.item[cid].split(",").map(x=>parseInt(x))
+      } else if (cid === "coords1" || cid === "coords2"){
+        lk[cid] = args.item[cid].split(",").map(x=>parseFloat(x))
       }
     }
     grid.dataView.updateItem(args.item.id, args.item);
@@ -1791,7 +1811,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       node_selected = null;
       ngl_current_item_id = arow.id;
       stage.removeAllComponents();
-      NGL_Load(arow.pdb1, "AU", GetNGLSelection(arow.sel1 + "," + arow.sel2, ""));
+      NGL_Load(arow.pdb1, "AU", NGL_GetSelection(arow.sel1 + "," + arow.sel2, ""));
       document.getElementById('ProteinId').innerHTML = arow.name1 + " " + arow.name2;
     } else if (grid.gname === "grid_uniprot") {
       //send the selection to the main recipe

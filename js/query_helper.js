@@ -873,17 +873,38 @@ function OneCPIngredient(node, surface) {
   return aing_dic;
 }
 
+//what about properties
 function AddPartner(ingdic, node, some_links) {
   ingdic["partners_name"] = [];
   for (var i = 0; i < some_links.length; i++) {
     //partner_name from the link table/graph_links
     if (some_links[i].source === node)
+    {
       if (ingdic["partners_name"].indexOf(some_links[i].target.data.name) == -1)
-        //if (!(some_links[i].target.data.name in ingdic["partners_name"]))
+      {
         ingdic["partners_name"].push(some_links[i].target.data.name);
+        //pairing ? source Protein; target Fiber
+        ingdic["properties"]={}
+        ingdic["properties"]["beads1"] = some_links[i].beads1;
+        ingdic["properties"]["beads2"] = some_links[i].beads2;
+        ingdic["properties"]["sel1"] = some_links[i].sel1;
+        ingdic["properties"]["sel2"] = some_links[i].sel2;
+        ingdic["properties"]["pdb1"] = some_links[i].pdb1;
+      }
+    }
     if (some_links[i].target === node)
+    {
       if (ingdic["partners_name"].indexOf(some_links[i].source.data.name) == -1)
+      {
         ingdic["partners_name"].push(some_links[i].source.data.name);
+        ingdic["properties"]={}
+        ingdic["properties"]["beads1"] = some_links[i].beads2;
+        ingdic["properties"]["beads2"] = some_links[i].beads1;  
+        ingdic["properties"]["sel1"] = some_links[i].beads2;
+        ingdic["properties"]["sel2"] = some_links[i].beads1;
+        ingdic["properties"]["pdb1"] = some_links[i].pdb1;              
+      }
+    }
   }
   return ingdic;
 }
@@ -1595,6 +1616,10 @@ function getCurrentNodesAsCP_SER_JSON(some_data) {
     {
       var cname = node.parent.data.name;
       var ingdic = OneCPIngredient(node);
+      if (some_links.length) {
+        console.log("check links", some_links.length)
+        ingdic = AddPartner(ingdic, node, some_links);
+      }
       if (node.parent === aroot) jsondic["cytoplasme"].ingredients[node.data.name] = ingdic;
       else if (node.data.surface) jsondic["compartments"][cname].surface.ingredients[node.data.name] = ingdic;
       else jsondic["compartments"][cname].interior.ingredients[node.data.name] = ingdic;

@@ -288,7 +288,7 @@ require(['viewer', 'jquerysvg', 'bootstrap/tooltip', 'bootstrap/modal',
   	console.log("event is",event);
     console.log("data is", data);
     var pdb = event.pdbID;
-    var chain = GetNGLSelection(event.chainID);
+    var chain = NGL_GetSelection(event.chainID);//GetNGLSelection
     stage.removeAllComponents();
     document.getElementById('ProteinId').innerHTML = pdb+" "+chain;//arow.compartment+" "+arow.name+" : "+arow.pdb;
     NGL_LoadOneProtein("rcsb://"+pdb,-1,":"+chain);

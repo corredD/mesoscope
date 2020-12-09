@@ -4653,6 +4653,7 @@ function NGL_UpdateWithNodePair(d) {
     pdb = d.source.data.source.pdb;
     if (!pdb || pdb === "") return;
     ngl_current_node = d.source;
+    d.pdb1 = pdb;
     NGL_Load(pdb, "AU", ""); //transform ?
     //ngl_current_structure.setPosition([ -200,0,0 ])
     pdb = d.target.data.source.pdb;

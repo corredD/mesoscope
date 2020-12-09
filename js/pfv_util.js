@@ -205,13 +205,13 @@ function setupPFV(){
   	console.log("event is",event);
     console.log("data is", data);
     var pdb = event.pdbID;
-    var chain = GetNGLSelection(event.chainID);
+    var chain = NGL_GetSelection(event.chainID);
     stage.removeAllComponents();
     document.getElementById('ProteinId').innerHTML = pdb+" "+chain;//arow.compartment+" "+arow.name+" : "+arow.pdb;
     NGL_LoadOneProtein("rcsb://"+pdb,-1,":"+chain);
 
   });
-  <!-- NGL code part II-->
+  //<!-- NGL code part II-->
   featureView.addListener("showPositionIn3d", function(event, data, moredate) {
 
 
