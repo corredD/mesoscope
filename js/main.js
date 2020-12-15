@@ -3646,10 +3646,10 @@ function AddALink(some_link) {
 
 function addIngredient(){
 	var grid = gridArray[0];
-  var row_to_edit;
-  var columns = grid.getColumns();
-  var	item_id = 0;
-  //add an empty row data
+	var row_to_edit;
+	var columns = grid.getColumns();
+	var	item_id = 0;
+	//add an empty row data
 	var newId = graph.nodes.length;//grid.dataView.getLength();
 	//var arow = grid.dataView.getItem(0);
 	row_to_edit = {};//JSON.parse(JSON.stringify(arow));
@@ -3662,27 +3662,27 @@ function addIngredient(){
 	row_to_edit.molecularweight = 0.0;
 	row_to_edit.confidence = 0.0;
 	row_to_edit.label = "protein_label";
-  //row_to_edit.geom = "x";
-  row_to_edit.bu="BU1";//default
-  row_to_edit.selection = "";
-  row_to_edit.pdb = "";
-  row_to_edit.offset = [0,0,0];
-  row_to_edit.pcpalAxis = [0,0,1];
+	//row_to_edit.geom = "x";
+	row_to_edit.bu="BU1";//default
+	row_to_edit.selection = "";
+	row_to_edit.pdb = "";
+	row_to_edit.offset = [0,0,0];
+	row_to_edit.pcpalAxis = [0,0,1];
 	row_to_edit.confidence = 0;
 	row_to_edit.include = true;
 	row_to_edit.ingtype = "protein";
 	row_to_edit.buildtype = "random";
-  row_to_edit.compartment = graph.nodes[0].data.name;//should be root
+	row_to_edit.compartment = graph.nodes[0].data.name;//should be root
 	grid.dataView.beginUpdate();
 	//grid.dataView.insertItem(0, row_to_edit);
 	grid.dataView.addItem(row_to_edit);
-  grid.dataView.endUpdate();
-  grid.dataView.setGrouping([])
-  grid.render();
-  grid.dataView.refresh();
-  //grid.setSelectedRows([0]);
+	grid.dataView.endUpdate();
+	grid.dataView.setGrouping([])
+	grid.render();
+	grid.dataView.refresh();
+	//grid.setSelectedRows([0]);
 	//grid.setActiveCell(0,0);
-  AddANode(JSON.parse(JSON.stringify(row_to_edit)));
+	AddANode(JSON.parse(JSON.stringify(row_to_edit)));
 }
 
 function AddANode(some_data){

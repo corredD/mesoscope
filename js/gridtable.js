@@ -2177,36 +2177,7 @@ function addRow() {
   var columns = grid.getColumns();
 
   if (current_grid === 0) {
-    item_id = 0;
-    //add an empty row data
-    var newId = graph.nodes.length; //grid.dataView.getLength();
-    //var arow = grid.dataView.getItem(0);
-    row_to_edit = {}; //JSON.parse(JSON.stringify(arow));
-    row_to_edit.id = "id_" + newId;
-    row_to_edit.name = "protein_name";
-    row_to_edit.size = 40;
-    row_to_edit.count = 0;
-    row_to_edit.molarity = 0.0;
-    row_to_edit.surface = false;
-    row_to_edit.label = "protein_label";
-    row_to_edit.geom = "x";
-    row_to_edit.bu = "AU";
-    row_to_edit.selection = "";
-    row_to_edit.pdb = "";
-    row_to_edit.offset = [0, 0, 0];
-    row_to_edit.pcpalAxis = [0, 0, 1];
-    row_to_edit.compartment = "compartmenthierarchy";
-    grid.dataView.beginUpdate();
-    grid.dataView.insertItem(0, row_to_edit);
-    grid.dataView.endUpdate();
-    grid.dataView.setGrouping([])
-    grid.render();
-    grid.dataView.refresh();
-    grid.setSelectedRows([0]);
-    grid.setActiveCell(0, 0);
-    AddANode(JSON.parse(JSON.stringify(row_to_edit)));
-
-    //add a node
+    addIngredient();
   } //insert at begining
   else if (current_grid === 1) {
     var arow = grid.dataView.getItem(0);
