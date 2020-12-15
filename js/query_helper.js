@@ -1658,7 +1658,7 @@ function saveCurrentCSV(){//saveCurrentCVJSON() {
   var first = parseInt(gridArray[0].dataView.getItem(0).id.split("_")[1]);
   var k = Object.keys(graph.nodes[first].data);
   for (var j = 0, len = k.length; j < len; j++) {
-    if ((k[j]!="visited") && (k[j]!="nodetype")) {
+    if ((k[j]!="visited") && (k[j]!="nodetype") && (k[j]!="compartment")) {
       if (k[j]==="source" ){
         colname.push("pdb");
         colname.push("model");
@@ -1671,14 +1671,13 @@ function saveCurrentCSV(){//saveCurrentCVJSON() {
   colname.push("compartment");
   rows.push(colname);
   //var cname = n.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/').slice(0,-1);
-
   for (var i = 0; i < graph.nodes.length; i++) {//graph.nodes.length
     var node = graph.nodes[i];
     console.log(i,node);
     if (!node.children && node.data.nodetype!=="compartment") {
       var singlerow = [];
       for (var j = 0; j < k.length; j++) {
-        if ((k[j]!="visited") && (k[j]!="nodetype"))
+        if ((k[j]!="visited") && (k[j]!="nodetype") && (k[j]!="compartment") )
         {
           if (k[j]==="source" ){
             singlerow.push(node.data.source.pdb);
