@@ -7,8 +7,8 @@ var ms_model_loaded = false;
 function MS_molstart_init(){
     BasicMolStarWrapper.init('molstar', {
         layoutShowControls: false,
-        viewportShowExpand: true,
-        layoutIsExpanded: true,
+        viewportShowExpand: false,
+        layoutIsExpanded: false,
         layoutControlsDisplay: false
         //pdbProvider: pdbProvider || 'pdbe',
         //emdbProvider: emdbProvider || 'pdbe',
