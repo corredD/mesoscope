@@ -879,7 +879,7 @@ var myLayout,
 var usesavedState = true;
 var usesavedSession = true;
 var savedRecipe = localStorage.getItem('savedRecipe');
-var current_version = {"version":1.20};
+var current_version = {"version":1.21};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()

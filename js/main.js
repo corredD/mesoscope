@@ -146,6 +146,7 @@ var centerX = 0,//width/2,
 var root;
 var gp_nodes;
 
+
 var offx;
 var offy;
 
@@ -1111,15 +1112,14 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 
 	for (var i=start_index;i<data.length;i++)
 	{
-		    var idata = data[i];
-		    if (!idata ) continue;//|| idata.length < data_header.length
-				if ((idata[0]) && (idata[0].toLowerCase()==="end"))
-				{
-					console.log(idata);
-					break;
-				}
-		    //console.log(idata);
-
+		var idata = data[i];
+		if (!idata ) continue;//|| idata.length < data_header.length
+		if ((idata[0]) && (idata[0].toLowerCase()==="end"))
+		{
+			console.log(idata);
+			break;
+		}
+		//console.log(idata);
         var name =  (name_index!==-1)?idata[name_index]:"";
 				if (name === "") name = "protein_"+i;
 				//console.log("parse name ",name);
@@ -1148,18 +1148,18 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 
         var bu = (biological_unit_index!==-1)? ParseBU(idata[biological_unit_index]):"BU1";//get bu
         var sele = (string_selection_index!==-1)?idata[string_selection_index]:"";//chain:residues?
-				var uniprot = (uniprot_index!==-1) ? idata[uniprot_index]:"";
+		var uniprot = (uniprot_index!==-1) ? idata[uniprot_index]:"";
 
-				var mw =  (molecularweight_index!==-1) ? idata[molecularweight_index]:0.0;
-				var confidence = (confidence_index!==-1) ? idata[confidence_index]:0.0;//overall confidence
-				var axis = [0,0,1];
-				if (pcpalvector_index!==-1) {
-					if (idata[pcpalvector_index]) axis = idata[pcpalvector_index].split(',').map(Number);//chain:residues?
-				}
-				var offset =[0,0,0];
-				if (offset_index!==-1){
-					if (idata[offset_index]) offset = idata[offset_index].split(',').map(Number);//chain:residues?
-				}
+		var mw =  (molecularweight_index!==-1) ? idata[molecularweight_index]:0.0;
+		var confidence = (confidence_index!==-1) ? idata[confidence_index]:0.0;//overall confidence
+		var axis = [0,0,1];
+		if (pcpalvector_index!==-1) {
+			if (idata[pcpalvector_index]) axis = idata[pcpalvector_index].split(',').map(Number);//chain:residues?
+		}
+		var offset =[0,0,0];
+		if (offset_index!==-1){
+			if (idata[offset_index]) offset = idata[offset_index].split(',').map(Number);//chain:residues?
+		}
         if ((!axis) || axis === 0||axis === "") axis = [0,0,1];
         if ((!offset) || offset === 0||offset === "") offset = [0,0,0];
         var model = "";
@@ -1167,21 +1167,21 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
         	if (idata[model_index]!=="")
         	   model = idata[model_index];
         }
-				var include = true;
-				if (allfield.include_index!==-1) {
-					var tmp = idata[allfield.include_index];
-					console.log("include is ",include);
-					if (tmp === "x") include = true;
-					if (tmp === "" || tmp === 'undefined' || tmp === null) include = false;
-					if (tmp === true) include = true;
-					if (tmp === false) include = false;
-				}
-				var color=[1,0,0];
-				if (allfield.color_index !==-1) {
-					if (idata[allfield.color_index]) color = idata[allfield.color_index].split(',').map(Number);//chain:residues?
-				}
-				var label = (allfield.label_index!==-1)?idata[allfield.label_index]:"";
-				var comments = (allfield.comment_index!==-1)?idata[allfield.comment_index]:"";
+		var include = true;
+		if (allfield.include_index!==-1) {
+			var tmp = idata[allfield.include_index];
+			console.log("include is ",include);
+			if (tmp === "x") include = true;
+			if (tmp === "" || tmp === 'undefined' || tmp === null) include = false;
+			if (tmp === true) include = true;
+			if (tmp === false) include = false;
+		}
+		var color=[1,0,0];
+		if (allfield.color_index !==-1) {
+			if (idata[allfield.color_index]) color = idata[allfield.color_index].split(',').map(Number);//chain:residues?
+		}
+		var label = (allfield.label_index!==-1)?idata[allfield.label_index]:"";
+		var comments = (allfield.comment_index!==-1)?idata[allfield.comment_index]:"";
         if (sele && sele !== null && sele !== "") sele = NGL_GetSelection(sele,model);
         var image = (allfield.image_index!==-1)?idata[allfield.image_index]:"";
         var offsety= (allfield.offsety_index!==-1)?idata[allfield.offsety_index]:0;
@@ -1401,28 +1401,38 @@ function selectFile(e){
     var reader = new FileReader();
 
     if (ext === "json"){
-    	  //alert("json");
-    	  //console.log("json file");
-    	  var comon = findLongestCommonSubstring(thefile.name,"serialized");
-    	  //console.log("serialzized ?",comon);
-    	  if (comon.length >= 9) {//full string found
-    	  	//console.log("serialized recipe type",thefile.name,comon);
-    	  	reader.onload = function(event) {
-  	        var data = reader.result;
-  	        data = data.replace(/\\n\\r/gm,'newChar');
+		//alert("json");
+		//console.log("json file");
+		var comon = findLongestCommonSubstring(thefile.name,"serialized");
+		//console.log("serialzized ?",comon);
+		if (comon.length >= 9) {//full string found
+		//console.log("serialized recipe type",thefile.name,comon);
+		reader.onload = function(event) {
+			var data = reader.result;
+			console.log(data);
+			data = data.replace(/\\n\\r/gm,'newChar');
+			console.log("BEFORE JSON PARSE");
+			console.log(data);
 			var ad = JSON.parse(data);
-			debug_data = ad;
+			console.log("AFTER JSON PARSE");
+			console.log(ad);
+			//debug_data = ad;
 			var adata = parseCellPackRecipeSerialized(ad);
 			//debug_data = adata;
-  	        if (MERGE) {
-              merge_getModal(adata.nodes,adata.links)
-              //merge_graph(adata.nodes,adata.links);
-            }
-			else update_graph(adata.nodes,adata.links);
+			console.log("AFTER CellPack PARSE");
+			console.log(adata);
+			merge_data = JSON.parse(JSON.stringify(adata));
+			if (MERGE) {
+				merge_getModal(adata.nodes,adata.links)
+				//merge_graph(adata.nodes,adata.links);
+			}
+			else {
+				update_graph(adata.nodes,adata.links);
+			}
 			var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links);
 			let blob = new Blob([JSON.stringify(jdata)], {type: 'text/plain'});
 			recipe_file = blob;
-       	 }
+		}
   	  	}
     	  else {
 			recipe_file = thefile;
@@ -4612,15 +4622,15 @@ function merge_node(cnode,newnode){
         // index: the ordinal position of the key within the object
         if (merge_field[akey].checked){
             var key = allfield_key[akey];
-            if ( newnode.data[key] ) cnode.data[key] = newnode.data[key];
+            if ( key in newnode.data ) cnode.data[key] = newnode.data[key];
             if (cnode.data.nodetype!=="compartment"){
-              if (key === "bu") {
+              if (key === "bu" && "bu" in newnode.data) {
                 cnode.data.source.bu = newnode.data.bu;
               }
-              if (key === "selection") {
+              if (key === "selection" && "bu" in newnode.data) {
                 cnode.data.source.selection = newnode.data.selection;
               }
-              if (key === "model") {
+              if (key === "model"  && "bu" in newnode.data) {
                 cnode.data.source.model = newnode.data.model;
               }
             }
@@ -4656,20 +4666,28 @@ function merge_one_node(new_node){
 }
 
 function merge_graph(agraph,alink){
-  //options to what to merge. e.g. what field are going to be overwritten when already Loaded
+  //options to what to do to merge. e.g. what field are going to be overwritten when already Loaded
   //use a modal view like the modal_canvas_comp.
-  //use merge_field to help overwrite when name is the name and also
+  //use merge_field to help overwrite when name is the name
+  var isempty= false;
+  if ( agraph.length < 1 ) isempty=true;
   var mapping = d3v4.scaleLinear()
     .domain([Math.min(0,property_mapping["size"].min), property_mapping["size"].max])
     .range([0, 25]);
-
+  
+	//agraph
   var new_root = d3v4.hierarchy(agraph)
     .sum(function(d) { return d.size; })
-    .sort(function(a, b) { return b.value - a.value; });
+    //.sort(function(a, b) { return b.value - a.value; });
 
   if (DEBUGLOG) console.log("root",new_root);
   var new_nodes = pack(new_root).descendants();//flatten--error ?
-	alink = MapLinkToNode(new_nodes,alink);
+  alink = MapLinkToNode(new_nodes,alink);
+
+  //if (!isempty) new_nodes = checkAttributes(new_nodes);
+  //if (!isempty)new_nodes = resetAllNodePos(new_nodes);
+  //if (!isempty)new_nodes = centerAllNodePos(new_nodes);
+  if (!new_nodes) new_nodes =[];
 
   //new_nodes = checkAttributes(new_nodes);
   //new_nodes = resetAllNodePos(new_nodes);
@@ -4678,6 +4696,7 @@ function merge_graph(agraph,alink){
   merge_nodes = new_nodes;
   merge_links = alink;
   //merge with current graph
+  //console.log(new_nodes);
   new_nodes.forEach(function(n){
       var cnode = getNodeByName(n.data.name);
       if (n !== new_root) {
@@ -4690,6 +4709,7 @@ function merge_graph(agraph,alink){
         }
       }
   });
+  gp_nodes = graph.nodes;
   gp_nodes = checkAttributes(gp_nodes);
   gp_nodes = resetAllNodePos(gp_nodes);
   gp_nodes = centerAllNodePos(gp_nodes);

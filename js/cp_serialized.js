@@ -463,7 +463,7 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
     sprite.scale2d = ("scale2d" in ing_dic["sprite"]) ? ing_dic["sprite"]["scale2d"] : 1;
     sprite.lengthy = ("lengthy" in ing_dic["sprite"]) ? ing_dic["sprite"]["lengthy"] : 0;
   }
-
+  var uniprot_id = ("uniprot" in ing_dic) ? ing_dic.uniprot : "";
   var elem = {
     "name": name,
     "size": size,
@@ -476,7 +476,7 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
     "geom": geom,
     "geom_type": geom_type,
     "label": label,
-    "uniprot": "",
+    "uniprot": uniprot_id,
     "pcpalAxis": principalVector,
     "offset": offset,
     "pos": p,
@@ -908,6 +908,18 @@ function GetIngredientTypeAndBuildType(an_ing_dic) {
   };
 }
 
+function CheckInteraction(interaction, elem) {
+  //only add if not in it already
+  var found = false;
+  interaction.forEach(function(e) {
+    if ((e.source == elem.source && e.target == elem.target)||(e.target == elem.source && e.target == elem.source)) {
+      found = true;
+    }
+  });
+  console.log(elem,found);
+  return found;
+}
+
 function parseCellPackRecipe(jsondic) {
   additional_data=[]
   var graph = {}; //the main graph
@@ -946,13 +958,16 @@ function parseCellPackRecipe(jsondic) {
         console.log(ps.length);
         console.log(ps);
         ps.forEach(function(elem) {
-          interaction.push(elem);
+          if (!CheckInteraction(interaction,elem))
+            interaction.push(elem);
         }); // $.extend( interaction, ps );
+        console.log("interaction");
         console.log(interaction);
       }
       var p = checkProperties(ing_dic, interaction.length);
       if (p) {
-        interaction.push(p);
+        if (!CheckInteraction(interaction,p))
+           interaction.push(p);
         console.log("found Properties ?");
         console.log(p);
       }
@@ -1004,13 +1019,13 @@ function parseCellPackRecipe(jsondic) {
             console.log(ps.length);
             console.log(ps);
             ps.forEach(function(elem) {
-              interaction.push(elem);
+              if (!CheckInteraction(interaction,elem)) interaction.push(elem);
             }); // $.extend( interaction, ps );
             console.log(interaction);
           }
           var p = checkProperties(ing_dic, interaction.length);
           if (p) {
-            interaction.push(p);
+            if (!CheckInteraction(interaction,elem)) interaction.push(p);
             console.log("found Properties ?");
             console.log(p);
           }
@@ -1032,13 +1047,13 @@ function parseCellPackRecipe(jsondic) {
             console.log(ps.length);
             console.log(ps);
             ps.forEach(function(elem) {
-              interaction.push(elem);
+              if (!CheckInteraction(interaction,elem)) interaction.push(elem);
             }); // $.extend( interaction, ps );
             console.log(interaction);
           }
           var p = checkProperties(ing_dic, interaction.length);
           if (p) {
-            interaction.push(p);
+            if (!CheckInteraction(interaction,elem)) interaction.push(p);
             console.log("found Properties ?");
             console.log(p);
           }

@@ -18,9 +18,12 @@ var merge_field={
 			comment_index:-1,
 			label_index:-1,
 	    compartments:-1//special case where one column per comnpartment
-	    };
+      };
+
+var merge_data;
 var merge_nodes;
 var merge_links;
+
 function merge_changeFieldInclude(e){
   merge_field[e.name] = e.value;
 }

@@ -991,12 +991,14 @@ function UpdateGrid(cdata, grid_id) {
   gridArray[grid_id].render();
   gridArray[grid_id].dataView.refresh();
   //this is not enought ?
-  gridArray[grid_id].resizeCanvas();
-  gridArray[grid_id].autosizeColumns();
-  gridArray[grid_id].render();
-  gridArray[grid_id].dataView.refresh();
-  gridArray[grid_id].resizeCanvas();
-  gridArray[grid_id].autosizeColumns();
+  //gridArray[grid_id].resizeCanvas();
+  //gridArray[grid_id].autosizeColumns();
+  //gridArray[grid_id].render();
+  //gridArray[grid_id].dataView.refresh();
+  //gridArray[grid_id].resizeCanvas();
+  //gridArray[grid_id].autosizeColumns();
+  gridArray[grid_id].invalidate();
+  gridArray[grid_id].render();  
 }
 
 
