@@ -4546,7 +4546,9 @@ function MapLinkToNode(some_nodes,some_links) {
 	    for (var j = 0; j < some_nodes.length; j++) {
 	    		//if use name as string
 	        if (alink.source == some_nodes[j].data.name) alink.source = j;
-	        if (alink.target == some_nodes[j].data.name) alink.target = j;
+			if (alink.target == some_nodes[j].data.name) alink.target = j;
+			if (typeof( alink.source) == "object" && alink.source.data.name == some_nodes[j].data.name) alink.source = j;
+	        if (typeof( alink.target) == "object" && alink.target.data.name == some_nodes[j].data.name) alink.target = j;
     	}
 	}
 	return some_links;
@@ -4573,7 +4575,7 @@ function update_graph(agraph,alink){
 		console.log("nodes",gp_nodes);
   	console.log("alink",alink);
   }
-	alink = MapLinkToNode(gp_nodes,alink);
+  alink = MapLinkToNode(gp_nodes,alink);
 
   if (!isempty)gp_nodes = checkAttributes(gp_nodes);
   if (!isempty)gp_nodes = resetAllNodePos(gp_nodes);
@@ -4688,7 +4690,7 @@ function merge_graph(agraph,alink){
   //if (!isempty)new_nodes = resetAllNodePos(new_nodes);
   //if (!isempty)new_nodes = centerAllNodePos(new_nodes);
   if (!new_nodes) new_nodes =[];
-
+  if (!alink) alink =[];
   //new_nodes = checkAttributes(new_nodes);
   //new_nodes = resetAllNodePos(new_nodes);
   //new_nodes = centerAllNodePos(new_nodes);
@@ -4713,15 +4715,24 @@ function merge_graph(agraph,alink){
   gp_nodes = checkAttributes(gp_nodes);
   gp_nodes = resetAllNodePos(gp_nodes);
   gp_nodes = centerAllNodePos(gp_nodes);
-
+  //update the links
+  alink.forEach(function(l){
+	  graph.links.forEach(function(ll){
+		if ((l.source == ll.source && l.target == ll.target)||(l.target == ll.source && l.target == ll.source)) {
+			//update
+			Object.keys(merge_field).forEach(function(akey,index) {
+				if ( akey in l ) ll[key] = l[key];
+			});
+		}
+	  })
+  });
   // Returns array of link objects between nodes.
   //links = root.links();//nodes.slice(1);
   console.log("update with "+gp_nodes.length);
   UpdateGridFromD3Nodes(gp_nodes,0);
-  UpdateGridFromD3Links(alink,1);
-
+  UpdateGridFromD3Links(graph.links,1);
+  //graph.links = MapLinkToNode(gp_nodes,graph.links);
   if (DEBUGLOG) console.log( gp_nodes );
-
   users = d3v4.nest()
       .key(function(d) { return d.name; })
       .entries(graph.nodes)

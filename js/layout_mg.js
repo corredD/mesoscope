@@ -875,11 +875,14 @@ var alt_layout = [];
 
 var myLayout,
   savedState = localStorage.getItem('savedState');
-
+  tab_visible   = JSON.parse(localStorage.getItem('layoutOptions'));
+if (tab_visible == null) {
+  tab_visible = {"sequence":false,"interaction":false,"object":false,"searchtab":false};//default is
+}
 var usesavedState = true;
 var usesavedSession = true;
 var savedRecipe = localStorage.getItem('savedRecipe');
-var current_version = {"version":1.21};
+var current_version = {"version":1.22};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()
@@ -915,7 +918,7 @@ if (savedState !== null && usesavedState && session_version) {
   myLayout = new window.GoldenLayout(config_light, $('#layoutContainer'));
   localStorage.setItem('session_version', JSON.stringify(current_version));
 }
-//console.log(myLayout);
+
 
 function toggleLayout(layoutId) {
   //loop over current layout and change it ?
@@ -953,6 +956,7 @@ myLayout.on('stateChanged', function() {
     state = JSON.stringify(config);
   }
   localStorage.setItem('savedState', state);
+  localStorage.setItem('layoutOptions', JSON.stringify(tab_visible));
   saveCurrentState();
 });
 
@@ -960,7 +964,12 @@ myLayout.on('stateChanged', function() {
 function saveCurrentState() {
   var jdata = serializedRecipe(graph.nodes, graph.links);
   //var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links); //Links?
-  localStorage.setItem('savedRecipe', JSON.stringify(jdata));
+  try {
+    localStorage.setItem('savedRecipe', JSON.stringify(jdata));
+  } catch (error) {
+    console.error("probably too big");
+    console.error(error);
+  }
   recipe_changed = false;
   if (grid_tab_label && grid_tab_label[0]) grid_tab_label[0].text ( "" );
 }
@@ -1373,12 +1382,29 @@ $(document).ready(function() {
       else setuped = true;
     }
     clearInterval(interval);
-    if (savedRecipe !== null && usesavedState) LoadSaveState(JSON.parse(savedRecipe));
-    else LoadExampleInfluenza_envelope();
+    if (savedRecipe !== null && usesavedState) {
+      try {
+        LoadSaveState(JSON.parse(savedRecipe));
+      }
+      catch(err) {
+        console.log(err);
+      }
+    }
+    else {
+      LoadExampleInfluenza_envelope();
+    }
     evaluate_interval = setInterval(EvaluateCurrentReadyState,10000);//in ms, Do every 10 seconds
     var checkboxes = document.getElementById("selection_ch_checkboxes");
     checkboxes.style.display = "none";
     layout_HideTabFor(["Interaction table","Object Properties","Sequence features","Topology","Uniprot mapping","Uniprot search table","PDB search table","protvista" ]);
+    //console.log(myLayout);
+    if (tab_visible != null)
+    {
+      if (tab_visible.sequence) layout_toggleSequenceFeatures();
+      if (tab_visible.object) layout_toggleObjectProperties();
+      if (tab_visible.interaction) layout_toggleInteractionTable();
+      if (tab_visible.searchtab) layout_toggleSearchTable();
+    }    
     document.getElementById("version_layout").innerHTML = "v"+current_version.version.toString();
     //grid_SetDefaultColumn(gridArray[0],["include","name","surface","pdb","bu","selection","compartment","image"]);
     //setupPDBLib();
@@ -1787,19 +1813,30 @@ function setupProVista(uniid){
 13: <li class="lm_tab" title="PDB search table">
 ​*/
 
+//keep track of it
+
 
 function layout_toggleSequenceFeatures(){
     layout_ToggleTabFor(["Sequence features","Topology","Uniprot mapping","protvista" ]);
     var current_style = document.getElementById('sequencefeatures').style.display;
     document.getElementById('sequencefeatures').style.display = (current_style == 'none')? 'block' : 'none';
+    tab_visible.sequence = !tab_visible.sequence;
+    var sh = (tab_visible.sequence)? "Show" : "Hide"
+    document.getElementById('sequence').innerHTML = '<a href="#" onclick="layout_toggleSequenceFeatures()">'+sh+' Sequence Feature</a>';
 }
 
 function layout_toggleObjectProperties(){
   layout_ToggleTabFor(["Object Properties"]);
+  tab_visible.object = !tab_visible.object;
+  var sh = (tab_visible.object)? "Show" : "Hide"
+  document.getElementById('object').innerHTML = '<a href="#" onclick="layout_toggleObjectProperties()">'+sh+' Objects Properties</a>';  
 }
 
 function layout_toggleInteractionTable(){
   layout_ToggleTabFor(["Interaction table"]);
+  tab_visible.interaction = !tab_visible.interaction;
+  var sh = (tab_visible.interaction)? "Show" : "Hide"
+  document.getElementById('interaction').innerHTML = '<a href="#" onclick="layout_toggleInteractionTable()">'+sh+' Interaction Table</a>';
 }
 
 function layout_toggleSearchTable(){
@@ -1807,6 +1844,9 @@ function layout_toggleSearchTable(){
   //toggle the search button?
   var current_style = document.getElementById('searchtable').style.display;
   document.getElementById('searchtable').style.display = (current_style == 'none')? 'block' : 'none';
+  tab_visible.searchtab = !tab_visible.searchtab;
+  var sh = (tab_visible.searchtab)? "Show" : "Hide"
+  document.getElementById('search').innerHTML = '<a href="#" onclick="layout_toggleSearchTable()">'+sh+' Search Table</a>';
 }
 
 function layout_ToggleTabFor(names){
