@@ -33,7 +33,10 @@ var ngl_force_build_beads = false;
 var slidercl_params2;
 var ngl_cluster_automatic = false;
 var ngl_cluser_sequence = false;
+var ngl_cluster_grid = false;
 var toggle_cluster_edit;
+var toggle_cluster_grid;
+var toggle_cluster_grid_from_LOD0;
 var force_do_cms = true;
 var cluster_force_radius = -1.0;
 var cluster_avg_radius = false;
@@ -694,6 +697,7 @@ function NGL_Setup() {
   });
 
   toggle_cluster_edit= document.getElementById("toggle_cluster_edit");
+  //toggle_cluster_grid= document.getElementById("toggle_cluster_grid");
 
   heading = document.getElementById("heading");
   grid_viewport = document.getElementById("viewport"); //createElement( "div" );
@@ -1335,7 +1339,7 @@ function NGL_showBeadsLevel_cb(alevel) {
   if (!node_selected.data.pos) return;
   if (!ngl_load_params.beads.pos) return;
   if (!ngl_load_params.beads.rad) return;
-  console.log("NGL_showBeadsLevel_cb "+alevel.toString());
+  //console.log("NGL_showBeadsLevel_cb "+alevel.toString());
   if (alevel === "None") {
     for (var i = 0; i < nLod; i++) {
       /*var rep = stage.getComponentsByName("beads_" + i);
@@ -3270,6 +3274,15 @@ function NGL_ChangeClusterNb_cb(e){
     ngl_cluster_automatic = e.checked;
 }
 
+function NGL_ChangeClusterGrid_cb(e){
+    ngl_cluster_grid = e.checked;
+}
+
+function NGL_ChangeClusterGridLOD_cb(e){
+  toggle_cluster_grid_from_LOD0 = e.checked;
+}
+
+
 function NGL_pcpTest(){
   var sele = new NGL.Selection(ngl_current_structure.sele);
   var axedata = stage.getRepresentationsByName("axes").list[0].repr.getAxesData(ngl_current_structure.structureView) 
@@ -3298,6 +3311,209 @@ function NGL_pcpTest(){
   //if (nProxy < 3) nProxy = 3
   //ncluster = nProxy;
   console.log("ncluster "+ nProxy1.toString()+" "+nProxy2.toString()+" "+nProxy3.toString()+" "+nProxy4.toString())
+}
+function getVoxelIJKfromU(index, sizex, sizey)
+{ 
+	var sliceNum = sizex*sizey;
+	var z = index / (sliceNum);
+	var temp = index % (sliceNum);
+	var y = temp / sizex;
+	var x = temp % sizex;
+	return [Math.floor(x),Math.floor(y),Math.floor(z)];
+}
+
+function getVoxelIdFrom3D(pt3d, grid_unit, gridSizesx,gridSizesy,gridSizesz,bbmin)
+{
+	var x = pt3d.x;
+	var y = pt3d.y;
+	var z = pt3d.z;
+	var spacing1 = 1.0 / grid_unit;//  # Grid spacing = diagonal of the voxel determined by smalled packing radius
+									 //test first if point lie inside the grid
+//	if (pt3d.x<bbmin.x || pt3d.y<bbmin.y || pt3d.z<bbmin.z || pt3d.x>bbmax.x || pt3d.y>bbmax.y || pt3d.z>bbmax.z) {
+		//outside the cube
+//		return -1;
+//	}
+	//else {
+		var i = Math.min(gridSizesx, Math.max(0, Math.round((x - bbmin.x) * spacing1)));
+		var j = Math.min(gridSizesy, Math.max(0, Math.round((y - bbmin.y) * spacing1)));
+		var k = Math.min(gridSizesz, Math.max(0, Math.round((z - bbmin.z) * spacing1)));
+		return k * gridSizesx * gridSizesy + j *gridSizesx + i;
+	//}
+}
+
+function getVoxelIJKFrom3D(pt3d, grid_unit, gridSizesx,gridSizesy,gridSizesz,bbmin)
+{
+	var x = pt3d.x;
+	var y = pt3d.y;
+	var z = pt3d.z;
+	var spacing1 = 1.0 / grid_unit;//  # Grid spacing = diagonal of the voxel determined by smalled packing radius
+									 //test first if point lie inside the grid
+//	if (pt3d.x<bbmin.x || pt3d.y<bbmin.y || pt3d.z<bbmin.z || pt3d.x>bbmax.x || pt3d.y>bbmax.y || pt3d.z>bbmax.z) {
+		//outside the cube
+//		return -1;
+//	}
+	//else {
+		var i = Math.min(gridSizesx, Math.max(0, Math.round((x - bbmin.x) * spacing1)));
+		var j = Math.min(gridSizesy, Math.max(0, Math.round((y - bbmin.y) * spacing1)));
+		var k = Math.min(gridSizesz, Math.max(0, Math.round((z - bbmin.z) * spacing1)));
+		return {i:i,j:j,k:k};
+	//}
+}
+
+function ComputeBounds(spheres, padding)
+{
+    var bbMin = new NGL.Vector3(999999, 999999, 999999);
+    var bbMax = new NGL.Vector3(-999999, -999999, -999999);
+    for (var i=0;i<spheres.length;i++)
+    {
+        var sphere = new NGL.Vector3(spheres[i][0],spheres[i][1],spheres[i][2]);
+        bbMin = bbMin.min(sphere);
+        bbMax = bbMax.max(sphere);
+    }
+    // add 1.5f since it does not take the atom size into account
+    bbMin.addScalar(-padding);
+    bbMax.addScalar(padding);
+    var bbSize = new NGL.Vector3(0,0,0);
+    bbSize.subVectors (bbMax,bbMin);
+    //var bbCenter = new NGL.Vector3(0,0,0);
+    //bbCenter = bbMin + bbSize*0.5f;
+    //if (spheres.Count == 1)
+    //{
+    //    bbSize = new Vector3(spheres[0].w - 0.5f, spheres[0].w - 0.5f, spheres[0].w - 0.5f);
+    //    bbCenter = new Vector3(spheres[0].x, spheres[0].y, spheres[0].z);
+    //}
+    return {bbMin:bbMin,bbSize:bbSize};
+}
+
+function buildClusterGridSphere(o, dataset , center, asele, radius) {
+  var nsele = new NGL.Selection(asele);
+  //var pcp = stage.getRepresentationsByName("axes").list[0].repr.getPrincipalAxes();
+  //var pcp = stage.getRepresentationsByName("axes").list[0].repr.getPrincipalAxes(sele);
+  var bb = ComputeBounds(dataset, 1.5);
+  var spacing = parseFloat(cluster_force_radius);
+  var sizex= Math.ceil(bb.bbSize.x/spacing);
+  var sizey= Math.ceil(bb.bbSize.y/spacing);
+  var sizez= Math.ceil(bb.bbSize.z/spacing);
+  var pos = [];
+  var rad = [];
+  
+  var gridsize = sizex*sizey*sizez;
+  //bbmin + float3(xyz.x*grid_unit, xyz.y*grid_unit, xyz.z*grid_unit) + grid_unit/2.0;
+  for (var i=0;i<sizex;i++){
+    for (var j=0;j<sizey;j++){
+      for (var k=0;k<sizez;k++){
+        var p = new NGL.Vector3(bb.bbMin.x+i*spacing+spacing/2.0-center.x,
+                            bb.bbMin.y+j*spacing+spacing/2.0-center.y,  
+                            bb.bbMin.z+k*spacing+spacing/2.0-center.z)
+        if (p.length() > radius) continue;
+        pos.push(p.x);
+        pos.push(p.y);
+        pos.push(p.z);
+        rad.push(spacing);
+      }
+    }
+  }
+  return {
+    "pos": pos,
+    "rad": rad
+  };
+}
+
+//buildClusterGridSpheresFromToLOD(node_selected, ngl_current_structure, "", 1, 0)
+function buildClusterGridSpheresFromToLOD(anode, nglo, asele, fromLOD, toLOD) {
+  var lod1p = anode.data.pos[fromLOD].coords;
+  var lod1r = anode.data.radii[fromLOD].radii;
+  var dataset = NGL_GetAtomDataSet(null,nglo);
+  var newLOD = buildClusterGridSpheres(nglo, dataset, nglo.gcenter, asele, lod1p, lod1r);
+  anode.data.pos[toLOD].coords = newLOD.pos;
+  anode.data.radii[toLOD].radii = newLOD.rad;
+}
+
+//buildClusterGridSpheresFromDataset(node_selected, ngl_current_structure, "", 0)
+function buildClusterGridSpheresFromDataset(anode, nglo, asele, toLOD) {
+  var dataset = NGL_GetAtomDataSet(null,nglo);
+  var newLOD = buildClusterGridSpheresFromAtoms(nglo,dataset,nglo.gcenter,asele);
+  anode.data.pos[toLOD].coords = newLOD.pos;
+  anode.data.radii[toLOD].radii = newLOD.rad;
+}
+
+//var dataset = NGL_GetAtomDataSet(null,ngl_current_structure);
+//var R = buildClusterGridSpheresFromAtoms(ngl_current_structure,dataset,ngl_current_structure.gcenter,"")
+function buildClusterGridSpheresFromAtoms(o, dataset , center, asele) {
+  var nsele = new NGL.Selection(asele);
+  //var pcp = stage.getRepresentationsByName("axes").list[0].repr.getPrincipalAxes();
+  //var pcp = stage.getRepresentationsByName("axes").list[0].repr.getPrincipalAxes(sele);
+  var bb = ComputeBounds(dataset, 1.5);
+  var spacing = parseFloat(cluster_force_radius);
+  var sizex= Math.ceil(bb.bbSize.x/spacing);
+  var sizey= Math.ceil(bb.bbSize.y/spacing);
+  var sizez= Math.ceil(bb.bbSize.z/spacing);
+  var pos = [];
+  var rad = [];
+  var agrid=[]
+  for (var l=0;l<dataset.length;l++){
+    var ap = new NGL.Vector3(dataset[l][0],dataset[l][1],dataset[l][2]);
+    //convertto3D
+    var xyz = getVoxelIJKFrom3D(ap, spacing, sizex,sizey,sizez,bb.bbMin);
+    var alocation = Math.ceil(xyz.k * sizex * sizey + xyz.j *sizex + xyz.i);
+    //distacce ?
+    //var xyz = getVoxelIJKfromU(location);
+    var p = new NGL.Vector3(bb.bbMin.x+xyz.i*spacing,
+      bb.bbMin.y+xyz.j*spacing,  
+      bb.bbMin.z+xyz.k*spacing)
+      var d = p.distanceTo(ap);
+      //console.log(d);
+      if (d < spacing) {
+        agrid[alocation] = p;
+      }
+  }
+  agrid.forEach(element => {
+    rad.push(spacing);
+    pos.push(element.x-center.x);
+    pos.push(element.y-center.y);
+    pos.push(element.z-center.z);
+  });
+  return {
+    "pos": pos,
+    "rad": rad
+  };
+}
+
+function buildClusterGridSpheres(o, dataset , center, asele, positions,radii) {
+  var nsele = new NGL.Selection(asele);
+  //var pcp = stage.getRepresentationsByName("axes").list[0].repr.getPrincipalAxes();
+  //var pcp = stage.getRepresentationsByName("axes").list[0].repr.getPrincipalAxes(sele);
+  var bb = ComputeBounds(dataset, 1.5);
+  var spacing = parseFloat(cluster_force_radius);
+  var sizex= Math.ceil(bb.bbSize.x/spacing);
+  var sizey= Math.ceil(bb.bbSize.y/spacing);
+  var sizez= Math.ceil(bb.bbSize.z/spacing);
+  var pos = [];
+  var rad = [];
+  
+  var gridsize = sizex*sizey*sizez;
+  //bbmin + float3(xyz.x*grid_unit, xyz.y*grid_unit, xyz.z*grid_unit) + grid_unit/2.0;
+  for (var i=0;i<sizex;i++){
+    for (var j=0;j<sizey;j++){
+      for (var k=0;k<sizez;k++){
+        var p = new NGL.Vector3(bb.bbMin.x+i*spacing+spacing/2.0-center.x,
+                            bb.bbMin.y+j*spacing+spacing/2.0-center.y,  
+                            bb.bbMin.z+k*spacing+spacing/2.0-center.z)
+        for (var l=0;l<radii.length;l++){
+          var d = p.distanceTo(new NGL.Vector3(positions[l*3],positions[l*3+1],positions[l*3+2]));
+          if (d > radii[l]) continue;
+          pos.push(p.x);
+          pos.push(p.y);
+          pos.push(p.z);
+          rad.push(spacing);
+        }
+      }
+    }
+  }
+  return {
+    "pos": pos,
+    "rad": rad
+  };
 }
 
 //https://github.com/EtixLabs/clustering
@@ -3369,6 +3585,17 @@ function buildWithKmeans(o, center, ncluster) {
       }
     }
     ncluster = clusters.length;
+  } else if (ngl_cluster_grid) {
+    //special case, should we use multiple spheres x,y,z,r ?
+    //buildClusterGridSpheresFromDataset(o.node, o, asele, 0)
+    var dataset = NGL_GetAtomDataSet(null,o);
+    return buildClusterGridSpheresFromAtoms(o, dataset, center,asele);
+  }
+  else if (toggle_cluster_grid_from_LOD0) {
+    var lod1p = o.node.data.pos[0].coords;
+    var lod1r = o.node.data.radii[0].radii;
+    var dataset = NGL_GetAtomDataSet(null,o);
+    return buildClusterGridSpheres(o, dataset, center, asele, lod1p, lod1r);
   }
   else {
     console.log("cluster!!", ncluster, dataset.length);
@@ -4044,9 +4271,9 @@ function NGL_RemoveMultiSpheresComp(name,count){
 function NGL_ChangeVisibilityMultiSpheresComp(name,count,value){
   console.log("change "+count.toString()+" lod sphere "+name+" "+value.toString());
   for (var i=0;i<count;i++) {
-    console.log(name+"_"+i.toString()+" "+value.toString());
+    //console.log(name+"_"+i.toString()+" "+value.toString());
     var rep = stage.getComponentsByName(name+"_"+i.toString());
-    console.log(rep);
+    //console.log(rep);
     if (rep.list && rep.list.length !== 0) {
       for (var j = 0; j < rep.list.length; j++) {
         //rep.list[j].setVisibility(value);
@@ -4057,7 +4284,7 @@ function NGL_ChangeVisibilityMultiSpheresComp(name,count,value){
         }
       }
     }
-    console.log(rep);
+    //console.log(rep);
   }
 }
 

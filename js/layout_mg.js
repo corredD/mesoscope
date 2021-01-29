@@ -336,6 +336,14 @@ var ngl_widget_options_collapsible = ''+
       '<label for="toggle_cluster_auto"> Auto number of beads</label> '+
       '</div>'+
       '<div>'+
+      '<input type="checkbox"  id="toggle_cluster_grid" onclick="NGL_ChangeClusterGrid_cb(this)" />' +
+      '<label for="toggle_cluster_grid"> Build on a grid </label> '+
+      '</div>'+      
+      '<div>'+
+      '<input type="checkbox"  id="toggle_cluster_grid_from_LOD0" onclick="NGL_ChangeClusterGridLOD_cb(this)" />' +
+      '<label for="toggle_cluster_grid_from_LOD0"> Build on a grid from level 0</label> '+
+      '</div>'+            
+      '<div>'+
       '<input type="checkbox"  id="toggle_cluster_edit" onclick="NGL_ChangeOpacityMultiSpheresComp_cb(this)" />' + 
       '<label for="toggle_cluster_edit"> Edit beads (ctrl) </label> '+
       '</div>'+
