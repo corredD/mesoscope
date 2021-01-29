@@ -890,7 +890,7 @@ if (tab_visible == null) {
 var usesavedState = true;
 var usesavedSession = true;
 var savedRecipe = localStorage.getItem('savedRecipe');
-var current_version = {"version":1.22};
+var current_version = {"version":1.23};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()
