@@ -3556,7 +3556,7 @@ function buildWithKmeans(o, center, ncluster) {
     //var R = o.viewer.bRadius;//Math.max.apply(null, biszea) / 4; //beads0.radius
     //V = 4*Math.PI*(R*R*R)/3.0;
     var nProxy = parseInt(Math.ceil(bvol/Vproxy));
-    if (nProxy < 3) nProxy = 3
+    if (nProxy <= 2) nProxy = 2
     else nProxy = nProxy + 2 // padding
     ncluster = nProxy;
     console.log("ncluster "+ nProxy.toString()+" "+nAtom.toString())

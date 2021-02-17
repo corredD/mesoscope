@@ -30,11 +30,12 @@ function MS_setupcallback(){
       if (!inside) return;
       if (!ms_model_loaded) return;
       const pickingId = canvas3d.identify(x, y);
+      //console.log("move found pickingId ",x,y,pickingId);
       //let label = '';
       if (pickingId) {
           const reprLoci = canvas3d.getLoci(pickingId);
           //label = lociLabel(reprLoci.loci);
-          //console.log(reprLoci.loci);
+          //console.log(reprLoci);
           if (reprLoci.loci.kind === "element-loci") MS_callback(reprLoci.loci.elements[0].unit.model.entryId);
           else clearHighLight();   
       } else {
@@ -47,7 +48,9 @@ function MS_setupcallback(){
     if (!ms_model_loaded) return;
     const pickingId = canvas3d.identify(x, y);
     if (pickingId) {
+      console.log("click found pickingId ",pickingId);
       const reprLoci = canvas3d.getLoci(pickingId);
+      console.log(reprLoci,reprLoci.loci.kind);
       if (reprLoci.loci.kind === "element-loci") MS_callback(reprLoci.loci.elements[0].unit.model.entryId, click = true);
       else {
         if (node_selected) node_selected.highlight = false;

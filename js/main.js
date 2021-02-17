@@ -3185,33 +3185,32 @@ function ticked(e) {
     FOLDER_UPDATED = false;
     //draw all the links
     if (graph.links.length) {
-       graph.links.forEach(function(d){
-       	//draw twich with different thickness for highlihg
-          drawLink(context,d);
-          if (d.highlight) {//mouse over
-          	context.strokeStyle = "black";
-          	context.lineWidth=8;
-          	context.stroke();
-          	drawLink(context,d);
-          	context.strokeStyle = color(d.source.depth+1);
-          	context.lineWidth=5;
-          	context.stroke();
-          	}
-          else {
-          	context.strokeStyle = color(d.source.depth+1);
-          	context.lineWidth=5;
-          	context.stroke();
-          }
-          if (d===line_selected){
-          	context.strokeStyle = "orange";
-          	context.lineWidth=8;
-          	context.stroke();
-          	drawLink(context,d);
-          	context.strokeStyle = "yellow";
-          	context.lineWidth=5;
-          	context.stroke();
-          }
-
+       	graph.links.forEach(function(d){
+			//draw twich with different thickness for highlihg
+			drawLink(context,d);
+			if (d.highlight) {//mouse over
+				context.strokeStyle = "black";
+				context.lineWidth=d.r+1;
+				context.stroke();
+				drawLink(context,d);
+				context.strokeStyle = color(d.source.depth+1);
+				context.lineWidth=d.r;
+				context.stroke();
+			}
+			else {
+				context.strokeStyle = color(d.source.depth+1);
+				context.lineWidth=d.r;
+				context.stroke();
+			}
+			if (d===line_selected){
+				context.strokeStyle = "orange";
+				context.lineWidth=d.r+1;
+				context.stroke();
+				drawLink(context,d);
+				context.strokeStyle = "yellow";
+				context.lineWidth=d.r;
+				context.stroke();
+			}
        }
        );
    }
