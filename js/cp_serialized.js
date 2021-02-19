@@ -564,6 +564,8 @@ function parseIngredientsGroups(groupdic, comp, surface, linkdata) {
   for (var i = 0; i < groupdic.Ingredients.length; i++) {
     var elem = OneIngredientDeserialized(groupdic.Ingredients[i], surface, comp);
     if (groupdic.Ingredients[i].partners_properties) {
+      elem.npartner = groupdic.Ingredients[i].partners_properties.length;
+      //elem.size = elem.size * elem.npartner;
       linkdata = OneIngredientDeserializedPartner(groupdic.Ingredients[i], linkdata);
     }
     comp.children.push(elem);

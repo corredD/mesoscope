@@ -33,7 +33,7 @@ function MS_setupcallback(){
       //console.log("move found pickingId ",x,y,pickingId);
       //let label = '';
       if (pickingId) {
-          const reprLoci = canvas3d.getLoci(pickingId);
+          const reprLoci = canvas3d.getLoci(pickingId.id);
           //label = lociLabel(reprLoci.loci);
           //console.log(reprLoci);
           if (reprLoci.loci.kind === "element-loci") MS_callback(reprLoci.loci.elements[0].unit.model.entryId);
@@ -47,10 +47,11 @@ function MS_setupcallback(){
     if (mousein) return;
     if (!ms_model_loaded) return;
     const pickingId = canvas3d.identify(x, y);
+    //console.log("click pickingId ",x,y,pickingId);
     if (pickingId) {
-      console.log("click found pickingId ",pickingId);
-      const reprLoci = canvas3d.getLoci(pickingId);
-      console.log(reprLoci,reprLoci.loci.kind);
+      //console.log("click found pickingId ",pickingId);
+      const reprLoci = canvas3d.getLoci(pickingId.id);
+      //console.log(reprLoci,reprLoci.loci.kind);
       if (reprLoci.loci.kind === "element-loci") MS_callback(reprLoci.loci.elements[0].unit.model.entryId, click = true);
       else {
         if (node_selected) node_selected.highlight = false;

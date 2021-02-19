@@ -155,6 +155,8 @@ var clusterBy=0;
 var graph = {};
 var users;
 var simulation;
+var link_force = 0.1;
+
 var pack;
 var HQ = false;
 
@@ -1406,33 +1408,33 @@ function selectFile(e){
 		var comon = findLongestCommonSubstring(thefile.name,"serialized");
 		//console.log("serialzized ?",comon);
 		if (comon.length >= 9) {//full string found
-		//console.log("serialized recipe type",thefile.name,comon);
-		reader.onload = function(event) {
-			var data = reader.result;
-			console.log(data);
-			data = data.replace(/\\n\\r/gm,'newChar');
-			console.log("BEFORE JSON PARSE");
-			console.log(data);
-			var ad = JSON.parse(data);
-			console.log("AFTER JSON PARSE");
-			console.log(ad);
-			//debug_data = ad;
-			var adata = parseCellPackRecipeSerialized(ad);
-			//debug_data = adata;
-			console.log("AFTER CellPack PARSE");
-			console.log(adata);
-			merge_data = JSON.parse(JSON.stringify(adata));
-			if (MERGE) {
-				merge_getModal(adata.nodes,adata.links)
-				//merge_graph(adata.nodes,adata.links);
+			//console.log("serialized recipe type",thefile.name,comon);
+			reader.onload = function(event) {
+				var data = reader.result;
+				console.log(data);
+				data = data.replace(/\\n\\r/gm,'newChar');
+				console.log("BEFORE JSON PARSE");
+				console.log(data);
+				var ad = JSON.parse(data);
+				console.log("AFTER JSON PARSE");
+				console.log(ad);
+				//debug_data = ad;
+				var adata = parseCellPackRecipeSerialized(ad);
+				//debug_data = adata;
+				console.log("AFTER CellPack PARSE");
+				console.log(adata);
+				merge_data = JSON.parse(JSON.stringify(adata));
+				if (MERGE) {
+					merge_getModal(adata.nodes,adata.links)
+					//merge_graph(adata.nodes,adata.links);
+				}
+				else {
+					update_graph(adata.nodes,adata.links);
+				}
+				var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links);
+				let blob = new Blob([JSON.stringify(jdata)], {type: 'text/plain'});
+				recipe_file = blob;
 			}
-			else {
-				update_graph(adata.nodes,adata.links);
-			}
-			var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links);
-			let blob = new Blob([JSON.stringify(jdata)], {type: 'text/plain'});
-			recipe_file = blob;
-		}
   	  	}
     	  else {
 			recipe_file = thefile;
@@ -1943,6 +1945,7 @@ function checkAttributes(agraph){
 		}
 		else {
  			agraph[i].data.nodetype = "compartment";
+			if (agraph[i].data.size === undefined) agraph[i].data.size = 200;
 			if (agraph[i].data.size > property_mapping.size.max) property_mapping.size.max = agraph[i].data.size;
 			if (agraph[i].data.size < property_mapping.size.min) property_mapping.size.min = agraph[i].data.size;
 			//if (!("geom" in agraph[i].data )) agraph[i].data.geom = "";
@@ -1956,25 +1959,26 @@ function checkAttributes(agraph){
 	}
 
 function updateAttributesNode(anode,new_data,akey) {
-	for (var key in new_data) {
+	for (var key in new_data) 
+	{
 			//if(!(key in anode.data)) continue;
-			if (akey !== key) continue;
-			console.log("update ",key,anode.data[key],new_data[key]);
-			if (key === "offset"){
+		if (akey !== key) continue;
+		console.log("update ",key,anode.data[key],new_data[key]);
+		if (key === "offset"){
 				anode.data.offset = (Array.isArray(new_data.offset)) ? new_data.offset : new_data.offset.split(",").map(function(d) {
 				return parseFloat(d);
 			});
-			}
-			else if (key ==="pcpalAxis") {
+		}
+		else if (key ==="pcpalAxis") {
 				anode.data.pcpalAxis = (Array.isArray(new_data.pcpalAxis)) ? new_data.pcpalAxis : new_data.pcpalAxis.split(",").map(function(d) {
 				return parseFloat(d);
 			});
-			}
-			else if (key === "pdb") {
+		}
+		else if (key === "pdb") {
 				if (!anode.data.source) anode.data.source={};
 				anode.data.source.pdb = new_data.pdb;
-			}
-			else if (key === "bu") {
+		}
+		else if (key === "bu") {
 			if (!anode.data.source) anode.data.source={};
 			anode.data.source.bu = new_data.bu;
 		}
@@ -1987,8 +1991,17 @@ function updateAttributesNode(anode,new_data,akey) {
 			anode.data.source.selection = new_data.selection;
 		}
 		else {
-				if(key in anode.data)
-					anode.data[key] = new_data[key];
+			if(key in anode.data)
+				anode.data[key] = new_data[key];
+		}
+	}
+	if (akey === "size") {
+		//update the node size
+		if (document.getElementById("canvas_map_r").value === "size")
+		{
+			checkAttributes(gp_nodes)
+			mapRadiusToProperty_cb("size");
+			updateForce();
 		}
 	}
 	return anode;
@@ -2492,61 +2505,61 @@ function isolate(force, filter) {
 }
 
 function updateForce(){
-			simulation.nodes(graph.nodes);
-			simulation.force("link", d3v4.forceLink().strength(0.1));//.iterations(1).id(function(d) { return d.id; })
-			simulation.force("link").links(graph.links);
-		  simulation.force("d0", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 0; }));
-		  simulation.force("d1", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 1; }));
-		  simulation.force("d2", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 2; }));
-		  simulation.force("d3", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 3; }));
-		  simulation.force("d4", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 4; }));
-		  simulation.force("leaf", isolate(d3v4.forceCollide().radius(function(d) {return d.r*1.65;}), function(d) { return !d.children; }));
-	}
+	simulation.nodes(graph.nodes);
+	simulation.force("link", d3v4.forceLink().strength(link_force));//.iterations(1).id(function(d) { return d.id; })
+	simulation.force("link").links(graph.links);
+	simulation.force("d0", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 0; }));
+	simulation.force("d1", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 1; }));
+	simulation.force("d2", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 2; }));
+	simulation.force("d3", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 3; }));
+	simulation.force("d4", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 4; }));
+	simulation.force("leaf", isolate(d3v4.forceCollide().radius(function(d) {return d.r*1.25;}), function(d) { return !d.children; }));
+}
 
 function setupD3(){
-	  canvas_label = document.getElementById("canvas_label");
+	canvas_label = document.getElementById("canvas_label");
     canvas_color = document.getElementById("canvas_color");
-		canvas =   document.getElementById("d3canvas");
-	  //canvas =  document.querySelector("canvas");
+	canvas =   document.getElementById("d3canvas");
+	//canvas =  document.querySelector("canvas");
     context = canvas.getContext("2d");
     container = $(canvas).parent();
     transform = d3v4.zoomIdentity;
     transform.x = 0;//center of page->we want center of div?
-		transform.y = 0;
-		transform.k = 1;
-		width = canvas.width;
-		height = canvas.height;
-		console.log("init ",width,height,container,context);
+	transform.y = 0;
+	transform.k = 1;
+	width = canvas.width;
+	height = canvas.height;
+	console.log("init ",width,height,container,context);
 
-		//var result = syncpyRequestSQL();
-		//console.log(result);
+	//var result = syncpyRequestSQL();
+	//console.log(result);
     var agraph = {};//JSON.parse(result);
 
-		pack = d3v4.pack()
+	pack = d3v4.pack()
 		  .size([width, height])
 		  .padding(30);
 
-		//before packing do the mapping on size ?
-		root = d3v4.hierarchy(agraph)
+	//before packing do the mapping on size ?
+	root = d3v4.hierarchy(agraph)
 	    .sum(function(d) { return d.size; })
 	    .sort(function(a, b) { return b.value - a.value; });
 
-	  /*sql_data =  pack(d3v4.hierarchy(JSON.parse(result))
-	    .sum(function(d) { return d.size; })
-	    .sort(function(a, b) { return b.value - a.value; })).descendants();
-		*/
+	/*sql_data =  pack(d3v4.hierarchy(JSON.parse(result))
+	.sum(function(d) { return d.size; })
+	.sort(function(a, b) { return b.value - a.value; })).descendants();
+	*/
 
-	  var nodes = pack(root).descendants();
-	  // Returns array of link objects between nodes.
-	  var links = [];//root.links();//nodes.slice(1);
+	var nodes = pack(root).descendants();
+	// Returns array of link objects between nodes.
+	var links = [];//root.links();//nodes.slice(1);
 
   	//nodes = checkAttributes(nodes);
-	 offx = canvas.parentNode.offsetWidth;
-	 offy = canvas.parentNode.offsetHeight;
+	offx = canvas.parentNode.offsetWidth;
+	offy = canvas.parentNode.offsetHeight;
 
-	  //nodes = resetAllNodePos(nodes);
- 	  graph.nodes = nodes;
-	  graph.links = links;
+	//nodes = resetAllNodePos(nodes);
+	graph.nodes = nodes;
+	graph.links = links;
 
     users = d3v4.nest()
       .key(function(d) { return d.name; })
@@ -2554,7 +2567,7 @@ function setupD3(){
       .sort(function(a, b) { return b.size - a.size; });
 
   	clearHighLight();
-		simulation = d3v4.forceSimulation()
+	simulation = d3v4.forceSimulation()
 		    .force("link", d3v4.forceLink())//.iterations(1).id(function(d) { return d.id; }).strength(0.1))
 		    .force("d0", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 0; }))
 		    .force("d1", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 1; }))
@@ -2564,11 +2577,11 @@ function setupD3(){
 		    .force("leaf", isolate(d3v4.forceCollide().radius(function(d) {return d.r*1.65;}), function(d) { return !d.children; }));
 
 
-	  simulation
+	simulation
 	      .nodes(graph.nodes)
 	      .on("tick", ticked);
 
-	  simulation.force("link").links(graph.links);
+	simulation.force("link").links(graph.links);
 
     canvas.onmousemove = isKeyPressed;
   	d3v4.select(canvas)
@@ -3025,22 +3038,26 @@ function ClusterNodeBy(eproperty) {
     });
 }
 
-function mapRadiusToProperty(eproperty) {
+function mapRadiusToProperty(eproperty){
 	var property = eproperty.value;
+	mapRadiusToProperty_cb(property);
+}
+
+function mapRadiusToProperty_cb(property) {
+	
 	console.log(property_mapping[property]);
 	var mapping = d3v4.scaleLinear()
-    .domain([Math.min(0,property_mapping[property].min), property_mapping[property].max])
-    .range([1, 35]);
-  //should we increase the size of the parent node ?
-
+		.domain([Math.min(0,property_mapping[property].min), property_mapping[property].max])
+		.range([1, 25]);
+	//should we increase the size of the parent node ?
 	graph.nodes.forEach(function(d){
 		if (!d.children) {
-      if (property==="molecularweight"){ d.r = Util_getRadiusFromMW(d.data.molecularweight); }
+			if (property==="molecularweight"){ d.r = Util_getRadiusFromMW(d.data.molecularweight); }
 			else d.r = mapping(d.data[property]);//or linearmapping
 			if (d.r <= 0) d.r = mapping(d.data.size);
-			if (isNaN(d.r)) d.r = 10;
-			}
-		});
+			if (isNaN(d.r)) d.r = 1;
+		}
+	});
 	//pack the circle
 	graph.nodes.forEach(function(d){
 		if (d.children) {
@@ -3048,20 +3065,21 @@ function mapRadiusToProperty(eproperty) {
 			var points = d.children.filter(ad => !ad.children && !ad.data.surface ).map(ad => ({ x: ad.x, y: ad.y, r: ad.r}));
 			console.log(points);
 			if (points.length !== 0)
-      {var circle = d3v4.packEnclose(points)
-			//var result = d3v4.packEnclose(d.children);//have .r,.x,.y
-			console.log(circle);
-			console.log(circle.x,circle.y,circle.r);
-			d.x = circle.x;
-			d.y = circle.y;
-			d.r = circle.r+25;
-			//d.r = d.children.reduce((acc, val) => acc + val.r/2, 0);
+			{
+				var circle = d3v4.packEnclose(points)
+				//var result = d3v4.packEnclose(d.children);//have .r,.x,.y
+				console.log(circle);
+				console.log("packEnclose",circle.x,circle.y,circle.r);
+				d.x = circle.x;
+				d.y = circle.y;
+				d.r = circle.r+25;
+				//d.r = d.children.reduce((acc, val) => acc + val.r/2, 0);
 			}
 		}
-		});
+	});
 	//update the parent so that all circle fit inside
 	simulation.nodes(graph.nodes);
-	}
+}
 
 function sortNodeByDepth(objects){
 	// For performance reasons, we will first map to a temp array, sort and map the temp array to the objects array.
@@ -3720,7 +3738,7 @@ function AddANode(some_data){
    newNode.r = 30;
    newNode.data.source = {"pdb":some_data.pdb,"bu":some_data.bu,"selection":some_data.selection,"model":""};
    newNode.data.sprite = {"image":null,"offsety":0,"scale2d":1.0};
-	 newNode.data.opm = 0;
+	newNode.data.opm = 0;
    newNode.data.angle = 25.0;//is it an opm model
    newNode.data.ulength = 34.0;//is it an opm model
    newNode.data.tlength = 100;//is it an opm model
@@ -3806,7 +3824,7 @@ function ResizeNodeOver(){
 	console.log(node_over_to_use);
 	var new_size = prompt("Please enter new size", node_over_to_use.r);
 	if (new_size!=null) {
-		node_over_to_use.data.size = parseFloat(new_size);
+		//node_over_to_use.data.size = parseFloat(new_size);
 		node_over_to_use.r = parseFloat(new_size);
 		if (node_over_to_use.data.nodetype!=="compartment")
 				updateCellValue(gridArray[0],"size",node_over_to_use.data.id,parseFloat(new_size));

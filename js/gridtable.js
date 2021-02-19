@@ -1477,7 +1477,6 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       var ni = parseInt(arow.id.split("_")[1]);
       console.log(ni);
       var cid = grid.getColumns()[cell].id;//"pdb"?
-      console.log(cid);      
       console.log(ni); //11
       var n = graph.nodes[ni];
       console.log(n);
