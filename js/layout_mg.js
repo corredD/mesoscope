@@ -1016,8 +1016,13 @@ d3canvasComponent.prototype._Resize = function() {
   console.log("resize Canvas?!!?");
   console.log(this._canvas);
   if (!this._canvas) return;
+  this._canvas.style.width = "100%";
+  this._canvas.style.height = "100%";
+  //this._canvas.height = this._canvas.width * .75;
   this._canvas.width = this._canvas.parentNode.clientWidth; //max width
   this._canvas.height = this._canvas.parentNode.clientHeight; //max height
+  //redraw ?
+  ticked(null);
   //change the scale and transform
   //this._canvas.transform.x = this._canvas.width /2;
   // this._canvas.transform.y = this._canvas.height /2;

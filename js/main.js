@@ -2623,15 +2623,15 @@ function intialize()
     container = $(canvas).parent();
     width = container.width();
     height = container.height();
-     offx = canvas.parentNode.offsetWidth;
-     offy = canvas.parentNode.offsetHeight;
+    offx = canvas.parentNode.offsetWidth;
+    offy = canvas.parentNode.offsetHeight;
 
 	  $(window).resize( respondCanvas );
     //width =  gridster.$widgets.eq(0).width();//width(),
     //height = gridster.$widgets.eq(0).height();//height();
     //respondCanvas();
-		canvas.width = width
-    canvas.height = height; //max height
+	canvas.width = 1200;
+    canvas.height = 1200; //max height
 
     transform.x = 0;//center of page->we want center of div?
 		transform.y = 0;
@@ -3031,11 +3031,13 @@ function ClusterNodeBy(eproperty) {
     var property = eproperty.value;
     console.log(property_mapping[property]);
     var clusters ={};//one cluster by category for this property
+	//asign cluster center to each nodes that it apply to
     graph.nodes.forEach(function(d){
       if (!d.children) {
-
+		//d.cluster = {x:0,y:0,r:5};
       }
     });
+	clusterBy = 1;
 }
 
 function mapRadiusToProperty(eproperty){
@@ -3104,15 +3106,159 @@ function sortNodeByDepth(objects){
 	//}
 }
 
+function Highlight(d) {
+	//check if part of selection?
+	if (nodes_selections.length !==0 && nodes_selections.indexOf(d)!==-1) {
+		context.strokeStyle = "orange";
+		context.stroke();
+		context.fillStyle = "yellow";
+		context.fill();
+	//return;
+	}
+	else if (d.highlight && d !== node_selected && d!== comp_highligh && d!==comp_highligh_surface) {
+		context.fillStyle = colorNode(d);
+		context.fill();
+		context.strokeStyle = "black";
+		context.stroke();
+	}
+	else if (d === node_selected) {
+		context.strokeStyle = "orange";
+		context.stroke();
+		context.fillStyle = "yellow";
+		context.fill();
+	}
+	else if (d===comp_highligh_surface) {
+		context.strokeStyle = "yellow";
+		context.lineWidth=5;
+		context.stroke();
+		context.fillStyle = colorNode(d);
+		context.fill();
+	}
+	else if (d===comp_highligh) {
+		context.strokeStyle = "black";
+		context.lineWidth=5;
+		context.stroke();
+		context.fillStyle = "grey";//colorNode(d);
+		context.fill();
+	}
+	else if (d.depth === 6){
+		context.strokeStyle = color(d.depth+1);
+		context.stroke();
+		context.fillStyle = "rgba(55, 55, 255, 0.3)";
+		context.fill();
+	}
+	else {
+		context.strokeStyle = color(d.depth+1);
+		context.stroke();
+		context.fillStyle = colorNode(d);
+		context.fill();
+	}	
+}
+
+function DrawCompartments(nodes_sorted){
+	nodes_sorted.forEach(function(d){
+		if (d.children) {
+			drawNode(d);
+			Highlight(d);
+		}
+	});
+}
+
+function DrawIngredients(nodes_sorted){
+	nodes_sorted.forEach(function(d){
+		if (!d.children) {
+			drawNode(d);
+			Highlight(d);
+		}
+	});
+}
+
+
+function DrawConnections(all_links){
+	all_links.forEach(function(d){
+		//draw twich with different thickness for highlihg
+		drawLink(context,d);
+		if (d.highlight) {//mouse over
+			context.strokeStyle = "black";
+			context.lineWidth=d.r+0.5;
+			context.stroke();
+			drawLink(context,d);
+			context.strokeStyle = color(d.source.depth+1);
+			context.lineWidth=d.r;
+			context.stroke();
+		}
+		else {
+			context.strokeStyle = color(d.source.depth+1);
+			context.lineWidth=d.r;
+			context.stroke();
+		}
+		if (d===line_selected){
+			context.strokeStyle = "orange";
+			context.lineWidth=d.r+0.5;
+			context.stroke();
+			drawLink(context,d);
+			context.strokeStyle = "yellow";
+			context.lineWidth=d.r;
+			context.stroke();
+		}
+   }
+   );
+}
+
+function DrawLabels(){
+	//draw all the labels
+	var counter = 0; //Needed for the rotation of the arc titles
+	//Do a second loop because the arc titles always have to be drawn on top
+	for (var i = 0; i < graph.nodes.length; i++) {
+		d = graph.nodes[i];
+		//a compartments
+		if (d.children && d.parent ){
+			var fontSizeTitle = Math.round(d.r / 10);
+			if (fontSizeTitle <= 4) fontSizeTitle = 10;
+			if (fontSizeTitle > 4) {
+				drawCircularText(context, d.data.name.replace(/,? and /g, ' & '),
+				fontSizeTitle, titleFont, d.x,d.y, d.r, rotationText[counter], 0);
+			}
+			counter = counter + 1;
+		}
+		if (!d.parent) {//root label
+			var ax = transform.invertX(5);
+			var ay = transform.invertY(canvas.height-20);
+			context.font=(20/transform.k)+"px Georgia";
+			context.fillStyle = "black";
+			var lb = (recipe_changed)?"*":"";
+			context.fillText(d.data.name+lb,ax,ay);
+		}
+		//	ingredient label
+		//console.log(transform.k);
+		if ( (d.highlight || ( transform.k > 1.5 && canvas_label.selectedOptions[0].value !== "None")) && !d.children ) {
+			var fontSizeTitle = Math.round(d.r / 2);
+			if (fontSizeTitle <= 4) fontSizeTitle = 5;
+			context.font=fontSizeTitle+"px Georgia";
+			var txtoption = canvas_label.selectedOptions[0].value;
+			var txt;
+			if (!d) console.log("options is ",txtoption,d);
+			if (txtoption === "pdb"){
+				if (d.data.source && d.data.source.pdb) txt = d.data.source.pdb.replace(/,? and /g, ' & ');//d.data[].replace(/,? and /g, ' & ');
+				else txt = d.data["name"].replace(/,? and /g, ' & ');
+			}
+			else if (txtoption==="None") {txt = d.data["name"].replace(/,? and /g, ' & ');}
+			else {
+				txt = (d && "data" in d && d.data && d.data[txtoption])? d.data[txtoption].replace(/,? and /g, ' & '):"";
+			}
+			context.fillText(txt,d.x-d.r,d.y+d.r+fontSizeTitle);
+		}
+	}
+}
+
 //the tick also draw in the canvas!
 function ticked(e) {
-    //$('#canvas').focus();
-    //nodes = pack(root).descendants();
-		if (context===null)
-		{
-			canvas =  document.querySelector("canvas");
-			context = canvas.getContext("2d");
-		}
+	if (context===null || context === undefined)
+	{
+		return;
+		//canvas =  document.querySelector("canvas");
+		//context = canvas.getContext("2d");
+	}
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.save();
     /*
@@ -3121,7 +3267,6 @@ function ticked(e) {
     context.shadowOffsetY = 5;
     context.shadowBlur = 10;
     */
-    //context.translate(width / 2, height / 2);
     context.translate(transform.x, transform.y);
     //if scale 1 is 200x200, when resizing the windows we could increase the scale.
     //using the max between canvas.width,canvas.height
@@ -3131,13 +3276,149 @@ function ticked(e) {
     	//draw the add ingredient/add compartment ?
     	//drawPalette();
     	//should we let drag/drop object to define compartment
-    	}
+	}
 
     //draw all the nodes
     //sort the nodes and draw them, when sorting we loose the mapping with the table
     var new_array = graph.nodes.slice(0);
     //var maping = graph.nodes.forEach(function(d,ind){ return {"ind":ind,"depth":d.depth};});
     new_array.sort(function(a,b){return a.depth-b.depth});
+	//should start with compartment then links then nodes.
+	DrawCompartments(new_array);
+
+    FOLDER_UPDATED = false;
+    //draw all the links
+    if (graph.links.length) {
+		DrawConnections(graph.links);
+   	}
+	
+	DrawIngredients(new_array);
+    if ( (nodes_selections.length % 2) === 0 ) {
+   		//show link between i,i+1
+   		for (var l=0;l<nodes_selections.length-1;l+=2){
+   			drawLinkTwoNode(nodes_selections[l],nodes_selections[l+1]);
+    		context.strokeStyle = "yellow";
+   			context.lineWidth=2;
+        	context.stroke();
+   		}
+   	}
+   	if (current_mode===1 && temp_link) {
+		drawLink(context,temp_link);
+		context.strokeStyle = "white";
+		context.lineWidth=2;
+		context.stroke();
+   	}
+    //draw all the labels
+    DrawLabels();
+
+    //draw a sphere for the mouse
+    if (mousein && draw_debug_mouse) {
+    	context.beginPath();
+    	context.moveTo(mousexy.x , mousexy.y);//why +3?
+    	context.arc(mousexy.x,mousexy.y,15,0,10);//0?
+    	context.fillStyle = "green";
+      	context.fill();
+    }    //thumbnail with special case for surface
+    var snode = node_selected;
+    if (snode == null || snode.children) snode = node_over;
+    if (snode !=null && !snode.children && snode.data && snode.data.thumbnail !==null && snode.data.thumbnail !== undefined && snode.data.name != null) {
+      	//scale from image size to 150 ?
+		if (snode.data.thumbnail.height!==0 && snode.data.thumbnail.width!==0)
+      	{
+			context.save();
+			context.resetTransform();
+			var ratio = (snode.data.thumbnail)? snode.data.thumbnail.width/snode.data.thumbnail.height:1.0;// 0.5;
+			var w = 150;//(snode.data.thumbnail)?snode.data.thumbnail.width:150;
+			var h = w/ratio;//(snode.data.thumbnail)?snode.data.thumbnail.height:150;
+			var x = canvas.width/2.0-w-10;
+			var y = canvas.height-h-10;
+			context.rect(x,y, w,h);
+			context.stroke();
+			context.fillText(snode.data["name"].replace(/,? and /g, ' & '),x,y);
+			var canvas_scale = (snode.data.thumbnail)? w/snode.data.thumbnail.width : 1.0;
+			if (snode.data.ingtype !== "fiber") drawThumbnailInCanvas(snode,x,y, w,h);//scale sized ?
+			//if surface draw a line representing the membrane
+			if (snode.data.surface) {
+				var thickness = 42.0/2.0;//angstrom
+				var sc2d = parseFloat(snode.data.sprite.scale2d)*canvas_scale;
+				var offy = -parseFloat(snode.data.sprite.offsety)*sc2d;//sc2d is angstrom to pixels
+				//aNode.data.thumbnail.oh
+				//scale2d should bring angstrom->pixels
+				//need to take in account original size of images
+				context.beginPath();
+				context.lineWidth=2;
+				context.moveTo(x,y+h/2.0-offy);
+				context.lineTo(x+w,y+h/2.0-offy);
+				context.strokeStyle = "green";
+				context.stroke();
+				//top
+				context.beginPath();
+				context.lineWidth=2;
+				context.moveTo(x,y+h/2.0-offy-thickness*sc2d);
+				context.lineTo(x+w,y+h/2.0-offy-thickness*sc2d);
+				context.strokeStyle = "red";
+				context.stroke();
+				//bottom
+				context.beginPath();
+				context.lineWidth=2;
+				context.moveTo(x,y+h/2.0-offy+thickness*sc2d);
+				context.lineTo(x+w,y+h/2.0-offy+thickness*sc2d);
+				context.strokeStyle = "blue";
+				context.stroke();
+			}
+			if (snode.data.ingtype === "fiber") {
+				var sc2d = parseFloat(snode.data.sprite.scale2d)*canvas_scale;
+				var leny = -parseFloat(snode.data.sprite.lengthy)*sc2d;//sc2d is angstrom to pixels
+				//draw two other thumbnail around
+				drawThumbnailInCanvas(snode,x-leny/2.0,y, w,h);//scale sized ?
+				drawThumbnailInCanvas(snode,x+leny/2.0,y, w,h);//scale sized ?
+			}
+			// Restore the default state
+			context.restore();
+		}
+    }
+    /*context.beginPath();
+    	context.moveTo(width/2,height/2);//why +3?
+    	context.arc(width/2,height/2,15,0,10);//0?
+    	context.fillStyle = "green";
+      context.fill();
+      */
+		//draw the traffic light
+		//drawTrafficLight();
+    context.restore();
+  }
+
+  function oldticked(e) {
+	if (context===null)
+	{
+		canvas =  document.querySelector("canvas");
+		context = canvas.getContext("2d");
+	}
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.save();
+    /*
+    context.shadowColor = 'black';
+    context.shadowOffsetX = 5;
+    context.shadowOffsetY = 5;
+    context.shadowBlur = 10;
+    */
+    context.translate(transform.x, transform.y);
+    //if scale 1 is 200x200, when resizing the windows we could increase the scale.
+    //using the max between canvas.width,canvas.height
+    context.scale(transform.k, transform.k);//d3v4.dragzoombiased using the current width/height ?
+
+    if (current_mode === 1) {
+    	//draw the add ingredient/add compartment ?
+    	//drawPalette();
+    	//should we let drag/drop object to define compartment
+	}
+
+    //draw all the nodes
+    //sort the nodes and draw them, when sorting we loose the mapping with the table
+    var new_array = graph.nodes.slice(0);
+    //var maping = graph.nodes.forEach(function(d,ind){ return {"ind":ind,"depth":d.depth};});
+    new_array.sort(function(a,b){return a.depth-b.depth});
+	//should start with compartment then links then nodes.
 
     //graph.nodes.sort(function(a,b){return a.depth-b.depth});
     //var nodetodraw = graph.nodes;//sortNodeByDepth(graph.nodes);
@@ -3186,7 +3467,7 @@ function ticked(e) {
       else if (d.depth === 6){
       	context.strokeStyle = color(d.depth+1);
         context.stroke();
-				context.fillStyle = "rgba(55, 55, 255, 0.3)";
+		context.fillStyle = "rgba(55, 55, 255, 0.3)";
       	context.fill();
       	}
       else {
@@ -3232,19 +3513,20 @@ function ticked(e) {
        }
        );
    }
+
    if ( (nodes_selections.length % 2) === 0 ) {
    	//show link between i,i+1
    	for (var l=0;l<nodes_selections.length-1;l+=2){
    			drawLinkTwoNode(nodes_selections[l],nodes_selections[l+1]);
     		context.strokeStyle = "yellow";
-   			context.lineWidth=5;
+   			context.lineWidth=2;
         context.stroke();
    		}
    	}
    if (current_mode===1 && temp_link) {
    				drawLink(context,temp_link);
    				context.strokeStyle = "white";
-   				context.lineWidth=5;
+   				context.lineWidth=2;
           context.stroke();
    	}
     //draw all the labels
@@ -3944,12 +4226,9 @@ function asubject(x,y) {
 
 	x = transform.invertX(x);
 	y = transform.invertY(y);
-  mousexy = {"x":x,"y":y};
-	//mousexy = {"x":x,"y":y};
-   //return subject;
-	//console.log("mouse is at");
-	//console.log(x,y);
-  var n = graph.nodes.length,
+	mousexy = {"x":x,"y":y};
+
+  	var n = graph.nodes.length,
       i,
       dx,
       dy,
@@ -3957,65 +4236,64 @@ function asubject(x,y) {
       r,
       d,
       subject;
-  var miniD=9999;
-  var depth_over=-10;
-  //var minI = 9999;
-  //is this hierarcica
-  //sort by depth too ?
+	var miniD=9999;
+	var depth_over=-10;
+	//var minI = 9999;
+	//is this hierarcica
+	//sort by depth too ?
 	subject = graph.nodes[0];//root
-  for (i = 0; i < n; ++i) {
-    d = graph.nodes[i];
-    r = d.r;
-    //if (d.data.nodeType==="compartment") r = d.r*2;
-    dx = x  - d.x;
-    dy = y  - d.y;
-    d2 = dx * dx + dy * dy;
+ 	for (i = 0; i < n; ++i) {
+		d = graph.nodes[i];
+		r = d.r;
+		//if (d.data.nodeType==="compartment") r = d.r*2;
+		dx = x  - d.x;
+		dy = y  - d.y;
+		d2 = dx * dx + dy * dy;
 		if (!d.parent)//root
 		{
 			miniD = d2;
 			subject = d;
 			depth_over = d.depth;
 		}
-    if (d2 < r*r) {
-    	if (d.depth > depth_over) { //if (d2 < miniD) {
-    		miniD = d2;
-    	  subject = d;
-    	  depth_over = d.depth;
+    	if (d2 < r*r) {
+			if (d.depth > depth_over) { //if (d2 < miniD) {
+				miniD = d2;
+				subject = d;
+				depth_over = d.depth;
+			}
     	}
-    }
- }
-  //how to find the link instead
-  //graph.links
-  //miniD=9999;
-  miniD= Math.sqrt(miniD);
-  for (i = 0; i < graph.links.length; ++i) {
-  	 var source = graph.links[i].source;
-  	 var target = graph.links[i].target;
-  	 //console.log("source "+graph.links[i].source.x+" "+i);//undefined ?
-  	 //console.log (x+" "+ source.x+" "+ target.x);
-      //if(x < source.x || x > target.x){
-      //    continue
-      //}
-      //var linepoint=linepointNearestMouse(source,target,x,y);
-      //var dx=x-linepoint.x;
-      //var dy=y-linepoint.y;
-      //var distance=Math.abs(Math.sqrt(dx*dx+dy*dy));
-      var aoffset = getOffsetLink(graph.links[i]);
-      var distance = distanceToLineSegment(aoffset.sx, aoffset.sy,aoffset.tx, aoffset.ty,x, y);
-      //console.log(distance+" "+tolerance);
-      if(distance < tolerance){
-      	 if (distance < miniD) {
-      	 	miniD = distance;
-          //console.log("found a line")
-          graph.links[i].highlight=true;
-          subject = graph.links[i];
-          graph.links[i].source.highlight=true;
-          graph.links[i].target.highlight=true;
-         }
+ 	}
+  	//how to find the link instead
+  	//graph.links
+  	//miniD=9999;
+  	miniD = Math.sqrt(miniD);
+  	for (i = 0; i < graph.links.length; ++i) {
+		graph.links[i].highlight=false;
+		graph.links[i].source.highlight=false;
+		graph.links[i].target.highlight=false;		  
+  	 	var source = graph.links[i].source;
+  	 	var target = graph.links[i].target;
+  	 	//console.log("source "+graph.links[i].source.x+" "+i);//undefined ?
+		//console.log (x+" "+ source.x+" "+ target.x);
+		//if(x < source.x || x > target.x){
+		//    continue
+		//}
+		//var linepoint=linepointNearestMouse(source,target,x,y);
+		//var dx=x-linepoint.x;
+		//var dy=y-linepoint.y;
+		//var distance=Math.abs(Math.sqrt(dx*dx+dy*dy));
+		var aoffset = getOffsetLink(graph.links[i],2);
+		var distance = distanceToLineSegment(aoffset.sx, aoffset.sy,aoffset.tx, aoffset.ty,x, y);
+		//console.log(distance+" "+tolerance);
+		if(distance < tolerance){
+      	 	if (distance < miniD) 
+			{
+				miniD = distance;
+				subject = graph.links[i];
+			} 
         }
-      }
-
-  return subject;
+	}
+  	return subject;
 }
 
 function subject() {
@@ -4041,6 +4319,8 @@ function dragsubject() {
 }
 
 function MouseMove(x,y) {
+	clearHighLight();
+	MS_ClearHighlight();	
 	var d = asubject(x,y);
 	var line = false;
 	if (d && "data" in d) {}//console.log("found "+d.data.name+" at "+x+" "+y);
@@ -4049,15 +4329,8 @@ function MouseMove(x,y) {
 		//console.log("found a line");
 	  	line = true;
 	}
-	if (!line) clearHighLight();
   	if (!d || d===null ) {
-	  clearHighLight();
-	  MS_ClearHighlight();
 	  return;
-	}
-  	if (!d.parent && !line) {
-		  clearHighLight();
-		  MS_ClearHighlight();
 	}
 	if (!line)
 	{
@@ -4079,8 +4352,15 @@ function MouseMove(x,y) {
 	}
 	else {
       	node_over = null;
-		  line_over = d;
-		  MS_ClearHighlight();
+		line_over = d;
+		if ("source" in line_over) {
+			line_over.highlight=true;
+			line_over.source.highlight=true;
+			line_over.target.highlight=true;		
+			//clearHighLight();
+			MS_HighlightNode(d.source);
+			MS_HighlightNode(d.target);			
+		}
 	}
   //}
   if (simulation.alpha() < 0.01 && HQ) simulation.alphaTarget(1).restart();
@@ -4382,18 +4662,18 @@ function dragended() {
   }
 }
 
-function getOffsetLink(d) {
-	 var deltaX = d.target.x - d.source.x,
-        deltaY = d.target.y - d.source.y,
+function getOffsetLink(d, padding) {
+	 var deltaX = (d.target.x - d.source.x),
+        deltaY = (d.target.y - d.source.y),
         dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY),
         normX = deltaX / dist,
         normY = deltaY / dist,
-        sourcePadding = 5,
-        targetPadding = 5,
-        sourceX = d.source.x + (sourcePadding * normX),
-        sourceY = d.source.y + (sourcePadding * normY),
-        targetX = d.target.x - (targetPadding * normX),
-        targetY = d.target.y - (targetPadding * normY);
+        sourcePadding = padding,
+        targetPadding = padding,
+        sourceX = d.source.x + d.source.r * normX,// + (sourcePadding * normX),
+        sourceY = d.source.y + d.source.r * normY,// + (sourcePadding * normY),
+        targetX = d.target.x - d.target.r * normX,// - (targetPadding * normX),
+        targetY = d.target.y - d.target.r * normY;// - (targetPadding * normY);
    return {"sx":sourceX,"sy":sourceY,"tx":targetX,"ty":targetY};
 	}
 
@@ -4414,7 +4694,7 @@ function getOffsetTwoNode(d1,d2) {
 
 function drawLink(acontext,d) {
 	acontext.beginPath();
-	var aoffset = getOffsetLink(d);
+	var aoffset = getOffsetLink(d,2);
    	acontext.moveTo(aoffset.sx, aoffset.sy);
    	acontext.lineTo(aoffset.tx, aoffset.ty);
 }
@@ -4463,12 +4743,14 @@ function drawNode(d) {
           r = d.r + cluster.r;
       if (l != r) {
         l = (l - r) / l * alpha;
-        d.x -= x *= l;
-        d.y -= y *= l;
-        cluster.x += x;
-        cluster.y += y;
-        d.vx -= dx * l;
-        d.vy -= dy * l;
+        //d.x -= x *= l;
+        //d.y -= y *= l;
+        //cluster.x += x;
+        //cluster.y += y;
+        //d.vx -= dx * l;
+        //d.vy -= dy * l;
+		d.vx += (cluster.x - d.x) * 0.05 * 1;
+		d.vy += (cluster.y - d.y) * 0.05 * 1;		
       }
     }
   }
