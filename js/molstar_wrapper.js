@@ -151,7 +151,7 @@ function MS_LoadModel(recipefile,modelfile){
     else BasicMolStarWrapper.setPreset('illustrative');
     var ingredients_files = [];
     Object.keys(pathList_).forEach(function(key) {
-      console.log(key, pathList_[key]);
+      //console.log(key, pathList_[key]);
       ingredients_files.push(pathList_[key]);
     });
     BasicMolStarWrapper.loadCellPACK_model(recipefile,modelfile,ingredients_files, ms_trace_only.checked, ms_spacefill.checked ? 'spacefill' : 'gaussian-surface');
