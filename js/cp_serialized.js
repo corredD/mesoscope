@@ -274,7 +274,7 @@ function serializedRecipe(some_data, some_links) {
   //traverse the hierarchy instead of the flat data?
   for (var i = 0; i < some_data.length; i++) {
     var node = some_data[i];
-    console.log(i, ' node ', node.data.name);
+    //console.log(i, ' node ', node.data.name);
     if (!node.parent) //root
     {
       aroot = node;

@@ -1,5 +1,7 @@
 // d3,ngl,pfv,grid1,grid2,grid3,grid4
 var all_intialized = [false, false, false, false, false, false, false];
+var localforage_done = false;
+var force_empty_recipe;
 var proteinFeatureView;
 var featureView;// = new Object()
 var ProtVista;
@@ -783,6 +785,26 @@ function get_PDB_component(atitle, atooltip,acname,states){
 	};
 }
 
+///this should be migrate to indexDB, localstorage is too limited
+async function getCurrentState(){
+  var value = await localforage.getItem('savedRecipe');
+  return value;
+}
+
+function saveCurrentState() {
+  var jdata = serializedRecipe(graph.nodes, graph.links);
+  //var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links); //Links?
+  try {
+    //localStorage.setItem('savedRecipe', JSON.stringify(jdata));
+    localforage.setItem('savedRecipe',jdata);
+  } catch (error) {
+    console.error("probably too big");
+    console.error(error);
+  }
+  recipe_changed = false;
+  if (grid_tab_label && grid_tab_label[0]) grid_tab_label[0].text ( "" );
+}
+
 
 //Main Config
 var config = {
@@ -880,6 +902,7 @@ var config_light = {
 //_onCloseClick
 //for mobile
 var alt_layout = [];
+//try to replace by localforage the saved recipe.
 
 var myLayout,
   savedState = localStorage.getItem('savedState');
@@ -889,8 +912,19 @@ if (tab_visible == null) {
 }
 var usesavedState = true;
 var usesavedSession = true;
-var savedRecipe = localStorage.getItem('savedRecipe');
-var current_version = {"version":1.23};
+
+//var savedRecipe = JSON.parse(localStorage.getItem('savedRecipe'));
+//var savedRecipe = await Promise.all([getCurrentState()])[0];
+var savedRecipe
+
+localforage.getItem('savedRecipe').then(function(readValue) {
+  console.log('ReadsavedRecipe: ', readValue);
+  savedRecipe = readValue;
+  localforage_done = true;
+}),
+
+console.log("savedRecipe", savedRecipe !== null, savedRecipe);
+var current_version = {"version":1.24};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()
@@ -920,6 +954,7 @@ if (savedState !== null && usesavedState && session_version) {
     myLayout = new window.GoldenLayout(config_light, $('#layoutContainer'));
     localStorage.setItem('session_version', JSON.stringify(current_version));
     savedRecipe = null;
+    localforage.setItem('savedRecipe','');
   }
 } else {
   //myLayout = new GoldenLayout( config );
@@ -965,22 +1000,8 @@ myLayout.on('stateChanged', function() {
   }
   localStorage.setItem('savedState', state);
   localStorage.setItem('layoutOptions', JSON.stringify(tab_visible));
-  saveCurrentState();
+  if (localforage_done) saveCurrentState();
 });
-
-///this should be migrate to indexDB, localstorage is too limited
-function saveCurrentState() {
-  var jdata = serializedRecipe(graph.nodes, graph.links);
-  //var jdata = getCurrentNodesAsCP_JSON(graph.nodes, graph.links); //Links?
-  try {
-    localStorage.setItem('savedRecipe', JSON.stringify(jdata));
-  } catch (error) {
-    console.error("probably too big");
-    console.error(error);
-  }
-  recipe_changed = false;
-  if (grid_tab_label && grid_tab_label[0]) grid_tab_label[0].text ( "" );
-}
 
 var d3canvasComponent = function(container, state) {
   this._container = container;
@@ -1001,7 +1022,10 @@ d3canvasComponent.prototype._Setup = function() {
   this._canvas = document.createElement('canvas');
   this._canvas.setAttribute("id", "d3canvas");
   this._canvas.style.border = "1px solid black";
+  this._canvas.style.width = "100%";
+  this._canvas.style.height = "100%";
   this._canvas.transform = d3.zoomIdentity;
+  //main_canvasResizer = this._canvasResizer = new swevans.CanvasResizer(this._canvas);
   var optionsDropdown = $(canvasOption);
   this._container.getElement().append(optionsDropdown);
   this._container.getElement().append(this._canvas); // '<canvas width="100%" height="100%" style="border:1px solid black;"></canvas>');
@@ -1021,6 +1045,7 @@ d3canvasComponent.prototype._Resize = function() {
   //this._canvas.height = this._canvas.width * .75;
   this._canvas.width = this._canvas.parentNode.clientWidth; //max width
   this._canvas.height = this._canvas.parentNode.clientHeight; //max height
+  //if(this._canvasResizer !== undefined) this._canvasResizer.resize();
   //redraw ?
   ticked(null);
   //change the scale and transform
@@ -1391,13 +1416,13 @@ $(document).ready(function() {
       //console.log(JSON.parse( savedRecipe ));
       console.log(all_intialized);
 			//is the pdb library loaded ?
-      if (false in all_intialized) return;
+      if (false in all_intialized && localforage_done === false) return;
       else setuped = true;
     }
     clearInterval(interval);
     if (savedRecipe !== null && usesavedState) {
       try {
-        LoadSaveState(JSON.parse(savedRecipe));
+        LoadSaveState(savedRecipe);
       }
       catch(err) {
         console.log(err);
