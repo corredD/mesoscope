@@ -22,6 +22,7 @@ var ngl_geom_opacity = 1.0;
 var use_mglserver_beads = false;
 var ill_style = document.getElementById("ill_style");
 var ngl_scene_control = document.getElementById("ngl_scene_control");
+var ngl_interaction_view = false;
 var nLod = 3;
 var slidercluster_elem;
 //var slidercluster_label_elem;
@@ -44,7 +45,9 @@ var use_cluster_radius = false;
 var current_annotation;
 var title_annotation = document.getElementById("pdb_title");
 var node_to_illustrate;
-
+var repToChange;
+var selToChange;
+var buToChange;
 //var beads_checkbox = document.getElementById("beads_check");
 //var labels_checkbox = document.getElementById("label_check");
 
@@ -56,9 +59,11 @@ var ngl_load_params = {
     "pos": null,
     "rad": null
   },
+  "dobeads_pairs": false,
   "doaxis": false,
   "axis": null
 };
+
 var ngl_show_beads;
 var ngl_show_beads_level_select;
 
@@ -898,7 +903,10 @@ function NGL_Setup() {
         //resize beads
         var lod = parseInt(asplit[1]);
         var lodid=parseInt(asplit[3]);
-        rad = node_selected.data.radii[lod].radii[lodid];
+        if (ngl_interaction_view) {
+          rad =  ngl_load_params.beads.rad[lod].radii[lodid];
+        }
+        else rad = node_selected.data.radii[lod].radii[lodid];
       }
       else {
         var mbi = parseInt( (asplit.length>1)? asplit[1]:"0");
@@ -1081,6 +1089,7 @@ function NGL_LoadSpheres(pos, rad) {
 function NGL_updateCurrentBeadsLevelClient() {
   //center
   //async function updateCurrentBeadsLevel() {
+  if (ngl_interaction_view) return;  
   console.log("update beads", beads_elem.selectedOptions[0].value); //undefined?//lod level
   var asele = "";
   var o = ngl_current_structure;
@@ -1167,6 +1176,7 @@ function NGL_updateCurrentBeadsLevelClient() {
   });
   */
   //NGL_RemoveMultiSpheresComp("lod_"+lod.toString()+"_",ngl_load_params.beads.rad[lod].radii.length);
+  //add some beads if its a fiber [-2,-1,0,1,2] and there is no structure ?
   NGL_multiSpheresComp("lod_"+lod.toString()+"_",ngl_load_params.beads.pos[lod].coords,ngl_load_params.beads.rad[lod].radii,(toggle_cluster_edit.checked)?1.0:0.5);
 
   nbBeads_elem.textContent = '' + ngl_load_params.beads.pos[lod].coords.length / 3 + ' beads';
@@ -1350,9 +1360,9 @@ function NGL_showBeadsLevel_cb(alevel) {
           rep.list[0].reprList[0].setVisibility(false);
         }
       }*/
-      if ( i < node_selected.data.radii.length) 
+      if ( i < ngl_load_params.beads.rad.length)// node_selected.data.radii.length) 
       {  
-        NGL_ChangeVisibilityMultiSpheresComp("lod_"+i.toString()+"_",node_selected.data.radii[i].radii.length,false);
+        NGL_ChangeVisibilityMultiSpheresComp("lod_"+i.toString()+"_",ngl_load_params.beads.rad[i].radii.length,false);
       }
     }
     nbBeads_elem.textContent = "";
@@ -1368,9 +1378,9 @@ function NGL_showBeadsLevel_cb(alevel) {
           });
         }
       }*/
-      if ( i < node_selected.data.radii.length) 
+      if ( i < ngl_load_params.beads.rad.length) 
       {
-          NGL_ChangeVisibilityMultiSpheresComp("lod_"+i.toString()+"_",node_selected.data.radii[i].radii.length,true);
+          NGL_ChangeVisibilityMultiSpheresComp("lod_"+i.toString()+"_",ngl_load_params.beads.rad[i].radii.length,true);
       }
     }
     nbBeads_elem.textContent = "";
@@ -1397,9 +1407,9 @@ function NGL_showBeadsLevel_cb(alevel) {
         if (ngl_load_params.beads.pos[i])
           nbBeads_elem.textContent = '' + ngl_load_params.beads.pos[i].coords.length / 3 + ' beads';
       } else v = false;
-      if ( i < node_selected.data.radii.length) 
+      if ( i < ngl_load_params.beads.rad.length) 
       {
-          NGL_ChangeVisibilityMultiSpheresComp("lod_"+i.toString()+"_",node_selected.data.radii[i].radii.length,v);
+          NGL_ChangeVisibilityMultiSpheresComp("lod_"+i.toString()+"_",ngl_load_params.beads.rad[i].radii.length,v);
       }
     }
   }
@@ -1407,6 +1417,19 @@ function NGL_showBeadsLevel_cb(alevel) {
 
 function NGL_showBeadsLevel(e) {
   NGL_showBeadsLevel_cb(e.value);
+}
+
+function NGL_showBeadsInteracting(alevel){
+  //use current node ngl_current_node and current link line_selected
+  if (!ngl_interaction_view) return;
+  //the follow use node_selected  NGL_showBeadsLevel_cb
+  //need the bead from target.
+  //node_selected = line_selected.target;
+  //NGL_showBeadsLevel_cb(alevel);
+  //node_selected = line_selected.source;
+  //draw cylinder for the pairs line_selected.beads1 <-> line_selected.beads2
+  //if same number 1-1, else all-1
+  //if source/target a fiber beads are id along the fiber.
 }
 
 function NGL_UpdateassemblyList(ngl_ob) {
@@ -1592,6 +1615,51 @@ function NGL_ChangeRepresentation(selectedO) {
       showBox: true,
       radius: 0.2,
       assembly: assembly_elem.selectedOptions[0].value
+    });
+    NGL_showBox(document.getElementById('showbox'));
+  //});
+}
+
+function NGL_ChangeRepresentation_cb() {
+  var repstyle = repToChange, 
+      selection = selToChange, 
+      bu = buToChange;
+  //this overwrite the opacity of the beads
+  //console.log(assembly_elem.selectedOptions[0].value);
+  stage.getRepresentationsByName("polymer").dispose();
+  stage.getRepresentationsByName("axes").dispose();
+  var comp = ngl_current_structure;
+  //stage.eachComponent(function(o) {
+  if (repstyle==="cms"){
+      comp.addRepresentation("surface", {
+        colorScheme: color_elem.selectedOptions[0].value,
+        sele: selection,
+        name: "polymer",
+        assembly: bu,
+        surfaceType: "edt",
+        smooth: 2,//use some slider ?
+        probeRadius: 1.0,
+        scaleFactor: cms_scale,
+        flatShaded: false,
+        opacity: 1.0,
+        lowResolution: true,
+      });
+  }
+  else {
+      comp.addRepresentation(repstyle, {
+        colorScheme: color_elem.selectedOptions[0].value,
+        sele: selection,
+        name: "polymer",
+        assembly: bu
+      });
+    }
+    //doesnt work with biological assembly
+    comp.addRepresentation("axes", {
+      sele: selection,
+      showAxes: true,
+      showBox: true,
+      radius: 0.2,
+      assembly: bu
     });
     NGL_showBox(document.getElementById('showbox'));
   //});
@@ -3960,7 +4028,7 @@ function NGL_GetBUCenter(nglobj,ass){
   return center_bu;
 }
 
-function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
+function NGL_LoadOneProtein(purl, aname, bu, sel_str, onfinish_cb = null) {
   var setopm = false;
   if (ngl_current_node && ngl_current_node.data.surface) {
     document.getElementById('surface').setAttribute("class", "show");
@@ -4152,7 +4220,9 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       if (ngl_load_params.dobeads) {
         NGL_LoadSpheres(ngl_load_params.beads.pos, ngl_load_params.beads.rad);
         ngl_load_params.dobeads = false;
-        NGL_showBeadsLevel(beads_elem.selectedOptions[0]);
+        NGL_showBeadsLevel(beads_elem.selectedOptions[0]);//that is just a visibility toggle
+        /* beads in partner if any + cylinder for links */
+        NGL_showBeadsInteracting(beads_elem.selectedOptions[0].value);
       }
       if (ngl_load_params.dogeom) {
         NGL_LoadAShapeObj(null,ngl_load_params.geom);
@@ -4217,6 +4287,8 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str) {
       if ( ispdb)//sequence_mapping
           NGL_pdbComponentPost(aname,ngl_current_node.data.uniprot);
       else NGL_cleanpdbComponentPost();
+      //done!
+      if (onfinish_cb) onfinish_cb();
     });
 }
 
@@ -4756,6 +4828,7 @@ stage.loadFile( "rcsb://1crn", { name: "myProtein" } ).then( function( o ){
 function NGL_UpdateWithNode(d, force = false) {
   //what is the id//
   //this is called from the canvas
+  ngl_interaction_view = false;
   console.log("update with ", d);
   SetObjectsOptionsDiv(d);
 
@@ -4867,34 +4940,119 @@ function NGL_UpdateWithNode(d, force = false) {
 
 
 function NGL_UpdateWithNodePair(d) {
+  ngl_interaction_view = true;
   stage.removeAllComponents();
-  document.getElementById('ProteinId').innerHTML = d.source.data.name + " " + d.target.data.name;
+  document.getElementById('ProteinId').innerHTML = d.source.data.name + " interact with " + d.target.data.name;
   var asele = ""
   var pdb;
   console.log(d);
+  ngl_current_node = d.source;
+  var target_beads = [{"coords":[],"radii":[]},{"coords":[],"radii":[]},{"coords":[],"radii":[]}];
+  var offset = [0,0,0];
+  var pcp = [1,0,0];
+  if ("offset" in ngl_current_node.data) {
+    ngl_load_params.axis = {
+      "axis": ngl_current_node.data.pcpalAxis,
+      "offset": ngl_current_node.data.offset
+    }
+    ngl_load_params.doaxis = true;
+    offset = ngl_current_node.data.offset;
+    pcp = ngl_current_node.data.pcpalAxis;
+    //NGL_ShowAxisOffset( d.data.pcpalAxis,d.data.offset );
+    console.log("axis", ngl_load_params.axis)
+  }    
+  ngl_load_params.dobeads = true;
+  var p = JSON.parse(JSON.stringify(ngl_current_node.data.pos));
+  var r = JSON.parse(JSON.stringify(ngl_current_node.data.radii));
+  for (var i=0;i<ngl_current_node.data.radii.length;i++){
+    for (var j=0;j<d.target.data.radii[i].radii.length;j++){
+      target_beads[i].coords.push(d.target.data.pos[i].coords[j*3]+offset[0]);//p[i]
+      target_beads[i].coords.push(d.target.data.pos[i].coords[j*3+1]+offset[1]);
+      target_beads[i].coords.push(d.target.data.pos[i].coords[j*3+2]+offset[2]);
+      target_beads[i].radii.push(d.target.data.radii[i].radii[j]);
+    }
+  }
+  //if one or the other is a fiber repeat along the pcp using the level ?
+  //fibers use control points, would need sub_beads id
+  if (d.source.data.ingtype == "fiber" ){
+
+  }
+  if (d.target.data.ingtype == "fiber" ){
+    //if selection 2 exist
+    /*if (d.sel2){
+      //duplicate along
+      var radius = 0;
+      for (var i=0;i<ngl_current_node.data.radii.length;i++){
+        for (var j=0;j<d.target.data.radii[i].radii.length;j++){
+          var p = new NGL.Vector3(target_beads[i].coords[j*3],target_beads[i].coords[j*3+1],target_beads[i].coords[j*3+2]);
+          var r = target_beads[i].radii[j];
+          radius = max(radius, p.length()+r);
+        }
+      }
+      var dataset = [];
+      o.structure.eachAtom(function(ap) {
+        if (ap.atomname ==="CA" || ap.atomname==="C3'" || ap.atomname==="C4'" || ap.atomname==="C4*" || nAtom < 20000) {//problem with DNA no CA why || nAtom < 20000 ?
+          dataset.push([ap.x, ap.y, ap.z]);
+          //console.log(ap.modelIndex,ap.index);
+        }
+      }, new NGL.Selection(asele));
+
+    }
+    else {*/
+      var o = [-1,1,2];
+      for (var i=0;i<d.target.data.radii.length;i++){
+        //add -1,1,2
+        var rad = d.target.data.radii[i].radii[0]*2.0;
+        o.forEach(v=>{
+          p[i].coords.push(offset[0]+pcp[0]*rad*v);
+          p[i].coords.push(offset[1]+pcp[1]*rad*v);
+          p[i].coords.push(offset[2]+pcp[2]*rad*v);
+          r[i].radii.push(rad/2.0);        
+        })      
+      }
+    //}    
+  }
+  //if fiber build line of beads.
+  ngl_load_params.beads = {
+    "pos": p,
+    "rad": r
+  };
+  //console.log(ngl_load_params.beads);
+  //add the target beads
+  ngl_load_params.dobeads_pairs = true;
 
   if (d.sel1) asele += d.sel1;
+  else {
+    d.sel1 = d.source.data.source.selection;
+    asele += d.source.data.source.selection;
+  }
   if (d.sel2) asele += d.sel2;
+  else {
+    d.sel2 = d.target.data.source.selection;
+    asele += d.target.data.source.selection;
+  }
   if (!d.pdb1 || d.pdb1 === "") {
     //use the pdb of the ingredient ?
     pdb = d.source.data.source.pdb;
     if (!pdb || pdb === "") return;
     ngl_current_node = d.source;
     d.pdb1 = pdb;
-    NGL_Load(pdb, "AU", ""); //transform ?
+    NGL_Load(pdb, d.source.data.source.bu, d.sel1); //transform ?
     //ngl_current_structure.setPosition([ -200,0,0 ])
     pdb = d.target.data.source.pdb;
     ngl_current_node = d.source;
     NGL_Load(pdb, "AU", ""); //transform ?
     //ngl_current_structure.setPosition([ 200,0,0 ])
-
   } else {
-    NGL_Load(d.pdb1, "AU", NGL_GetSelection(asele, ""));
+    repToChange = rep_elem.selectedOptions[0].value;
+    selToChange = asele;
+    buToChange = d.source.data.source.bu;
+    NGL_Load(d.pdb1, d.source.data.source.bu, NGL_GetSelection(d.sel1, ""),onfinish_cb=(d.sel2)?NGL_ChangeRepresentation_cb:null);//this async
+    //load and wait function ?
+    //update the selection with dsel2
+    //NGL_ChangeRepresentation_cb(rep_elem.selectedOptions[0].value, asele, d.source.data.source.bu);
   }
-  //colorByChain?
-  //NGL_Load(d.pdb2,"AU",NGL_GetSelection(d.sel2,""));
 }
-
 
 function NGL_ClearGridMode(){
   NGL_Clear();
@@ -4911,7 +5069,7 @@ function NGL_ClearGridMode(){
   ngl_grid_heading.innerText = "";
 }
 
-function NGL_Load(pdbname, bu, sel_str) {
+function NGL_Load(pdbname, bu, sel_str, onfinish_cb = null) {
   //MS_Select(query)
   MS_Select(pdbname);
   if (ngl_grid_mode) {
@@ -4919,7 +5077,7 @@ function NGL_Load(pdbname, bu, sel_str) {
   }
 
   if (pdbname.length === 4) {
-    NGL_LoadOneProtein("rcsb://" + pdbname + ".mmtf", pdbname, bu, sel_str);
+    NGL_LoadOneProtein("rcsb://" + pdbname + ".mmtf", pdbname, bu, sel_str, onfinish_cb = onfinish_cb);
   }
   else {
     var ext = pdbname.slice(-4, pdbname.length);

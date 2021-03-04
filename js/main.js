@@ -21,6 +21,10 @@ var canvas_label = document.getElementById("canvas_label");
 var canvas_label_options = ["name", "None", "pdb", "uniprot", "label"];
 
 var canvas_color = document.getElementById("canvas_color");
+var default_options = ["none","pdb", "pcpalAxis", "offset", "count_molarity", "Beads",
+"geom", "confidence", "color", "viewed", "size", "count",
+  "molarity", "molecularweight","default"];
+
 var canvas_color_options = ["pdb", "pcpalAxis", "offset", "count_molarity", "Beads",
                             "geom", "confidence", "color", "viewed", "size", "count",
                             "molarity", "molecularweight","default","automatic"];
@@ -30,6 +34,7 @@ var canvas_node_clusters = ["none","pdb", "pcpalAxis", "offset", "count_molarity
 var canvas_mincolor="hsl(0, 100%, 50%)";
 var canvas_maxcolor="hsl(165, 100%, 50%)";
 var property_mapping = {};
+property_mapping.default = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
 property_mapping.size = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
 property_mapping.molecularweight = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
 property_mapping.molarity = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
@@ -126,6 +131,7 @@ var nodes_selections = [];
 var ctrlKey = false;
 
 var canvas,
+	main_canvasResizer,
     context,
     transform,
     thumbnail = new Image(),
@@ -151,6 +157,8 @@ var offx;
 var offy;
 
 var clusterBy=0;
+var clusterByForce = 0.1;
+var ParentForce = 0.1;
 
 var graph = {};
 var users;
@@ -1279,7 +1287,7 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
 		//add any additional data
 		if (additional_data.length !==0) {
 			$.each(additional_data, function (i, e) {
-				var custom_data = (allfield[e]!==-1)?idata[allfield[e]]:0;	
+				var custom_data = (allfield[e]!==-1)?idata[allfield[e]]:null;	
 				elem[e] = custom_data;				
 			});
 		}
@@ -1863,6 +1871,7 @@ function checkAttributes(agraph){
 			var key = additional_data[i];
 			if (!(key in property_mapping)){
 				canvas_color_options.push(key);
+				canvas_label_options.push(key);
 				property_mapping[key] = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
 			}
 			else {
@@ -1954,6 +1963,8 @@ function checkAttributes(agraph){
 	}
 	if (additional_data.length !== 0) {
 		layout_updateSelect("canvas_color",canvas_color_options);
+		layout_updateSelect("canvas_label",canvas_label_options);
+		layout_updateSelect("canvas_group",Object.keys(property_mapping));
 	}
 	return agraph;
 	}
@@ -2619,7 +2630,7 @@ function intialize()
     context = canvas.getContext("2d");
     transform = d3v4.zoomIdentity;
     searchRadius = 140;
-
+	
     container = $(canvas).parent();
     width = container.width();
     height = container.height();
@@ -2885,6 +2896,12 @@ function applyColorModeToIngredient(){
   })
 }
 //
+
+
+function onlyUnique(value, index, self) {
+  return self.indexOf(value) === index;
+}
+
 function colorNode(d) {
 	var colorby = canvas_color.selectedOptions[0].value;
 	if (colorby === "pdb") {
@@ -3008,16 +3025,34 @@ function colorNode(d) {
   }
 	else {
 		if (additional_data.length!==0){
-			var scores = graph.nodes.map(d=>(d.data[colorby]!=null && d.data[colorby]!=-1)?d.data[colorby]:null).filter(d=>d!=null);
-			property_mapping[colorby].max = Math.max.apply(null, scores);
-			property_mapping[colorby].min = Math.min.apply(null, scores);
-			var color_mapping = d3v4.scaleLinear()//d3v4.scaleLinear()
-			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
-			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
-			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null&& d.data[colorby] >= 0.0) ? color_mapping(d.data[colorby]):color(d.depth);		
+			//detect type of data ?
+			var scores = graph.nodes.map(d=>(!d.children && d.data[colorby]!=null && d.data[colorby]!=-1)?d.data[colorby]:null).filter(d=>d!=null);
+			//type of data ? if string do some categories
+			//test value
+			var value = parseFloat(scores[0]);
+			if (isNaN(value)) {
+				var unique = scores.filter(onlyUnique);
+				var new_scores = graph.nodes.map(d=>(d.data[colorby]!=null && d.data[colorby]!=-1)?unique.indexOf(d.data[colorby]):null).filter(d=>d!=null);
+				//else use scaleLinear
+				property_mapping[colorby].max = Math.max.apply(null, new_scores);
+				property_mapping[colorby].min = Math.min.apply(null, new_scores);
+				var color_mapping = d3v4.scaleLinear()//d3v4.scaleLinear()
+				.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
+				.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
+				return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null ) ? color_mapping(unique.indexOf(d.data[colorby])):color(d.depth);		
+	
+			} else {
+				property_mapping[colorby].max = Math.max.apply(null, scores);
+				property_mapping[colorby].min = Math.min.apply(null, scores);
+				var color_mapping = d3v4.scaleLinear()//d3v4.scaleLinear()
+				.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
+				.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
+				return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null ) ? color_mapping(d.data[colorby]):color(d.depth);		
+			}
+
 		}
 		else {
-						return ( !d.children && "data" in d && "source" in d.data
+			return ( !d.children && "data" in d && "source" in d.data
 				&& "pdb" in d.data.source
 				&& (!d.data.source.pdb || d.data.source.pdb === "None" || d.data.source.pdb === "null"
 				|| d.data.source.pdb === ""))? "red" : color(d.depth);
@@ -3030,14 +3065,48 @@ function ClusterNodeBy(eproperty) {
     //cluster by properties value range?
     var property = eproperty.value;
     console.log(property_mapping[property]);
+	var index_opt = default_options.indexOf(property);
     var clusters ={};//one cluster by category for this property
 	//asign cluster center to each nodes that it apply to
+	var unique = {};
+	clusterBy = 0;	
+	if (index_opt == -1) {
+		//additional_data
+		var scores = graph.nodes.map(d=>(d.data[property]!=null && d.data[property]!=-1)?d.data[property]:null).filter(d=>d!=null);
+		//type of data ? if string do some categories
+		var unique = scores.filter(onlyUnique);
+		var nCluster = unique.length;
+		var cluster_rad = d.parent.r/nCluster;
+		graph.nodes.forEach(function(d){
+			if (!d.children) {
+			  //d.cluster = {x:0,y:0,r:5};
+			  var c = unique.indexOf(d.data[property]);
+			  let valueForKey = c in clusters;
+			  if ( !valueForKey ) {
+				clusters[c] = {x:d.x-d.parent.x,y:d.y-d.parent.y,r:cluster_rad};//local  to the parent
+			  }
+			}
+		  });
+		clusterBy = 1;			
+	}
+	var test = Object.values(clusters);
+	clusters = d3v4.packSiblings(test);
+	//pack the clusters ?
     graph.nodes.forEach(function(d){
       if (!d.children) {
 		//d.cluster = {x:0,y:0,r:5};
+		var c = unique.indexOf(d.data[property]);
+		let valueForKey = c in clusters;
+		if ( valueForKey ) d.cluster = clusters[c];
+		else d.cluster = null;
       }
     });
-	clusterBy = 1;
+	updateForce();	
+	var oldF = clusterByForce;
+	clusterByForce = 1.0;
+	for (var i=0; i<5; i++) ticked(null);
+	clusterByForce = oldF;
+	ticked(null);
 }
 
 function mapRadiusToProperty(eproperty){
@@ -3050,21 +3119,22 @@ function mapRadiusToProperty_cb(property) {
 	console.log(property_mapping[property]);
 	var mapping = d3v4.scaleLinear()
 		.domain([Math.min(0,property_mapping[property].min), property_mapping[property].max])
-		.range([1, 25]);
+		.range([1, 50]);
 	//should we increase the size of the parent node ?
 	graph.nodes.forEach(function(d){
 		if (!d.children) {
 			if (property==="molecularweight"){ d.r = Util_getRadiusFromMW(d.data.molecularweight); }
+			else if (property==="size"){ d.r = d.data.size;}
 			else d.r = mapping(d.data[property]);//or linearmapping
-			if (d.r <= 0) d.r = mapping(d.data.size);
-			if (isNaN(d.r)) d.r = 1;
+			if (d.r <= 0) d.r = d.data.size;
+			if (isNaN(d.r)) d.r = 10;
 		}
 	});
 	//pack the circle
 	graph.nodes.forEach(function(d){
 		if (d.children) {
 			//d3v4.packSiblings(d.children.filter(ad =>!ad.data.surface));
-			var points = d.children.filter(ad => !ad.children && !ad.data.surface ).map(ad => ({ x: ad.x, y: ad.y, r: ad.r}));
+			var points = d.children.filter(ad => !ad.children ).map(ad => ({ x: ad.x, y: ad.y, r: ad.r * 2.0}));
 			console.log(points);
 			if (points.length !== 0)
 			{
@@ -3080,7 +3150,11 @@ function mapRadiusToProperty_cb(property) {
 		}
 	});
 	//update the parent so that all circle fit inside
-	simulation.nodes(graph.nodes);
+	//simulation.nodes(graph.nodes);
+	updateForce();
+	//simulation.restart();
+	//simulation.alpha(1).alphaTarget(0).restart();
+	//simulation.alpha(1);
 }
 
 function sortNodeByDepth(objects){
@@ -3982,6 +4056,12 @@ function addIngredient(){
 	row_to_edit.ingtype = "protein";
 	row_to_edit.buildtype = "random";
 	row_to_edit.compartment = graph.nodes[0].data.name;//should be root
+	for (var i=0;i<additional_data.length;i++){
+		var key = additional_data[i];
+		if (!(key in row_to_edit)){
+			row_to_edit[key]="";
+		}
+	}
 	grid.dataView.beginUpdate();
 	//grid.dataView.insertItem(0, row_to_edit);
 	grid.dataView.addItem(row_to_edit);
@@ -3997,69 +4077,75 @@ function addIngredient(){
 function AddANode(some_data){
 	//some data should have all the info need for a graph
 	/*var newNode = {
-    type: 'node-type',
-    name: new Date().getTime(),
-    children: []
-  };
-  //Creates a Node from newNode object using d3v4.hierarchy(.)
-  var newNode = d3v4.hierarchy(newNode);
+	type: 'node-type',
+	name: new Date().getTime(),
+	children: []
+	};
+	//Creates a Node from newNode object using d3v4.hierarchy(.)
+	var newNode = d3v4.hierarchy(newNode);
 
-  //later added some properties to Node like child,parent,depth
-  newNode.depth = selected.depth + 1;
-  newNode.height = selected.height - 1;
-  newNode.parent = selected;
-  newNode.id = Date.now();
-  */
-   console.log(graph.nodes[0]);
-   some_data.nodetype = "ingredient";
-   var newNode = d3v4.hierarchy(some_data);
-   newNode.parent = graph.nodes[0];//should be root
-   newNode.depth = graph.nodes[0].depth+1;
-   newNode.x = canvas.width/2;
-   newNode.y = canvas.height/2;
-   newNode.r = 30;
-   newNode.data.source = {"pdb":some_data.pdb,"bu":some_data.bu,"selection":some_data.selection,"model":""};
-   newNode.data.sprite = {"image":null,"offsety":0,"scale2d":1.0};
+	//later added some properties to Node like child,parent,depth
+	newNode.depth = selected.depth + 1;
+	newNode.height = selected.height - 1;
+	newNode.parent = selected;
+	newNode.id = Date.now();
+	*/
+	console.log(graph.nodes[0]);
+	some_data.nodetype = "ingredient";
+	var newNode = d3v4.hierarchy(some_data);
+	newNode.parent = graph.nodes[0];//should be root
+	newNode.depth = graph.nodes[0].depth+1;
+	newNode.x = canvas.width/2;
+	newNode.y = canvas.height/2;
+	newNode.r = 30;
+	newNode.data.source = {"pdb":some_data.pdb,"bu":some_data.bu,"selection":some_data.selection,"model":""};
+	newNode.data.sprite = {"image":null,"offsety":0,"scale2d":1.0};
 	newNode.data.opm = 0;
-   newNode.data.angle = 25.0;//is it an opm model
-   newNode.data.ulength = 34.0;//is it an opm model
-   newNode.data.tlength = 100;//is it an opm model
-   graph.nodes[0].children.push(newNode);
-   graph.nodes.push(newNode);
-   console.log(newNode);
-   updateForce();
-   return;
-   /*
-   //by default  add to root
-   //update_graph(agraph,alink)
-   newNode.nodetype = "ingredient";
-   root.children.push(some_data);
-   //var newNode = d3v4.hierarchy(some_data);
-   //if the graph is empty need to create a root, then add the elem
-   //newNode = root.depth+1
-   //newNode.parent = root;
-	 //graph.nodes.push(newNode);
-	 var aroot = d3v4.hierarchy(root)
-    .sum(function(d) { return d.size; })
-    .sort(function(a, b) { return b.value - a.value; });
-   var nodes = pack(aroot).descendants();//repack ?
-   nodes = checkAttributes(nodes);
-   nodes = resetAllNodePos(nodes);
-   nodes = centerAllNodePos(nodes);
+	newNode.data.angle = 25.0;//is it an opm model
+	newNode.data.ulength = 34.0;//is it an opm model
+	newNode.data.tlength = 100;//is it an opm model
+	for (var i=0;i<additional_data.length;i++){
+		var key = additional_data[i];
+		if (!(key in newNode)){
+			newNode[key]=null;
+		}
+	}   
+	graph.nodes[0].children.push(newNode);
+	graph.nodes.push(newNode);
+	console.log(newNode);
+	updateForce();
+	return;
+	/*
+	//by default  add to root
+	//update_graph(agraph,alink)
+	newNode.nodetype = "ingredient";
+	root.children.push(some_data);
+	//var newNode = d3v4.hierarchy(some_data);
+	//if the graph is empty need to create a root, then add the elem
+	//newNode = root.depth+1
+	//newNode.parent = root;
+	//graph.nodes.push(newNode);
+	var aroot = d3v4.hierarchy(root)
+	.sum(function(d) { return d.size; })
+	.sort(function(a, b) { return b.value - a.value; });
+	var nodes = pack(aroot).descendants();//repack ?
+	nodes = checkAttributes(nodes);
+	nodes = resetAllNodePos(nodes);
+	nodes = centerAllNodePos(nodes);
 
-   graph.nodes=nodes;
+	graph.nodes=nodes;
 
-	 //compare node id and graph length
-	 simulation.nodes(graph.nodes);
-   simulation.force("link").links(graph.links);
+	//compare node id and graph length
+	simulation.nodes(graph.nodes);
+	simulation.force("link").links(graph.links);
 
-  // simulation.restart();
-   //simulation.alpha(1).alphaTarget(0).restart();
-   //simulation.alpha(1);
-  // newNode.x = canvas.width/2;
-  // newNode.y = canvas.height/2;
-   simulation.alpha(1).alphaTarget(0).restart();
-   console.log(graph.nodes);*/
+	// simulation.restart();
+	//simulation.alpha(1).alphaTarget(0).restart();
+	//simulation.alpha(1);
+	// newNode.x = canvas.width/2;
+	// newNode.y = canvas.height/2;
+	simulation.alpha(1).alphaTarget(0).restart();
+	console.log(graph.nodes);*/
 }
 
 function traverseTreeForCompartmentNameUpdate(anode){
@@ -4081,23 +4167,24 @@ async function ChangeColorNodeOver(){
 	//var hx = Util_rgbToHex(rgb[0]*255,rgb[1]*255,rgb[2]*255);
 	var color = Util_getRGB(document.getElementById("node_color").value);
 	node_over_to_use.data.color =[color.arr[0]/255.0,color.arr[1]/255.0,color.arr[2]/255.0];
-  var acolor = node_over_to_use.data.color;
-  GP_updateMeshColorGeometry(node_over_to_use);
-  //change also in ngl view if geometry is toggled
-  if (node_over_to_use === ngl_current_node) {//node_selected
-    if  (document.getElementById("showgeom").checked ) {
-      	var comp = stage.getComponentsByName("geom_surface");
-		if (comp.list.length && comp.list[0])
-		{
-			if (comp.list[0].reprList.length)
+	var acolor = node_over_to_use.data.color;
+	GP_updateMeshColorGeometry(node_over_to_use);
+	//change also in ngl view if geometry is toggled
+	if (node_over_to_use === ngl_current_node) {//node_selected
+		if  (document.getElementById("showgeom").checked ) {
+			var comp = stage.getComponentsByName("geom_surface");
+			if (comp.list.length && comp.list[0])
 			{
-				comp.list[0].reprList[0].repr.diffuse = new THREE.Color( acolor[0], acolor[1], acolor[2] );
-				comp.list[0].reprList[0].repr.update();
+				if (comp.list[0].reprList.length)
+				{
+					comp.list[0].reprList[0].repr.diffuse = new THREE.Color( acolor[0], acolor[1], acolor[2] );
+					comp.list[0].reprList[0].repr.update();
+				}
 			}
 		}
-    }
-  }
-  await MS_ChangeColor(node_over_to_use,node_over_to_use.data.color);
+	}
+	await MS_ChangeColor(node_over_to_use,node_over_to_use.data.color);
+	//what about color by properties, should we change properties color instead
 }
 
 function ResizeNodeOver(){
@@ -4412,75 +4499,64 @@ function dragstarted() {
 	console.log("DraggStart",ctrlKey,d3v4.event.subject);
 	draggin_d_node = true;
 	//padding
-  var rect = canvas.getBoundingClientRect(), // abs. size of element
+  	var rect = canvas.getBoundingClientRect(), // abs. size of element
       scaleX = canvas.width / rect.width,    // relationship bitmap vs. element for X
       scaleY = canvas.height / rect.height;
 	start_drag.x =  d3v4.event.x* scaleX;
 	start_drag.y =  d3v4.event.y* scaleY;
-  if (!d3v4.event.active) simulation.alphaTarget(0.3).restart();
-  //drag start is the equivalent to click down
-  //here we should load the NGL viewer
-  //console.log("clicked on "+d3v4.event.subject.data.name+" "+d3v4.event.subject.r,d3v4.event.subject.depth,d3v4.event.subject.parent,d3v4.event.subject.children);
+  	if (!d3v4.event.active) simulation.alphaTarget(0.3).restart();
 
-  if (!d3v4.event.subject.children) {
-  	console.log("??",nodes_selections,ctrlKey);
-  	node_selected =  d3v4.event.subject;
-  	node_selected_indice = graph.nodes.indexOf(node_selected);
-
-  	if (ctrlKey){
-  		console.log("ctrl",nodes_selections);
-  		if (nodes_selections.indexOf(node_selected)===-1) nodes_selections.push(node_selected);
-  		console.log(nodes_selections.length);
-  	}
-  	else {
-  		nodes_selections=[]
-  		nodes_selections.push(node_selected);
-  		}
-  	console.log("??",nodes_selections,ctrlKey);
-  	//NGL_UpdateWithNode(d3v4.event.subject);
-  }
+	if (!d3v4.event.subject.children) {
+		console.log("??",nodes_selections,ctrlKey);
+		node_selected =  d3v4.event.subject;
+		node_selected_indice = graph.nodes.indexOf(node_selected);
+		if (ctrlKey){
+			console.log("ctrl",nodes_selections);
+			if (nodes_selections.indexOf(node_selected)===-1) nodes_selections.push(node_selected);
+			console.log(nodes_selections.length);
+		}
+		else {
+			nodes_selections=[]
+			nodes_selections.push(node_selected);
+			}
+		console.log("??",nodes_selections,ctrlKey);
+		//NGL_UpdateWithNode(d3v4.event.subject);
+	}
 	else if (d3v4.event.subject.parent) {
 		if (current_mode !== 1) {
 			node_selected =  d3v4.event.subject;
-	  	node_selected_indice = graph.nodes.indexOf(node_selected);
+	  		node_selected_indice = graph.nodes.indexOf(node_selected);
 			nodes_selections=[]
 			nodes_selections.push(node_selected);
 		}
 		else {
 			node_selected = null;
-  		node_selected_indice = -1;
-  		nodes_selections=[];
-  		//clear highligh
-  		clearHighLight();
-  		draggin_d_node = false;
+			node_selected_indice = -1;
+			nodes_selections=[];
+			//clear highligh
+			clearHighLight();
+			draggin_d_node = false;
 		}
 	}
-  else {
+  	else {
   		node_selected = null;
   		node_selected_indice = -1;
   		nodes_selections=[];
   		//clear highligh
   		clearHighLight();
   		draggin_d_node = false;
-  }
-  //change the node.depth os that it doesnt collide
-  if (current_mode === 1 && d3v4.event.subject.parent && !(ctrlKey))
-  {
-  	var depth = d3v4.event.subject.depth;
-  	d3v4.event.subject._depth = depth;
-  	d3v4.event.subject.depth = 6;
-  	updateForce();
-  }
+  	}
+	//change the node.depth os that it doesnt collide
+	if (current_mode === 1 && d3v4.event.subject.parent && !(ctrlKey))
+	{
+		var depth = d3v4.event.subject.depth;
+		d3v4.event.subject._depth = depth;
+		d3v4.event.subject.depth = 6;
+		updateForce();
+	}
 	else {
 		d3v4.event.subject._depth = d3v4.event.subject.depth;
 	}
-  //d3v4.event.subject.fx = d3v4.event.subject.x;
-  //d3v4.event.subject.fy = d3v4.event.subject.y;
- // console.log(d3v4.event.subject.depth);
- // var nodetodraw = sortNodeByDepth(graph.nodes);
- // console.log(nodetodraw);
- //testsort();
-
 }
 
 function testsort(){
@@ -4506,160 +4582,161 @@ function dragged() {
 	var rect = canvas.getBoundingClientRect(), // abs. size of element
       scaleX = canvas.width / rect.width,    // relationship bitmap vs. element for X
       scaleY = canvas.height / rect.height;
-  if (!d3v4.event.subject.parent) return;//root
-  //node_selected =  d3v4.event.subject;
-  d3v4.event.subject.fx = start_drag.x  + ((d3v4.event.x - start_drag.x ) / transform.k) * scaleX;//d3v4.event.x;
-  d3v4.event.subject.fy = start_drag.y  + ((d3v4.event.y - start_drag.y ) / transform.k) * scaleY;
-  if (current_mode === 1 && d3v4.event.subject.parent && !(ctrlKey)){
-  	//do we hover another object.
-
-  	//if ingredient hovering compartment show it
-  	//then on drag end assign the new parent + surface
-  	var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y,graph.nodes);
+  	if (!d3v4.event.subject.parent) return;//root
+	//node_selected =  d3v4.event.subject;
+	d3v4.event.subject.fx = start_drag.x  + ((d3v4.event.x - start_drag.x ) / transform.k) * scaleX;//d3v4.event.x;
+	d3v4.event.subject.fy = start_drag.y  + ((d3v4.event.y - start_drag.y ) / transform.k) * scaleY;
+	if (current_mode === 1 && d3v4.event.subject.parent && !(ctrlKey)){
+		//do we hover another object.
+		//if ingredient hovering compartment show it
+		//then on drag end assign the new parent + surface
+		var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y,graph.nodes);
 		console.log("dragged hover ",hovernodes);
 		//console.log(hovernodes.node.data.name);
-  	if (hovernodes.node && hovernodes.node.data.nodetype === "compartment")
-  	{
-  		comp_highligh = hovernodes.node;
-  		//highlghed surface
-  		//hovernodes.node.highlight = true;
-  		if ( Math.abs(hovernodes.node.r - hovernodes.distance) < d3v4.event.subject.r )
-  				comp_highligh_surface = hovernodes.node;
-  		else
-  				comp_highligh_surface = null;
-  		updateTempLink(d3v4.event.subject,hovernodes.node);
+		if (hovernodes.node && hovernodes.node.data.nodetype === "compartment")
+		{
+			comp_highligh = hovernodes.node;
+			//highlghed surface
+			//hovernodes.node.highlight = true;
+			if ( Math.abs(hovernodes.node.r - hovernodes.distance) < d3v4.event.subject.r )
+				comp_highligh_surface = hovernodes.node;
+			else
+				comp_highligh_surface = null;
+			updateTempLink(d3v4.event.subject,hovernodes.node);
+		}
+		else {
+			temp_link = null;
+			comp_highligh = null;
+			comp_highligh_surface = null;
+		}
+		//testsort();
   	}
-  	else {
-  		temp_link = null;
-  		comp_highligh = null;
-  		comp_highligh_surface = null;
-  	}
-  	//testsort();
-  }
-
 }
 
 function dragended() {
 	draggin_d_node = false;
 	console.log("dragended",d3v4.event.subject,ctrlKey);
 
-  if (!d3v4.event.active && HQ) simulation.alphaTarget(0);
-  d3v4.event.subject.fx = null;
-  d3v4.event.subject.fy = null;
+	if (!d3v4.event.active && HQ) simulation.alphaTarget(0);
+	d3v4.event.subject.fx = null;
+	d3v4.event.subject.fy = null;
 	SetObjectsOptionsDiv(d3v4.event.subject);
-  if (!d3v4.event.subject.children && !("source" in d3v4.event.subject)) {
+  	if (!d3v4.event.subject.children && !("source" in d3v4.event.subject)) {
 		d3v4.event.subject.data.visited = true;
-  	//node_selected =  d3v4.event.subject;
-  	//node_selected_indice = nodes.indexOf(node_selected);
-  	grid_UpdateSelectionPdbFromId(d3v4.event.subject.data.id);
+  		//node_selected =  d3v4.event.subject;
+  		//node_selected_indice = nodes.indexOf(node_selected);
+  		grid_UpdateSelectionPdbFromId(d3v4.event.subject.data.id);
 		//SelectRowFromId(node_selected.data.id);
-  	if (current_mode===0) {
+		if (current_mode===0) {
 			NGL_UpdateWithNode(d3v4.event.subject);
 			//also update the PDB component and sequence viewer
 			var nopdb = (!d3v4.event.subject.data.source.pdb || d3v4.event.subject.data.source.pdb === "None");
 			if (!nopdb)
 			{
-				UpdatePDBcomponent(d3v4.event.subject.data.source.pdb.toLowerCase());
-				if (!(d3v4.event.subject.data.uniprot)||d3v4.event.subject.data.uniprot === "") {
-					//gather the first uniprot code ?
-					var entry = CleanEntryPDB(d3v4.event.subject.data.source.pdb.toLowerCase());
-					current_list_pdb=[entry]
-					custom_report_uniprot_only = true;
-					customReport(entry);//should update the uniprot
-				}
-				else {
-					setupProVista(d3v4.event.subject.data.uniprot);
-					console.log(protvista_instance);
-					UpdateUniPDBcomponent(d3v4.event.subject.data.uniprot);
+				var ispdb = document.getElementById("pdb_component_enable")?document.getElementById("pdb_component_enable").checked : false;
+  				if (ispdb) {
+					  UpdatePDBcomponent(d3v4.event.subject.data.source.pdb.toLowerCase());
+					if (!(d3v4.event.subject.data.uniprot)||d3v4.event.subject.data.uniprot === "") {
+						//gather the first uniprot code ?
+						var entry = CleanEntryPDB(d3v4.event.subject.data.source.pdb.toLowerCase());
+						current_list_pdb=[entry]
+						custom_report_uniprot_only = true;
+						customReport(entry);//should update the uniprot
+					}
+					else {
+						setupProVista(d3v4.event.subject.data.uniprot);
+						console.log(protvista_instance);
+						UpdateUniPDBcomponent(d3v4.event.subject.data.uniprot);
+					}
 				}
 			}
 		}
-  	line_selected = null;
-  }
-  else {
-  	if ("source" in d3v4.event.subject ){//&& d3v4.event.subject.nodetype==="ingredient"
-	  	line_selected = d3v4.event.subject;
-  		nodes_selections=[]
-  		nodes_selections.push(line_selected.source);
-  		nodes_selections.push(line_selected.target);
-	  	node_selected = line_selected.source;
-	  	//its a line/interactin with an id.
-	  	UpdateSelectionInteractionFromId(d3v4.event.subject.id);//undefined ?
-	  	if (current_mode===0) NGL_UpdateWithNodePair(d3v4.event.subject);
-	  	//if pdb1 and pdb2 -> NGL_UpdateWithNode with all info...
+		line_selected = null;
+	}
+  	else {
+		if ("source" in d3v4.event.subject ){//&& d3v4.event.subject.nodetype==="ingredient"
+			line_selected = d3v4.event.subject;
+			nodes_selections=[]
+			nodes_selections.push(line_selected.source);
+			nodes_selections.push(line_selected.target);
+			node_selected = line_selected.source;
+			//its a line/interactin with an id.
+			UpdateSelectionInteractionFromId(d3v4.event.subject.id);//undefined ?
+			if (current_mode===0) NGL_UpdateWithNodePair(d3v4.event.subject);
+			//if pdb1 and pdb2 -> NGL_UpdateWithNode with all info...
+		}
   	}
-  }
-  if (current_mode === 1 )
-  {
+  	if (current_mode === 1 )
+  	{
 		if (ctrlKey) return;
 		node_selected = d3v4.event.subject;
-  	mousexy = {"x":d3v4.event.subject.x,"y":d3v4.event.subject.y};
+  		mousexy = {"x":d3v4.event.subject.x,"y":d3v4.event.subject.y};
 
-  	var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y,graph.nodes);
-  	console.log("hover ",hovernodes);
+		var hovernodes = anotherSubject(d3v4.event.subject,d3v4.event.subject.x,d3v4.event.subject.y,graph.nodes);
+		console.log("hover ",hovernodes);
 
 		//restore depth value
-  	d3v4.event.subject.depth = d3v4.event.subject._depth;
-  	//if subject is an ingredient and hover is compartment change graph
-  	if (hovernodes.node && (!("source" in node_selected)) )
-  	{
+		d3v4.event.subject.depth = d3v4.event.subject._depth;
+		//if subject is an ingredient and hover is compartment change graph
+		if (hovernodes.node && (!("source" in node_selected)) )
+		{
 			console.log("hover ",hovernodes.node.data.name);
-  		console.log (hovernodes.node.data.nodetype);
-  		if ( hovernodes.node.data.nodetype === "compartment" || (!(hovernodes.node.parent))) {//compartment or root
-				//current index as a child
-				var index = d3v4.event.subject.parent.children.indexOf(d3v4.event.subject);
-				//if the current parent is different from the node hover
-  			if (d3v4.event.subject.parent!==hovernodes.node) {
-					//check if hovernode is a child of the subject
-  				if (d3v4.event.subject.children && d3v4.event.subject.children.indexOf(hovernodes.node)!==-1){}//d3v4.event.subject.children &&
+			console.log (hovernodes.node.data.nodetype);
+			if ( hovernodes.node.data.nodetype === "compartment" || (!(hovernodes.node.parent))) {//compartment or root
+					//current index as a child
+					var index = d3v4.event.subject.parent.children.indexOf(d3v4.event.subject);
+					//if the current parent is different from the node hover
+				if (d3v4.event.subject.parent!==hovernodes.node) {
+						//check if hovernode is a child of the subject
+					if (d3v4.event.subject.children && d3v4.event.subject.children.indexOf(hovernodes.node)!==-1){}//d3v4.event.subject.children &&
+						else {
+						if (index > -1) {
+								//remove subject to his parent
+					d3v4.event.subject.parent.children.splice(index, 1);
+					}
+							//add subject to hover children list
+					hovernodes.node.children.push(d3v4.event.subject);
+							//change the parent of subject
+					d3v4.event.subject.parent = hovernodes.node;
+					d3v4.event.subject.depth = hovernodes.node.depth+1;
+					hovernodes.node.r += d3v4.event.subject.r/2;
+					var cname = d3v4.event.subject.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/').slice(0,-1);
+					console.log("update ? ",d3v4.event.subject);
+					if (d3v4.event.subject.data.nodetype !== "compartment")
+						updateCellValue(gridArray[0],"compartment",d3v4.event.subject.data.id,cname);
 					else {
-	  				if (index > -1) {
-							//remove subject to his parent
-	            d3v4.event.subject.parent.children.splice(index, 1);
-	        	}
-						//add subject to hover children list
-		        hovernodes.node.children.push(d3v4.event.subject);
-						//change the parent of subject
-		  		  d3v4.event.subject.parent = hovernodes.node;
-		  		  d3v4.event.subject.depth = hovernodes.node.depth+1;
-		  		  hovernodes.node.r += d3v4.event.subject.r/2;
-		  		  var cname = d3v4.event.subject.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/').slice(0,-1);
-		  		  console.log("update ? ",d3v4.event.subject);
-		  		  if (d3v4.event.subject.data.nodetype !== "compartment")
-		  		  	updateCellValue(gridArray[0],"compartment",d3v4.event.subject.data.id,cname);
-		  		  else {
-							//loop over the children and change the depth and the radius, and the path ?
-							d3v4.event.subject.children.forEach(function (ch_node)
-							{
-								ch_node.depth = d3v4.event.subject.depth+1;
-								var cn = ch_node.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/').slice(0,-1);
-								updateCellValue(gridArray[0],"compartment",ch_node.data.id,cn);
-							}
-						);
-						}//need to change all child
-		  		}
-		  	}
-	  		if (d3v4.event.subject.data.nodetype !== "compartment")
-	  		{
-	  			if ( Math.abs(hovernodes.node.r - hovernodes.distance) < d3v4.event.subject.r )
-	  				d3v4.event.subject.data.surface = true;
-	  			else
-	  				d3v4.event.subject.data.surface = false;
-	  			updateCellValue(gridArray[0],"surface",d3v4.event.subject.data.id,d3v4.event.subject.data.surface);
-	  		}
-	  	}
-  		else {
-  			//ignredient
-  			//make a link between them
-  			//	graph.links.push({"source":hovernodes.node,"target":d3v4.event.subject});
-  			//	simulation.force("link").links(graph.links);
-  			}
+								//loop over the children and change the depth and the radius, and the path ?
+								d3v4.event.subject.children.forEach(function (ch_node)
+								{
+									ch_node.depth = d3v4.event.subject.depth+1;
+									var cn = ch_node.ancestors().reverse().map(function(d) {return (d.children)?d.data.name:""; }).join('/').slice(0,-1);
+									updateCellValue(gridArray[0],"compartment",ch_node.data.id,cn);
+								}
+							);
+							}//need to change all child
+					}
+				}
+				if (d3v4.event.subject.data.nodetype !== "compartment")
+				{
+					if ( Math.abs(hovernodes.node.r - hovernodes.distance) < d3v4.event.subject.r )
+						d3v4.event.subject.data.surface = true;
+					else
+						d3v4.event.subject.data.surface = false;
+					updateCellValue(gridArray[0],"surface",d3v4.event.subject.data.id,d3v4.event.subject.data.surface);
+				}
+			}
+			else {
+				//ignredient
+				//make a link between them
+				//	graph.links.push({"source":hovernodes.node,"target":d3v4.event.subject});
+				//	simulation.force("link").links(graph.links);
+				}
+		}
+		//update the table ?
+		updateForce();
+		temp_link = null;
+		comp_highligh = null;
   	}
-  	//update the table ?
-  	updateForce();
-  	temp_link = null;
-  	comp_highligh = null;
-  }
 }
 
 function getOffsetLink(d, padding) {
@@ -4736,21 +4813,16 @@ function drawNode(d) {
   if (clusterBy!==0){
     var cluster = d.cluster;
     if (cluster && cluster !== d) {
-      var dx = d.x - cluster.x,
-          dy = d.y - cluster.y,
+      var dx = d.x - (cluster.x + d.parent.x),
+          dy = d.y - (cluster.y + d.parent.y),
           l = Math.sqrt(dx * dx + dy * dy),
-          k = (d.parent.r - r) * 2 * 1 / r;
+          //k = (d.parent.r - r) * 2 * 1 / r;
           r = d.r + cluster.r;
       if (l != r) {
         l = (l - r) / l * alpha;
-        //d.x -= x *= l;
-        //d.y -= y *= l;
-        //cluster.x += x;
-        //cluster.y += y;
-        //d.vx -= dx * l;
-        //d.vy -= dy * l;
-		d.vx += (cluster.x - d.x) * 0.05 * 1;
-		d.vy += (cluster.y - d.y) * 0.05 * 1;		
+		//should be local to the parent
+		d.vx += ((cluster.x + d.parent.x) - d.x) * clusterByForce;
+		d.vy += ((cluster.y + d.parent.y) - d.y) * clusterByForce;		
       }
     }
   }
@@ -4780,8 +4852,8 @@ function drawNode(d) {
         r = Math.sqrt(dx * dx + dy * dy);
     if (r + d.r * 1.2 > d.parent.r && !surface && d.parent.parent)//outside parent
     {
-      d.vx += (d.parent.x - d.x) * 0.05 * 1;
-      d.vy += (d.parent.y - d.y) * 0.05 * 1;
+      d.vx += (d.parent.x - d.x) * ParentForce;
+      d.vy += (d.parent.y - d.y) * ParentForce;
     }
     context.arc(ndx, ndy, d.r, 0, 10);//0?
   }
@@ -4902,12 +4974,12 @@ function update_graph(agraph,alink){
   //    .nodes(graph.nodes)
   //    .on("tick", ticked);
   //update the size to reflect the table size
-
+  mapRadiusToProperty_cb("size");
   simulation.stop();
   simulation.nodes(graph.nodes);
   simulation.force("link").links(graph.links);
 
-	//mapRadiusToProperty(document.getElementById("canvas_map_r"));
+  //mapRadiusToProperty(document.getElementById("canvas_map_r"));
 
   simulation.restart();
   //simulation.alpha(1).alphaTarget(0).restart();

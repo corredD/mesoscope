@@ -619,7 +619,7 @@ var grid_header = '<div id="inlineFilterPanel" style="display:none;background:#d
                   '</div>'
 
 var recipe_grid_header = '<div id="inlineFilterPanel" style="display:none;background:#dddddd;padding:3px;color:black;">'+
-'Show ingredient including <input type="text" id="txtSearch2"></div>';
+'Filter using : <input type="text" id="txtSearch2"></div>';
 
 
 var pfvoptions = '' +
@@ -1916,7 +1916,10 @@ function layout_addColumn(){
 
 helper_setupFibersDictionary();
 
-
+//var alltabs = document.getElementsByClassName('lm_tab');
+//alltabs[11]$("selector").trigger("blur");
+//var event = new Event('change');
+//alltabs[11].dispatchEvent(event);
 /*
 (function () {
 'use strict';

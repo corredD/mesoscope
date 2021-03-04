@@ -1014,11 +1014,14 @@ function updateDataGridRowElem(grid_id, item_id, column_name, new_value) {
   gridArray[grid_id].dataView.beginUpdate();
   gridArray[grid_id].invalidateRow(item_id);
   var arow = gridArray[grid_id].dataView.getItemById(item_id);
-  arow[column_name] = new_value;
-  gridArray[grid_id].dataView.updateItem(item_id, arow);
-  gridArray[grid_id].dataView.endUpdate();
-  gridArray[grid_id].render();
-  gridArray[grid_id].dataView.refresh();
+  if (arow != undefined)
+  {
+    arow[column_name] = new_value;
+    gridArray[grid_id].dataView.updateItem(item_id, arow);
+    gridArray[grid_id].dataView.endUpdate();
+    gridArray[grid_id].render();
+    gridArray[grid_id].dataView.refresh();
+  }
 }
 
 function CreateColumns() {
@@ -1730,6 +1733,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
         console.log("ngl_current_item_id", ngl_current_item_id);
         console.log("arow.id", arow.id);
         if (cid === "pdb") {
+          ngl_interaction_view = false;
           //ngl_load_params = {"dogeom":false,"geom":null,
           //			"dobeads":false,"beads":null,
           //		"doaxis":false,"axis":null};
@@ -1811,9 +1815,13 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
     } else if (grid.gname === "grid_interaction") {
       node_selected = null;
       ngl_current_item_id = arow.id;
-      stage.removeAllComponents();
-      NGL_Load(arow.pdb1, "AU", NGL_GetSelection(arow.sel1 + "," + arow.sel2, ""));
-      document.getElementById('ProteinId').innerHTML = arow.name1 + " " + arow.name2;
+      line_selected = graph.links[ngl_current_item_id];
+			nodes_selections=[]
+			nodes_selections.push(line_selected.source);
+			nodes_selections.push(line_selected.target);
+			node_selected = line_selected.source;
+      NGL_UpdateWithNodePair(line_selected);  
+      SetObjectsOptionsDiv(line_selected);         
     } else if (grid.gname === "grid_uniprot") {
       //send the selection to the main recipe
       //var rowsids = gridArray[0].getSelectedRows()[0];
@@ -1874,7 +1882,7 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       });
     });
 
-    $("#grid_contextMenu").click(function (e) {
+  $("#grid_contextMenu").click(function (e) {
        if (!$(e.target).is("li")) {
          return;
        }
@@ -2040,6 +2048,9 @@ function grid_UpdateSelectionPdbFromId(node_id) {
   //dataView.expandAllGroups() so that it goes to itr
   //$('#tabs').tabs('load', 0);
   //$("div#tabs-1").show();
+  if (current_grid != 0) {
+    changeCurrentGrid(0);
+  }
   gridArray[0].dataView.expandAllGroups();
   var test = gridArray[0].dataView.getRowById(node_selected.data.id);
   console.log("atest ", test);
@@ -2061,11 +2072,15 @@ function UpdateSelectionInteractionFromId(node_id) {
   //show table 2
   //$('#tabs').tabs('load', 1);
   // $("div#tabs-2").show();
+  if (current_grid != 1) {
+    changeCurrentGrid(1);
+  }  
   if (!gridArray[1]) return;
   gridArray[1].dataView.expandAllGroups();
   var test = gridArray[1].dataView.getRowById(node_id);
   console.log("atest ", test);
   gridArray[1].setSelectedRows([test]);
+  gridArray[1].gotoCell(test, 1, false);
   //gridArray[0].setActiveCell(test,7);//7 is currently pdb
 }
 //var grid;
@@ -2614,7 +2629,12 @@ function grid_AddColumn(name)
   gridArray[current_grid].columnpicker.setAllColumns(columns);
   additional_data.push(name);
   canvas_color_options.push(name);
+  canvas_label_options.push(name);
   layout_updateSelect("canvas_color",canvas_color_options);
+  layout_updateSelect("canvas_label",canvas_label_options);
+  //canvas group ?
+  layout_updateSelect("canvas_group",Object.keys(property_mapping));
+  
   graph.nodes.map(d=>(d.data[name]=0.0));
   property_mapping[name] = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
 }
