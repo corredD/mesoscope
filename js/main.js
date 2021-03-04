@@ -22,14 +22,14 @@ var canvas_label_options = ["name", "None", "pdb", "uniprot", "label"];
 
 var canvas_color = document.getElementById("canvas_color");
 var default_options = ["none","pdb", "pcpalAxis", "offset", "count_molarity", "Beads",
-"geom", "confidence", "color", "viewed", "size", "count",
+"geom", "interaction", "confidence", "color", "viewed", "size", "count",
   "molarity", "molecularweight","default"];
 
 var canvas_color_options = ["pdb", "pcpalAxis", "offset", "count_molarity", "Beads",
-                            "geom", "confidence", "color", "viewed", "size", "count",
+                            "geom", "interaction", "confidence", "color", "viewed", "size", "count",
                             "molarity", "molecularweight","default","automatic"];
 var canvas_node_clusters = ["none","pdb", "pcpalAxis", "offset", "count_molarity", "Beads",
-                          "geom", "confidence", "color", "viewed", "size", "count",
+                          "geom", "interaction", "confidence", "color", "viewed", "size", "count",
                             "molarity", "molecularweight","default"];
 var canvas_mincolor="hsl(0, 100%, 50%)";
 var canvas_maxcolor="hsl(165, 100%, 50%)";
@@ -40,6 +40,7 @@ property_mapping.molecularweight = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%,
 property_mapping.molarity = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
 property_mapping.count = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
 property_mapping.confidence = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
+property_mapping.interaction = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
 var color_palette = {};
 var comp_colors = {};
 var current_scale = 1;
@@ -1934,6 +1935,11 @@ function checkAttributes(agraph){
 
 			//if (agraph[i].data.confidence > property_mapping.confidence.max) property_mapping.confidence.max = agraph[i].data.confidence;
 			//if (agraph[i].data.confidence < property_mapping.confidence.min) property_mapping.confidence.min = agraph[i].data.confidence;
+			
+			//npartner
+			//cluster by partner. Cluster is target partner
+			//if (agraph[i].data.confidence > property_mapping.confidence.max) property_mapping.confidence.max = agraph[i].data.confidence;
+			//if (agraph[i].data.confidence < property_mapping.confidence.min) property_mapping.confidence.min = agraph[i].data.confidence;
 
 			if (!("visited" in agraph[i].data)) agraph[i].data.visited = false;
 			if (!("include" in agraph[i].data)) agraph[i].data.include = true;
@@ -2524,7 +2530,7 @@ function updateForce(){
 	simulation.force("d2", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 2; }));
 	simulation.force("d3", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 3; }));
 	simulation.force("d4", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 4; }));
-	simulation.force("leaf", isolate(d3v4.forceCollide().radius(function(d) {return d.r*1.05;}), function(d) { return !d.children; }));
+	simulation.force("leaf", isolate(d3v4.forceCollide().radius(function(d) {return d.r*1.15;}), function(d) { return !d.children; }));
 }
 
 function setupD3(){
@@ -3124,7 +3130,7 @@ function mapRadiusToProperty_cb(property) {
 	graph.nodes.forEach(function(d){
 		if (!d.children) {
 			if (property==="molecularweight"){ d.r = Util_getRadiusFromMW(d.data.molecularweight); }
-			else if (property==="size"){ d.r = d.data.size;}
+			//else if (property==="size"){ d.r = d.data.size;}
 			else if (property==="default"){ d.r = 10;}
 			else d.r = mapping(d.data[property]);//or linearmapping
 			if (d.r <= 0) d.r = d.data.size;
@@ -3147,7 +3153,7 @@ function mapRadiusToProperty_cb(property) {
 				console.log("packEnclose",circle.x,circle.y,circle.r);
 				//d.x = circle.x;
 				//d.y = circle.y;
-				d.r = circle.r+Math.max(25,property_mapping[property].max);
+				d.r = circle.r+25;//Math.max(25,property_mapping[property].max);
 				//d.r = d.children.reduce((acc, val) => acc + val.r/2, 0);
 			}
 		}
@@ -4937,7 +4943,7 @@ function update_graph(agraph,alink){
 	if (DEBUGLOG) console.log("agraph",agraph);
 	var mapping = d3v4.scaleLinear()
     .domain([Math.min(0,property_mapping["size"].min), property_mapping["size"].max])
-    .range([0, 25]);
+    .range([0, 50]);
 
   root = d3v4.hierarchy(agraph)
     .sum(function(d) { return d.size; });
@@ -5049,7 +5055,7 @@ function merge_graph(agraph,alink){
   if ( agraph.length < 1 ) isempty=true;
   var mapping = d3v4.scaleLinear()
     .domain([Math.min(0,property_mapping["size"].min), property_mapping["size"].max])
-    .range([0, 25]);
+    .range([0, 50]);
   
 	//agraph
   var new_root = d3v4.hierarchy(agraph)
