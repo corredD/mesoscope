@@ -3029,6 +3029,19 @@ function colorNode(d) {
                                  + Math.floor(d.data.color[2]*255)+')' : color(d.depth);//rgb list ?
     }
   }
+  else if (colorby === "interaction") {
+	  //color by interaction partner or just interaction number
+		if (!d.children && "data" in d && "_color" in d.data)
+		return (d.data._color !== null)? 'rgb('+ Math.floor(d.data._color[0]*255)+","
+									+ Math.floor(d.data._color[1]*255)+","
+									+ Math.floor(d.data._color[2]*255)+')' : color(d.depth);//rgb list ?
+		else {
+		return (!d.children && "data" in d && "color" in d.data
+			&& d.data.color !== null)? 'rgb('+ Math.floor(d.data.color[0]*255)+","
+									+ Math.floor(d.data.color[1]*255)+","
+									+ Math.floor(d.data.color[2]*255)+')' : color(d.depth);//rgb list ?
+		}
+  }
 	else {
 		if (additional_data.length!==0){
 			//detect type of data ?
@@ -3074,7 +3087,7 @@ function ClusterNodeBy(eproperty) {
 	var index_opt = default_options.indexOf(property);
     var clusters ={};//one cluster by category for this property
 	//asign cluster center to each nodes that it apply to
-	var unique = {};
+	var unique = [];
 	clusterBy = 0;	
 	if (index_opt == -1) {
 		//additional_data
@@ -3094,6 +3107,9 @@ function ClusterNodeBy(eproperty) {
 			}
 		  });
 		clusterBy = 1;			
+	} else {
+		//default option 
+		//if interaction the cluster should be the partner target...
 	}
 	var test = Object.values(clusters);
 	clusters = d3v4.packSiblings(test);
@@ -3271,7 +3287,13 @@ function DrawConnections(all_links){
 			context.stroke();
 		}
 		else {
-			context.strokeStyle = color(d.source.depth+1);
+			//use the color of the source
+			//or the color by ?
+			var grd = context.createLinearGradient(0, 0, 170, 0);
+			grd.addColorStop(0, colorNode(d.source));
+			grd.addColorStop(1, colorNode(d.target));
+			context.fillStyle = grd;
+			context.strokeStyle = grd;//color(d.source.depth+1);
 			context.lineWidth=d.r;
 			context.stroke();
 		}
@@ -3469,270 +3491,270 @@ function ticked(e) {
 		//draw the traffic light
 		//drawTrafficLight();
     context.restore();
-  }
+}
 
-  function oldticked(e) {
-	if (context===null)
-	{
-		canvas =  document.querySelector("canvas");
-		context = canvas.getContext("2d");
+function oldticked(e) {
+if (context===null)
+{
+	canvas =  document.querySelector("canvas");
+	context = canvas.getContext("2d");
+}
+context.clearRect(0, 0, canvas.width, canvas.height);
+context.save();
+/*
+context.shadowColor = 'black';
+context.shadowOffsetX = 5;
+context.shadowOffsetY = 5;
+context.shadowBlur = 10;
+*/
+context.translate(transform.x, transform.y);
+//if scale 1 is 200x200, when resizing the windows we could increase the scale.
+//using the max between canvas.width,canvas.height
+context.scale(transform.k, transform.k);//d3v4.dragzoombiased using the current width/height ?
+
+if (current_mode === 1) {
+	//draw the add ingredient/add compartment ?
+	//drawPalette();
+	//should we let drag/drop object to define compartment
+}
+
+//draw all the nodes
+//sort the nodes and draw them, when sorting we loose the mapping with the table
+var new_array = graph.nodes.slice(0);
+//var maping = graph.nodes.forEach(function(d,ind){ return {"ind":ind,"depth":d.depth};});
+new_array.sort(function(a,b){return a.depth-b.depth});
+//should start with compartment then links then nodes.
+
+//graph.nodes.sort(function(a,b){return a.depth-b.depth});
+//var nodetodraw = graph.nodes;//sortNodeByDepth(graph.nodes);
+//graph.nodes.forEach(function(d){
+new_array.forEach(function(d){
+	//for (var i = 0; i < graph.nodes.length; i++) {
+	//user.values.forEach(drawNode);
+	//var ind = i;//nodetodraw[i].index;
+	//var d = graph.nodes[el.ind];
+	//console.log("Draw ",i,d.data.name,d.depth);
+	drawNode(d);
+	//check if part of selection?
+	if (nodes_selections.length !==0 && nodes_selections.indexOf(d)!==-1) {
+	context.strokeStyle = "orange";
+	context.stroke();
+	context.fillStyle = "yellow";
+	context.fill();
+	//return;
 	}
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.save();
-    /*
-    context.shadowColor = 'black';
-    context.shadowOffsetX = 5;
-    context.shadowOffsetY = 5;
-    context.shadowBlur = 10;
-    */
-    context.translate(transform.x, transform.y);
-    //if scale 1 is 200x200, when resizing the windows we could increase the scale.
-    //using the max between canvas.width,canvas.height
-    context.scale(transform.k, transform.k);//d3v4.dragzoombiased using the current width/height ?
-
-    if (current_mode === 1) {
-    	//draw the add ingredient/add compartment ?
-    	//drawPalette();
-    	//should we let drag/drop object to define compartment
+	else if (d.highlight && d !== node_selected && d!== comp_highligh && d!==comp_highligh_surface) {
+	context.fillStyle = colorNode(d);
+	context.fill();
+	context.strokeStyle = "black";
+	context.stroke();
 	}
-
-    //draw all the nodes
-    //sort the nodes and draw them, when sorting we loose the mapping with the table
-    var new_array = graph.nodes.slice(0);
-    //var maping = graph.nodes.forEach(function(d,ind){ return {"ind":ind,"depth":d.depth};});
-    new_array.sort(function(a,b){return a.depth-b.depth});
-	//should start with compartment then links then nodes.
-
-    //graph.nodes.sort(function(a,b){return a.depth-b.depth});
-    //var nodetodraw = graph.nodes;//sortNodeByDepth(graph.nodes);
-    //graph.nodes.forEach(function(d){
-    new_array.forEach(function(d){
-		//for (var i = 0; i < graph.nodes.length; i++) {
-      //user.values.forEach(drawNode);
-      //var ind = i;//nodetodraw[i].index;
-      //var d = graph.nodes[el.ind];
-      //console.log("Draw ",i,d.data.name,d.depth);
-      drawNode(d);
-      //check if part of selection?
-      if (nodes_selections.length !==0 && nodes_selections.indexOf(d)!==-1) {
-        context.strokeStyle = "orange";
-        context.stroke();
-        context.fillStyle = "yellow";
-        context.fill();
-        //return;
-      }
-      else if (d.highlight && d !== node_selected && d!== comp_highligh && d!==comp_highligh_surface) {
-        context.fillStyle = colorNode(d);
-        context.fill();
-        context.strokeStyle = "black";
-        context.stroke();
-      }
-      else if (d === node_selected) {
-        context.strokeStyle = "orange";
-        context.stroke();
-        context.fillStyle = "yellow";
-        context.fill();
-      }
-      else if (d===comp_highligh_surface) {
-        context.strokeStyle = "yellow";
-        context.lineWidth=5;
-        context.stroke();
-        context.fillStyle = colorNode(d);
-        context.fill();
-      	}
-      else if (d===comp_highligh) {
-        context.strokeStyle = "black";
-        context.lineWidth=5;
-        context.stroke();
-        context.fillStyle = "grey";//colorNode(d);
-        context.fill();
-      	}
-      else if (d.depth === 6){
-      	context.strokeStyle = color(d.depth+1);
-        context.stroke();
-		context.fillStyle = "rgba(55, 55, 255, 0.3)";
-      	context.fill();
-      	}
-      else {
-      	context.strokeStyle = color(d.depth+1);
-        context.stroke();
-      	context.fillStyle = colorNode(d);
-      	context.fill();
-      	}
-      if (!d.children && ( d.data.image !=null || d.data.thumbnail !==null) ) {
-        var s = Math.sqrt(((d.r*2.0)*(d.r*2.0))/2.0);
-        if (document.getElementById("sprites").checked) drawThumbnailInCanvas(d,d.x-s/2.0,d.y-s/2.0,s,s)
-      }
-    });
-    FOLDER_UPDATED = false;
-    //draw all the links
-    if (graph.links.length) {
-       	graph.links.forEach(function(d){
-			//draw twich with different thickness for highlihg
+	else if (d === node_selected) {
+	context.strokeStyle = "orange";
+	context.stroke();
+	context.fillStyle = "yellow";
+	context.fill();
+	}
+	else if (d===comp_highligh_surface) {
+	context.strokeStyle = "yellow";
+	context.lineWidth=5;
+	context.stroke();
+	context.fillStyle = colorNode(d);
+	context.fill();
+	}
+	else if (d===comp_highligh) {
+	context.strokeStyle = "black";
+	context.lineWidth=5;
+	context.stroke();
+	context.fillStyle = "grey";//colorNode(d);
+	context.fill();
+	}
+	else if (d.depth === 6){
+	context.strokeStyle = color(d.depth+1);
+	context.stroke();
+	context.fillStyle = "rgba(55, 55, 255, 0.3)";
+	context.fill();
+	}
+	else {
+	context.strokeStyle = color(d.depth+1);
+	context.stroke();
+	context.fillStyle = colorNode(d);
+	context.fill();
+	}
+	if (!d.children && ( d.data.image !=null || d.data.thumbnail !==null) ) {
+	var s = Math.sqrt(((d.r*2.0)*(d.r*2.0))/2.0);
+	if (document.getElementById("sprites").checked) drawThumbnailInCanvas(d,d.x-s/2.0,d.y-s/2.0,s,s)
+	}
+});
+FOLDER_UPDATED = false;
+//draw all the links
+if (graph.links.length) {
+	graph.links.forEach(function(d){
+		//draw twich with different thickness for highlihg
+		drawLink(context,d);
+		if (d.highlight) {//mouse over
+			context.strokeStyle = "black";
+			context.lineWidth=d.r+1;
+			context.stroke();
 			drawLink(context,d);
-			if (d.highlight) {//mouse over
-				context.strokeStyle = "black";
-				context.lineWidth=d.r+1;
-				context.stroke();
-				drawLink(context,d);
-				context.strokeStyle = color(d.source.depth+1);
-				context.lineWidth=d.r;
-				context.stroke();
-			}
-			else {
-				context.strokeStyle = color(d.source.depth+1);
-				context.lineWidth=d.r;
-				context.stroke();
-			}
-			if (d===line_selected){
-				context.strokeStyle = "orange";
-				context.lineWidth=d.r+1;
-				context.stroke();
-				drawLink(context,d);
-				context.strokeStyle = "yellow";
-				context.lineWidth=d.r;
-				context.stroke();
-			}
-       }
-       );
-   }
+			context.strokeStyle = color(d.source.depth+1);
+			context.lineWidth=d.r;
+			context.stroke();
+		}
+		else {
+			context.strokeStyle = color(d.source.depth+1);
+			context.lineWidth=d.r;
+			context.stroke();
+		}
+		if (d===line_selected){
+			context.strokeStyle = "orange";
+			context.lineWidth=d.r+1;
+			context.stroke();
+			drawLink(context,d);
+			context.strokeStyle = "yellow";
+			context.lineWidth=d.r;
+			context.stroke();
+		}
+	}
+	);
+}
 
-   if ( (nodes_selections.length % 2) === 0 ) {
-   	//show link between i,i+1
-   	for (var l=0;l<nodes_selections.length-1;l+=2){
-   			drawLinkTwoNode(nodes_selections[l],nodes_selections[l+1]);
-    		context.strokeStyle = "yellow";
-   			context.lineWidth=2;
-        context.stroke();
-   		}
-   	}
-   if (current_mode===1 && temp_link) {
-   				drawLink(context,temp_link);
-   				context.strokeStyle = "white";
-   				context.lineWidth=2;
-          context.stroke();
-   	}
-    //draw all the labels
-    var counter = 0; //Needed for the rotation of the arc titles
-		//Do a second loop because the arc titles always have to be drawn on top
-		for (var i = 0; i < graph.nodes.length; i++) {
-			d = graph.nodes[i];
-			//a compartments
-      if (d.children && d.parent ){//&& canvas_label.selectedOptions[0].value !== "None") {
-	  	   //context.font="20px Georgia";
-	  	   //context.fillStyle = "black";
-	   	   //context.fillText(d.data.name,d.x,d.y);
-	       var fontSizeTitle = Math.round(d.r / 10);
-	       if (fontSizeTitle <= 4) fontSizeTitle = 10;
-				 if (fontSizeTitle > 4) {
-				 		drawCircularText(context, d.data.name.replace(/,? and /g, ' & '),
-				 				fontSizeTitle, titleFont, d.x,d.y, d.r, rotationText[counter], 0);
-				 }
-				 counter = counter + 1;
-     }
-     if (!d.parent) {//root label
-	     var ax = transform.invertX(5);
-	     var ay = transform.invertY(canvas.height-20);
-  	   context.font=(20/transform.k)+"px Georgia";
-  	   context.fillStyle = "black";
-			 var lb = (recipe_changed)?"*":"";
-   	   context.fillText(d.data.name+lb,ax,ay);
-     	}
-     //	ingredient label
-     //console.log(transform.k);
-     if ( (d.highlight || ( transform.k > 1.5 && canvas_label.selectedOptions[0].value !== "None")) && !d.children ) {
-     	 var fontSizeTitle = Math.round(d.r / 2);
-       if (fontSizeTitle <= 4) fontSizeTitle = 5;
-       context.font=fontSizeTitle+"px Georgia";
-       var txtoption = canvas_label.selectedOptions[0].value;
-	     var txt;
-	     if (!d) console.log("options is ",txtoption,d);
-	     if (txtoption === "pdb"){
-	     			if (d.data.source && d.data.source.pdb) txt = d.data.source.pdb.replace(/,? and /g, ' & ');//d.data[].replace(/,? and /g, ' & ');
-	     			else txt = d.data["name"].replace(/,? and /g, ' & ');
-	     }
-	     else if (txtoption==="None") {txt = d.data["name"].replace(/,? and /g, ' & ');}
-	     else {
-	     			txt = (d && "data" in d && d.data && d.data[txtoption])? d.data[txtoption].replace(/,? and /g, ' & '):"";
-	     		}
-       context.fillText(txt,d.x-d.r,d.y+d.r+fontSizeTitle);
-     }
-    }
+if ( (nodes_selections.length % 2) === 0 ) {
+//show link between i,i+1
+for (var l=0;l<nodes_selections.length-1;l+=2){
+		drawLinkTwoNode(nodes_selections[l],nodes_selections[l+1]);
+		context.strokeStyle = "yellow";
+		context.lineWidth=2;
+	context.stroke();
+	}
+}
+if (current_mode===1 && temp_link) {
+			drawLink(context,temp_link);
+			context.strokeStyle = "white";
+			context.lineWidth=2;
+		context.stroke();
+}
+//draw all the labels
+var counter = 0; //Needed for the rotation of the arc titles
+	//Do a second loop because the arc titles always have to be drawn on top
+	for (var i = 0; i < graph.nodes.length; i++) {
+		d = graph.nodes[i];
+		//a compartments
+	if (d.children && d.parent ){//&& canvas_label.selectedOptions[0].value !== "None") {
+		//context.font="20px Georgia";
+		//context.fillStyle = "black";
+		//context.fillText(d.data.name,d.x,d.y);
+		var fontSizeTitle = Math.round(d.r / 10);
+		if (fontSizeTitle <= 4) fontSizeTitle = 10;
+				if (fontSizeTitle > 4) {
+					drawCircularText(context, d.data.name.replace(/,? and /g, ' & '),
+							fontSizeTitle, titleFont, d.x,d.y, d.r, rotationText[counter], 0);
+				}
+				counter = counter + 1;
+	}
+	if (!d.parent) {//root label
+		var ax = transform.invertX(5);
+		var ay = transform.invertY(canvas.height-20);
+	context.font=(20/transform.k)+"px Georgia";
+	context.fillStyle = "black";
+			var lb = (recipe_changed)?"*":"";
+	context.fillText(d.data.name+lb,ax,ay);
+	}
+	//	ingredient label
+	//console.log(transform.k);
+	if ( (d.highlight || ( transform.k > 1.5 && canvas_label.selectedOptions[0].value !== "None")) && !d.children ) {
+		var fontSizeTitle = Math.round(d.r / 2);
+	if (fontSizeTitle <= 4) fontSizeTitle = 5;
+	context.font=fontSizeTitle+"px Georgia";
+	var txtoption = canvas_label.selectedOptions[0].value;
+		var txt;
+		if (!d) console.log("options is ",txtoption,d);
+		if (txtoption === "pdb"){
+				if (d.data.source && d.data.source.pdb) txt = d.data.source.pdb.replace(/,? and /g, ' & ');//d.data[].replace(/,? and /g, ' & ');
+				else txt = d.data["name"].replace(/,? and /g, ' & ');
+		}
+		else if (txtoption==="None") {txt = d.data["name"].replace(/,? and /g, ' & ');}
+		else {
+				txt = (d && "data" in d && d.data && d.data[txtoption])? d.data[txtoption].replace(/,? and /g, ' & '):"";
+			}
+	context.fillText(txt,d.x-d.r,d.y+d.r+fontSizeTitle);
+	}
+}
 
-    //draw a sphere for the mouse
-    if (mousein && draw_debug_mouse) {
-    	context.beginPath();
-    	context.moveTo(mousexy.x , mousexy.y);//why +3?
-    	context.arc(mousexy.x,mousexy.y,15,0,10);//0?
-    	context.fillStyle = "green";
-      context.fill();
-    }    //thumbnail with special case for surface
-    var snode = node_selected;
-    if (snode == null || snode.children) snode = node_over;
-    if (snode !=null && !snode.children && snode.data && snode.data.thumbnail !==null  && snode.data.name != null) {
-      //scale from image size to 150 ?
-      context.save();
-      context.resetTransform();
-      var ratio = (snode.data.thumbnail)? snode.data.thumbnail.width/snode.data.thumbnail.height:1.0;// 0.5;
-      var w = 150;//(snode.data.thumbnail)?snode.data.thumbnail.width:150;
-      var h = w/ratio;//(snode.data.thumbnail)?snode.data.thumbnail.height:150;
-      var x = canvas.width/2.0-w-10;
-      var y = canvas.height-h-10;
-      context.rect(x,y, w,h);
-      context.stroke();
-      context.fillText(snode.data["name"].replace(/,? and /g, ' & '),x,y);
-	  if (snode.data.ingtype !== "fiber") drawThumbnailInCanvas(snode,x,y, w,h);//scale sized ?
-      //if surface draw a line representing the membrane
-      if (snode.data.surface) {
-        var thickness = 42.0/2.0;//angstrom
-        var canvas_scale = w/snode.data.thumbnail.width;
-        var sc2d = parseFloat(snode.data.sprite.scale2d)*canvas_scale;
-        var offy = -parseFloat(snode.data.sprite.offsety)*sc2d;//sc2d is angstrom to pixels
-        //aNode.data.thumbnail.oh
-        //scale2d should bring angstrom->pixels
-        //need to take in account original size of images
-        context.beginPath();
-        context.lineWidth=2;
-        context.moveTo(x,y+h/2.0-offy);
-        context.lineTo(x+w,y+h/2.0-offy);
-        context.strokeStyle = "green";
-        context.stroke();
-        //top
-        context.beginPath();
-        context.lineWidth=2;
-        context.moveTo(x,y+h/2.0-offy-thickness*sc2d);
-        context.lineTo(x+w,y+h/2.0-offy-thickness*sc2d);
-        context.strokeStyle = "red";
-        context.stroke();
-        //bottom
-        context.beginPath();
-        context.lineWidth=2;
-        context.moveTo(x,y+h/2.0-offy+thickness*sc2d);
-        context.lineTo(x+w,y+h/2.0-offy+thickness*sc2d);
-        context.strokeStyle = "blue";
-        context.stroke();
-	  }
-	  if (snode.data.ingtype === "fiber") {
-		var canvas_scale = w/snode.data.thumbnail.width;
-        var sc2d = parseFloat(snode.data.sprite.scale2d)*canvas_scale;
-        var leny = -parseFloat(snode.data.sprite.lengthy)*sc2d;//sc2d is angstrom to pixels
-		//draw two other thumbnail around
-		drawThumbnailInCanvas(snode,x-leny/2.0,y, w,h);//scale sized ?
-		drawThumbnailInCanvas(snode,x+leny/2.0,y, w,h);//scale sized ?
-	  }
-      // Restore the default state
-      context.restore();
-    }
-    /*context.beginPath();
-    	context.moveTo(width/2,height/2);//why +3?
-    	context.arc(width/2,height/2,15,0,10);//0?
-    	context.fillStyle = "green";
-      context.fill();
-      */
-		//draw the traffic light
-		//drawTrafficLight();
-    context.restore();
-  }
+//draw a sphere for the mouse
+if (mousein && draw_debug_mouse) {
+	context.beginPath();
+	context.moveTo(mousexy.x , mousexy.y);//why +3?
+	context.arc(mousexy.x,mousexy.y,15,0,10);//0?
+	context.fillStyle = "green";
+	context.fill();
+}    //thumbnail with special case for surface
+var snode = node_selected;
+if (snode == null || snode.children) snode = node_over;
+if (snode !=null && !snode.children && snode.data && snode.data.thumbnail !==null  && snode.data.name != null) {
+	//scale from image size to 150 ?
+	context.save();
+	context.resetTransform();
+	var ratio = (snode.data.thumbnail)? snode.data.thumbnail.width/snode.data.thumbnail.height:1.0;// 0.5;
+	var w = 150;//(snode.data.thumbnail)?snode.data.thumbnail.width:150;
+	var h = w/ratio;//(snode.data.thumbnail)?snode.data.thumbnail.height:150;
+	var x = canvas.width/2.0-w-10;
+	var y = canvas.height-h-10;
+	context.rect(x,y, w,h);
+	context.stroke();
+	context.fillText(snode.data["name"].replace(/,? and /g, ' & '),x,y);
+	if (snode.data.ingtype !== "fiber") drawThumbnailInCanvas(snode,x,y, w,h);//scale sized ?
+	//if surface draw a line representing the membrane
+	if (snode.data.surface) {
+	var thickness = 42.0/2.0;//angstrom
+	var canvas_scale = w/snode.data.thumbnail.width;
+	var sc2d = parseFloat(snode.data.sprite.scale2d)*canvas_scale;
+	var offy = -parseFloat(snode.data.sprite.offsety)*sc2d;//sc2d is angstrom to pixels
+	//aNode.data.thumbnail.oh
+	//scale2d should bring angstrom->pixels
+	//need to take in account original size of images
+	context.beginPath();
+	context.lineWidth=2;
+	context.moveTo(x,y+h/2.0-offy);
+	context.lineTo(x+w,y+h/2.0-offy);
+	context.strokeStyle = "green";
+	context.stroke();
+	//top
+	context.beginPath();
+	context.lineWidth=2;
+	context.moveTo(x,y+h/2.0-offy-thickness*sc2d);
+	context.lineTo(x+w,y+h/2.0-offy-thickness*sc2d);
+	context.strokeStyle = "red";
+	context.stroke();
+	//bottom
+	context.beginPath();
+	context.lineWidth=2;
+	context.moveTo(x,y+h/2.0-offy+thickness*sc2d);
+	context.lineTo(x+w,y+h/2.0-offy+thickness*sc2d);
+	context.strokeStyle = "blue";
+	context.stroke();
+	}
+	if (snode.data.ingtype === "fiber") {
+	var canvas_scale = w/snode.data.thumbnail.width;
+	var sc2d = parseFloat(snode.data.sprite.scale2d)*canvas_scale;
+	var leny = -parseFloat(snode.data.sprite.lengthy)*sc2d;//sc2d is angstrom to pixels
+	//draw two other thumbnail around
+	drawThumbnailInCanvas(snode,x-leny/2.0,y, w,h);//scale sized ?
+	drawThumbnailInCanvas(snode,x+leny/2.0,y, w,h);//scale sized ?
+	}
+	// Restore the default state
+	context.restore();
+}
+/*context.beginPath();
+	context.moveTo(width/2,height/2);//why +3?
+	context.arc(width/2,height/2,15,0,10);//0?
+	context.fillStyle = "green";
+	context.fill();
+	*/
+	//draw the traffic light
+	//drawTrafficLight();
+context.restore();
+}
 
 function drawThumbnailInCanvas(aNode,x,y,w,h){
   //first get the image
