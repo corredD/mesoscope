@@ -2524,7 +2524,7 @@ function updateForce(){
 	simulation.force("d2", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 2; }));
 	simulation.force("d3", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 3; }));
 	simulation.force("d4", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 4; }));
-	simulation.force("leaf", isolate(d3v4.forceCollide().radius(function(d) {return d.r*1.25;}), function(d) { return !d.children; }));
+	simulation.force("leaf", isolate(d3v4.forceCollide().radius(function(d) {return d.r*1.05;}), function(d) { return !d.children; }));
 }
 
 function setupD3(){
@@ -3125,6 +3125,7 @@ function mapRadiusToProperty_cb(property) {
 		if (!d.children) {
 			if (property==="molecularweight"){ d.r = Util_getRadiusFromMW(d.data.molecularweight); }
 			else if (property==="size"){ d.r = d.data.size;}
+			else if (property==="default"){ d.r = 10;}
 			else d.r = mapping(d.data[property]);//or linearmapping
 			if (d.r <= 0) d.r = d.data.size;
 			if (isNaN(d.r)) d.r = 10;
@@ -3134,17 +3135,19 @@ function mapRadiusToProperty_cb(property) {
 	graph.nodes.forEach(function(d){
 		if (d.children) {
 			//d3v4.packSiblings(d.children.filter(ad =>!ad.data.surface));
-			var points = d.children.filter(ad => !ad.children ).map(ad => ({ x: ad.x, y: ad.y, r: ad.r * 2.0}));
+			var points = d.children.filter(ad => !ad.children ).map(ad => ({ x: ad.x, y: ad.y, r: ad.r}));
 			console.log(points);
 			if (points.length !== 0)
 			{
+				points.sort((a,b) => b.r - a.r);
+				d3v4.packSiblings(points);
 				var circle = d3v4.packEnclose(points)
 				//var result = d3v4.packEnclose(d.children);//have .r,.x,.y
 				console.log(circle);
 				console.log("packEnclose",circle.x,circle.y,circle.r);
-				d.x = circle.x;
-				d.y = circle.y;
-				d.r = circle.r+25;
+				//d.x = circle.x;
+				//d.y = circle.y;
+				d.r = circle.r+Math.max(25,property_mapping[property].max);
 				//d.r = d.children.reduce((acc, val) => acc + val.r/2, 0);
 			}
 		}
@@ -4974,7 +4977,7 @@ function update_graph(agraph,alink){
   //    .nodes(graph.nodes)
   //    .on("tick", ticked);
   //update the size to reflect the table size
-  mapRadiusToProperty_cb("size");
+  //mapRadiusToProperty_cb("size");
   simulation.stop();
   simulation.nodes(graph.nodes);
   simulation.force("link").links(graph.links);
