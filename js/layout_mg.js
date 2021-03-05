@@ -160,7 +160,7 @@ var canvasOption = '' +
       getSelect("canvas_label", "options_elems", "Node label",
                             "ChangeCanvasLabel(this)", canvas_label_options,"name")+//canvas_label_options)+
       getSelect("canvas_color", "options_elems", "Node color",
-                            "ChangeCanvasColor(this)", canvas_color_options,"pdb")+
+                            "ChangeCanvasColor(this)", canvas_color_options,"default")+
       '<input type="color" id="min_color" onchange="ChangeMinColor(this)" name="colormin" value="#ff0000" />' +
       '<input type="color" id="max_color" onchange="ChangeMaxColor(this)" name="colormax" value="#00ffbf" />' +
       //add two color picker for the min-max linear mapping
