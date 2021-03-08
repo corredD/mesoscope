@@ -2955,6 +2955,7 @@ function ChangeMinColor(e){
   //var dmcolor = d3v4.color(min_color);
   //canvas_mincolor=min_color.rgb;
   property_mapping[colorby].cmin = min_color.rgb;
+  ChangeCanvasColor(null);
 }
 
 function ChangeMaxColor(e){
@@ -2964,6 +2965,7 @@ function ChangeMaxColor(e){
   //var dmcolor = d3v4.color(max_color);
   //canvas_maxcolor = max_color.rgb;
   property_mapping[colorby].cmax = max_color.rgb;
+  ChangeCanvasColor(null);
 }
 
 function applyColorModeToIngredient(){
