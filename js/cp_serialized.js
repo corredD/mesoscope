@@ -1422,7 +1422,7 @@ function cp_SerializedColorSchem(){
       //root.mpn.membrane.outer_membrane
       var name_path = d.ancestors().reverse().map(function(d) {
         return (d.children) ? d.data.name : "";
-      }).join('.').slice(0, -1);
+      }).join('.');//.slice(0, -1); why the slice ?
       if (!d.data.color) d.data.color = [1,0,0];
       var node_color = {"x":parseInt(d.data.color[0]*255.0),
                    "y":parseInt(d.data.color[1]*255.0),

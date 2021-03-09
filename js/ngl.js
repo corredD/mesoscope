@@ -656,6 +656,12 @@ function NGL_Setup() {
     {
       NGL_applyLengthY2D(this.value)
     }
+    else if (this.id.endsWith("Force")) 
+    {
+      var forcename = this.id.split("_")[1];
+      //change forces value
+      AllForces[forcename] = this.value;
+    }
     else {
       NGL_updateMBcomp();
       NGL_applyPcp();

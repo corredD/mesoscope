@@ -263,6 +263,50 @@ var ngl_widget_options = ''+
   '<label id="pdb_title">pdb TITLE</label>' +
 '</div>';
 
+function getForcesInputs() {
+    //var Forces = ["ParentForce","SurfaceForce","LinkForce","clusterByForce"];
+    var options='';
+    Object.keys(AllForces).forEach(function(fname) {
+      options+='<label id="label_'+fname+'">'+fname+'</label>';
+      options+='<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="range_'+fname+'"  type="range" value="'+AllForces[fname]+'" min="0.0" max="1.0" step="0.01" style="width:70%"/>';
+      options+='<input class="inputNumber" id="num_'+fname+'" min="0.0" max="2.0" type="number" value="'+AllForces[fname]+'" style="width:30%"/></div>'
+    });
+    return options;
+}
+
+var canvas_widget_options_collapsible = ''+
+  '<div class="RecipeCanvasOptions">'+
+    '<button class="meso_collapsible meso_active">View Options</button>'+
+    '<div class="meso_content" style="max-height: 100%;">'+
+      '<input type="checkbox" checked="true" id="sprites">Node image</input>'+
+      getSelect("canvas_label", "options_elems", "Node label",
+      "ChangeCanvasLabel(this)", canvas_label_options,"name")+//canvas_label_options)+
+      getSelect("canvas_color", "options_elems", "Node color",
+        "ChangeCanvasColor(this)", canvas_color_options,"default")+
+      '<input type="checkbox" id="colormap" onclick="toggleColorMapping(this)" checked>Use color linear mapping</input>'+  
+      '<input type="color" id="min_color" onchange="ChangeMinColor(this)" name="colormin" value="#ff0000" />' +
+      '<input type="color" id="max_color" onchange="ChangeMaxColor(this)" name="colormax" value="#00ffbf" />' +
+      //add two color picker for the min-max linear mapping
+      '<button id="applycolor" onclick="applyColorModeToIngredient()">Apply current to ingredient color</button>' +
+      //load color palette?
+      getSelect("canvas_map_r", "options_elems", "Node size",
+        "mapRadiusToProperty(this)", Object.keys(property_mapping),"size")+
+      getSelect("canvas_group", "options_elems", "Node group by",
+        "ClusterNodeBy(this)", Object.keys(property_mapping),"size")+
+    '</div>'+
+    '<button class="meso_collapsible">Recipe Options</button>'+
+    '<div class="meso_content">'+
+      '<div><input type="checkbox" id="editmode" onclick="switchMode(this)">Edit Mode</input></div>'+
+      '<div><button id="addingr" onclick="addIngredient()">Add ingredient</button></div>' +
+      '<div><button id="addcomp" onclick="addCompartment()">Add compartment</button></div>' +
+      '<div><button id="addlink" onclick="addLink()">Add interaction</button></div>'+
+    '</div>'+  
+    '<button class="meso_collapsible">Forces Options</button>'+
+    '<div class="meso_content">'+
+      getForcesInputs()+
+    '</div>'+
+  '</div>';
+
 var ngl_widget_options_collapsible = ''+
   '<div class="NGLOptions">'+
   '<button class="meso_collapsible">Molecule header</button>'+
@@ -404,91 +448,6 @@ var ngl_widget_options_collapsible = ''+
   '</div>';
 
 
-var ngl_options= ''+
-  '<div class="NGLOptions">'+
-  '<button onclick="PreviousIgredient()" style="">Previous Ingredient</button>' +
-  '<button onclick="NextIgredient()" style="">Next Ingredient</button>' +
-  '<button onclick="NGL_UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite</button>' +
-  '<input type="checkbox" id="ill_style" checked="false">Coarse Illustration</input>' +
-  '<button onclick="NGL_Illustrate()" style="">Illustrate</button>' +
-  '<input type="checkbox" id="savethumbnail" checked="true">Save Thumbnail/Sprite</input>' +
-  '<input type="checkbox" id="ngl_scene_control" checked="true">Mouse Control World</input>' +
-  '<button class="accordion">NGL options</button>'+
-  '<div class="accordion_panel">'+
-    '<div class="clusterBtn">' +
-      '<button onclick="NGL_CenterView()" style="">Center Camera</button>' +
-    '</div>' +
-    '<div><label id="ProteinId">protein name</label></div>' +
-    '<div><label id="pdb_id">pdb id</label></div>' +
-    '<div>'+
-      '<label for="rep_type">Selection</label>'+
-      '<input type="text" id="sel_str" style="width:55%" placeholder="Selection" onchange="NGL_ChangeSelection(this)"/>'+
-      layout_getMultiSelect("selection_ch_checkboxes") +
-    '</div>'+
-    '<label id="ngl_status"></label>' +
-    getSelect("rep_type", "options_elems", "Representation",
-                            "NGL_ChangeRepresentation(this)", ngl_styles,"cartoon")+
-    getSelect("ass_type", "options_elems", "Assembly",
-                            "NGL_ChangeBiologicalAssembly(this)", ["AU"],"AU")+
-    getSelect("mod_type", "options_elems", "Model",
-                            "NGL_ChangeModel(this)", ["0"],"0")+
-    getSelect("color_type", "options_elems", "Color",
-                            "NGL_ChangeColorScheme(this)", ngl_available_color_schem,"atomindex")+
-    getSelect("label_elem", "options_elems", "Label",
-                            "NGL_Changelabel(this)", ["None","Chain"],"None")+
-    '<div>'+
-      '<input type="checkbox"  id="showgeom" onclick="NGL_showGeomNode(this)" checked>' +
-      '<label for="showgeom"> Show Geometry used </label> '+
-      '<button onclick="NGL_buildCMS()">Rebuild Geometry</button>'+getSpinner("stopbuildgeom","stopGeom()")+
-    '</div>' +
-    getSelect("beads_elem", "options_elems", "Show Beads",
-                            "NGL_showBeadsLevel(this)", ["All","0","1","2","None"],"None")+
-  //' <div class="clusterBtn">' +
-  //' <select id="cluster_elem" name="cluster_elem" onchange="NGL_changeClusterMethod(this)" style="width:100%;height:40px">' +
-  //'  <option value="Kmeans" selected>Kmeans </option>' +
-  //'  <option value="Optics" disabled> Optics</option>' +
-  //'  <option value="DBSCAN" disabled> DBSCAN </option>' +
-  //' </select>' +
-    '<div>'+
-      '<label> number of cluster</label>' +
-      '<input id="slidercl_params1" style="width:70%;display:inline" type="range" min="1" max="200"" step="1" value="10" /> ' +
-      '<input class="inputNumber" id="slidercl_params2" min="1" max="200" type="number" value="1" />' +
-      '<label id="cl_params1" for="slidercl_params1">10</label>' +  getSpinner("stopkmeans","stopKmeans()")+
-      '<input id="cl_radius" min="1.0" max="100.0" onchange="NGL_updateCurrentBeadsRadius(this)" type="number" value="1.0" style="width:30%"/>' +
-      '<input type="checkbox"  id="cl_use_radius" onclick="NGL_updateCurrentBeadsRadius(this)" checked>' +
-    '</div>'+
-    '<label id="nbBeads">0 beads</label>' +
-    '<div id="query_search">' +
-      '<label id="heading"></label>' +
-    '</div> ' +
-    '<div class="hidden" id="surface">' +
-      '<div><input type="checkbox"  id="showgeommb" onclick="NGL_showGeomMembrane(this)" checked>' +
-      '<label for="showgeommb"> Show Membrane used </label></div>'+
-      '<label id="pcpLabel">Principal Axis (shift+control left click)</label>' +
-      '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpX" type="range" min="-100" max="100" step="1" style="width:70%" />' +
-      '<input class="inputNumber" id="num1" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
-      '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpY" type="range" min="-100" max="100" step="1" style="width:70%" />' +
-      '<input class="inputNumber" id="num2" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
-      '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpZ" type="range" min="-100" max="100" step="1" style="width:70%"/>' +
-      '<input class="inputNumber" id="num3" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
-      '<label id="offsetLabel">Offset (shift+control right click)</label>' +
-      '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetX" type="range" min="-450" max="450" step="1" style="width:70%" />' +
-      '<input class="inputNumber" id="num4" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
-      '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetY" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
-      '<input class="inputNumber" id="num5" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
-      '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetZ" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
-      '<input class="inputNumber" id="num6" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
-      '</div>' +
-      //'<button onclick="NGL_applyPcp()">Apply To Ingredient</button>' +
-      '<button onclick="NGL_resetPcp()">Reset</button>' +
-    '</div>' +
-    '<label id="pdb_title">pdb TITLE</label>' +
-  '</div>' +
-  '<button class="accordion">object properties</button>'+
-  '<div class="accordion_panel" id="objectOptions">'+
-   //either compartment or ingredient
-  '</div>' +
-  '</div>'
 
 var object_properties = '<div style="display:flex;flex-flow:column;" id="objectOptions"></div>';
 
@@ -816,7 +775,8 @@ var config = {
     type: 'column',
     content: [{
         type: 'row',
-        content: [get_comp_definition_d3(),
+        content: [get_new_single_component("Recipe Options","canvas view options","canvas_options",{label: 'C'}),
+                  get_comp_definition_d3(),
                   {type:'column',content:[
                     get_new_single_component("NGL Options","ngl viewer options","ngl_options",{label: 'C'}),
                     get_new_single_component("Object Properties","change object properties","object_properties",{label: 'C'})
@@ -866,7 +826,8 @@ var config_light = {
     type: 'column',
     content: [{
         type: 'row',
-        content: [get_comp_definition_d3(),
+        content: [get_new_single_component("Recipe Options","canvas view options","canvas_options",{label: 'C'}),
+                  get_comp_definition_d3(),
                   {type:'stack',content:[
                     get_new_single_component("NGL Options","ngl viewer options","ngl_options",{label: 'C'}),
                     get_new_single_component("Object Properties","change object properties","object_properties",{label: 'C'}),               
@@ -924,7 +885,7 @@ localforage.getItem('savedRecipe').then(function(readValue) {
 }),
 
 console.log("savedRecipe", savedRecipe !== null, savedRecipe);
-var current_version = {"version":1.24};
+var current_version = {"version":1.25};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()
@@ -1026,8 +987,8 @@ d3canvasComponent.prototype._Setup = function() {
   this._canvas.style.height = "100%";
   this._canvas.transform = d3.zoomIdentity;
   //main_canvasResizer = this._canvasResizer = new swevans.CanvasResizer(this._canvas);
-  var optionsDropdown = $(canvasOption);
-  this._container.getElement().append(optionsDropdown);
+  //var optionsDropdown = $(canvasOption);
+  //this._container.getElement().append(optionsDropdown);
   this._container.getElement().append(this._canvas); // '<canvas width="100%" height="100%" style="border:1px solid black;"></canvas>');
   this._container.on('resize', this._Resize, this);
   this._Resize();
@@ -1308,6 +1269,12 @@ myLayout.registerComponent('ngl_options', function(container, state) {
   var el = container.getElement();
   el[0].style.overflow="scroll";
   el.html(ngl_widget_options_collapsible);
+})
+
+myLayout.registerComponent('canvas_options', function(container, state) {
+  var el = container.getElement();
+  el[0].style.overflow="scroll";
+  el.html(canvas_widget_options_collapsible);
 })
 
 myLayout.registerComponent('object_properties', function(container, state) {

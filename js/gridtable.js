@@ -2636,7 +2636,7 @@ function grid_AddColumn(name)
   layout_updateSelect("canvas_group",Object.keys(property_mapping));
   
   graph.nodes.map(d=>(d.data[name]=0.0));
-  property_mapping[name] = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
+  property_mapping[name] = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
 }
 
 function grid_SetDefaultColumn(agrid,defaults_names){

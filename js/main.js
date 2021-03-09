@@ -34,15 +34,16 @@ var canvas_node_clusters = ["none","pdb", "pcpalAxis", "offset", "count_molarity
 var canvas_mincolor="hsl(0, 100%, 50%)";
 var canvas_maxcolor="hsl(165, 100%, 50%)";
 var property_mapping = {};
-property_mapping.default = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
-property_mapping.size = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
-property_mapping.molecularweight = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
-property_mapping.molarity = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
-property_mapping.count = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
-property_mapping.confidence = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
-property_mapping.interaction = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
-
+property_mapping.default = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
+property_mapping.size = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
+property_mapping.molecularweight = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
+property_mapping.molarity = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
+property_mapping.count = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
+property_mapping.confidence = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
+property_mapping.interaction = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
+property_mapping.automatic = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
 var current_color_mapping;
+var use_color_mapping = true;
 var unique_array;
 var use_unique_array = false;
 var color_palette = {};
@@ -146,6 +147,7 @@ var container,
     width,
     height;
 
+//depth color
 var color = d3v4.scaleLinear()
     .domain([-1, 6])
     .range(["hsl(360,100%,100%)", "hsl(228,30%,40%)"])
@@ -165,12 +167,15 @@ var clusterBy=0;
 var clusterByForce = 0.01;
 var ParentForce = 0.01;
 var SurfaceForce = 2;
+var link_force = 0.1;
+
+var AllForces = {"ParentForce":0.01,"SurfaceForce":0.5,"LinkForce":0.1,"clusterByForce":0.01};
 
 var current_clusters = {};
 var graph = {};
 var users;
 var simulation;
-var link_force = 0.1;
+
 
 var pack;
 var HQ = false;
@@ -262,15 +267,15 @@ function EvaluateCurrentReadyState() {
 function switchMode(e){
 	if (current_mode ===1 ){
 		current_mode = 0;
-		document.getElementById("addingr").setAttribute("class", "hidden");
-		document.getElementById("addcomp").setAttribute("class", "hidden");
-		document.getElementById("addlink").setAttribute("class", "hidden");
+		//document.getElementById("addingr").setAttribute("class", "hidden");
+		//document.getElementById("addcomp").setAttribute("class", "hidden");
+		//document.getElementById("addlink").setAttribute("class", "hidden");
 		}
 	else {
 		current_mode = 1;
-		document.getElementById("addingr").setAttribute("class", "show");
-		document.getElementById("addcomp").setAttribute("class", "show");
-		document.getElementById("addlink").setAttribute("class", "show");
+		//document.getElementById("addingr").setAttribute("class", "show");
+		//document.getElementById("addcomp").setAttribute("class", "show");
+		//document.getElementById("addlink").setAttribute("class", "show");
 		}
 	}
 
@@ -1860,6 +1865,13 @@ function MergeExampleBloodHIV(){
 }
 
 function checkAttributes(agraph){
+	canvas_label_options = ["name", "None", "pdb", "uniprot", "label"];
+	canvas_color_options = ["pdb", "pcpalAxis", "offset", "count_molarity", "Beads",
+	"geom", "interaction", "confidence", "color", "viewed", "size", "count",
+	"molarity", "molecularweight","default","automatic"];
+	canvas_node_clusters = ["none","pdb", "pcpalAxis", "offset", "count_molarity", "Beads",
+	"geom", "interaction", "confidence", "color", "viewed", "size", "count",
+	  "molarity", "molecularweight","default"];
 	agraph.mapping_ids={}
   	console.log("checkAttributes ",agraph);
 	if ( !agraph || agraph.length < 2 ) return;
@@ -1879,12 +1891,18 @@ function checkAttributes(agraph){
 			if (!(key in property_mapping)){
 				canvas_color_options.push(key);
 				canvas_label_options.push(key);
-				property_mapping[key] = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)"};
+				property_mapping[key] = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
 			}
 			else {
 				property_mapping[key].min=0;
 				property_mapping[key].max=999999;
 			}
+			if (canvas_label_options.indexOf(key) == -1){
+				canvas_label_options.push(key);
+			}
+			if (canvas_color_options.indexOf(key) == -1){
+				canvas_color_options.push(key);
+			}			
 		}
 	}
 	var counter_id = 0;
@@ -1973,11 +1991,11 @@ function checkAttributes(agraph){
 			//if (!("geom" in agraph[i].data )) agraph[i].data.geom = "";
 		}
 	}
-	if (additional_data.length !== 0) {
-		layout_updateSelect("canvas_color",canvas_color_options);
-		layout_updateSelect("canvas_label",canvas_label_options);
-		layout_updateSelect("canvas_group",Object.keys(property_mapping));
-	}
+	//if (additional_data.length !== 0) {
+	layout_updateSelect("canvas_color",canvas_color_options);
+	layout_updateSelect("canvas_label",canvas_label_options);
+	layout_updateSelect("canvas_group",Object.keys(property_mapping));
+	///}
 	return agraph;
 	}
 
@@ -2530,7 +2548,7 @@ function isolate(force, filter) {
 
 function updateForce(){
 	simulation.nodes(graph.nodes);
-	simulation.force("link", d3v4.forceLink().strength(link_force));//.iterations(1).id(function(d) { return d.id; })
+	simulation.force("link", d3v4.forceLink().strength(AllForces.LinkForce));//.iterations(1).id(function(d) { return d.id; })
 	simulation.force("link").links(graph.links);
 	simulation.force("d0", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 0; }));
 	simulation.force("d1", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 1; }));
@@ -2847,6 +2865,11 @@ function GenerateOneColorRangePalette(rgb,ncolors){
 	return colors;
 }
 
+function toggleColorMapping(e){
+	use_color_mapping = e.checked;
+	//ChangeCanvasColor(null);
+}
+
 function ChangeCanvasColor(e){
 	var colorby = canvas_color.selectedOptions[0].value;
 	if (colorby == "automatic") {
@@ -2880,6 +2903,13 @@ function ChangeCanvasColor(e){
 	var hmax = Util_rgbToHex(parseInt(cmax.r),parseInt(cmax.g),parseInt(cmax.b));
 	document.getElementById("min_color").value = hmin;
 	document.getElementById("max_color").value = hmax;
+	if (colorby == "automatic") {
+		property_mapping[colorby].max = Math.max.apply(null, graph.nodes.length);
+		property_mapping[colorby].min = Math.min.apply(null, 0);
+		current_color_mapping = d3v4.scaleLinear()//d3v4.scaleLinear()
+			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
+			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
+	}
 	if (colorby === "confidence"){
 		var scores = graph.nodes.map(d=>(d.data.confidence!=null && d.data.confidence!=-1)?d.data.confidence:null).filter(d=>d!=null);
 		property_mapping[colorby].max = Math.max.apply(null, scores);
@@ -2927,9 +2957,20 @@ function ChangeCanvasColor(e){
 		var scores = graph.nodes.map(d=>(!d.children && d.data[colorby]!=null && d.data[colorby]!=-1)?d.data[colorby]:null).filter(d=>d!=null);
 		var value = parseFloat(scores[0]);
 		if (isNaN(value)) {
+			//should be string
 			use_unique_array = true;
 			unique_array = scores.filter(onlyUnique);
 			unique_array.push("");
+			var nCategories = unique_array.length;
+			var cs = GenerateNColor(nCategories);
+			//map to rgb string
+			if (property_mapping[colorby].colors.length != nCategories)
+			{
+				property_mapping[colorby].colors = cs.map(function (c, ind) {
+					var c1 = c.rgb();
+					return 'rgb('+ c1[0]+","+c1[1]+","+c1[2]+')';
+				});
+			}	
 			var new_scores = graph.nodes.map(d=>(d.data[colorby]!=undefined && d.data[colorby]!=null && d.data[colorby]!=-1)?unique_array.indexOf(d.data[colorby]):unique_array.indexOf("")).filter(d=>d!=null);
 			//else use scaleLinear
 			property_mapping[colorby].max = Math.max.apply(null, new_scores);
@@ -2950,7 +2991,7 @@ function ChangeCanvasColor(e){
 
 function ChangeMinColor(e){
   var colorby = canvas_color.selectedOptions[0].value;
-  if (colorby == "automatic") return;
+  //if (colorby == "automatic") return;
   var min_color = Util_getRGB(e.value);
   //var dmcolor = d3v4.color(min_color);
   //canvas_mincolor=min_color.rgb;
@@ -2960,7 +3001,7 @@ function ChangeMinColor(e){
 
 function ChangeMaxColor(e){
   var colorby = canvas_color.selectedOptions[0].value;
-  if (colorby == "automatic") return;
+  //if (colorby == "automatic") return;
   var max_color = Util_getRGB(e.value);
   //var dmcolor = d3v4.color(max_color);
   //canvas_maxcolor = max_color.rgb;
@@ -2973,11 +3014,11 @@ function applyColorModeToIngredient(){
   graph.nodes.forEach(function(d){
     var color = colorNode(d);//return "rbg()"
     var dcolor = d3v4.color(color);
-    if (!d.children && "data" in d ){
+    //if (!d.children && "data" in d ){
       if (!(d.data.color) || !( "color" in d.data )) d.data.color=[1,0,0];
       if (!("_color" in d.data)) d.data._color=[d.data.color[0],d.data.color[1],d.data.color[2]];
       d.data.color=[dcolor.r/255.0,dcolor.g/255.0,dcolor.b/255.0];
-    }
+    //}
   })
 }
 //
@@ -2988,7 +3029,7 @@ function onlyUnique(value, index, self) {
 }
 
 function colorNode(d) {
-	if (current_color_mapping == undefined) return color(d.depth);
+	if (current_color_mapping == undefined && use_color_mapping) return color(d.depth);
 	var colorby = canvas_color.selectedOptions[0].value;
 	if (colorby === "pdb") {
 				return ( !d.children && "data" in d && "source" in d.data
@@ -3055,15 +3096,20 @@ function colorNode(d) {
 		return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null&& d.data[colorby] >= 0.0) ? current_color_mapping(d.data[colorby]):color(d.depth);
 	}
 	else if (colorby == "automatic") {
-		if (!d.children) {
-			var pname = d.parent.data.name;
-			var id = d.parent.children.indexOf(d);
-			var c1 = color_palette[pname][id].rgb()
-			return 'rgb('+ c1[0]+","+c1[1]+","+c1[2]+')';
+		if (use_color_mapping){
+			return current_color_mapping(graph.nodes.indexOf(d));	
 		}
-		else if (d.children){
-			var c1 = comp_colors[d.data.name].rgb();
-			return 'rgb('+ c1[0]+","+c1[1]+","+c1[2]+')';
+		else {
+				if (!d.children) {
+				var pname = d.parent.data.name;
+				var id = d.parent.children.indexOf(d);
+				var c1 = color_palette[pname][id].rgb()
+				return 'rgb('+ c1[0]+","+c1[1]+","+c1[2]+')';
+			}
+			else if (d.children){
+				var c1 = comp_colors[d.data.name].rgb();
+				return 'rgb('+ c1[0]+","+c1[1]+","+c1[2]+')';
+			}
 		}
 	}
     else if (colorby === "default") {
@@ -3093,10 +3139,17 @@ function colorNode(d) {
 	}
 	else {
 		if (additional_data.length!==0){
-			if (use_unique_array) {
-				return ( !d.children && "data" in d && colorby in d.data  ) ? current_color_mapping(unique_array.indexOf(d.data[colorby])):color(d.depth);		
+			if (use_color_mapping){
+				if (use_unique_array) {
+					return ( !d.children && "data" in d && colorby in d.data  ) ? current_color_mapping(unique_array.indexOf(d.data[colorby])):color(d.depth);		
+				} else {
+					return ( !d.children && "data" in d && colorby in d.data  ) ? current_color_mapping(d.data[colorby]):color(d.depth);		
+				}
 			} else {
-				return ( !d.children && "data" in d && colorby in d.data  ) ? current_color_mapping(d.data[colorby]):color(d.depth);		
+				if (use_unique_array) 
+					return ( !d.children && "data" in d && colorby in d.data  ) ? property_mapping[colorby].colors[unique_array.indexOf(d.data[colorby])]:property_mapping[colorby].colors[unique_array.indexOf("")];	
+				else 
+					return ( !d.children && "data" in d && colorby in d.data  ) ? current_color_mapping(d.data[colorby]):color(d.depth);	
 			}
 		}
 		else {
@@ -4265,8 +4318,15 @@ async function ChangeColorNodeOver(){
 	//var rgb = node_over_to_use.data.color;
 	//var hx = Util_rgbToHex(rgb[0]*255,rgb[1]*255,rgb[2]*255);
 	var color = Util_getRGB(document.getElementById("node_color").value);
-	node_over_to_use.data.color =[color.arr[0]/255.0,color.arr[1]/255.0,color.arr[2]/255.0];
-	var acolor = node_over_to_use.data.color;
+	var acolor = [color.arr[0]/255.0,color.arr[1]/255.0,color.arr[2]/255.0];
+	var colorby = canvas_color.selectedOptions[0].value;
+	if (!use_color_mapping && default_options.indexOf(colorby) == -1 && use_unique_array){
+		//what the current property value
+		var indice = unique_array.indexOf(node_over_to_use.data[colorby]);
+		property_mapping[colorby].colors[indice] = color.rgb;
+	} else {
+		node_over_to_use.data.color =[color.arr[0]/255.0,color.arr[1]/255.0,color.arr[2]/255.0];
+	}
 	GP_updateMeshColorGeometry(node_over_to_use);
 	//change also in ngl view if geometry is toggled
 	if (node_over_to_use === ngl_current_node) {//node_selected
@@ -4920,8 +4980,8 @@ function drawNode(d) {
       if (l > r) {
         //l = (l - r) / l * alpha;
 		//should be local to the parent
-		d.vx += ((cluster.x + d.parent.x) - d.x) * clusterByForce;
-		d.vy += ((cluster.y + d.parent.y) - d.y) * clusterByForce;		
+		d.vx += ((cluster.x + d.parent.x) - d.x) * AllForces.clusterByForce;
+		d.vy += ((cluster.y + d.parent.y) - d.y) * AllForces.clusterByForce;		
       }
     }
   }
@@ -4932,7 +4992,7 @@ function drawNode(d) {
     var dx = d.x - d.parent.x,
         dy = d.y - d.parent.y,
         r = Math.sqrt(dx * dx + dy * dy),
-        k = (d.parent.r - r) * SurfaceForce * 1 / r;
+        k = (d.parent.r - r) * AllForces.SurfaceForce * 1 / r;
     d.vx += dx * k;
     d.vy += dy * k;
   }
@@ -4951,8 +5011,8 @@ function drawNode(d) {
         r = Math.sqrt(dx * dx + dy * dy);
     if (r + d.r * 1.2 > d.parent.r && !surface && d.parent.parent)//outside parent
     {
-      d.vx += (d.parent.x - d.x) * ParentForce;
-      d.vy += (d.parent.y - d.y) * ParentForce;
+      d.vx += (d.parent.x - d.x) * AllForces.ParentForce;
+      d.vy += (d.parent.y - d.y) * AllForces.ParentForce;
     }
     context.arc(ndx, ndy, d.r, 0, 10);//0?
   }
@@ -5453,13 +5513,20 @@ $(document).bind("contextmenu", function (event) {
     event.preventDefault();
     node_over_to_use = node_over || line_over;
     console.log("use over ",node_over_to_use)
-		var rgb = ("color" in node_over_to_use.data && node_over_to_use.data.color !== null)? node_over_to_use.data.color: [1,0,0];
+	var rgb = ("color" in node_over_to_use.data && node_over_to_use.data.color !== null)? node_over_to_use.data.color: [1,0,0];
     if (rgb === null || !rgb) rgb = [1,0,0];
     node_over_to_use.data.color = rgb;
+	var colorby = canvas_color.selectedOptions[0].value;
+	if (!use_color_mapping && default_options.indexOf(colorby) == -1 && use_unique_array){
+		var indice = unique_array.indexOf(node_over_to_use.data[colorby]);
+		document.getElementById("node_color").value = property_mapping[colorby].colors[indice];
+	}
+	else {
 		var hx = Util_rgbToHex(rgb[0]*255,rgb[1]*255,rgb[2]*255);
 		document.getElementById("node_color").value = hx;
-		//var x = document.getElementById("node_color").value;
-		//var x = document.getElementById("myColor").value;
+	}
+	//var x = document.getElementById("node_color").value;
+	//var x = document.getElementById("myColor").value;
 
     // Show contextmenu
     $(".custom-menu-node").finish().toggle(100).
