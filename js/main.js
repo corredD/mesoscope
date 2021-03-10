@@ -729,7 +729,9 @@ function guessCompartmentList(data_header, jsondic, rootName){
 
 
 function getModalMapping(data_header,jsondic,rootName) {
-	additional_data=[];//reset
+	if (!MERGE){
+		additional_data=[];//reset
+	}
 	var modal_cont = document.getElementById("slickdetail");
   	var item_cont = document.getElementById("modalform");//"slickitems");//modalform
 		item_cont.innerHTML = "";
@@ -1400,7 +1402,7 @@ function forceSelect(e) {
 
 //first/second sheet is the current graph/link, next is the original data -> up to 4 Grid
 function selectFile(e){
-	additional_data = []
+	if (!MERGE) additional_data = []
 	document.getElementById("addingr").setAttribute("class", "hidden");
 	document.getElementById("addcomp").setAttribute("class", "hidden");
 	document.getElementById("addlink").setAttribute("class", "hidden");
