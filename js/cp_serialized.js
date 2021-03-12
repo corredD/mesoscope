@@ -1435,4 +1435,60 @@ function cp_SerializedColorSchem(){
   download(JSON.stringify(color_mapping_js), 'palette.json', 'text/plain');
 }
 
-function cp_DeserializedColorSchem(){}
+function cp_DeserializedColorSchem_cb(e){
+  var theFiles = e.target.files;
+  var thefile = theFiles[0];
+  if (window.FileReader) {
+    // FileReader is supported.
+  } else {
+    alert('FileReader is not supported in this browser.');
+  }
+  var reader = new FileReader();
+  reader.onload = function(event) {
+    var data = reader.result;
+    data = data.replace(/\\n\\r/gm,'newChar');
+    cp_DeserializedColorSchem(data);
+  }
+  reader.readAsText(thefile, 'UTF-8');
+}
+
+function cp_DeserializedColorSchem(data){
+  var color_mapping_js = JSON.parse(data);//name-color
+  console.log(color_mapping_js);
+  graph.nodes.forEach(function(d){
+    if (!d.children)
+    {
+      var name_path = d.ancestors().reverse().map(function(d) {
+        return (d.children) ? d.data.name : "";
+      }).join('.').slice(0, -1);
+      //check if surfaces
+      //is it root or a compartment
+      if (d.parent.data.name !== "root"){
+        if ("surface" in d.data && d.data.surface){
+          name_path = name_path+".surface.proteins."+d.data.name;
+        }
+        else {
+          name_path =  name_path+".interior.proteins."+d.data.name;
+        }
+      }
+      else name_path = name_path+".proteins."+d.data.name;
+      if (name_path in color_mapping_js)
+      {
+        d.data.color = [color_mapping_js[name_path].x/255.0,color_mapping_js[name_path].y/255.0,color_mapping_js[name_path].z/255.0];
+      }
+    }
+    else {
+      //compartment inner and outer membrane if specified?
+      //root.mpn.membrane.inner_membrane
+      //root.mpn.membrane.outer_membrane
+      var name_path = d.ancestors().reverse().map(function(d) {
+        return (d.children) ? d.data.name : "";
+      }).join('.');//.slice(0, -1); why the slice ?
+      name_path = name_path+".membrane.outer_membrane"
+      if (name_path in color_mapping_js)
+      { 
+        d.data.color = [color_mapping_js[name_path].x/255.0,color_mapping_js[name_path].y/255.0,color_mapping_js[name_path].z/255.0];
+      }
+    }
+  });
+}
