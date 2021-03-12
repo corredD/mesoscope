@@ -1455,6 +1455,11 @@ function cp_DeserializedColorSchem_cb(e){
 function cp_DeserializedColorSchem(data){
   var color_mapping_js = JSON.parse(data);//name-color
   console.log(color_mapping_js);
+  var colorby = canvas_color.selectedOptions[0].value;
+  var update_map = false;
+  if (!use_color_mapping && default_options.indexOf(colorby) == -1 && use_unique_array){
+    update_map = true;
+  }
   graph.nodes.forEach(function(d){
     if (!d.children)
     {
@@ -1474,7 +1479,12 @@ function cp_DeserializedColorSchem(data){
       else name_path = name_path+".proteins."+d.data.name;
       if (name_path in color_mapping_js)
       {
-        d.data.color = [color_mapping_js[name_path].x/255.0,color_mapping_js[name_path].y/255.0,color_mapping_js[name_path].z/255.0];
+        var c = color_mapping_js[name_path];
+        d.data.color = [c.x/255.0,c.y/255.0,c.z/255.0];
+        if (update_map) {
+          var id = unique_array.indexOf(d.data[colorby]);
+          property_mapping[colorby].colors[id] = 'rgb('+ c.x+","+c.y+","+c.z+')';
+        }
       }
     }
     else {
@@ -1491,4 +1501,38 @@ function cp_DeserializedColorSchem(data){
       }
     }
   });
+  //update the color mapping if in the correct mode
+}
+
+function cp_SerializedColorMap(){
+  var color_mapping_js={};//
+  Object.keys(property_mapping).forEach(function(key) {
+    color_mapping_js[key] = property_mapping[key].colors;
+  });
+  console.log(JSON.stringify(color_mapping_js));
+  download(JSON.stringify(color_mapping_js), 'color_mapping.json', 'text/plain');
+}
+
+function cp_DeserializedColorMap(data){
+  var color_mapping_js = JSON.parse(data);//name-color
+  Object.keys(property_mapping).forEach(function(key) {
+    property_mapping[key].colors = color_mapping_js[key];
+  });  
+}
+
+function cp_DeserializedColorMap_cb(e){
+  var theFiles = e.target.files;
+  var thefile = theFiles[0];
+  if (window.FileReader) {
+    // FileReader is supported.
+  } else {
+    alert('FileReader is not supported in this browser.');
+  }
+  var reader = new FileReader();
+  reader.onload = function(event) {
+    var data = reader.result;
+    data = data.replace(/\\n\\r/gm,'newChar');
+    cp_DeserializedColorMap(data);
+  }
+  reader.readAsText(thefile, 'UTF-8');
 }

@@ -3476,7 +3476,7 @@ function DrawLabels(){
 	}
 }
 
-function drawColorLegend(){
+function DrawColorLegend(){
 	//draw legends for color mapping
 	var colorby = canvas_color.selectedOptions[0].value;
 	var index_opt = default_options.indexOf(colorby);
@@ -3625,7 +3625,7 @@ function ticked(e) {
 			context.restore();
 		}
     }
-	drawColorLegend();
+	DrawColorLegend();
 
 	/*if (clusterBy != -1) {
 		DrawCluster();
