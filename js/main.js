@@ -2962,7 +2962,7 @@ function ChangeCanvasColor(e){
 			//should be string
 			use_unique_array = true;
 			unique_array = scores.filter(onlyUnique);
-			unique_array.push("");
+			if (unique_array.indexOf("") == -1) unique_array.push("");
 			var nCategories = unique_array.length;
 			var cs = GenerateNColor(nCategories);
 			//map to rgb string
@@ -3476,6 +3476,29 @@ function DrawLabels(){
 	}
 }
 
+function drawColorLegend(){
+	//draw legends for color mapping
+	var colorby = canvas_color.selectedOptions[0].value;
+	var index_opt = default_options.indexOf(colorby);
+	if (!use_color_mapping && index_opt == -1 && use_unique_array) {
+		var sx = 0,
+			sy = 0,
+			w = 50,
+			h = 10;
+		unique_array.forEach(function(label){
+			context.fillStyle = property_mapping[colorby].colors[unique_array.indexOf(label)];
+			context.fillRect(sx,sy+5, w,h);
+			context.strokeStyle = "black";
+			context.stroke();	
+			context.textAlign = 'left';
+			context.font="10px Georgia";
+			if (label == "") label = "unknown";
+			context.fillText(label,sx+55,sy+15);
+			sy+=10;
+		});
+	}	
+}
+
 //the tick also draw in the canvas!
 function ticked(e) {
 	if (context===null || context === undefined)
@@ -3602,6 +3625,8 @@ function ticked(e) {
 			context.restore();
 		}
     }
+	drawColorLegend();
+
 	/*if (clusterBy != -1) {
 		DrawCluster();
 	}*/

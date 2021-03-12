@@ -171,9 +171,9 @@ var canvasOption = '' +
       getSelect("canvas_group", "options_elems", "Node group by",
                             "ClusterNodeBy(this)", Object.keys(property_mapping),"size")+
     '</div>' +
-    '<button id="addingr" class="hidden" onclick="addIngredient()">Add ingredient</button>' +
-    '<button id="addcomp" class="hidden" onclick="addCompartment()">Add compartment</button>' +
-    '<button id="addlink" class="hidden" onclick="addLink()">Add interaction</button>'+
+    '<button id="addingr" onclick="addIngredient()">Add ingredient</button>' +
+    '<button id="addcomp" onclick="addCompartment()">Add compartment</button>' +
+    '<button id="addlink" onclick="addLink()">Add interaction</button>'+
     '<div>'+
       '<input type="checkbox" id="unchecked" onclick="switchMode(this)" class="cbx hidden" />' +
       '<label for="unchecked" class="lbl"></label>' +
