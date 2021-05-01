@@ -401,6 +401,7 @@ function Util_ClientDetection(window) {
      cookies: cookieEnabled,
      flashVersion: flashVersion
    };
+   return window.jscd;
  }
 
 function Util_selectFolder(e) {

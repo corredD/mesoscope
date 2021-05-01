@@ -864,9 +864,30 @@ function CreateDataColumnFromD3Links(alinks) {
   var data = [];
   var columns = [];
   console.log(alinks.length);
+  MapLinkToNode(gp_nodes,graph.links)
   for (var i = 0; i < alinks.length; i++) {
-    var jlink = JSON.stringify(alinks[i]);
-    var elem = JSON.parse(JSON.stringify(alinks[i]));
+    //link source and data need to be string.
+    //var jlink = JSON.stringify(alinks[i]);
+    var elem = {};
+    for (key in alinks[i]) {
+      console.log(key,alinks[i][key],typeof (alinks[i][key]));
+      if (key === "source" || key === "target" ) {
+        if ( typeof (alinks[i][key]) === 'string') {
+          elem[key] = alinks[i][key];
+        }
+        else if ( typeof (alinks[i][key]) === 'number') {
+          elem[key] = alinks[i][key];
+        }
+        else {//object
+          var lmap = MapOneLink(alinks[i]);
+          elem[key] = lmap[key];//need the ID
+        }
+      }
+      else {
+        elem[key] = alinks[i][key]; // copies each property to the objCopy object
+      }
+    }
+    //var elem = objCopy;//JSON.parse(JSON.stringify(alinks[i]));
     //elem.id = "id_"+i;
     if (columns.length === 0) {
       columns = CreateColumnsFromANodes(elem);
@@ -955,6 +976,7 @@ function UpdateGridFromD3Nodes(agraph, grid_id) {
 
 function UpdateGridFromD3Links(agraph, grid_id) {
   var cdata = CreateDataColumnFromD3Links(agraph);
+  console.log("cdata ",cdata.data);
   //if grid doesnt exist creat it
   console.log(gridArray.length + " before");
   console.log(grid_id);

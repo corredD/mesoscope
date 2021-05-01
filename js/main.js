@@ -4840,7 +4840,9 @@ function dragended() {
 		line_selected = null;
 	}
   	else {
-		if ("source" in d3v4.event.subject ){//&& d3v4.event.subject.nodetype==="ingredient"
+		if ("source" in d3v4.event.subject )
+		{
+			//&& d3v4.event.subject.nodetype==="ingredient"
 			line_selected = d3v4.event.subject;
 			nodes_selections=[]
 			nodes_selections.push(line_selected.source);
@@ -5096,8 +5098,20 @@ function drawCircularText(ctx, text, fontSize, titleFont, centerX, centerY, radi
 	ctx.restore(); //Restore to state as it was before transformations
 }//function drawCircularText
 
+function MapOneLink(alink){
+	var linkmap = {"source":0,"target":1};
+	for (var j = 0; j < graph.nodes.length; j++) {
+		//if use name as string
+		if (alink.source == some_nodes[j].data.name) linkmap.source = j;
+		if (alink.target == some_nodes[j].data.name) linkmap.target = j;
+		if (typeof( alink.source) == "object" && alink.source.data.name == some_nodes[j].data.name) linkmap.source = j;
+		if (typeof( alink.target) == "object" && alink.target.data.name == some_nodes[j].data.name) linkmap.target = j;
+	}	
+	return linkmap;
+}
+
 function MapLinkToNode(some_nodes,some_links) {
-	console.log(some_links);
+	//console.log(some_links);
 	for (var i=0;i<some_links.length;i++){
 		var alink = some_links[i];
 	    for (var j = 0; j < some_nodes.length; j++) {
@@ -5275,10 +5289,12 @@ function merge_graph(agraph,alink){
   //update the links
   alink.forEach(function(l){
 	  graph.links.forEach(function(ll){
-		if ((l.source == ll.source && l.target == ll.target)||(l.target == ll.source && l.target == ll.source)) {
+		if ((l.name1 === ll.name1 && l.name2 === ll.name2)||(l.name2 === ll.name1 && l.name1 === ll.name2)) {
 			//update
-			Object.keys(merge_field).forEach(function(akey,index) {
-				if ( akey in l ) ll[key] = l[key];
+			Object.keys(l).forEach(function(akey,index) {
+				if (akey !== "source" && akey !== "target" && akey !== "index" && akey !== "id" && akey !== "highlight") {
+					if ( akey in ll ) ll[akey] = l[akey];	
+				}
 			});
 		}
 	  })
@@ -5288,6 +5304,7 @@ function merge_graph(agraph,alink){
   console.log("update with "+gp_nodes.length);
   UpdateGridFromD3Nodes(gp_nodes,0);
   UpdateGridFromD3Links(graph.links,1);
+  MERGE = false;
   //graph.links = MapLinkToNode(gp_nodes,graph.links);
   if (DEBUGLOG) console.log( gp_nodes );
   users = d3v4.nest()

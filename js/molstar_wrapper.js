@@ -3,7 +3,8 @@ var ms_trace_only = document.getElementById("ms_trace_only");
 var ms_spacefill = document.getElementById("ms_spacefill");
 //.checked
 var ms_model_loaded = false;
-
+//https://molstar.org/viewer/?snapshot-url=https%3A%2F%2Fmolstar.s3.us-east-2.amazonaws.com%2Fbtub-ompf.molx&snapshot-url-type=molx
+//https://molstar.org/viewer/?snapshot-url=https://mesoscope.scripps.edu/beta/data/cellpack_mge.molx&snapshot-url-type=molx
 function MS_molstart_init(){
     BasicMolStarWrapper.init('molstar', {
         layoutShowControls: false,

@@ -335,7 +335,11 @@ function NGL_updateMetaBallsGeom(anode)
     anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
     anode.data.radii=[{"radii":[500.0]}];
   }
-  NGL_multiSpheresComp(anode.data.name,anode.data.pos[0].coords,anode.data.radii[0].radii.map(x=>x/2.0),1.0);//box around ?
+  var colors = anode.data.radii[0].radii.map(x=>anode.data.colors);
+  NGL_multiSpheresComp(anode.data.name,anode.data.pos[0].coords,
+                          anode.data.radii[0].radii.map(x=>x/2.0),
+                          colors,
+                          1.0);//box around ?
   if (nlg_preview_isosurface){
     if (!ngl_marching_cube) ngl_marching_cube = new NGL.MarchingCubes(30, null, true, false);
     NGL_updateMetaBalls(anode);
@@ -1059,7 +1063,22 @@ function NGL_LoadSpheres(pos, rad) {
     var lod = i;
     if (!pos[lod].coords) continue;
     var col = Array(pos[lod].coords.length).fill(0).map(Util_makeARandomNumber);
-    NGL_multiSpheresComp("lod_"+lod.toString()+"_",pos[lod].coords,rad[lod].radii,(toggle_cluster_edit.checked)?1.0:0.5);
+    var colors = rad[lod].radii.map(x=>ngl_current_node.data.color);
+    //if we are showing a pairs, color differently the binding beads.
+    if (ngl_load_params.dobeads_pairs) {
+      colors = ngl_load_params.beads.colors[lod].colors
+      //ngl_load_params.beads.colors[lod].colors.map(function(c){
+      //    if (c===[1,1,0]){return "yellow";}
+      //    else {return "red"}
+      //});
+      //NGL_multiSpheresComp("lod_"+lod.toString()+"_", ngl_load_params.beads.pos[lod].coords,
+      //                               ngl_load_params.beads.rad[lod].radii, 
+      //                               ngl_load_params.beads.colors[lod].colors, 1.0)
+    }
+    NGL_multiSpheresComp("lod_"+lod.toString()+"_",pos[lod].coords,
+                    rad[lod].radii,
+                    colors,
+                    (toggle_cluster_edit.checked)?1.0:0.5);
     /*
     //check if exist
     var rep = stage.getComponentsByName("beads_"+i);
@@ -1183,7 +1202,10 @@ function NGL_updateCurrentBeadsLevelClient() {
   */
   //NGL_RemoveMultiSpheresComp("lod_"+lod.toString()+"_",ngl_load_params.beads.rad[lod].radii.length);
   //add some beads if its a fiber [-2,-1,0,1,2] and there is no structure ?
-  NGL_multiSpheresComp("lod_"+lod.toString()+"_",ngl_load_params.beads.pos[lod].coords,ngl_load_params.beads.rad[lod].radii,(toggle_cluster_edit.checked)?1.0:0.5);
+  NGL_multiSpheresComp("lod_"+lod.toString()+"_",
+        ngl_load_params.beads.pos[lod].coords,
+        ngl_load_params.beads.colors[lod].colors, 
+        ngl_load_params.beads.rad[lod].radii,(toggle_cluster_edit.checked)?1.0:0.5);
 
   nbBeads_elem.textContent = '' + ngl_load_params.beads.pos[lod].coords.length / 3 + ' beads';
   /*
@@ -4349,14 +4371,14 @@ function NGL_RemoveMultiSpheresComp(name,count){
 function NGL_ChangeVisibilityMultiSpheresComp(name,count,value){
   console.log("change "+count.toString()+" lod sphere "+name+" "+value.toString());
   for (var i=0;i<count;i++) {
-    //console.log(name+"_"+i.toString()+" "+value.toString());
+    console.log(name+"_"+i.toString()+" "+value.toString());
     var rep = stage.getComponentsByName(name+"_"+i.toString());
     //console.log(rep);
     if (rep.list && rep.list.length !== 0) {
       for (var j = 0; j < rep.list.length; j++) {
         //rep.list[j].setVisibility(value);
         if (rep.list[j].reprList.length !== 0) {
-          //console.log(rep.list[j].reprList[0]);
+          console.log(rep.list[j].reprList[0]);
           rep.list[j].reprList[0].setParameters({opacity:(toggle_cluster_edit.checked)?1.0:0.6});
           rep.list[j].reprList[0].setVisibility(value);
         }
@@ -4393,15 +4415,18 @@ function NGL_ChangeOpacityMultiSpheresComp_cb(e)
   else NGL_ChangeOpacityMultiSpheresComp("lod_"+lod.toString()+"_",count,0.6);
 }
 
-function NGL_multiSpheresComp(name,pos, radii, opacity) {
+function NGL_multiSpheresComp(name,pos, radii, colors, opacity) {
   var p=0;
+  if (colors.length !== radii.length ) {
+    colors = radii.map(x=>ngl_current_node.data.color);
+  }
   for (var i=0;i<radii.length;i++) {
     //position,color,radii,label
     var shape = new NGL.Shape(name+"_"+i.toString(), {
       disableImpostor: true,
       radialSegments: 10
     });
-    shape.addSphere([pos[p],pos[p+1],pos[p+2]], [1, 0, 0], radii[i],name+"_"+i.toString());
+    shape.addSphere([pos[p],pos[p+1],pos[p+2]], colors[i], radii[i],name+"_"+i.toString());
     p+=3;
     var shapeComp = stage.addComponentFromObject(shape);
     shapeComp.addRepresentation(name+"_"+i.toString(),{opacity:opacity}); //wireframe ?
@@ -4965,19 +4990,37 @@ function NGL_UpdateWithNodePair(d) {
     offset = ngl_current_node.data.offset;
     pcp = ngl_current_node.data.pcpalAxis;
     //NGL_ShowAxisOffset( d.data.pcpalAxis,d.data.offset );
-    console.log("axis", ngl_load_params.axis)
+    console.log("caxis", ngl_load_params.axis);
   }    
-  ngl_load_params.dobeads = true;
+  ngl_load_params.dobeads = false;
+  console.log("dobeads", ngl_load_params.dobeads);
   var p = JSON.parse(JSON.stringify(ngl_current_node.data.pos));
   var r = JSON.parse(JSON.stringify(ngl_current_node.data.radii));
+  var c = []//rad[lod].radii.map(x=>ngl_current_node.data.colors);
   for (var i=0;i<ngl_current_node.data.radii.length;i++){
+    c.push({"colors":[]});
+    for (var j=0;j<ngl_current_node.data.radii[i].radii.length;j++){
+      if (d.beads1.indexOf(j)!==-1) {c[i].colors.push([1,1,0]);}
+      else {c[i].colors.push([1,0,0]);}
+    }
+  }
+  //ngl_current_node.data.radii.forEach(r=>{
+  //  var ac = r.radii.map(x=>ngl_current_node.data.color);
+  //  c.push({"colors":ac});
+  //})
+  console.log("target_beads",ngl_current_node.data.radii.length);
+  //use color and line for interaction ?
+  //line_selected.beads1
+  //line_selected.beads2
+  /*for (var i=0;i<ngl_current_node.data.radii.length;i++){
     for (var j=0;j<d.target.data.radii[i].radii.length;j++){
       target_beads[i].coords.push(d.target.data.pos[i].coords[j*3]+offset[0]);//p[i]
       target_beads[i].coords.push(d.target.data.pos[i].coords[j*3+1]+offset[1]);
       target_beads[i].coords.push(d.target.data.pos[i].coords[j*3+2]+offset[2]);
       target_beads[i].radii.push(d.target.data.radii[i].radii[j]);
     }
-  }
+  }*/
+  console.log("target_beads", r);
   //if one or the other is a fiber repeat along the pcp using the level ?
   //fibers use control points, would need sub_beads id
   if (d.source.data.ingtype == "fiber" ){
@@ -5005,7 +5048,7 @@ function NGL_UpdateWithNodePair(d) {
 
     }
     else {*/
-      var o = [-1,1,2];
+      var o = [-1,0,1,2];
       for (var i=0;i<d.target.data.radii.length;i++){
         //add -1,1,2
         var rad = d.target.data.radii[i].radii[0]*2.0;
@@ -5013,19 +5056,25 @@ function NGL_UpdateWithNodePair(d) {
           p[i].coords.push(offset[0]+pcp[0]*rad*v);
           p[i].coords.push(offset[1]+pcp[1]*rad*v);
           p[i].coords.push(offset[2]+pcp[2]*rad*v);
-          r[i].radii.push(rad/2.0);        
+          r[i].radii.push(rad/2.0); 
+          if (d.beads2.indexOf(v)!==-1) {c[i].colors.push([1,1,0]);}
+          else {c[i].colors.push([0,0,1]);}    
+          //c[i].colors.push(d.target.data.color); 
         })      
       }
+      console.log("target_beads2", r);
     //}    
   }
+  console.log("d.target.data.ingtype", d.target.data.ingtype);
   //if fiber build line of beads.
   ngl_load_params.beads = {
     "pos": p,
-    "rad": r
+    "rad": r,
+    "colors" : c,
   };
-  //console.log(ngl_load_params.beads);
+  console.log("ngl_load_params.beads",ngl_load_params.beads);
   //add the target beads
-  ngl_load_params.dobeads_pairs = true;
+  ngl_load_params.dobeads_pairs = false;
 
   if (d.sel1) asele += d.sel1;
   else {
@@ -5037,18 +5086,47 @@ function NGL_UpdateWithNodePair(d) {
     d.sel2 = d.target.data.source.selection;
     asele += d.target.data.source.selection;
   }
+  console.log("check PDB for d ");
+  console.log((!d.pdb1 || d.pdb1 === ""));
+  var nLod = r.length;
+  for (var i = 0; i < nLod; i++) {
+    var lod = i;
+    NGL_multiSpheresComp("lod_"+lod.toString()+"_", ngl_load_params.beads.pos[lod].coords,
+                                   ngl_load_params.beads.rad[lod].radii, 
+                                   ngl_load_params.beads.colors[lod].colors, 
+                                   (toggle_cluster_edit.checked)?1.0:0.5)
+  }
+  NGL_showBeadsLevel(beads_elem.selectedOptions[0]);
+  //then load proteins  
   if (!d.pdb1 || d.pdb1 === "") {
     //use the pdb of the ingredient ?
+    console.log("no PDB for d use source");
     pdb = d.source.data.source.pdb;
-    if (!pdb || pdb === "") return;
+    if (!pdb || pdb === "") 
+    {
+      console.log("no PDB for d "+pdb);
+      return;
+    }
     ngl_current_node = d.source;
     d.pdb1 = pdb;
     NGL_Load(pdb, d.source.data.source.bu, d.sel1); //transform ?
     //ngl_current_structure.setPosition([ -200,0,0 ])
-    pdb = d.target.data.source.pdb;
+    var pdb2 = d.target.data.source.pdb;
     ngl_current_node = d.source;
-    NGL_Load(pdb, "AU", ""); //transform ?
-    //ngl_current_structure.setPosition([ 200,0,0 ])
+    ngl_load_params.dobeads_pairs = false;
+    //second one should be load and offset on pcp. Problem with multiple binder
+    //var purl = "";
+    //if (pdb2.length === 4) {purl = "rcsb://" + pdb2 + ".mmtf";}
+    //else if ( pdb2 in pathList_ ) {purl = pathList_[pdb2];}
+    //else {purl = cellpack_repo+"other/" + pdb2;}
+    //NGL_Load(pdb2, "AU", ""); //transform ?
+    //var axis = d.source.data.pcpalAxis;
+    //ngl_current_structure.setPosition(d.source.data.offset);
+    //var q = new NGL.Quaternion();
+    //q.setFromUnitVectors(new NGL.Vector3(0, 0, 1), new NGL.Vector3(axis[0], axis[1], axis[2]));
+    //ngl_current_structure.setRotation(q);
+
+    
   } else {
     repToChange = rep_elem.selectedOptions[0].value;
     selToChange = asele;
@@ -5058,6 +5136,7 @@ function NGL_UpdateWithNodePair(d) {
     //update the selection with dsel2
     //NGL_ChangeRepresentation_cb(rep_elem.selectedOptions[0].value, asele, d.source.data.source.bu);
   }
+  
 }
 
 function NGL_ClearGridMode(){
