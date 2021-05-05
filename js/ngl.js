@@ -1166,7 +1166,7 @@ function NGL_updateCurrentBeadsLevelClient() {
   }
   var res = NGL_buildBeads(lod, ngl_current_structure, center);
   console.log("finsihed building", res);
-  var col = Array(ngl_load_params.beads.pos[lod].coords.length).fill(0).map(Util_makeARandomNumber);
+  var col = Array(ngl_load_params.beads.rad[lod].radii.length).fill(0).map(d=>[Util_makeARandomNumber(),Util_makeARandomNumber(),Util_makeARandomNumber()]);
   var labels = Array(ngl_load_params.beads.pos[lod].coords.length).fill("0").map(function(v, i) {
     return "bead_" + i.toString()
   });
@@ -1202,10 +1202,17 @@ function NGL_updateCurrentBeadsLevelClient() {
   */
   //NGL_RemoveMultiSpheresComp("lod_"+lod.toString()+"_",ngl_load_params.beads.rad[lod].radii.length);
   //add some beads if its a fiber [-2,-1,0,1,2] and there is no structure ?
+  if (!ngl_load_params.beads.colors) {
+    ngl_load_params.beads.colors = []
+  }
+  if (ngl_load_params.beads.colors.length <= lod) {
+    ngl_load_params.beads.colors[lod] = {"colors":col};
+  }
   NGL_multiSpheresComp("lod_"+lod.toString()+"_",
         ngl_load_params.beads.pos[lod].coords,
+        ngl_load_params.beads.rad[lod].radii,
         ngl_load_params.beads.colors[lod].colors, 
-        ngl_load_params.beads.rad[lod].radii,(toggle_cluster_edit.checked)?1.0:0.5);
+        (toggle_cluster_edit.checked)?1.0:0.5);
 
   nbBeads_elem.textContent = '' + ngl_load_params.beads.pos[lod].coords.length / 3 + ' beads';
   /*
