@@ -1208,6 +1208,9 @@ function NGL_updateCurrentBeadsLevelClient() {
   if (ngl_load_params.beads.colors.length <= lod) {
     ngl_load_params.beads.colors[lod] = {"colors":col};
   }
+  if ( ngl_load_params.beads.colors[lod].colors.length !== ngl_load_params.beads.rad[lod].radii.length){
+    ngl_load_params.beads.colors[lod].colors = col;
+  }
   NGL_multiSpheresComp("lod_"+lod.toString()+"_",
         ngl_load_params.beads.pos[lod].coords,
         ngl_load_params.beads.rad[lod].radii,
