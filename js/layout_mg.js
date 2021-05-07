@@ -362,7 +362,7 @@ var ngl_widget_options_collapsible = ''+
   '<div class="meso_content">'+
     '<div>'+
         '<input type="checkbox"  id="showgeom" onclick="NGL_showGeomNode(this)">' +
-        '<label for="showgeom"> Show Geometry used </label> '+
+        '<label for="showgeom">&nbsp;Show Geometry used </label> '+
         '<button onclick="NGL_buildCMS()">Rebuild Geometry</button>'+getSpinner("stopbuildgeom","stopGeom()")+
         '<div>'+
           '<label>Geometry details</label>' +
@@ -372,30 +372,32 @@ var ngl_widget_options_collapsible = ''+
       '</div>' +
       getSelect("beads_elem", "options_elems", "Show Beads",
                             "NGL_showBeadsLevel(this)", ["All","0","1","2","None"],"None")+
+      getSelect("beads_color_elem", "options_elems", "Color Beads",
+                            "NGL_colorBeadsLevel(this)", ["level","radius","interacting","random","red"],"red")+                            
       '<div>'+
-        '<label> number of cluster</label>' +
+        '<label> Number of Beads</label>' +
         '<input id="slidercl_params1" style="width:70%;display:inline" type="range" min="1" max="2000"" step="1" value="10" /> ' +
         '<input class="inputNumber" id="slidercl_params11" min="1" max="2000" type="number" value="10" />' +getSpinner("stopkmeans","stopKmeans()")+
       '</div>'+
       '<div>'+
       '<input type="checkbox"  id="toggle_cluster_auto" onclick="NGL_ChangeClusterNb_cb(this)" />' +
-      '<label for="toggle_cluster_auto"> Auto number of beads</label> '+
+      '<label for="toggle_cluster_auto">&nbsp;Auto number of beads</label> '+
       '</div>'+
       '<div>'+
       '<input type="checkbox"  id="toggle_cluster_grid" onclick="NGL_ChangeClusterGrid_cb(this)" />' +
-      '<label for="toggle_cluster_grid"> Build on a grid </label> '+
+      '<label for="toggle_cluster_grid">&nbsp;Build on a grid </label> '+
       '</div>'+      
       '<div>'+
       '<input type="checkbox"  id="toggle_cluster_grid_from_LOD0" onclick="NGL_ChangeClusterGridLOD_cb(this)" />' +
-      '<label for="toggle_cluster_grid_from_LOD0"> Build on a grid from level 0</label> '+
+      '<label for="toggle_cluster_grid_from_LOD0">&nbsp;Build on a grid from level 0</label> '+
       '</div>'+            
       '<div>'+
       '<input type="checkbox"  id="toggle_cluster_edit" onclick="NGL_ChangeOpacityMultiSpheresComp_cb(this)" />' + 
-      '<label for="toggle_cluster_edit"> Edit beads (ctrl) </label> '+
+      '<label for="toggle_cluster_edit">&nbsp;Edit beads (ctrl) </label> '+
       '</div>'+
       '<div>'+
       '<input type="checkbox"  id="cl_use_radius" onclick="NGL_toggleUseCurrentBeadsRadius(this)" />' + 
-      '<label for="showgeom"> Overwrite cluster radius</label> '+   
+      '<label for="showgeom">&nbsp;Overwrite cluster radius</label> '+   
       '</div>'+
       '<div>'+
       '<input id="cl_radius" min="1.0" max="100.0" onchange="NGL_updateCurrentBeadsRadius(this)" type="number" value="1.0" style="width:30%"/>' +
@@ -885,7 +887,7 @@ localforage.getItem('savedRecipe').then(function(readValue) {
 }),
 
 console.log("savedRecipe", savedRecipe !== null, savedRecipe);
-var current_version = {"version":1.27};
+var current_version = {"version":1.28};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()

@@ -1488,6 +1488,8 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
       return (value1 == value2 ? 0 : (value1 > value2 ? 1 : -1)) * sign;
       //return (a[args.sortCol.field] > b[args.sortCol.field]) ? 1 : -1;
     }); //, args.sortAsc
+    //update the selection
+    grid_UpdateSelectionPdbFromId(node_selected.data.id);
   });
   // wire up model events to drive the grid
 
@@ -2079,13 +2081,13 @@ function grid_UpdateSelectionPdbFromId(node_id) {
   gridArray[0].setSelectedRows([test]);
   gridArray[0].setActiveCell(test, 7); //7 is currently pdb
   gridArray[0].gotoCell(test, 7, false);
-  current_grid_row = test.id;
+  current_grid_row = test;
 }
 
 function SelectRowFromId(node_id) {
   var test = gridArray[0].dataView.getRowById(node_id);
   console.log("atest ", test);
-  current_grid_row = test.id;
+  current_grid_row = test;//this is undefined
   gridArray[0].setSelectedRows([test]);
 }
 

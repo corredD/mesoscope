@@ -42,6 +42,10 @@ function Util_getRGB(avalue){
   return {"rgb":"rgb(" + value.join(",") + ")","arr":value};
 }
 
+function Util_getRBG_float(rgb) {
+  return [rgb[0]/255.0,rgb[1]/255.0,rgb[2]/255.0];
+}
+
 function Util_rgbToHsl(r, g, b) {
   r /= 255, g /= 255, b /= 255;
 

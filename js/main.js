@@ -4075,6 +4075,19 @@ function getNodeByName(aname){
 	return null;
 }
 
+function getPairInteracting(anode){
+	for (i = 0; i < graph.links.length; ++i) {
+		var link = graph.links[i];
+		if (anode === link.source) {
+			return {"found":"source","link":link};
+		}
+		else if (anode === link.target) {
+			return {"found":"target","link":link};
+		}
+	}
+	return  {"found":"notfound","link":null};
+}
+
 function addCompartment() {
 	var some_data = {
 		nodetype: "compartment",
@@ -5332,52 +5345,105 @@ function merge_graph(agraph,alink){
   MERGE = false;
 }
 
+//used _index before, now use table.
 function PreviousIgredient(){
+	PreviousIgredient_table();
+}
+
+function NextIgredient(){
+	NextIgredient_table();
+}
+
+function PreviousIgredient_table(){
+	var current_rows = gridArray[0].getSelectedRows();
+	var crow = 0;
+	var total = gridArray[0].dataView.getLength();
+	if (current_rows.length == 0) {
+		//select last row
+		crow = -1;
+	} else {
+		//select previous row
+		crow = current_rows[0];
+	}
+	crow = crow - 1;
+	if (crow < 0) crow = total-1;
+	var arow = gridArray[0].dataView.getItem(crow);
+	node_selected_indice = parseInt(arow.id.split("_")[1]);
+	node_selected = graph.nodes[node_selected_indice];
+	node_selected.data.visited = true;
+	grid_UpdateSelectionPdbFromId(node_selected.data.id);
+	NGL_UpdateWithNode(node_selected);
+	wakeUpSim();
+}
+
+function NextIgredient_table(){
+	var current_rows = gridArray[0].getSelectedRows();
+	var crow = 0;
+	var total = gridArray[0].dataView.getLength();
+	if (current_rows.length == 0) {
+		//select last row
+		crow = -1;
+	} else {
+		//select previous row
+		crow = current_rows[0];
+	}
+	crow = crow + 1;
+	if (crow >= total) crow = 0;
+	var arow = gridArray[0].dataView.getItem(crow);
+	node_selected_indice = parseInt(arow.id.split("_")[1]);
+	node_selected = graph.nodes[node_selected_indice];
+	node_selected.data.visited = true;
+	grid_UpdateSelectionPdbFromId(node_selected.data.id);
+	NGL_UpdateWithNode(node_selected);
+	wakeUpSim();
+}
+
+function PreviousIgredient_index(){
 	var icurrent = node_selected_indice;
 	//find previous
 	var found = false;
 	var i=(icurrent)? icurrent : graph.nodes.length;
-  while (!found){
-     i=i-1;
-     if (i===0) { i = graph.nodes.length;}
-     if (!graph.nodes[i].children){
-     	found = true;
-     	node_selected_indice = i;
-     	node_selected = graph.nodes[i];
+	while (!found){
+		i=i-1;
+		if (i===0) { i = graph.nodes.length;}
+		if (!graph.nodes[i].children){
+			found = true;
+			node_selected_indice = i;
+			node_selected = graph.nodes[i];
 			nodes_selections=[];
-     }
-  }
-  if (found)
-  {
-  	//find the row
+		}
+	}
+	if (found)
+	{
+		//find the row
 		node_selected.data.visited = true;
-  	grid_UpdateSelectionPdbFromId(node_selected.data.id);
-  	NGL_UpdateWithNode(node_selected);
-  	wakeUpSim();
-  }
+		grid_UpdateSelectionPdbFromId(node_selected.data.id);
+		NGL_UpdateWithNode(node_selected);
+		wakeUpSim();
+	}
 }
 
-function NextIgredient(){
+function NextIgredient_index(){
 	var icurrent = node_selected_indice;
 	//find previous
 	var found = false;
 	var i=(icurrent)? icurrent : 0;
-  while (!found){
-     i=i+1;
-     if (i===graph.nodes.length) { i = 0;}
-     if (!graph.nodes[i].children){
-     	found = true;
-     	node_selected_indice = i;
-     	node_selected = graph.nodes[i];
-     }
-  }
-  if (found)
-  {
+	while (!found){
+		i=i+1;
+		if (i===graph.nodes.length) { i = 0;}
+		if (!graph.nodes[i].children){
+			found = true;
+			node_selected_indice = i;
+			node_selected = graph.nodes[i];
+		}
+	}
+	if (found)
+	{
 		node_selected.data.visited = true;
-  	grid_UpdateSelectionPdbFromId(node_selected.data.id);
-  	NGL_UpdateWithNode(node_selected);
-  	wakeUpSim();
-  }
+		grid_UpdateSelectionPdbFromId(node_selected.data.id);
+		NGL_UpdateWithNode(node_selected);
+		wakeUpSim();
+	}
 }
 
 var gridster;

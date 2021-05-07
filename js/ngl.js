@@ -9,6 +9,7 @@ var color_elem = document.getElementById("color_type");
 var sym_elem = document.getElementById("sym_elem");
 var label_elem = document.getElementById("label_elem");
 var beads_elem = document.getElementById("beads_elem");
+var beads_color_elem = document.getElementById("beads_color_elem");
 var heading = document.getElementById("heading");
 var grid_viewport = document.getElementById("viewport"); //createElement( "div" );
 var pdb_id_elem;
@@ -335,7 +336,7 @@ function NGL_updateMetaBallsGeom(anode)
     anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
     anode.data.radii=[{"radii":[500.0]}];
   }
-  var colors = anode.data.radii[0].radii.map(x=>anode.data.colors);
+  var colors = anode.data.radii[0].radii.map(x=>anode.data.color);
   NGL_multiSpheresComp(anode.data.name,anode.data.pos[0].coords,
                           anode.data.radii[0].radii.map(x=>x/2.0),
                           colors,
@@ -624,6 +625,7 @@ function NGL_Setup() {
   sym_elem = document.getElementById("sym_elem");
   label_elem = document.getElementById("label_elem");
   beads_elem = document.getElementById("beads_elem");
+  beads_color_elem = document.getElementById("beads_color_elem");
   cluster_elem = document.getElementById("cluster_elem");
   nbBeads_elem = document.getElementById("nbBeads");
   pdb_id_elem = document.getElementById("pdb_id");
@@ -1202,6 +1204,7 @@ function NGL_updateCurrentBeadsLevelClient() {
   */
   //NGL_RemoveMultiSpheresComp("lod_"+lod.toString()+"_",ngl_load_params.beads.rad[lod].radii.length);
   //add some beads if its a fiber [-2,-1,0,1,2] and there is no structure ?
+  if (beads_color_elem!==null) NGL_getColorBeads(beads_color_elem.selectedOptions[0].value);
   if (!ngl_load_params.beads.colors) {
     ngl_load_params.beads.colors = []
   }
@@ -1454,6 +1457,7 @@ function NGL_showBeadsLevel_cb(alevel) {
 }
 
 function NGL_showBeadsLevel(e) {
+  if (beads_color_elem!==null) NGL_colorBeadsLevel_cb(beads_color_elem.selectedOptions[0].value);
   NGL_showBeadsLevel_cb(e.value);
 }
 
@@ -1468,6 +1472,96 @@ function NGL_showBeadsInteracting(alevel){
   //draw cylinder for the pairs line_selected.beads1 <-> line_selected.beads2
   //if same number 1-1, else all-1
   //if source/target a fiber beads are id along the fiber.
+}
+
+function NGL_getColorBeads(color_schem){
+  if (beads_elem.selectedOptions[0].value === "None" || beads_elem.selectedOptions[0].value === "All") return;
+  var lod = parseInt(beads_elem.selectedOptions[0].value);
+  if (!ngl_load_params.beads.pos) return;
+  if (!ngl_load_params.beads.rad) return;
+  if (lod >= ngl_load_params.beads.rad.length) return;
+  var col = Array(ngl_load_params.beads.rad[lod].radii.length).fill(0).map(d=>[1,0,0]);
+  var lod_colors = [[1,1,0],[0,1,0],[0,0,1]];//GenerateNColor(3);//
+  if (!ngl_load_params.beads.colors) {
+    ngl_load_params.beads.colors = []
+  }
+  if (ngl_load_params.beads.colors.length <= lod) {
+    ngl_load_params.beads.colors[lod] = {"colors":[]};
+  }  
+  if (!ngl_load_params.beads.colors[lod]) {
+    ngl_load_params.beads.colors[lod] = {"colors":[]};
+  }
+  if (color_schem === "red") {
+    ngl_load_params.beads.colors[lod].colors = col;
+  }
+  else if (color_schem === "level") {
+    //0,1,2 YBG
+    ngl_load_params.beads.colors[lod].colors = Array(ngl_load_params.beads.rad[lod].radii.length).fill(0).map(d=>lod_colors[lod]);//Util_getRBG_float(lod_colors[lod].rgb()));
+  }
+  else if (color_schem === "radius") {
+    //map radius to colors
+    var vmax = Math.max.apply(null, ngl_load_params.beads.rad[lod].radii);
+    var vmin = Math.min.apply(null, ngl_load_params.beads.rad[lod].radii);
+    var v_colors = GenerateNColor(2);
+    var color_mapping = d3v4.scaleLinear()//d3v4.scaleLinear()
+				.domain([Math.min(0,vmin), vmax])
+				.range([Util_getRBG_float(v_colors[0].rgb()), Util_getRBG_float(v_colors[1].rgb())]);
+    ngl_load_params.beads.colors[lod].colors = ngl_load_params.beads.rad[lod].radii.map(d=>color_mapping(d));
+  }
+  else if (color_schem === "interacting") {
+    //if beads id is in the interacting table highligh/colors
+    //check if node_selected has interaction
+    var pair = getPairInteracting(node_selected);
+    var c = Array(ngl_load_params.beads.rad[lod].radii.length).fill(0).map(d=>lod_colors[lod]);//Util_getRBG_float(lod_colors[lod].rgb()));
+    if (pair.found !== "notfound") {
+      //check if beads in pairs
+      if (pair.found === "source") {
+        for (var j=0;j<ngl_load_params.beads.rad[lod].radii.length;j++){
+          if (pair.link.beads1.indexOf(j)!==-1) {c[j] = [1,1,0];}
+          else {c[j] = [1,0,0];}
+        }        
+      }
+      else if (pair.found === "target") {
+        for (var j=0;j<ngl_load_params.beads.rad[lod].radii.length;j++){
+          if (pair.link.beads2.indexOf(j)!==-1) {c[j] = [1,1,0];}
+          else {c[j] = [1,0,0];}
+        }        
+      } 
+    }
+    ngl_load_params.beads.colors[lod].colors = c;
+  }
+  else if (color_schem === "random") {
+    ngl_load_params.beads.colors[lod].colors = Array(ngl_load_params.beads.rad[lod].radii.length).fill(0).map(d=>[Util_makeARandomNumber(),Util_makeARandomNumber(),Util_makeARandomNumber()]);
+  }
+}
+
+function NGL_colorBeadsLevel_cb(color_schem) {
+  if (beads_elem.selectedOptions[0].value === "None" || beads_elem.selectedOptions[0].value === "All") return;
+  if (!ngl_load_params.beads.pos) return;
+  if (!ngl_load_params.beads.rad) return;  
+  var lod = parseInt(beads_elem.selectedOptions[0].value);
+  if (lod >= ngl_load_params.beads.rad.length) return;
+  if (beads_color_elem!==null) NGL_getColorBeads(color_schem);
+  
+  console.log("color beads",ngl_load_params.beads.colors[lod].colors);
+  var comp = stage.getComponentsByName("beads_" + lod.toString());
+  if (comp.list) {
+    stage.removeComponent(comp.list[0]);
+  }
+  if (ngl_load_params.beads.rad && ngl_load_params.beads.rad.length != 0 && ngl_load_params.beads.rad[lod]) 
+  {
+    NGL_RemoveMultiSpheresComp("lod_"+lod.toString()+"_",ngl_load_params.beads.rad[lod].radii.length);
+  }
+  NGL_multiSpheresComp("lod_"+lod.toString()+"_",
+          ngl_load_params.beads.pos[lod].coords,
+          ngl_load_params.beads.rad[lod].radii,
+          ngl_load_params.beads.colors[lod].colors, 
+          (toggle_cluster_edit.checked)?1.0:0.5);
+  //NGL_updateCurrentBeadsLevelClient();
+}
+
+function NGL_colorBeadsLevel(e) {
+  NGL_colorBeadsLevel_cb(e.value);
 }
 
 function NGL_UpdateassemblyList(ngl_ob) {
