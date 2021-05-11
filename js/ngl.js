@@ -40,6 +40,7 @@ var toggle_cluster_edit;
 var toggle_cluster_grid;
 var toggle_cluster_grid_from_LOD0;
 var force_do_cms = true;
+var force_do_beads = true;
 var cluster_force_radius = -1.0;
 var cluster_avg_radius = false;
 var use_cluster_radius = false;
@@ -2552,8 +2553,8 @@ function NGL_Illustrate(){
     formData.append("force_pdb",true);
     var xhr = new XMLHttpRequest();
     var url = 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py'
-    xhr.open('POST', url);
-    xhr.timeout = 1000000000;
+    xhr.open('POST', url, !query_illustrate );
+    if (!query_illustrate) xhr.timeout = 1000000000;
     xhr.ontimeout = function () {
       console.error("The request for " + url + " timed out.");
     };
@@ -4828,18 +4829,21 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
       //build the kmeans
       //var ats = o.structure.atomStore;
       //var nAtom = ats.count;
-      console.log("before kmeans ?");
-      var _cluster_coords = buildWithKmeans(o, center, parseInt(slidercluster_elem.value));
-      console.log("after kmeans ?",_cluster_coords);
-      var _pos = {
-        "coords": _cluster_coords.pos
-      };
-      var _rad = {
-        "radii": _cluster_coords.rad
-      };
-      var lod = parseInt(beads_elem.selectedOptions[0].value);
-      anode.data.pos[lod] = JSON.parse(JSON.stringify(_pos));
-      anode.data.radii[lod] = JSON.parse(JSON.stringify(_rad));
+      if (force_do_beads)
+      {
+        console.log("before kmeans ?");
+        var _cluster_coords = buildWithKmeans(o, center, parseInt(slidercluster_elem.value));
+        console.log("after kmeans ?",_cluster_coords);
+        var _pos = {
+          "coords": _cluster_coords.pos
+        };
+        var _rad = {
+          "radii": _cluster_coords.rad
+        };
+        var lod = parseInt(beads_elem.selectedOptions[0].value);
+        anode.data.pos[lod] = JSON.parse(JSON.stringify(_pos));
+        anode.data.radii[lod] = JSON.parse(JSON.stringify(_rad));
+      }
       //console.log("kmeans done with 10 cluster ",anode.data.pos);
       //build the CMS Representation
       if (force_do_cms) var rep = o.addRepresentation("surface", {
@@ -4864,6 +4868,7 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
         if (force_do_cms) NGL_setCMSBufferGeomTimer(o);//wait ?
         //stage.removeComponent(o);
         //do next
+        if (query_illustrate) NGL_Illustrate();//illustrate
         document.getElementById("stopbeads_lbl").innerHTML = "building " + current_compute_index + " / " + graph.nodes.length;
         if (NextComputeIgredient() && (!(stop_current_compute))) {
           //update label_elem
@@ -4907,6 +4912,7 @@ function NGL_buildLoopAsync() {
     } else {
       document.getElementById("stopbeads_lbl").innerHTML = "finished " + current_compute_index + " / " + graph.nodes.length;
       stopBeads();
+      if (query_illustrate) query_illustrate = false;
     }
     return;
   }
@@ -4926,7 +4932,7 @@ function NGL_buildLoopAsync() {
       d.data.pos === "")) {
     dobeads = true;
   }
-  if (dobeads || docms)
+  if ( dobeads || docms || query_illustrate )
   {
     var purl = NGL_getUrlStructure(d,pdb);
     console.log("query with ", [pdb, bu, sele, model, thefile], purl);
@@ -4939,6 +4945,7 @@ function NGL_buildLoopAsync() {
     } else {
       document.getElementById("stopbeads_lbl").innerHTML = "finished " + current_compute_index + " / " + graph.nodes.length;
       stopBeads();
+      if (query_illustrate) query_illustrate = false;
     }
   }
 }
@@ -5161,7 +5168,7 @@ function NGL_UpdateWithNodePair(d) {
           p[i].coords.push(offset[1]+pcp[1]*rad*v);
           p[i].coords.push(offset[2]+pcp[2]*rad*v);
           r[i].radii.push(rad/2.0); 
-          if (d.beads2.indexOf(v)!==-1) {c[i].colors.push([1,1,0]);}
+          if (d.beads2.indexOf(v)!==-1) {c[i].colors.push([1,1,0.2]);}
           else {c[i].colors.push([0,0,1]);}    
           //c[i].colors.push(d.target.data.color); 
         })      
@@ -5200,7 +5207,8 @@ function NGL_UpdateWithNodePair(d) {
                                    ngl_load_params.beads.colors[lod].colors, 
                                    (toggle_cluster_edit.checked)?1.0:0.5)
   }
-  NGL_showBeadsLevel(beads_elem.selectedOptions[0]);
+  //NGL_showBeadsLevel(beads_elem.selectedOptions[0]);
+  NGL_showBeadsLevel_cb(beads_elem.selectedOptions[0].value);
   //then load proteins  
   if (!d.pdb1 || d.pdb1 === "") {
     //use the pdb of the ingredient ?
@@ -5213,6 +5221,7 @@ function NGL_UpdateWithNodePair(d) {
     }
     ngl_current_node = d.source;
     d.pdb1 = pdb;
+    ngl_load_params.dobeads = false;
     NGL_Load(pdb, d.source.data.source.bu, d.sel1); //transform ?
     //ngl_current_structure.setPosition([ -200,0,0 ])
     var pdb2 = d.target.data.source.pdb;

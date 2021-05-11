@@ -12,6 +12,7 @@ var cp_fiber_description = {};
 var current_compute_index = 0;
 var current_compute_node;
 var stop_current_compute = false;
+var query_illustrate = false;
 
 //so we can use the mgl2 copy and put there some computed geometry
 var opm_url = "https://opm-assets.storage.googleapis.com/pdb/"
@@ -1386,6 +1387,8 @@ function BuildDefaultCompartmentsRep() {
 function query_BuildAll(cms) {
   //show the stop button
   force_do_cms = cms;
+  query_illustrate = false;
+  force_do_beads = true;
   stop_current_compute = false;
   document.getElementById('stopbeads').setAttribute("class", "spinner");
   document.getElementById("stopbeads_lbl").setAttribute("class", "show");
@@ -1400,8 +1403,19 @@ function query_BuildAll(cms) {
   //build beads
 }
 
+
 function query_IllustrateAll() {
   //query NGL_illustrate for all nodes
+  stop_current_compute = false;
+  query_illustrate = true;
+  force_do_beads = false;
+  force_do_cms = false;
+  document.getElementById('stopbeads').setAttribute("class", "spinner");
+  document.getElementById("stopbeads_lbl").setAttribute("class", "show");
+  document.getElementById("stopbeads_lbl").innerHTML = "building " + current_compute_index + " / " + graph.nodes.length;
+  current_compute_index = -1;
+  NextComputeIgredient();
+  NGL_buildLoopAsync();
 }
 
 function as_clearNode(anode){
