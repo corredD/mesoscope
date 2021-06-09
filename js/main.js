@@ -267,15 +267,15 @@ function EvaluateCurrentReadyState() {
 function switchMode(e){
 	if (current_mode ===1 ){
 		current_mode = 0;
-		//document.getElementById("addingr").setAttribute("class", "hidden");
-		//document.getElementById("addcomp").setAttribute("class", "hidden");
-		//document.getElementById("addlink").setAttribute("class", "hidden");
+		document.getElementById("addingr").setAttribute("class", "hidden");
+		document.getElementById("addcomp").setAttribute("class", "hidden");
+		document.getElementById("addlink").setAttribute("class", "hidden");
 		}
 	else {
 		current_mode = 1;
-		//document.getElementById("addingr").setAttribute("class", "show");
-		//document.getElementById("addcomp").setAttribute("class", "show");
-		//document.getElementById("addlink").setAttribute("class", "show");
+		document.getElementById("addingr").setAttribute("class", "show");
+		document.getElementById("addcomp").setAttribute("class", "show");
+		document.getElementById("addlink").setAttribute("class", "show");
 		}
 	}
 
@@ -284,7 +284,7 @@ function CreateNew(){
 	if (!r) return;
 	//reset everything
 	current_mode = 1;
-	document.getElementById("unchecked").checked = true;
+	document.getElementById("editmode").checked = true;
 	document.getElementById("addingr").setAttribute("class", "show");
 	document.getElementById("addcomp").setAttribute("class", "show");
 	document.getElementById("addlink").setAttribute("class", "show");
@@ -294,10 +294,10 @@ function CreateNew(){
 	graph.nodes=[];
 	//add the master parent
 	root = {"name":"root","children":[]};
-  var aroot = d3v4.hierarchy(root);
-  var nodes = pack(aroot).descendants();
-  nodes[0].children=[];
-  graph.nodes=nodes;
+	var aroot = d3v4.hierarchy(root);
+	var nodes = pack(aroot).descendants();
+	nodes[0].children=[];
+	graph.nodes=nodes;
 	graph.links=[];
 	//clear selection
 	node_selected = null;
@@ -313,7 +313,7 @@ function CreateNew(){
 	setupProVista(null);
 	UpdatePDBcomponent(null);
 	MS_Clear();
-	}
+}
 
 //we need Stoichiometry=>change of molarity
 //need to add

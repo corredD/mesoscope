@@ -5275,7 +5275,7 @@ function NGL_Load(pdbname, bu, sel_str, onfinish_cb = null) {
   }
 
   if (pdbname.length === 4) {
-    NGL_LoadOneProtein("rcsb://" + pdbname + ".mmtf", pdbname, bu, sel_str, onfinish_cb = onfinish_cb);
+    NGL_LoadOneProtein("rcsb://" + pdbname + ".cif", pdbname, bu, sel_str, onfinish_cb = onfinish_cb);
   }
   else {
     var ext = pdbname.slice(-4, pdbname.length);
