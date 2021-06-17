@@ -887,7 +887,7 @@ localforage.getItem('savedRecipe').then(function(readValue) {
 }),
 
 console.log("savedRecipe", savedRecipe !== null, savedRecipe);
-var current_version = {"version":1.28};
+var current_version = {"version":1.29};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()

@@ -2909,7 +2909,8 @@ function ChangeCanvasColor(e){
 		property_mapping[colorby].max = Math.max.apply(null, graph.nodes.length);
 		property_mapping[colorby].min = Math.min.apply(null, 0);
 		current_color_mapping = d3v4.scaleLinear()//d3v4.scaleLinear()
-			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
+			//.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
+			.domain([property_mapping[colorby].min, property_mapping[colorby].max])
 			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
 	}
 	if (colorby === "confidence"){
@@ -2917,7 +2918,7 @@ function ChangeCanvasColor(e){
 		property_mapping[colorby].max = Math.max.apply(null, scores);
 		property_mapping[colorby].min = Math.min.apply(null, scores);
 		current_color_mapping = d3v4.scaleLinear()
-				.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
+				.domain([property_mapping[colorby].min, property_mapping[colorby].max])
 				.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);
 	}
 	else if (colorby === "count") {
@@ -2925,7 +2926,7 @@ function ChangeCanvasColor(e){
     	property_mapping[colorby].max = Math.max.apply(null, scores);
     	property_mapping[colorby].min = Math.min.apply(null, scores);
 		current_color_mapping = d3v4.scaleSqrt()
-			.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
+			.domain([property_mapping[colorby].min, property_mapping[colorby].max])
 			.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
 	}
 	else if (colorby === "size") {
@@ -2933,7 +2934,7 @@ function ChangeCanvasColor(e){
 		property_mapping[colorby].max = Math.max.apply(null, scores);
 		property_mapping[colorby].min = Math.min.apply(null, scores);
 		current_color_mapping = d3v4.scaleLinear()
-				.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
+				.domain([property_mapping[colorby].min, property_mapping[colorby].max])
 				.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
 	}
 	else if (colorby === "molarity") {
@@ -2941,7 +2942,7 @@ function ChangeCanvasColor(e){
 		property_mapping[colorby].max = Math.max.apply(null, scores);
 		property_mapping[colorby].min = Math.min.apply(null, scores);
 		current_color_mapping = d3v4.scaleSqrt() // scaleLinear()
-				.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
+				.domain([property_mapping[colorby].min, property_mapping[colorby].max])
 				.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
 				return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null&& d.data[colorby] >= 0.0)?color_mapping(d.data[colorby]):color(d.depth);
 	}
@@ -2951,7 +2952,7 @@ function ChangeCanvasColor(e){
 		property_mapping[colorby].min = Math.min.apply(null, scores);
 		//try different mapping
 		current_color_mapping = d3v4.scaleLinear()//d3v4.scaleLinear()
-				.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
+				.domain([property_mapping[colorby].min, property_mapping[colorby].max])
 				.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
 			return ( !d.children && "data" in d && colorby in d.data && d.data[colorby]!=null&& d.data[colorby] >= 0.0) ? color_mapping(d.data[colorby]):color(d.depth);
 	} 
@@ -2978,14 +2979,14 @@ function ChangeCanvasColor(e){
 			property_mapping[colorby].max = Math.max.apply(null, new_scores);
 			property_mapping[colorby].min = Math.min.apply(null, new_scores);
 			current_color_mapping = d3v4.scaleLinear()//d3v4.scaleLinear()
-				.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
+				.domain([property_mapping[colorby].min, property_mapping[colorby].max])
 				.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
 		} else {
 			use_unique_array = false;
 			property_mapping[colorby].max = Math.max.apply(null, scores);
 			property_mapping[colorby].min = Math.min.apply(null, scores);
 			current_color_mapping = d3v4.scaleLinear()//d3v4.scaleLinear()
-				.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
+				.domain([property_mapping[colorby].min, property_mapping[colorby].max])
 				.range([property_mapping[colorby].cmin, property_mapping[colorby].cmax]);//.interpolate(d3v4.interpolateHcl);
 		}					
 	}		
@@ -3143,15 +3144,15 @@ function colorNode(d) {
 		if (additional_data.length!==0){
 			if (use_color_mapping){
 				if (use_unique_array) {
-					return ( !d.children && "data" in d && colorby in d.data  ) ? current_color_mapping(unique_array.indexOf(d.data[colorby])):color(d.depth);		
+					return ( !d.children && "data" in d && colorby in d.data && typeof d.data[colorby] !== 'undefined' ) ? current_color_mapping(unique_array.indexOf(d.data[colorby])):color(d.depth);		
 				} else {
-					return ( !d.children && "data" in d && colorby in d.data  ) ? current_color_mapping(d.data[colorby]):color(d.depth);		
+					return ( !d.children && "data" in d && colorby in d.data && typeof d.data[colorby] !== 'undefined' ) ? current_color_mapping(d.data[colorby]):color(d.depth);		
 				}
 			} else {
 				if (use_unique_array) 
-					return ( !d.children && "data" in d && colorby in d.data  ) ? property_mapping[colorby].colors[unique_array.indexOf(d.data[colorby])]:property_mapping[colorby].colors[unique_array.indexOf("")];	
+					return ( !d.children && "data" in d && colorby in d.data && typeof d.data[colorby] !== 'undefined' ) ? property_mapping[colorby].colors[unique_array.indexOf(d.data[colorby])]:property_mapping[colorby].colors[unique_array.indexOf("")];	
 				else 
-					return ( !d.children && "data" in d && colorby in d.data  ) ? current_color_mapping(d.data[colorby]):color(d.depth);	
+					return ( !d.children && "data" in d && colorby in d.data && typeof d.data[colorby] !== 'undefined' ) ? current_color_mapping(d.data[colorby]):color(d.depth);	
 			}
 		}
 		else {
@@ -3380,6 +3381,17 @@ function DrawIngredients(nodes_sorted){
 		if (!d.children) {
 			drawNode(d);
 			Highlight(d);
+			if (document.getElementById("sprites").checked) {
+				if (!d.children && ( typeof d.data.thumbnail !== 'undefined' && d.data.thumbnail !==null) ) {
+					var s = d.r*2.0;//Math.sqrt(((d.r*2.0)*(d.r*2.0))/2.0);
+					var ratio = (d.data.thumbnail)? d.data.thumbnail.width/d.data.thumbnail.height:1.0;// 0.5;
+					var w = s;
+					var h = s;
+					if (d.data.thumbnail.width < d.data.thumbnail.height) w = w*ratio;//need to offset
+					else h = h / ratio;
+					drawThumbnailInCanvas(d,d.x-w/2.0,d.y-h/2.0,w,h)
+				}
+			}			
 		}
 	});
 }
@@ -3685,53 +3697,54 @@ new_array.forEach(function(d){
 	drawNode(d);
 	//check if part of selection?
 	if (nodes_selections.length !==0 && nodes_selections.indexOf(d)!==-1) {
-	context.strokeStyle = "orange";
-	context.stroke();
-	context.fillStyle = "yellow";
-	context.fill();
+		context.strokeStyle = "orange";
+		context.stroke();
+		context.fillStyle = "yellow";
+		context.fill();
 	//return;
 	}
 	else if (d.highlight && d !== node_selected && d!== comp_highligh && d!==comp_highligh_surface) {
-	context.fillStyle = colorNode(d);
-	context.fill();
-	context.strokeStyle = "black";
-	context.stroke();
+		context.fillStyle = colorNode(d);
+		context.fill();
+		context.strokeStyle = "black";
+		context.stroke();
 	}
 	else if (d === node_selected) {
-	context.strokeStyle = "orange";
-	context.stroke();
-	context.fillStyle = "yellow";
-	context.fill();
+		context.strokeStyle = "orange";
+		context.stroke();
+		context.fillStyle = "yellow";
+		context.fill();
 	}
 	else if (d===comp_highligh_surface) {
-	context.strokeStyle = "yellow";
-	context.lineWidth=5;
-	context.stroke();
-	context.fillStyle = colorNode(d);
-	context.fill();
+		context.strokeStyle = "yellow";
+		context.lineWidth=5;
+		context.stroke();
+		context.fillStyle = colorNode(d);
+		context.fill();
 	}
 	else if (d===comp_highligh) {
-	context.strokeStyle = "black";
-	context.lineWidth=5;
-	context.stroke();
-	context.fillStyle = "grey";//colorNode(d);
-	context.fill();
+		context.strokeStyle = "black";
+		context.lineWidth=5;
+		context.stroke();
+		context.fillStyle = "grey";//colorNode(d);
+		context.fill();
 	}
 	else if (d.depth === 6){
-	context.strokeStyle = color(d.depth+1);
-	context.stroke();
-	context.fillStyle = "rgba(55, 55, 255, 0.3)";
-	context.fill();
+		context.strokeStyle = color(d.depth+1);
+		context.stroke();
+		context.fillStyle = "rgba(55, 55, 255, 0.3)";
+		context.fill();
 	}
 	else {
-	context.strokeStyle = color(d.depth+1);
-	context.stroke();
-	context.fillStyle = colorNode(d);
-	context.fill();
+		context.strokeStyle = color(d.depth+1);
+		context.stroke();
+		context.fillStyle = colorNode(d);
+		context.fill();
 	}
 	if (!d.children && ( d.data.image !=null || d.data.thumbnail !==null) ) {
-	var s = Math.sqrt(((d.r*2.0)*(d.r*2.0))/2.0);
-	if (document.getElementById("sprites").checked) drawThumbnailInCanvas(d,d.x-s/2.0,d.y-s/2.0,s,s)
+		var s = Math.sqrt(((d.r*2.0)*(d.r*2.0))/2.0);
+		console.log("in draw node, draw sprite ?",document.getElementById("sprites").checked);
+		if (document.getElementById("sprites").checked) drawThumbnailInCanvas(d,d.x-s/2.0,d.y-s/2.0,s,s)
 	}
 });
 FOLDER_UPDATED = false;
@@ -3769,21 +3782,21 @@ if (graph.links.length) {
 
 if ( (nodes_selections.length % 2) === 0 ) {
 //show link between i,i+1
-for (var l=0;l<nodes_selections.length-1;l+=2){
+	for (var l=0;l<nodes_selections.length-1;l+=2){
 		drawLinkTwoNode(nodes_selections[l],nodes_selections[l+1]);
 		context.strokeStyle = "yellow";
 		context.lineWidth=2;
-	context.stroke();
+		context.stroke();
 	}
 }
 if (current_mode===1 && temp_link) {
-			drawLink(context,temp_link);
-			context.strokeStyle = "white";
-			context.lineWidth=2;
-		context.stroke();
+	drawLink(context,temp_link);
+	context.strokeStyle = "white";
+	context.lineWidth=2;
+	context.stroke();
 }
-//draw all the labels
-var counter = 0; //Needed for the rotation of the arc titles
+	//draw all the labels
+	var counter = 0; //Needed for the rotation of the arc titles
 	//Do a second loop because the arc titles always have to be drawn on top
 	for (var i = 0; i < graph.nodes.length; i++) {
 		d = graph.nodes[i];
@@ -3904,83 +3917,90 @@ if (snode !=null && !snode.children && snode.data && snode.data.thumbnail !==nul
 context.restore();
 }
 
+function getThumbnail(aNode){
+	var value = ""
+	if ("sprite" in aNode.data && "image" in aNode.data.sprite)
+	  	value = aNode.data.sprite.image;
+	//var img = new Image();
+	//either image is defined or ise the PDB id
+	if (aNode.data.repo_check && aNode.data.repo_test) {
+		var search_url = cellpack_repo+"images/"+value;
+		aNode.data.thumbnail.src = search_url;
+		aNode.data.repo_check = false;
+		aNode.data.repo_checking = false;
+	}	
+	if (aNode.data.thumbnail == null || FOLDER_UPDATED ) {
+		if (aNode.data.thumbnail == null) {
+		  aNode.data.thumbnail = new Image();
+		  aNode.data.thumbnail.done = false;
+		  aNode.data.repo_check = false;
+		  aNode.data.repo_checking = false;
+		  aNode.data.thumbnail.onload = function() {
+			var height = this.height;
+			var width = this.width;
+			this.oh = parseFloat(height);
+			this.ow = parseFloat(width);
+			this.done = true;
+		  }
+		  aNode.data.thumbnail.onerror = function () {
+			this.src = 'images/Warning_icon.png';
+			this.done = false;
+		  };
+		}
+		if (value && value in pathList_){
+			aNode.data.repo_check = false;
+			aNode.data.repo_test = false;
+			var data = pathList_[value];//the file
+			aNode.data.thumbnail.src = URL.createObjectURL(data);
+		}
+		else {
+		  //search if exist in
+		  var found = false;
+		  if (value) {
+			var search_url = cellpack_repo+"images/"+value;
+			if (!aNode.data.repo_checking && !aNode.data.repo_check) {
+			  aNode.data.repo_checking = true;
+			  var cb = function(exist) {
+				aNode.data.repo_check = true;
+				aNode.data.repo_test = exist;
+			  }
+			  async_checkExist(search_url,cb);
+			}
+			/*else {
+			  aNode.data.repo_checking = false;
+			  if (aNode.data.repo_test){
+				 found = true;
+				 aNode.data.thumbnail.src = search_url;
+			  }
+			}*/
+			//async_checkExist
+			//var results = urlExists(search_url);//should be done async..
+			//if (results)
+			//{
+			//  found = true;
+			//  aNode.data.thumbnail.src = search_url;
+			//}
+		  }
+		  else {
+			var ipdb = ("source" in aNode.data && aNode.data.source.pdb) ? aNode.data.source.pdb.split("_")[0].toLowerCase():"";
+			var twoletters = ipdb[1] + ipdb[2];
+			//pdbe url is https://www.ebi.ac.uk/pdbe/static/entry/5c6e_deposited_chain_front_image-800x800.png//5c6e_deposited_chain_front_image-200x200.png
+			var url = "https://www.ebi.ac.uk/pdbe/static/entry/"+ipdb+"_deposited_chain_front_image-400x400.png"
+			//var url = "https://cdn.rcsb.org/images/rutgers/" + twoletters + "/" + ipdb + "/" + ipdb + ".pdb1-250.jpg";
+			//console.log(html);
+			aNode.data.thumbnail.src = url;
+		  }
+		}
+	  }
+}
 function drawThumbnailInCanvas(aNode,x,y,w,h){
   //first get the image
-  var value = ""
-  if ("sprite" in aNode.data && "image" in aNode.data.sprite)
-    value = aNode.data.sprite.image;
-  //var img = new Image();
-  //either image is defined or ise the PDB id
-  if (aNode.data.repo_check && aNode.data.repo_test) {
-    var search_url = cellpack_repo+"images/"+value;
-    aNode.data.thumbnail.src = search_url;
-    aNode.data.repo_check = false;
-    aNode.data.repo_checking = false;
-  }
   if (aNode.data.thumbnail == null || FOLDER_UPDATED ) {
-    if (aNode.data.thumbnail == null) {
-      aNode.data.thumbnail = new Image();
-      aNode.data.thumbnail.done = false;
-      aNode.data.repo_check = false;
-      aNode.data.repo_checking = false;
-      aNode.data.thumbnail.onload = function() {
-        var height = this.height;
-        var width = this.width;
-        this.oh = parseFloat(height);
-        this.ow = parseFloat(width);
-        this.done = true;
-      }
-      aNode.data.thumbnail.onerror = function () {
-        this.src = 'images/Warning_icon.png';
-        this.done = false;
-      };
-    }
-    if (value && value in pathList_){
-        aNode.data.repo_check = false;
-        aNode.data.repo_test = false;
-        var data = pathList_[value];//the file
-        aNode.data.thumbnail.src = URL.createObjectURL(data);
-    }
-    else {
-      //search if exist in
-      var found = false;
-      if (value) {
-        var search_url = cellpack_repo+"images/"+value;
-        if (!aNode.data.repo_checking && !aNode.data.repo_check) {
-          aNode.data.repo_checking = true;
-          var cb = function(exist) {
-            aNode.data.repo_check = true;
-            aNode.data.repo_test = exist;
-          }
-          async_checkExist(search_url,cb);
-        }
-        /*else {
-          aNode.data.repo_checking = false;
-          if (aNode.data.repo_test){
-             found = true;
-             aNode.data.thumbnail.src = search_url;
-          }
-        }*/
-        //async_checkExist
-        //var results = urlExists(search_url);//should be done async..
-        //if (results)
-        //{
-        //  found = true;
-        //  aNode.data.thumbnail.src = search_url;
-        //}
-      }
-      else {
-        var ipdb = ("source" in aNode.data && aNode.data.source.pdb) ? aNode.data.source.pdb.split("_")[0].toLowerCase():"";
-        var twoletters = ipdb[1] + ipdb[2];
-        //pdbe url is https://www.ebi.ac.uk/pdbe/static/entry/5c6e_deposited_chain_front_image-800x800.png//5c6e_deposited_chain_front_image-200x200.png
-        var url = "https://www.ebi.ac.uk/pdbe/static/entry/"+ipdb+"_deposited_chain_front_image-400x400.png"
-        //var url = "https://cdn.rcsb.org/images/rutgers/" + twoletters + "/" + ipdb + "/" + ipdb + ".pdb1-250.jpg";
-        //console.log(html);
-        aNode.data.thumbnail.src = url;
-      }
-    }
+    	getThumbnail(aNode);
   }
-  if (aNode.data.thumbnail.complete == true && aNode.data.thumbnail.done) context.drawImage(  aNode.data.thumbnail, x,y,w,h);
+  if (aNode.data.thumbnail.complete == true && aNode.data.thumbnail.done)  		{
+	context.drawImage(  aNode.data.thumbnail, x,y,w,h);
+  }
 }
 
 function ColorLuminance(hex, lum) {
