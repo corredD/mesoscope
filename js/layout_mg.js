@@ -291,8 +291,10 @@ var canvas_widget_options_collapsible = ''+
       //load color palette?
       getSelect("canvas_map_r", "options_elems", "Node size",
         "mapRadiusToProperty(this)", Object.keys(property_mapping),"size")+
+      '<div><label for="radius_scale"> Scale Radius by </label><input class="inputNumber" id="radius_scale"  type="number" value="'+radius_scale+'" min="0.01" max="10.0" step="0.01" /></div>' + 
       getSelect("canvas_group", "options_elems", "Node group by",
         "ClusterNodeBy(this)", Object.keys(property_mapping),"size")+
+      '<div id="stroke_l"><label for="stroke_lineWidth"> Stroke Line width </label><input class="inputNumber" id="stroke_lineWidth"  type="number" value="'+stroke_line_width+'" min="0.01" max="10.0" step="0.01" /></div>' + 
       '<input type="checkbox" id="show_legends" onclick="toggleShowLegends(this)">Show latest legends</input>'+  
       '<div id="legends_w_l" style="display:none"><label for="legends_w"> Width </label><input class="inputRange" id="legends_w"  type="range" value="'+legends.w+'" min="1" max="250" step="1" /></div>' + 
       '<div id="legends_h_l" style="display:none"><label for="legends_h"> Heigh </label><input class="inputRange" id="legends_h"  type="range" value="'+legends.h+'" min="1" max="250" step="1"  /></div>'  +
@@ -893,7 +895,7 @@ localforage.getItem('savedRecipe').then(function(readValue) {
 }),
 
 console.log("savedRecipe", savedRecipe !== null, savedRecipe);
-var current_version = {"version":1.30};
+var current_version = {"version":1.31};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()

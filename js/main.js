@@ -62,7 +62,8 @@ var list_missing_beads = [];
 var list_missing_geom = [];
 var list_missing_pdb = [];
 var totalNbInclude = 0;
-
+var stroke_line_width = 1;
+var radius_scale = 1.0;
 var sheet_name = [];
 var current_data_header,
     current_jsondic,
@@ -172,7 +173,13 @@ var ParentForce = 0.01;
 var SurfaceForce = 2;
 var link_force = 0.1;
 
-var AllForces = {"ParentForce":0.01,"SurfaceForce":0.5,"LinkForce":0.1,"clusterByForce":0.01};
+var AllForces = {
+		"ParentForce":0.01,
+		"SurfaceForce":0.5,
+		"LinkForce":0.1,
+		"clusterByForce":0.01,
+		"collisionForce":1.0
+	};
 
 var current_clusters = {};
 var graph = {};
@@ -2553,14 +2560,14 @@ function isolate(force, filter) {
 
 function updateForce(){
 	simulation.nodes(graph.nodes);
-	simulation.force("link", d3v4.forceLink().strength(AllForces.LinkForce));//.iterations(1).id(function(d) { return d.id; })
+	simulation.force("link", d3v4.forceLink().strength(parseFloat( AllForces.LinkForce )));//.iterations(1).id(function(d) { return d.id; })
 	simulation.force("link").links(graph.links);
-	simulation.force("d0", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 0; }));
-	simulation.force("d1", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 1; }));
-	simulation.force("d2", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 2; }));
-	simulation.force("d3", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 3; }));
-	simulation.force("d4", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 4; }));
-	simulation.force("leaf", isolate(d3v4.forceCollide().radius(function(d) {return d.r*1.15;}), function(d) { return !d.children; }));
+	simulation.force("d0", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 0; }).strength(1));
+	simulation.force("d1", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 1; }).strength(1));
+	simulation.force("d2", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 2; }).strength(1));
+	simulation.force("d3", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 3; }).strength(1));
+	simulation.force("d4", isolate(d3v4.forceCollide().radius(function(d) {return d.r;}), function(d) { return d.depth === 4; }).strength(1));
+	simulation.force("leaf", isolate(d3v4.forceCollide().radius(function(d) {return d.r*1.15;}), function(d) { return !d.children; }).strength(parseFloat(AllForces.collisionForce)));
 }
 
 function setupD3(){
@@ -3041,7 +3048,6 @@ function applyColorModeToIngredient(){
 }
 //
 
-
 function onlyUnique(value, index, self) {
   return self.indexOf(value) === index;
 }
@@ -3278,12 +3284,13 @@ function mapRadiusToProperty_cb(property) {
 	//should we increase the size of the parent node ?
 	graph.nodes.forEach(function(d){
 		if (!d.children) {
-			if (property==="molecularweight"){ d.r = Util_getRadiusFromMW(d.data.molecularweight); }
+			if (property==="molecularweight"){ d.r = Util_getRadiusFromMW(d.data.molecularweight)*radius_scale; }
 			//else if (property==="size"){ d.r = d.data.size;}
-			else if (property==="default"){ d.r = 10;}
-			else d.r = mapping(d.data[property]);//or linearmapping
-			if (d.r <= 0) d.r = d.data.size;
-			if (isNaN(d.r)) d.r = 10;
+			else if (property==="default"){ d.r = 10*radius_scale;}
+			else if (property==="size"){ d.r = d.data.size*radius_scale;}
+			else d.r = mapping(d.data[property])*radius_scale;//or linearmapping
+			if (d.r <= 0) d.r = d.data.size*radius_scale;
+			if (isNaN(d.r)) d.r = 10*radius_scale;
 		}
 	});
 	//pack the circle
@@ -3341,49 +3348,54 @@ function sortNodeByDepth(objects){
 function Highlight(d) {
 	//check if part of selection?
 	if (nodes_selections.length !==0 && nodes_selections.indexOf(d)!==-1) {
-		context.strokeStyle = "orange";
-		context.stroke();
 		context.fillStyle = "yellow";
 		context.fill();
+		context.strokeStyle = "orange";
+		context.lineWidth=stroke_line_width;
+		context.stroke();
 	//return;
 	}
 	else if (d.highlight && d !== node_selected && d!== comp_highligh && d!==comp_highligh_surface) {
 		context.fillStyle = colorNode(d);
 		context.fill();
 		context.strokeStyle = "black";
+		context.lineWidth=stroke_line_width;
 		context.stroke();
 	}
 	else if (d === node_selected) {
-		context.strokeStyle = "orange";
-		context.stroke();
 		context.fillStyle = "yellow";
 		context.fill();
+		context.strokeStyle = "orange";
+		context.lineWidth=stroke_line_width;
+		context.stroke();
 	}
 	else if (d===comp_highligh_surface) {
-		context.strokeStyle = "yellow";
-		context.lineWidth=5;
-		context.stroke();
 		context.fillStyle = colorNode(d);
 		context.fill();
+		context.strokeStyle = "yellow";
+		context.lineWidth=stroke_line_width;
+		context.stroke();
 	}
 	else if (d===comp_highligh) {
-		context.strokeStyle = "black";
-		context.lineWidth=5;
-		context.stroke();
 		context.fillStyle = "grey";//colorNode(d);
 		context.fill();
+		context.strokeStyle = "black";
+		context.lineWidth=stroke_line_width;
+		context.stroke();
 	}
 	else if (d.depth === 6){
-		context.strokeStyle = color(d.depth+1);
-		context.stroke();
 		context.fillStyle = "rgba(55, 55, 255, 0.3)";
 		context.fill();
+		context.strokeStyle = color(d.depth+1);
+		context.lineWidth=stroke_line_width;
+		context.stroke();
 	}
 	else {
-		context.strokeStyle = color(d.depth+1);
-		context.stroke();
 		context.fillStyle = colorNode(d);
 		context.fill();
+		context.strokeStyle = color(d.depth+1);
+		context.lineWidth=stroke_line_width;
+		context.stroke();
 	}	
 }
 
@@ -3475,7 +3487,7 @@ function DrawLabels(){
 			if (fontSizeTitle <= 4) fontSizeTitle = 10;
 			if (fontSizeTitle > 4) {
 				drawCircularText(context, d.data.name.replace(/,? and /g, ' & '),
-				fontSizeTitle, titleFont, d.x,d.y, d.r, rotationText[counter], 0);
+				fontSizeTitle, titleFont, d.x,d.y, d.r+5, rotationText[counter], 0);
 			}
 			counter = counter + 1;
 		}
@@ -5093,8 +5105,8 @@ function drawNode(d) {
       if (l > r) {
         //l = (l - r) / l * alpha;
 		//should be local to the parent
-		d.vx += ((cluster.x + d.parent.x) - d.x) * AllForces.clusterByForce;
-		d.vy += ((cluster.y + d.parent.y) - d.y) * AllForces.clusterByForce;		
+		d.vx += ((cluster.x + d.parent.x) - d.x) * parseFloat(AllForces.clusterByForce);
+		d.vy += ((cluster.y + d.parent.y) - d.y) * parseFloat(AllForces.clusterByForce);		
       }
     }
   }
@@ -5105,9 +5117,11 @@ function drawNode(d) {
     var dx = d.x - d.parent.x,
         dy = d.y - d.parent.y,
         r = Math.sqrt(dx * dx + dy * dy),
-        k = (d.parent.r - r) * AllForces.SurfaceForce * 1 / r;
+        k = (d.parent.r - r) * parseFloat(AllForces.SurfaceForce) * 1 / r;
     d.vx += dx * k;
     d.vy += dy * k;
+	//d.x = d.x + (d.parent.r - r);
+	//d.y = d.y + (d.parent.r - r);
   }
   else if (!d.children && d.parent) {}
   else if (d.parent) {}
@@ -5117,17 +5131,28 @@ function drawNode(d) {
     d.vy += (-d.y) * 0.1 * 1;
   }
   context.beginPath();
-  if (!d.parent) {}
+  if (!d.parent) {
+	  //root
+  }
   else {
     var dx = d.x - d.parent.x,
         dy = d.y - d.parent.y,
         r = Math.sqrt(dx * dx + dy * dy);
-    if (r + d.r * 1.2 > d.parent.r && !surface && d.parent.parent)//outside parent
+    if (r + d.r * 1.2 > d.parent.r-5 && !surface && d.parent.parent)//outside parent
     {
-      d.vx += (d.parent.x - d.x) * AllForces.ParentForce;
-      d.vy += (d.parent.y - d.y) * AllForces.ParentForce;
+      d.vx += (d.parent.x - d.x) * parseFloat(AllForces.ParentForce);
+      d.vy += (d.parent.y - d.y) * parseFloat(AllForces.ParentForce);
     }
-    context.arc(ndx, ndy, d.r, 0, 10);//0?
+    if (d.parent && !d.children) context.arc(ndx, ndy, d.r, 0, 10);//ingredient
+	else //compartment
+	{
+		context.arc(ndx, ndy, d.r+5, 0, 10);
+		context.strokeStyle = color(d.depth+1);
+		context.stroke();
+		context.arc(ndx, ndy, d.r-5, 0, 10);
+		context.strokeStyle = color(d.depth+1);
+		context.stroke();		
+	}
   }
 }
 

@@ -669,10 +669,18 @@ function NGL_Setup() {
       var forcename = this.id.split("_")[1];
       //change forces value
       AllForces[forcename] = this.value;
+      updateForce();
     }
     else if (this.id.startsWith("legends_")){
       var lename = this.id.split("_")[1];
       legends[lename] = this.value;
+    }
+    else if (this.id.startsWith("stroke_line")){
+      stroke_line_width = parseFloat(this.value);
+    }
+    else if (this.id.startsWith("radius_scale")){
+      radius_scale = parseFloat(this.value);
+      mapRadiusToProperty_cb(document.getElementById("canvas_map_r").value);
     }
     else {
       NGL_updateMBcomp();

@@ -1423,6 +1423,17 @@ function query_ResizeAll() {
   //build beads
 }
 
+function query_ResizeFromNbBeadsLvl(cutoff){
+  //use current level
+  var lod = parseInt(beads_elem.selectedOptions[0].value);
+  graph.nodes.forEach(function(d){
+    if (!d.children) {
+       var nbeads =( lod in d.data.radii )?d.data.radii[lod].radii.length:0;
+       d.data.size = Math.cbrt ( (nbeads < cutoff) ? nbeads : cutoff );
+       updateCellValue(gridArray[0],"size",d.data.id,parseFloat(d.data.size));
+    }
+  });
+}
 
 function query_IllustrateAll() {
   //query NGL_illustrate for all nodes
