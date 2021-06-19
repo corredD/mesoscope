@@ -1403,6 +1403,26 @@ function query_BuildAll(cms) {
   //build beads
 }
 
+function query_ResizeAll() {
+  //show the stop button
+  force_do_cms = false;
+  query_illustrate = false;
+  force_do_beads = false;
+  stop_current_compute = false;
+  resize_nodes = true;
+  document.getElementById('stopbeads').setAttribute("class", "spinner");
+  document.getElementById("stopbeads_lbl").setAttribute("class", "show");
+  document.getElementById("stopbeads_lbl").innerHTML = "building " + current_compute_index + " / " + graph.nodes.length;
+  //use getItem(index)
+  //for all compartment get a geom. default sphere of 500A
+  //BuildDefaultCompartmentsRep();
+  current_compute_index = -1;
+  NextComputeIgredient();
+  NGL_buildLoopAsync();
+  //build geom for compartment by default
+  //build beads
+}
+
 
 function query_IllustrateAll() {
   //query NGL_illustrate for all nodes

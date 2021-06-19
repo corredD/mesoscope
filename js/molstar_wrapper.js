@@ -248,6 +248,7 @@ async function MS_applyAllColors(){
 async function MS_ChangeColor(node,acolor)
 {
     if (!MS_inited) return;
+    if (!node.data.source) return;
     var aname = node.data.source.pdb;
     if (aname.length === 4 ) {
       aname = aname.toUpperCase();

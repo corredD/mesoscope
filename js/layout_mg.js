@@ -293,6 +293,11 @@ var canvas_widget_options_collapsible = ''+
         "mapRadiusToProperty(this)", Object.keys(property_mapping),"size")+
       getSelect("canvas_group", "options_elems", "Node group by",
         "ClusterNodeBy(this)", Object.keys(property_mapping),"size")+
+      '<input type="checkbox" id="show_legends" onclick="toggleShowLegends(this)">Show latest legends</input>'+  
+      '<div id="legends_w_l" style="display:none"><label for="legends_w"> Width </label><input class="inputRange" id="legends_w"  type="range" value="'+legends.w+'" min="1" max="250" step="1" /></div>' + 
+      '<div id="legends_h_l" style="display:none"><label for="legends_h"> Heigh </label><input class="inputRange" id="legends_h"  type="range" value="'+legends.h+'" min="1" max="250" step="1"  /></div>'  +
+      //'<div><input class="inputRange" id="legends_ypad"  type="range" value="'+legends.ypad+'" min="1" max="1000" step="1" style="display:none" /></div>'   +
+      '<div id="legends_f_l" style="display:none"><label for="legends_f"> Font </label><input class="inputRange" id="legends_f"  type="range" value="'+legends.f+'" min="1" max="250" step="1" /></div>'   +
     '</div>'+
     '<button class="meso_collapsible">Recipe Options</button>'+
     '<div class="meso_content">'+
@@ -557,6 +562,7 @@ var gridoptions = ''
   ' <button style="display:block;" onclick="query_ClearAll()">Reset Geometry and Beads</button>' + getSpinner("stopbeads","stopBeads()")+
   ' <button style="display:block;" onclick="query_BuildAll(true)">AutoFix Recipe geometry and beads </button>' + getSpinner("stopbeads","stopBeads()")+
   ' <button style="display:block;" onclick="query_BuildAll(false)">AutoFix Recipe only beads </button>' + getSpinner("stopbeads","stopBeads()")+
+  ' <button style="display:block;" onclick="query_ResizeAll()">Resize based on encapsulating radius </button>' + getSpinner("stopbeads","stopBeads()")+
   '</div>'+
   '<label id="LoaderTxt" class="hidden" for="aloader"></label>' +
   '<div class="spinner hidden" id="spinner" style="width:200px;height:20px;" >' +
@@ -887,7 +893,7 @@ localforage.getItem('savedRecipe').then(function(readValue) {
 }),
 
 console.log("savedRecipe", savedRecipe !== null, savedRecipe);
-var current_version = {"version":1.29};
+var current_version = {"version":1.30};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()

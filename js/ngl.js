@@ -41,6 +41,7 @@ var toggle_cluster_grid;
 var toggle_cluster_grid_from_LOD0;
 var force_do_cms = true;
 var force_do_beads = true;
+var resize_nodes = false;
 var cluster_force_radius = -1.0;
 var cluster_avg_radius = false;
 var use_cluster_radius = false;
@@ -668,6 +669,10 @@ function NGL_Setup() {
       var forcename = this.id.split("_")[1];
       //change forces value
       AllForces[forcename] = this.value;
+    }
+    else if (this.id.startsWith("legends_")){
+      var lename = this.id.split("_")[1];
+      legends[lename] = this.value;
     }
     else {
       NGL_updateMBcomp();
@@ -4055,8 +4060,10 @@ function NGL_ReprensentOne(o,anode){
   }
   sele_elem.value = sele;
 
-  var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
-  o.gcenter = center;
+  var xcenter = NGL_GetGeometricCenter(o, new NGL.Selection(sele));
+  o.gcenter = xcenter.center;
+  o.radius = xcenter.radius;
+  var center = xcenter.center;
   if (assembly !== "AU") center = NGL_GetBUCenter(o,assembly);
   console.log("setPosition");
   o.setPosition([-center.x, -center.y, -center.z]); //center molecule
@@ -4146,6 +4153,7 @@ function NGL_GetBUCenter(nglobj,ass){
   var center_bu=new NGL.Vector3();
   var center=new NGL.Vector3();
   var bucount=0;
+  var R = 0;
   if (!(ass in nglobj.structure.biomolDict)) return chain_center;
   if (ass==="AU") return chain_center;
   for (var j = 0; j < nglobj.object.biomolDict[ass].partList.length; j++) {
@@ -4158,7 +4166,18 @@ function NGL_GetBUCenter(nglobj,ass){
     }
   }
   center_bu.divideScalar(bucount);
-  return center_bu;
+  for (var j = 0; j < nglobj.object.biomolDict[ass].partList.length; j++) {
+    for (var k = 0; k < nglobj.object.biomolDict[ass].partList[j].matrixList.length; k++) {
+      var mat = nglobj.object.biomolDict[ass].partList[j].matrixList[k];
+      center.copy(chain_center).applyMatrix4(mat);
+      var L = center.sub(center_bu).length() + nglobj.radius;
+      if (L > R) R = L;
+    }
+  }
+  return {
+    "center": center_bu,
+    "radius": R
+  };
 }
 
 function NGL_LoadOneProtein(purl, aname, bu, sel_str, onfinish_cb = null) {
@@ -4273,9 +4292,13 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str, onfinish_cb = null) {
       //var sc = o.getView(new NGL.Selection(sele));
       //console.log("atomcenter",sc.atomCenter());
       //if (o.object.biomolDict.BU1) console.log(o.object.biomolDict.BU1);
-      var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
-      ngl_current_structure.gcenter = center;
-      if (assembly !== "AU") center = NGL_GetBUCenter(ngl_current_structure,assembly);
+      var xcenter = NGL_GetGeometricCenter(o, new NGL.Selection(sele));
+      ngl_current_structure.gcenter = xcenter.center;
+      ngl_current_structure.radius = xcenter.radius;
+      var center = xcenter.center;
+      if (assembly !== "AU") {
+        center = NGL_GetBUCenter(ngl_current_structure,assembly);
+      }
       console.log("gcenter", center, ngl_force_build_beads);
       o.setPosition([-center.x, -center.y, -center.z]); //center molecule
       //ngl_force_build_beads
@@ -4707,7 +4730,7 @@ function NGL_getUrlStructure(anode,pdbname){
           //console.log(hdoc);
       }
     }
-    return "rcsb://" + pdbname + ".mmtf";
+    return "rcsb://" + pdbname + ".cif";
   }
   else
   {
@@ -4811,20 +4834,31 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
       o.sele = sele;
       o.assembly = assembly;
       console.log("NGL_GetGeometricCenter",sele,assembly);
-      var center = NGL_GetGeometricCenter(o, new NGL.Selection(sele)).center;
-      o.gcenter = center;
-      if (assembly !== "AU") center = NGL_GetBUCenter(o,assembly);
+      var xcenter = NGL_GetGeometricCenter(o, new NGL.Selection(sele));
+      o.gcenter = xcenter.center;
+      o.radius = xcenter.radius;
+      center = xcenter.center;
+      if (assembly !== "AU") {
+        center = NGL_GetBUCenter(o,assembly);
+      }
       console.log("gcenter", center, ngl_force_build_beads);
-      //center molecule
-      o.setPosition([-center.x, -center.y, -center.z]);
-      o.ngl_sele = new NGL.Selection(sele);
-      o.addRepresentation("axes", {
+      if (resize_nodes) {
+        //apply radius to size
+        o.node.data.size = o.radius;
+        //update the table ?
+        updateCellValue(gridArray[0],"size",o.node.data.id,parseFloat(o.radius));
+      }
+      else {
+        o.setPosition([-center.x, -center.y, -center.z]);
+        o.ngl_sele = new NGL.Selection(sele);
+        o.addRepresentation("axes", {
         sele: sele,
         showAxes: true,
         showBox: true,
         radius: 0.2,
         assembly: assembly
-      })
+        })
+      }
       //build a surface and extract the mesh ?
       //build the kmeans
       //var ats = o.structure.atomStore;
@@ -4930,9 +4964,9 @@ function NGL_buildLoopAsync() {
     (!d.data.pos || d.data.pos === "None" ||
       d.data.pos === "null" || d.data.pos.length <= lod ||
       d.data.pos === "")) {
-    dobeads = true;
+      if (force_do_beads) dobeads = true;
   }
-  if ( dobeads || docms || query_illustrate )
+  if ( dobeads || docms || query_illustrate || resize_nodes)
   {
     var purl = NGL_getUrlStructure(d,pdb);
     console.log("query with ", [pdb, bu, sele, model, thefile], purl);

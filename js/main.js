@@ -46,6 +46,9 @@ var current_color_mapping;
 var use_color_mapping = true;
 var unique_array;
 var use_unique_array = false;
+var show_last_legends = false;
+var legends = {w:100,h:40,ypad:5,f:30};
+var latest_colorby;
 var color_palette = {};
 var comp_colors = {};
 var current_scale = 1;
@@ -2872,6 +2875,15 @@ function toggleColorMapping(e){
 	//ChangeCanvasColor(null);
 }
 
+function toggleShowLegends(e){
+	show_last_legends = e.checked;
+	var aclass = (e.checked)? "block" :  "none";
+	document.getElementById("legends_w_l").style.display = aclass;// .setAttribute("class", aclass);
+	document.getElementById("legends_h_l").style.display = aclass;//.setAttribute("class", aclass);
+	//document.getElementById("legends_ypad").style.display = aclass;//.setAttribute("class", aclass);
+	document.getElementById("legends_f_l").style.display = aclass;//.setAttribute("class", aclass);
+}
+
 function ChangeCanvasColor(e){
 	var colorby = canvas_color.selectedOptions[0].value;
 	if (colorby == "automatic") {
@@ -2961,6 +2973,7 @@ function ChangeCanvasColor(e){
 		var value = parseFloat(scores[0]);
 		if (isNaN(value)) {
 			//should be string
+			latest_colorby = colorby;
 			use_unique_array = true;
 			unique_array = scores.filter(onlyUnique);
 			if (unique_array.indexOf("") == -1) unique_array.push("");
@@ -3023,6 +3036,8 @@ function applyColorModeToIngredient(){
       d.data.color=[dcolor.r/255.0,dcolor.g/255.0,dcolor.b/255.0];
     //}
   })
+  //switch the UI ?
+
 }
 //
 
@@ -3034,6 +3049,11 @@ function onlyUnique(value, index, self) {
 function colorNode(d) {
 	if (current_color_mapping == undefined && use_color_mapping) return color(d.depth);
 	var colorby = canvas_color.selectedOptions[0].value;
+	if (d.parent === null) {
+		return (d.data.color !== null)? 'rgb('+ Math.floor(d.data.color[0]*255)+","
+                                 + Math.floor(d.data.color[1]*255)+","
+                                 + Math.floor(d.data.color[2]*255)+')' : color(d.depth);//rgb list ?
+	}
 	if (colorby === "pdb") {
 				return ( !d.children && "data" in d && "source" in d.data
 				&& "pdb" in d.data.source
@@ -3382,6 +3402,7 @@ function DrawIngredients(nodes_sorted){
 			drawNode(d);
 			Highlight(d);
 			if (document.getElementById("sprites").checked) {
+				getThumbnail(d);
 				if (!d.children && ( typeof d.data.thumbnail !== 'undefined' && d.data.thumbnail !==null) ) {
 					var s = d.r*2.0;//Math.sqrt(((d.r*2.0)*(d.r*2.0))/2.0);
 					var ratio = (d.data.thumbnail)? d.data.thumbnail.width/d.data.thumbnail.height:1.0;// 0.5;
@@ -3492,23 +3513,43 @@ function DrawColorLegend(){
 	//draw legends for color mapping
 	var colorby = canvas_color.selectedOptions[0].value;
 	var index_opt = default_options.indexOf(colorby);
+	var sx = 0,
+		sy = 0,
+		w = parseInt (legends.w),
+		h = parseInt (legends.h);	
+	var ypad = parseInt (legends.ypad);
+	var ex = w+ypad,
+		ey = h+ypad;
+	//difference between H and F
+	var f=legends.f.toString();
 	if (!use_color_mapping && index_opt == -1 && use_unique_array) {
-		var sx = 0,
-			sy = 0,
-			w = 50,
-			h = 10;
 		unique_array.forEach(function(label){
 			context.fillStyle = property_mapping[colorby].colors[unique_array.indexOf(label)];
-			context.fillRect(sx,sy+5, w,h);
+			context.fillRect(sx,sy+ypad, w,h);
 			context.strokeStyle = "black";
-			context.stroke();	
+			context.strokeRect(sx,sy+ypad, w,h);
+			//context.stroke();	
 			context.textAlign = 'left';
-			context.font="10px Georgia";
+			context.font=f+"px Georgia";
 			if (label == "") label = "unknown";
-			context.fillText(label,sx+55,sy+15);
-			sy+=10;
+			context.fillText(label,sx+ex+5,sy+ey-h/2+f/2);//x, y [, maxWidth]
+			sy+=h;
 		});
-	}	
+	}
+	if (colorby === "color" && show_last_legends ){
+		unique_array.forEach(function(label){
+			context.fillStyle = property_mapping[latest_colorby].colors[unique_array.indexOf(label)];
+			context.fillRect(sx,sy+ypad, w,h);
+			context.strokeStyle = "black";
+			context.strokeRect(sx,sy+ypad, w,h);
+			//context.stroke();	
+			context.textAlign = 'left';
+			context.font=f+"px Georgia";
+			if (label == "") label = "unknown";
+			context.fillText(label,sx+ex+5,sy+ey-h/2+f/2);
+			sy+=h;
+		});		
+	}
 }
 
 //the tick also draw in the canvas!
@@ -3520,6 +3561,16 @@ function ticked(e) {
 		//context = canvas.getContext("2d");
 	}
     context.clearRect(0, 0, canvas.width, canvas.height);
+	if (graph.nodes[0].data.color)
+		context.fillStyle = 'rgb('+ Math.floor(graph.nodes[0].data.color[0]*255)+","
+	+ Math.floor(graph.nodes[0].data.color[1]*255)+","
+	+ Math.floor(graph.nodes[0].data.color[2]*255)+')';//'rgba(0,255,0,1)';//background color
+	else {
+		graph.nodes[0].data.color = [0.88,0.88,0.88];
+		context.fillStyle ='rgba(225,225,225,1)';
+	}
+	//context.fillStyle =
+	context.fillRect(0,0,window.innerWidth,window.innerHeight);
     context.save();
     /*
     context.shadowColor = 'black';
@@ -4380,7 +4431,7 @@ async function ChangeColorNodeOver(){
 	var color = Util_getRGB(document.getElementById("node_color").value);
 	var acolor = [color.arr[0]/255.0,color.arr[1]/255.0,color.arr[2]/255.0];
 	var colorby = canvas_color.selectedOptions[0].value;
-	if (!use_color_mapping && default_options.indexOf(colorby) == -1 && use_unique_array){
+	if (node_over_to_use.parent!== null && !use_color_mapping && default_options.indexOf(colorby) == -1 && use_unique_array){
 		//what the current property value
 		var indice = unique_array.indexOf(node_over_to_use.data[colorby]);
 		property_mapping[colorby].colors[indice] = color.rgb;
@@ -5643,11 +5694,11 @@ $(document).bind("contextmenu", function (event) {
     event.preventDefault();
     node_over_to_use = node_over || line_over;
     console.log("use over ",node_over_to_use)
-	var rgb = ("color" in node_over_to_use.data && node_over_to_use.data.color !== null)? node_over_to_use.data.color: [1,0,0];
+	var rgb = ("color" in node_over_to_use.data && node_over_to_use.data.color !== null) ? node_over_to_use.data.color: [1,0,0];
     if (rgb === null || !rgb) rgb = [1,0,0];
     node_over_to_use.data.color = rgb;
 	var colorby = canvas_color.selectedOptions[0].value;
-	if (!use_color_mapping && default_options.indexOf(colorby) == -1 && use_unique_array){
+	if (node_over.parent !== null && !use_color_mapping && default_options.indexOf(colorby) == -1 && use_unique_array){
 		var indice = unique_array.indexOf(node_over_to_use.data[colorby]);
 		document.getElementById("node_color").value = property_mapping[colorby].colors[indice];
 	}
