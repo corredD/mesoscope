@@ -1423,8 +1423,9 @@ function query_ResizeAll() {
   //build beads
 }
 
-function query_ResizeFromNbBeadsLvl(cutoff){
+function query_ResizeFromNbBeadsLvl(){
   //use current level
+  var cutoff = 100000;
   var lod = parseInt(beads_elem.selectedOptions[0].value);
   graph.nodes.forEach(function(d){
     if (!d.children) {
