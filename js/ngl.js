@@ -1682,7 +1682,7 @@ function NGL_ChangeSymmetry(select0) {}
 function NGL_ChangeBiologicalAssembly(selected0) {
 
   //also change the geometric center
-  var center_bu= NGL_GetBUCenter(ngl_current_structure,selected0.value);
+  var center_bu= NGL_GetBUCenter(ngl_current_structure,selected0.value).center;
   ngl_current_structure.setPosition([-center_bu.x,-center_bu.y,-center_bu.z]);
   //updatTheTable
   console.log("NGL_ChangeBiologicalassembly",center_bu,assembly_elem.selectedOptions[0].value);
@@ -1731,39 +1731,39 @@ function NGL_ChangeRepresentation(selectedO) {
   stage.getRepresentationsByName("axes").dispose();
   var comp = ngl_current_structure;
   //stage.eachComponent(function(o) {
-    if (selectedO.value==="cms"){
-      comp.addRepresentation("surface", {
-        colorScheme: color_elem.selectedOptions[0].value,
-        sele: sele_elem.value,
-        name: "polymer",
-        assembly: assembly_elem.selectedOptions[0].value,
-        surfaceType: "edt",
-        smooth: 2,//use some slider ?
-        probeRadius: 1.0,
-        scaleFactor: cms_scale,
-        flatShaded: false,
-        opacity: 1.0,
-        lowResolution: true,
-      });
-    }
-    else {
-      comp.addRepresentation(selectedO.value, {
-        colorScheme: color_elem.selectedOptions[0].value,
-        sele: sele_elem.value,
-        name: "polymer",
-        assembly: assembly_elem.selectedOptions[0].value
-      });
-    }
-    //doesnt work with biological assembly
-    comp.addRepresentation("axes", {
+  if (selectedO.value==="cms"){
+    comp.addRepresentation("surface", {
+      colorScheme: color_elem.selectedOptions[0].value,
       sele: sele_elem.value,
-      showAxes: true,
-      showBox: true,
-      radius: 0.2,
+      name: "polymer",
+      assembly: assembly_elem.selectedOptions[0].value,
+      surfaceType: "edt",
+      smooth: 2,//use some slider ?
+      probeRadius: 1.0,
+      scaleFactor: cms_scale,
+      flatShaded: false,
+      opacity: 1.0,
+      lowResolution: true,
+    });
+  }
+  else {
+    comp.addRepresentation(selectedO.value, {
+      colorScheme: color_elem.selectedOptions[0].value,
+      sele: sele_elem.value,
+      name: "polymer",
       assembly: assembly_elem.selectedOptions[0].value
     });
-    NGL_showBox(document.getElementById('showbox'));
-  //});
+  }
+  //doesnt work with biological assembly
+  comp.addRepresentation("axes", {
+    sele: sele_elem.value,
+    showAxes: true,
+    showBox: true,
+    radius: 0.2,
+    assembly: assembly_elem.selectedOptions[0].value
+  });
+  NGL_showBox(document.getElementById('showbox'));
+//});
 }
 
 function NGL_ChangeRepresentation_cb() {
@@ -2179,7 +2179,7 @@ function NGL_applyBUtoMesh(nglobj,meshobj){
   var startindice = 0;
   var count = (meshobj.verts)? meshobj.verts.length/3:0;
   //first loop to get the center
-  var center_bu= NGL_GetBUCenter(nglobj,ass);
+  var center_bu= NGL_GetBUCenter(nglobj,ass).center;
   console.log("NGL_applyBUtoMesh",center_bu);
   //nglobj.setPosition(-center_bu.x,-center_bu.y,-center_bu.z);
   for (var j = 0; j < nglobj.object.biomolDict[ass].partList.length; j++) {
@@ -3827,7 +3827,7 @@ function buildWithKmeans(o, center, ncluster) {
       return NGL_ClusterToBeads(clusters, o, new NGL.Vector3(0),dataset);
     }
     else {
-      center = NGL_GetBUCenter(o,o.assembly);
+      center = NGL_GetBUCenter(o,o.assembly).center;
       return NGL_applybuToclusters(o,clusters,center,dataset);
     }
   }
@@ -4072,7 +4072,7 @@ function NGL_ReprensentOne(o,anode){
   o.gcenter = xcenter.center;
   o.radius = xcenter.radius;
   var center = xcenter.center;
-  if (assembly !== "AU") center = NGL_GetBUCenter(o,assembly);
+  if (assembly !== "AU") center = NGL_GetBUCenter(o,assembly).center;
   console.log("setPosition");
   o.setPosition([-center.x, -center.y, -center.z]); //center molecule
   if (anode.data.surface || anode.data.ingtype=="fiber"){
@@ -4162,8 +4162,14 @@ function NGL_GetBUCenter(nglobj,ass){
   var center=new NGL.Vector3();
   var bucount=0;
   var R = 0;
-  if (!(ass in nglobj.structure.biomolDict)) return chain_center;
-  if (ass==="AU") return chain_center;
+  if (!(ass in nglobj.structure.biomolDict)) return {
+    "center": chain_center,
+    "radius": R
+  };
+  if (ass==="AU") return {
+    "center": chain_center,
+    "radius": R
+  };
   for (var j = 0; j < nglobj.object.biomolDict[ass].partList.length; j++) {
     console.log(nglobj.object.biomolDict[ass].partList[j].matrixList.length);
     for (var k = 0; k < nglobj.object.biomolDict[ass].partList[j].matrixList.length; k++) {
@@ -4305,7 +4311,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str, onfinish_cb = null) {
       ngl_current_structure.radius = xcenter.radius;
       var center = xcenter.center;
       if (assembly !== "AU") {
-        center = NGL_GetBUCenter(ngl_current_structure,assembly);
+        center = NGL_GetBUCenter(ngl_current_structure,assembly).center;
       }
       console.log("gcenter", center, ngl_force_build_beads);
       o.setPosition([-center.x, -center.y, -center.z]); //center molecule
@@ -4847,7 +4853,7 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
       o.radius = xcenter.radius;
       center = xcenter.center;
       if (assembly !== "AU") {
-        center = NGL_GetBUCenter(o,assembly);
+        center = NGL_GetBUCenter(o,assembly).center;
       }
       console.log("gcenter", center, ngl_force_build_beads);
       if (resize_nodes) {
