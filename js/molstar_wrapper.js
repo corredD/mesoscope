@@ -120,7 +120,7 @@ function MS_HighlightNode(anode){
     } 
     //else aname = aname.replace(".pdb","")
     //fiber use the ingredient name
-    //if (anode.data.ingtype === "fiber") aname = anode.data.name;
+    if (anode.data.ingtype === "fiber") aname = anode.data.name;
     MS_Highlight(aname);
   }
 }
@@ -216,6 +216,7 @@ async function MS_mapColorSchem(){
           color_mapping_js[aname]=node_color;
         }
         else {
+          if (d.data.ingtype === "fiber") aname = d.data.name;
           color_mapping_js[aname]=node_color;
           //color_mapping_js[aname.replace(".pdb","")]=node_color;
         }
@@ -253,6 +254,7 @@ async function MS_ChangeColor(node,acolor)
     if (aname.length === 4 ) {
       aname = aname.toUpperCase();
     }
+    if (node.data.ingtype === "fiber") aname = node.data.name;
     BasicMolStarWrapper.coloring.changeColorStructure(aname,acolor);
     //if (node.data.ingtype === "fiber") aname = node.data.name;
     //console.log(aname,acolor)

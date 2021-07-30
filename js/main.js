@@ -1738,6 +1738,7 @@ function LoadExampleInfluenza_envelope(){
 		})
 	MS_LoadExample('influenza_model1.json');
 }
+
 function LoadExampleInfluenza_complete(){
 	stage.removeAllComponents();
 	var url = "data/InfluenzaFull.json";
@@ -1823,6 +1824,25 @@ function LoadExampleBloodHIV(){
 						update_graph(adata.nodes,adata.links);
 						})
 		MS_LoadExample('BloodHIV1.0_mixed_fixed_nc1.cpr');
+}
+
+function LoadExampleMycoplasmaGenitalium(){
+	stage.removeAllComponents();
+	var url = "data/InfluenzaA.json";//repo MG
+	csv_mapping= false;
+	comp_column = false;
+	d3v4.json(url, function (json) {
+			if (DEBUGLOG) console.log(json);
+				var adata = parseCellPackRecipe(json)
+				//var alink =[]
+				//alert("worked??");
+				//alert(JSON.stringify(adata));
+				update_graph(adata.nodes,adata.links);
+		})
+	//membrane ?
+	//model file bin or molstar-zip ?
+	//MS_LoadModel(recipefile,modelfile) // can I pass URL ?
+	//MS_LoadExample('influenza_model1.json');
 }
 
 function MergeExampleBlood(){
