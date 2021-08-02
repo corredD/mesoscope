@@ -1,8 +1,10 @@
 var MS_inited = false;
 var ms_trace_only = document.getElementById("ms_trace_only");
 var ms_spacefill = document.getElementById("ms_spacefill");
+var ms_membrane = document.getElementById("ms_membrane");
 //.checked
 var ms_model_loaded = false;
+//https://molstar.org/viewer/?snapshot-url=https://github.com/mmaritan/wholecellworkflow/blob/master/mol-star_state_1189.molx&snapshot-url-type=molx
 //https://molstar.org/viewer/?snapshot-url=https%3A%2F%2Fmolstar.s3.us-east-2.amazonaws.com%2Fbtub-ompf.molx&snapshot-url-type=molx
 //https://molstar.org/viewer/?snapshot-url=https://mesoscope.scripps.edu/beta/data/cellpack_mge.molx&snapshot-url-type=molx
 function MS_molstart_init(){
@@ -21,6 +23,7 @@ function MS_molstart_init(){
     MS_inited = true;
     ms_trace_only = document.getElementById("ms_trace_only");
     ms_spacefill = document.getElementById("ms_spacefill");
+    ms_membrane = document.getElementById("ms_membrane");
 }
 
 function MS_setupcallback(){
@@ -155,7 +158,7 @@ function MS_LoadModel(recipefile,modelfile){
       //console.log(key, pathList_[key]);
       ingredients_files.push(pathList_[key]);
     });
-    BasicMolStarWrapper.loadCellPACK_model(recipefile,modelfile,ingredients_files, ms_trace_only.checked, ms_spacefill.checked ? 'spacefill' : 'gaussian-surface');
+    BasicMolStarWrapper.loadCellPACK_model(recipefile,modelfile,ingredients_files, ms_trace_only.checked, ms_membrane.checked, ms_spacefill.checked ? 'spacefill' : 'gaussian-surface');
     BasicMolStarWrapper.setPreset('clip_pixel');
     ms_model_loaded = true;
 }

@@ -484,6 +484,7 @@ var mol_star_view=''+
 '<button id="applyAllcolors_button" onclick="MS_applyRandomColors()" style="">Apply default Colors</button>' +//z-index:999,right:5%;
 '<input type="checkbox" id="ms_trace_only">Trace Only</input>' +
 '<input type="checkbox" id="ms_spacefill">Spacefill</input></div>' +
+'<input type="checkbox" id="ms_membrane">Membrane</input></div>' +
 '</div>'+
 '</div>';
 

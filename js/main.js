@@ -4736,6 +4736,7 @@ function MouseMove(x,y) {
         else {
           	node_over = d;
         }
+		MS_HighlightNode(d);
 		d.highlight=true;
         line_over = null;
 	}
