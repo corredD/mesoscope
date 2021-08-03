@@ -4,9 +4,10 @@ var ms_spacefill = document.getElementById("ms_spacefill");
 var ms_membrane = document.getElementById("ms_membrane");
 //.checked
 var ms_model_loaded = false;
-//https://molstar.org/viewer/?snapshot-url=https://github.com/mmaritan/wholecellworkflow/blob/master/mol-star_state_1189.molx&snapshot-url-type=molx
-//https://molstar.org/viewer/?snapshot-url=https%3A%2F%2Fmolstar.s3.us-east-2.amazonaws.com%2Fbtub-ompf.molx&snapshot-url-type=molx
+//https://molstar.org/viewer/?snapshot-url=https://mesoscope.scripps.edu/beta/data/mol-star_state_1189.molx&snapshot-url-type=molx
+//Working : https://molstar.org/viewer/?snapshot-url=https://rawcdn.githack.com/mesoscope/cellPACK_data/fe7891a2af5c14bf12845e69314b30037caf4c64/cellPACK_database_1.1.0/results/mol-star_state_1189.molx&snapshot-url-type=molx
 //https://molstar.org/viewer/?snapshot-url=https://mesoscope.scripps.edu/beta/data/cellpack_mge.molx&snapshot-url-type=molx
+
 function MS_molstart_init(){
     BasicMolStarWrapper.init('molstar', {
         layoutShowControls: false,
@@ -144,6 +145,12 @@ function MS_Load(pdbname, bu, sel_str){
       else {
 
       }
+}
+
+function MS_LoadMGMembrane(){
+  var format = "mmcif";//or cif or bcif?
+  var url = "data/lipid_149.cif";
+  BasicMolStarWrapper.load({ url: url, format: format})
 }
 
 function MS_LoadModel(recipefile,modelfile){

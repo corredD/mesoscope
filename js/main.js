@@ -1826,23 +1826,42 @@ function LoadExampleBloodHIV(){
 		MS_LoadExample('BloodHIV1.0_mixed_fixed_nc1.cpr');
 }
 
-function LoadExampleMycoplasmaGenitalium(){
+/*var xhr = new XMLHttpRequest();
+xhr.open("GET", requestUrl);
+xhr.responseType = "blob";
+
+xhr.onload = function () {
+    onDownloaded(this);
+};
+xhr.send();
+*/
+
+function LoadExampleMycoplasmaGenitaliumAuto(){
 	stage.removeAllComponents();
-	var url = "data/InfluenzaA.json";//repo MG
-	csv_mapping= false;
-	comp_column = false;
-	d3v4.json(url, function (json) {
-			if (DEBUGLOG) console.log(json);
-				var adata = parseCellPackRecipe(json)
-				//var alink =[]
-				//alert("worked??");
-				//alert(JSON.stringify(adata));
-				update_graph(adata.nodes,adata.links);
-		})
-	//membrane ?
-	//model file bin or molstar-zip ?
-	//MS_LoadModel(recipefile,modelfile) // can I pass URL ?
-	//MS_LoadExample('influenza_model1.json');
+	var url = "data/MG_auto_149.zip";//repo MG
+	fetch(url)
+    .then(res => res.blob())
+    .then(data => {
+        //code to handle the response
+		alert("The full model will be loaded in the molstar window, the loading can take serveral minutes, especially if the membrane option is toggle on.");
+		unzipAndLoad( data );
+    }).catch(err => {
+        console.error('Error: ', err);
+    });	
+}
+
+function LoadExampleMycoplasmaGenitaliumCurated(){
+	stage.removeAllComponents();
+	var url = "data/MG_curated_149.zip";//repo MG
+	fetch(url)
+    .then(res => res.blob())
+    .then(data => {
+        //code to handle the response
+		alert("The full model will be loaded in the molstar window, the loading can take serveral minutes, especially if the membrane option is toggle on.");
+		unzipAndLoad( data );
+    }).catch(err => {
+        console.error('Error: ', err);
+    });	
 }
 
 function MergeExampleBlood(){
