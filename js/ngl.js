@@ -51,6 +51,7 @@ var node_to_illustrate;
 var repToChange;
 var selToChange;
 var buToChange;
+var force_not_dobeads = true;
 //var beads_checkbox = document.getElementById("beads_check");
 //var labels_checkbox = document.getElementById("label_check");
 
@@ -4386,8 +4387,13 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str, onfinish_cb = null) {
 
       //
       var align_axis = false;
-
-      if (ngl_load_params.dobeads) {
+      var maxnbbeads = 0;
+      var nLod = ngl_load_params.beads.rad.length;
+      for (var i = 0; i < nLod; i++) {
+         var nbeads = ngl_load_params.beads.rad[lod].radii.length;
+         maxnbbeads = Math.max(maxnbbeads,nbeads);
+      }
+      if (ngl_load_params.dobeads && force_not_dobeads && maxnbbeads < 5000) {
         NGL_LoadSpheres(ngl_load_params.beads.pos, ngl_load_params.beads.rad);
         ngl_load_params.dobeads = false;
         NGL_showBeadsLevel(beads_elem.selectedOptions[0]);//that is just a visibility toggle
