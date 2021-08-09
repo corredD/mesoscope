@@ -4390,7 +4390,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str, onfinish_cb = null) {
       var maxnbbeads = 0;
       var nLod = ngl_load_params.beads.rad.length;
       for (var i = 0; i < nLod; i++) {
-         var nbeads = ngl_load_params.beads.rad[lod].radii.length;
+         var nbeads = ngl_load_params.beads.rad[i].radii.length;
          maxnbbeads = Math.max(maxnbbeads,nbeads);
       }
       if (ngl_load_params.dobeads && force_not_dobeads && maxnbbeads < 5000) {
