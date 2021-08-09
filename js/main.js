@@ -37,6 +37,7 @@ var property_mapping = {};
 property_mapping.default = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
 property_mapping.size = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
 property_mapping.molecularweight = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
+property_mapping.radius_molecularweight = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
 property_mapping.molarity = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
 property_mapping.count = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
 property_mapping.confidence = {"min": 999999, "max": 0,"cmin":"hsl(0, 100%, 50%)","cmax":"hsl(165, 100%, 50%)","colors":[]};
@@ -3323,8 +3324,8 @@ function mapRadiusToProperty_cb(property) {
 	//should we increase the size of the parent node ?
 	graph.nodes.forEach(function(d){
 		if (!d.children) {
-			if (property==="molecularweight"){ d.r = Util_getRadiusFromMW(d.data.molecularweight)*radius_scale; }
-			//else if (property==="size"){ d.r = d.data.size;}
+			if (property==="radius_molecularweight"){ d.r = Util_getRadiusFromMW(d.data.molecularweight)*radius_scale*0.1; }
+			else if (property==="molecularweight"){ d.r = Math.cbrt (d.data.molecularweight)* 0.1 * radius_scale;}
 			else if (property==="default"){ d.r = 10*radius_scale;}
 			else if (property==="size"){ d.r = d.data.size*radius_scale;}
 			else d.r = mapping(d.data[property])*radius_scale;//or linearmapping
@@ -5336,6 +5337,7 @@ function update_graph(agraph,alink){
   //ticked();
   //saveCurrentState();
   ChangeCanvasColor(null);
+  mapRadiusToProperty_cb(document.getElementById("canvas_map_r").value);
 }
 
 function merge_node(cnode,newnode){
@@ -5344,6 +5346,7 @@ function merge_node(cnode,newnode){
         // index: the ordinal position of the key within the object
         if (merge_field[akey].checked){
             var key = allfield_key[akey];
+			console.log("checked ",akey,( key in newnode.data ));
             if ( key in newnode.data ) cnode.data[key] = newnode.data[key];
             if (cnode.data.nodetype!=="compartment"){
               if (key === "bu" && "bu" in newnode.data) {
@@ -5427,6 +5430,7 @@ function merge_graph(agraph,alink){
           if (create_when_merge) merge_one_node(n);
         }
         else {
+			console.log("merge 2 nodes ",cnode,n);
             merge_node(cnode,n);
         }
       }
