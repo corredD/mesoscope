@@ -7,7 +7,12 @@ var ms_model_loaded = false;
 //https://molstar.org/viewer/?snapshot-url=https://mesoscope.scripps.edu/beta/data/mol-star_state_1189.molx&snapshot-url-type=molx
 //Working : https://molstar.org/viewer/?snapshot-url=https://rawcdn.githack.com/mesoscope/cellPACK_data/fe7891a2af5c14bf12845e69314b30037caf4c64/cellPACK_database_1.1.0/results/mol-star_state_1189.molx&snapshot-url-type=molx
 //https://molstar.org/viewer/?snapshot-url=https://mesoscope.scripps.edu/beta/data/cellpack_mge.molx&snapshot-url-type=molx
+//https://molstar.org/viewer/?snapshot-url=https://github.com/ccsb-scripps/MycoplasmaGenitalium/blob/main/Models/cellpack_atom_instances_149_curated.bcif?raw=true&snapshot-url-type=cif
+//https://rawcdn.githack.com/ccsb-scripps/MycoplasmaGenitalium/main/Models/mol-star_state_1189.molx
 
+//https://molstar.org/viewer/?snapshot-url=https://ghcdn.rawgit.org/ccsb-scripps/MycoplasmaGenitalium/main/Models/cellpack_atom_instances_149_curated.zip&snapshot-url-type=cif&structure-url-is-binary=1
+//https://molstar.org/viewer/?structure-url=https://ghcdn.rawgit.org/ccsb-scripps/MycoplasmaGenitalium/main/Models/cellpack_atom_instances_149_curated.bcif&structure-url-format=mmcif&structure-url-is-binary=1
+//https://molstar.org/viewer/?structure-url=https://ghcdn.rawgit.org/ccsb-scripps/MycoplasmaGenitalium/main/Models/cellpack_atom_instances_149_curated.zip&structure-url-format=mmcif
 function MS_molstart_init(){
     BasicMolStarWrapper.init('molstar', {
         layoutShowControls: false,
@@ -56,7 +61,7 @@ function MS_setupcallback(){
     if (pickingId) {
       //console.log("click found pickingId ",pickingId);
       const reprLoci = canvas3d.getLoci(pickingId.id);
-      //console.log(reprLoci,reprLoci.loci.kind);
+      console.log(reprLoci,reprLoci.loci.kind);
       if (reprLoci.loci.kind === "element-loci") MS_callback(reprLoci.loci.elements[0].unit.model.entryId, click = true);
       else {
         if (node_selected) node_selected.highlight = false;
@@ -150,7 +155,8 @@ function MS_Load(pdbname, bu, sel_str){
 function MS_LoadMGMembrane(){
   var format = "mmcif";//or cif or bcif?
   var url = "data/lipid_149.cif";
-  BasicMolStarWrapper.load({ url: url, format: format})
+  //BasicMolStarWrapper.load({ url: url, format: format, assemblyId: '1'})
+  BasicMolStarWrapper.load_dev_url({ url: url, format: format, assemblyId: '1'})
 }
 
 function MS_LoadModel(recipefile,modelfile){

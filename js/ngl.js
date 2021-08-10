@@ -338,7 +338,9 @@ function NGL_updateMetaBallsGeom(anode)
   if (!("pos" in anode.data)||(anode.data.pos === null)||(anode.data.pos.length===0)) {
     anode.data.pos = [{"coords":[0.0,0.0,0.0]}];
     anode.data.radii=[{"radii":[500.0]}];
+    anode.data.types=[{"types":[0]}];
   }
+  if (!anode.data.color) anode.data.color = [0,1,0];
   var colors = anode.data.radii[0].radii.map(x=>anode.data.color);
   NGL_multiSpheresComp(anode.data.name,anode.data.pos[0].coords,
                           anode.data.radii[0].radii.map(x=>x/2.0),

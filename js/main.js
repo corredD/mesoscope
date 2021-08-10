@@ -1742,7 +1742,7 @@ function LoadExampleInfluenza_envelope(){
 
 function LoadExampleInfluenza_complete(){
 	stage.removeAllComponents();
-	var url = "data/InfluenzaFull.json";
+	var url = "data/InfluenzaFull.json";//InfluenzaFull.json";
 	csv_mapping= false;
 	comp_column = false;
 
@@ -2271,29 +2271,29 @@ function resizeMetaBall(e){
 function AddMetaball(){
 	//use current radius and metaball to current node
 	if (node_selected) {
-			if (!("pos" in node_selected.data)||(node_selected.data.pos === null)||(node_selected.data.pos.length===0)) {
-				node_selected.data.pos = [{"coords":[]}];
-				node_selected.data.radii=[{"radii":[]}];
-        node_selected.data.types=[{"types":[]}];
-			}
-			node_selected.data.pos[0].coords.push(0.0);
-			node_selected.data.pos[0].coords.push(0.0);
-			node_selected.data.pos[0].coords.push(0.0);
-			var radius = document.getElementById('comp_slider').value;
-			node_selected.data.radii[0].radii.push(radius);
-      node_selected.data.types[0].types.push(0);
-			//update the select
-			var mbe = document.getElementById('metaball_elem');
-			mbe.options.length = 0;
-			var n_mb = node_selected.data.pos[0].coords.length/3;
-			for (let i = 0; i < n_mb; ++i) {
-				//addOption(options, i, 'Model ' + (i + 1))
-				mbe.options[mbe.options.length] = new Option(i, i);
-			}
-			stage.removeAllComponents();
-			NGL_updateMetaBallsGeom(node_selected);//NGL_MetaBalls();
-			NGL_ShowOrigin();
-			//stage.autoView();
+		if (!("pos" in node_selected.data)||(node_selected.data.pos === null)||(node_selected.data.pos.length===0)) {
+			node_selected.data.pos = [{"coords":[]}];
+			node_selected.data.radii=[{"radii":[]}];
+			node_selected.data.types=[{"types":[]}];
+		}
+		node_selected.data.pos[0].coords.push(0.0);
+		node_selected.data.pos[0].coords.push(0.0);
+		node_selected.data.pos[0].coords.push(0.0);
+		var radius = document.getElementById('comp_slider').value;
+		node_selected.data.radii[0].radii.push(radius);
+		node_selected.data.types[0].types.push(0);
+		//update the select
+		var mbe = document.getElementById('metaball_elem');
+		mbe.options.length = 0;
+		var n_mb = node_selected.data.pos[0].coords.length/3;
+		for (let i = 0; i < n_mb; ++i) {
+			//addOption(options, i, 'Model ' + (i + 1))
+			mbe.options[mbe.options.length] = new Option(i, i);
+		}
+		stage.removeAllComponents();
+		NGL_updateMetaBallsGeom(node_selected);//NGL_MetaBalls();
+		NGL_ShowOrigin();
+		//stage.autoView();
 	}
 }
 
