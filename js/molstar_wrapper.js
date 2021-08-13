@@ -159,6 +159,10 @@ function MS_LoadMGMembrane(){
   BasicMolStarWrapper.load_dev_url({ url: url, format: format, assemblyId: '1'})
 }
 
+
+//const { models } = ctx.structure.root;
+//const { models } = BasicMolStarWrapper.getStructureRoot().root;
+
 function MS_LoadModel(recipefile,modelfile){
     if (!MS_inited) return;
     //how to access cellpack menu ?
@@ -172,7 +176,8 @@ function MS_LoadModel(recipefile,modelfile){
       ingredients_files.push(pathList_[key]);
     });
     BasicMolStarWrapper.loadCellPACK_model(recipefile,modelfile,ingredients_files, ms_trace_only.checked, ms_membrane.checked, ms_spacefill.checked ? 'spacefill' : 'gaussian-surface');
-    BasicMolStarWrapper.setPreset('clip_pixel');
+    BasicMolStarWrapper.setPreset('clip_instance');
+    
     ms_model_loaded = true;
 }
 

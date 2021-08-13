@@ -1844,7 +1844,7 @@ function LoadExampleMycoplasmaGenitaliumAuto(){
     .then(res => res.blob())
     .then(data => {
         //code to handle the response
-		alert("The full model will be loaded in the molstar window, the loading can take serveral minutes, especially if the membrane option is toggle on.");
+		alert("The full model will be loaded in the molstar window, the loading can take serveral minutes, membrane loading is " + ms_membrane.checked.toString());
 		unzipAndLoad( data );
     }).catch(err => {
         console.error('Error: ', err);
@@ -1858,7 +1858,7 @@ function LoadExampleMycoplasmaGenitaliumCurated(){
     .then(res => res.blob())
     .then(data => {
         //code to handle the response
-		alert("The full model will be loaded in the molstar window, the loading can take serveral minutes, especially if the membrane option is toggle on.");
+		alert("The full model will be loaded in the molstar window, the loading can take serveral minutes, membrane loading is " + ms_membrane.checked.toString());
 		unzipAndLoad( data );
     }).catch(err => {
         console.error('Error: ', err);
