@@ -2027,7 +2027,17 @@ function checkAttributes(agraph){
 			if (additional_data.length !== 0) {
 				for (var j=0;j<additional_data.length;j++){
 					var key = additional_data[j];
-					if (agraph[i].data[key] > property_mapping[key].max) property_mapping[key].max = agraph[i].data[key];
+					var avalue = agraph[i].data[key];
+					if (isNumeric(avalue)) {
+						avalue = parseFloat(avalue);
+						agraph[i].data[key] = avalue;
+					} 
+					if (avalue === "" || avalue === undefined) {
+						avalue = undefined;
+						agraph[i].data[key] = avalue;
+					}
+					if (avalue > property_mapping[key].max) property_mapping[key].max = avalue;
+					if (avalue < property_mapping[key].min) property_mapping[key].min = avalue;
 				}
 			}
 			agraph[i].data.__id = counter_id;
@@ -3210,15 +3220,15 @@ function colorNode(d) {
 		if (additional_data.length!==0){
 			if (use_color_mapping){
 				if (use_unique_array) {
-					return ( !d.children && "data" in d && colorby in d.data && typeof d.data[colorby] !== 'undefined' ) ? current_color_mapping(unique_array.indexOf(d.data[colorby])):color(d.depth);		
+					return ( !d.children && "data" in d && colorby in d.data && typeof d.data[colorby] !== 'undefined' && d.data[colorby] !== null) ? current_color_mapping(unique_array.indexOf(d.data[colorby])):color(d.depth);		
 				} else {
-					return ( !d.children && "data" in d && colorby in d.data && typeof d.data[colorby] !== 'undefined' ) ? current_color_mapping(d.data[colorby]):color(d.depth);		
+					return ( !d.children && "data" in d && colorby in d.data && typeof d.data[colorby] !== 'undefined' && d.data[colorby] !== null) ? current_color_mapping(d.data[colorby]):color(d.depth);		
 				}
 			} else {
 				if (use_unique_array) 
-					return ( !d.children && "data" in d && colorby in d.data && typeof d.data[colorby] !== 'undefined' ) ? property_mapping[colorby].colors[unique_array.indexOf(d.data[colorby])]:property_mapping[colorby].colors[unique_array.indexOf("")];	
+					return ( !d.children && "data" in d && colorby in d.data && typeof d.data[colorby] !== 'undefined' && d.data[colorby] !== null) ? property_mapping[colorby].colors[unique_array.indexOf(d.data[colorby])]:property_mapping[colorby].colors[unique_array.indexOf("")];	
 				else 
-					return ( !d.children && "data" in d && colorby in d.data && typeof d.data[colorby] !== 'undefined' ) ? current_color_mapping(d.data[colorby]):color(d.depth);	
+					return ( !d.children && "data" in d && colorby in d.data && typeof d.data[colorby] !== 'undefined' && d.data[colorby] !== null) ? current_color_mapping(d.data[colorby]):color(d.depth);	
 			}
 		}
 		else {

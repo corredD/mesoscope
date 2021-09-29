@@ -5,6 +5,12 @@ var  Y_AXIS = new NGL.Vector3(0, 1, 0);
 var  Z_AXIS = new NGL.Vector3(0, 0, 1);
 var FOLDER_UPDATED = false;
 
+const isNumeric = (str) => {
+  if (typeof str !== "string") return false
+  return !isNaN(str) &&
+    !isNaN(parseFloat(str))
+}
+
 function Util_parseParams(){
   return location.search
     .substr(1)
