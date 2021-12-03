@@ -2975,8 +2975,8 @@ function ChangeCanvasColor(e){
 	document.getElementById("min_color").value = hmin;
 	document.getElementById("max_color").value = hmax;
 	if (colorby == "automatic") {
-		property_mapping[colorby].max = Math.max.apply(null, graph.nodes.length);
-		property_mapping[colorby].min = Math.min.apply(null, 0);
+		property_mapping[colorby].max = graph.nodes.length; // Math.max.apply(null, graph.nodes.length);
+		property_mapping[colorby].min = 0; // Math.min.apply(null, 0);
 		current_color_mapping = d3v4.scaleLinear()//d3v4.scaleLinear()
 			//.domain([Math.min(0,property_mapping[colorby].min), property_mapping[colorby].max])
 			.domain([property_mapping[colorby].min, property_mapping[colorby].max])

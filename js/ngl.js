@@ -556,6 +556,12 @@ function NGL_updateMBcomp() {
   else acomp.setPosition([offset[0], offset[1], offset[2]]);
   console.log("NGL_update axis ?", axis, offset);
   //change the grid ? or the data or both ?
+  pcp_elem[0].value = axis.x*100;
+  pcp_elem[1].value = axis.y*100;
+  pcp_elem[2].value = axis.z*100;
+  for (var i = 0; i < 3; i++) {
+    $(pcp_elem[i]).siblings('.inputNumber').val(pcp_elem[i].value);
+  }
 }
 
 function NGL_panShapeDrag (stage, deltaX, deltaY) {
@@ -3111,7 +3117,8 @@ function NGL_ShowAxisOffset(axis, offset, anode) //StructureView
     if (anode.data.surface) {
       console.log("build membrane along", axis);
       var q = new NGL.Quaternion();
-      q.setFromUnitVectors(new NGL.Vector3(0, 0, 1), new NGL.Vector3(axis[0], axis[1], axis[2]));
+      axis = new NGL.Vector3(axis[0], axis[1], axis[2]);//normalize ?
+      q.setFromUnitVectors(new NGL.Vector3(0, 0, 1), axis.normalize());
       console.log(q, new NGL.Vector3(axis[0], axis[1], axis[2]));
       var shapemb = new NGL.Shape("mb");
       //two cylinder one red up, one blue down, center is 0,0,0
