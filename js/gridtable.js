@@ -123,6 +123,7 @@ function simulateServerCall(item) {
 }
 
 function getImageHtmlPDB(pdb) {
+  if (!pdb) return;
   pdb = pdb.toLowerCase();
   var twoletters = pdb[1] + pdb[2];
   //var html = "<img id='imagepdb' src='https://cdn.rcsb.org/images/rutgers/" + twoletters + "/" + pdb + "/" + pdb + ".pdb1-250.jpg' onmouseenter='showClone(this)' onmouseleave='hideClone(this)'/>"; //size
@@ -140,7 +141,8 @@ function getImageHtmlPDB_src(pdb) {
 
 function renderImageCell(row, cell, value, columnDef, dataContext) {
   //first two letter
-  return getImageHtmlPDB(dataContext.structureId);
+  if (dataContext.structureId) return getImageHtmlPDB(dataContext.structureId);
+  if (dataContext.pdb) return getImageHtmlPDB(dataContext.pdb);
 }
 
 function renderImageRecipeCell(row, cell, value, columnDef, dataContext) {
@@ -845,6 +847,30 @@ function CreateDataColumnFromCVS(cvsdata) {
   console.log(cvsdata.length);
   for (var i = 0; i < cvsdata.length; i++) {
     var elem = JSON.parse(JSON.stringify(cvsdata[i]));
+    elem.id = "id_" + i;
+    //elem.picked = false;
+    if (columns.length === 0) {
+      columns = CreateColumnsFromANodes(elem);
+    }
+    data.push(elem);
+  }
+  //console.log(columns);
+  return {
+    "data": data,
+    "column": columns
+  };
+}
+
+function CreateDataColumnFromRCSBJson(jsondata) {
+  //work only with leaf
+  var data = [];
+  var columns = [];
+  console.log("total_count",jsondata.total_count);
+  //return CreateDataColumnFromPDBList(jsondata.result_set);
+  for (var i = 0; i < jsondata.result_set.length; i++) {
+    var elem = {};//JSON.parse(JSON.stringify(jsondata.result_set[i]));
+    // elem.pdb = jsondata.result_set[i].identifier.split("_")[0];
+    elem.structureId = jsondata.result_set[i].identifier.split("_")[0];    
     elem.id = "id_" + i;
     //elem.picked = false;
     if (columns.length === 0) {
@@ -1918,9 +1944,10 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
        var query_ = $(e.target).attr("data");
        var query = arow[query_];
        console.log("query PDB for " + query_+" "+query);
-       if (query !== "protein_name" && query !== "" && query !== null) {
+       if ( "undefined" !== typeof query && query !== "protein_name" && query !== "" && query !== null) {
          document.getElementById("Query_4").value = query.split("_").join(" ");
-         queryPDBfromName(query);
+         if (query_ === "uniprot") queryPDBfromUniprot(query);
+         else queryPDBfromName(query);
          if (ngl_load_params.dogeom) {
            NGL_LoadAShapeObj(null,ngl_load_params.geom);
            ngl_load_params.dogeom = false;
@@ -2034,7 +2061,7 @@ function groupByElem_cb(gridid, selemvalue) {
   var aformater = function(g) {
     return selemvalue + ":  " + g.value + "  <span style='color:green'>(" + g.count + " items)</span>";
   }
-  if (gridid === 3 && selemvalue === "structureId") //pdb
+  if (gridid === 3 && (selemvalue === "structureId" || selemvalue === "pdb")) //pdb
   {
     //use the preview image
     aformater = function(g) {
@@ -2149,7 +2176,8 @@ function refineQuery(e) {
       //check if sequence search
       queryPDBfromName(elem);
     }
-  }
+  } /* search all uniprot id ? */
+    /* search from taxonomy and convert back to recipe ? */
 }
 
 

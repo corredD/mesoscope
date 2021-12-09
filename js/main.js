@@ -3179,7 +3179,8 @@ function colorNode(d) {
 			return current_color_mapping(graph.nodes.indexOf(d));	
 		}
 		else {
-				if (!d.children) {
+			if (!d.children) {
+				console.log(d,d.parent);
 				var pname = d.parent.data.name;
 				var id = d.parent.children.indexOf(d);
 				var c1 = color_palette[pname][id].rgb()

@@ -66,6 +66,114 @@ function BuildSequenceQuery(sqceQuery) {
   return query;
 }
 
+
+function submitJson_form(query_uniprot){
+  var query = {}
+  query.type = "group";
+  query.logical_operator = "and";
+  var node1 = {"type": "terminal",
+  "service": "text",
+  "parameters": {
+    "operator": "exact_match",
+    "value": query_uniprot,
+    "attribute": "rcsb_polymer_entity_container_identifiers.reference_sequence_identifiers.database_accession"
+  }}
+  var node2={"type": "terminal",
+  "service": "text",
+  "parameters": {
+    "operator": "exact_match",
+    "value": "UniProt",
+    "attribute": "rcsb_polymer_entity_container_identifiers.reference_sequence_identifiers.database_name"
+  }}
+  query.nodes = [node1,node2];
+  var url = "https://search.rcsb.org/rcsbsearch/v1/query?json=" + encodeURIComponent(JSON.stringify ({query:query,return_type : "polymer_entity"}));
+  console.log(url);
+  callAjax(url, reportResultcb, "");
+}
+
+function reportResultcb(results){
+  console.log(results);
+  var result = JSON.parse(results);
+  var cdata = CreateDataColumnFromRCSBJson(result);
+  console.log(cdata);
+  var tabId = 4;
+  if (gridArray.length <= 3) {
+    //add a grid from the csv data test
+    var options = CreateOptions();
+    var parentId = "tabs-" + tabId;
+    if (cdata.data.length > 0) cdata.data[0].picked = true;
+    var g = CreateGrid("grid_pdb", parentId, cdata.data, cdata.column, options);
+    //g.registerPlugin(checkboxSelector);
+    //force redraw of the grid with resize?
+  }
+  else
+  {
+    if (cdata.data.length > 0) {
+      cdata.data[0].picked = true;
+      pdb_picked = 0;
+    }
+    pdb_picked = 0;
+    cdata.column.push({
+      id: "picked",
+      name: "picked",
+      field: "picked",
+      formatter: Slick.Formatters.Checkmark,
+      editor: Slick.Editors.Checkbox
+    });
+    //cdata.column.unshift(uniprot_detailView.getColumnDefinition());
+    cdata.column.unshift({
+      id: "preview",
+      name: "preview",
+      field: "preview",
+      formatter: renderImageCell
+    });
+    UpdateGrid(cdata, 3);
+    if (usesavedSession) {
+      //var querytxt = document.getElementById("LoaderTxt").innerHTML.split(" : ")[1];
+      //slice the data
+      //only store 20
+      //var rowsids = gridArray[0].getSelectedRows();
+      //cdata.data.splice(20, cdata.data.length - 20);
+      //sessionStorage.setItem("pdb_"+rowsids[0],JSON.stringify({"query":querytxt,"data":cdata}));
+    }
+    //update the recipe grid with first element
+    if (cdata.data.length) {
+      var rowsids = gridArray[0].getSelectedRows();
+      if (rowsids && rowsids.length > 0) {
+        var row = gridArray[0].dataView.getItem(rowsids[0]);
+        //row.label = test[0]["Protein names"].split("(")[0];
+        row.uniprot = cdata.data[0].uniprotAcc;
+        row.label = cdata.data[0].uniprotRecommendedName;
+        if (custom_report_uniprot_only === false) row.pdb = cdata.data[0].structureId;
+        gridArray[0].dataView.beginUpdate();
+        gridArray[0].invalidateRow(row.id);
+        gridArray[0].dataView.updateItem(row.id, row);
+        gridArray[0].dataView.endUpdate();
+        gridArray[0].render();
+        gridArray[0].dataView.refresh();
+        //trigger cellchange?
+        SyncTableGraphCell(row.id, "uniprot", "uniprot"); //update the graph
+        SyncTableGraphCell(row.id, "label", "label"); //update the graph this overwrite any label
+        SyncTableGraphCell(row.id, "pdb", "pdb"); //update the graph
+        //SyncTableGraphCell(row.id,"pdb","pdb");//update the graph molecular weight
+        //group by structureId
+        groupByElem_cb(3, "structureId");
+        gridArray[3].render();
+        gridArray[3].dataView.refresh();
+        UpdateUniPDBcomponent(row.uniprot);
+        setupProVista(row.uniprot);
+      }
+    }
+  }
+  grid_tab_label[3].text ( cdata.data.length.toString() );
+  current_list_pdb = "";
+  cumulative_res = {
+    "pdbs": null,
+    "mols": null
+  };
+  custom_report_uniprot_only = false;  
+}
+
 //PDB text search
 function submitForm(xmlText, querytxt) {
   console.log(xmlText);
@@ -534,8 +642,14 @@ function queryPDBfromName(aname) {
   }
   if (dosearch) {
     var query = BuildQuery(aname.split("_").join(" "));
-    submitForm(query, querytxt);
+    submitForm(query, querytxt);//submitJson_form
   }
+}
+
+function queryPDBfromUniprot(uniprot) {
+  grid_tab_label[3].text( "" );
+  document.getElementById("LoaderTxt").innerHTML = "query Uniprot : " + uniprot;
+  submitJson_form(uniprot);
 }
 
 function queryPDBfromSequence(sequence) {
