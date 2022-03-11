@@ -4219,11 +4219,14 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str, onfinish_cb = null) {
       else if (ngl_current_node.data.opm === 0)
       {
           //check if exists
-          var search_url = cellpack_repo+"opm/"+aname+ ".mmtf";
+          //var search_url = cellpack_repo+"opm/"+aname+ ".mmtf";
+          // https://opm-assets.storage.googleapis.com/pdb/6v4d.pdb
+          var search_url = opm_url+aname+".pdb";
           var results = syncCall(search_url);
           if (results !=="")
           {
-            purl = cellpack_repo+"opm/" + aname + ".mmtf";
+            // purl = cellpack_repo+"opm/" + aname + ".mmtf";
+            purl = opm_url+aname+".pdb";
             ngl_current_node.data.opm = 1;
             setopm = true;
           }
@@ -4671,11 +4674,13 @@ function LM_getUrlStructure(anode,pdbname){
       else if (anode.data.opm === 0)
       {
           //check if exists
-          var search_url = cellpack_repo+"opm/"+pdbname+ ".mmtf";
+          //var search_url = cellpack_repo+"opm/"+pdbname+ ".mmtf";
+          var search_url = opm_url+aname+".pdb";
           var results = syncCall(search_url);
           if (results !=="")
           {
-            purl = cellpack_repo+"opm/" + pdbname + ".mmtf";
+            // purl = cellpack_repo+"opm/" + pdbname + ".mmtf";
+            purl = opm_url+aname+".pdb";
             anode.data.opm = 1;
             return purl;
           }
@@ -4741,11 +4746,11 @@ function NGL_getUrlStructure(anode,pdbname){
       else if (anode.data.opm === 0)
       {
           //check if exists
-          var search_url = cellpack_repo+"opm/"+pdbname+ ".mmtf";
+          var search_url = opm_url+pdbname+ ".mmtf";
           var results = syncCall(search_url);
           if (results !=="")
           {
-            purl = cellpack_repo+"opm/" + pdbname + ".mmtf";
+            purl = opm_url + pdbname + ".mmtf";
             anode.data.opm = 1;
             return purl;
           }
@@ -4810,11 +4815,11 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
         else if (anode.data.opm === 0)
         {
             //check if exists
-            var search_url = cellpack_repo+"opm/"+aname+ ".mmtf";
+            var search_url = opm_url+aname+ ".mmtf";
             var results = syncCall(search_url);
             if (results !=="")
             {
-              purl = cellpack_repo+"opm/" + aname + ".mmtf";
+              purl = opm_url + aname + ".mmtf";
               anode.data.opm = 1;
             }
             else {

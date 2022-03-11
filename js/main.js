@@ -2894,7 +2894,7 @@ function GenerateNColor(ncolors){
 		&& hcl[1]>=30 && hcl[1]<=80
 		&& hcl[2]>=35 && hcl[2]<=80;
 	},
-		false, // Using Force Vector instead of k-Means
+		true, // Using Force Vector instead of k-Means
 		50, // Steps (quality)
 		false, // Ultra precision
 		'Default' // Color distance type (colorblindness)
@@ -2907,17 +2907,17 @@ function GenerateNColor(ncolors){
 function GenerateOneColorRangePalette(rgb,ncolors){
 	// Generate colors (as Chroma.js objects)
 	var hcl = chroma.rgb(rgb[0],rgb[1],rgb[2]).hcl();
-	var start = hcl[0]-25;
-	var end = hcl[0]+25;
+	var start = hcl[0]-30;
+	var end = hcl[0]+30;
 	var colors = paletteGenerator.generate(
 		ncolors, // Colors
 		function(color){ // This function filters valid colors
 		var hcl = color.hcl();
 		return hcl[0]>=start && hcl[0]<=end
-			&& hcl[1]>=38.82 && hcl[1]<=100
-			&& hcl[2]>=38.04 && hcl[2]<=100;
+			&& hcl[1]>=0 && hcl[1]<=100
+			&& hcl[2]>=0 && hcl[2]<=100;
 		},
-		false, // Using Force Vector instead of k-Means
+		true, // Using Force Vector instead of k-Means
 		50, // Steps (quality)
 		false, // Ultra precision
 		'Default' // Color distance type (colorblindness)
@@ -2940,7 +2940,20 @@ function toggleShowLegends(e){
 	//document.getElementById("legends_ypad").style.display = aclass;//.setAttribute("class", aclass);
 	document.getElementById("legends_f_l").style.display = aclass;//.setAttribute("class", aclass);
 }
-
+/*
+	comp_colors[d.data.name] = {"surface":theColor[nComp],"interior":theColor[nComp+1]};
+	//how many inside and surface children
+	var ninside = 0;
+	var nsurface = 0;
+	d.children.forEach(function(d){
+		if (d.data.surface) nsurface++;
+		else ninside++;
+	})
+	color_palette[d.data.name] = {"surface":GenerateOneColorRangePalette(theColor[nComp].rgb(),nsurface),
+									"interior":GenerateOneColorRangePalette(theColor[nComp+1].rgb(),ninside)};
+	nComp++;
+	nComp++;
+*/
 function ChangeCanvasColor(e){
 	var colorby = canvas_color.selectedOptions[0].value;
 	if (colorby == "automatic") {
@@ -2949,14 +2962,18 @@ function ChangeCanvasColor(e){
 		//generate one color range per compartment
 		var nComp = 0;
 		graph.nodes.forEach(function(d){
-		if (d.children){// && d.depth != 0){
+		if (d.parent && d.children && d.data.nodetype == "compartment"){// && d.depth != 0){
 			nComp++;
 		}
 		});
+		// nComp = Math.max(nComp,3);
 		var theColor = GenerateNColor(nComp);
+		if (nComp == 1) {
+			var theColor = [chroma.rgb(Math.random()*255,Math.random()*255,Math.random()*255)];
+		}
 		nComp = 0;
 		graph.nodes.forEach(function(d){
-		if (d.children){// && d.depth != 0){
+		if (d.parent && d.children && d.data.nodetype == "compartment"){// && d.depth != 0){
 			if (!(d.data.name in color_palette))
 			{
 				//should seperate surface / interior
@@ -3180,7 +3197,7 @@ function colorNode(d) {
 		}
 		else {
 			if (!d.children) {
-				console.log(d,d.parent);
+				// console.log(d,d.parent);
 				var pname = d.parent.data.name;
 				var id = d.parent.children.indexOf(d);
 				var c1 = color_palette[pname][id].rgb()

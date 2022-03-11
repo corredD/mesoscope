@@ -1248,7 +1248,7 @@ function CreateNodeColumns() {
       name: "buildtype",
       field: "buildtype",
       sortable: true,
-      options: "random,file,supercell",
+      options: "random,file,supercell,projected",
       editor: SelectCellEditor
     },
 

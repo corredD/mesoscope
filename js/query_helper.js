@@ -584,9 +584,9 @@ function queryUniportKBfromName(aname) {
       }
     }
   }
-
+// /https://www.uniprot.org/uniprot/?query=Platelet%20glycoprotein%204&columns=id%2Centry%20name%2Creviewed%2Cprotein%20names%2Cgenes%2Corganism%2Clength%2C3d&sort=score
   if (dosearch) {
-    var uni_column = "id%2Centry%20name%2Creviewed%2Cprotein%20names%2Cgenes%2Corganism%2Clength%2Csequence%2Ccomment(FUNCTION)%2Ccomment(SUBUNIT%20STRUCTURE)%2Cgo(molecular%20function)%2Cgo(cellular%20component)%2Ccomment(SUBCELLULAR%20LOCATION)%2Cfeature(TOPOLOGICAL%20DOMAIN)%2Cfeature(TRANSMEMBRANE)%2Cfeature(INTRAMEMBRANE)%2Cfeature(MODIFIED%20RESIDUE)%2Cfeature(SIGNAL)%2C3d%2Cdatabase(PDB)%2Cdatabase(ProteinModelPortal)%2Cdatabase(Pfam)"
+    var uni_column = "id%2Centry%20name%2Creviewed%2Cprotein%20names%2Cgenes%2Corganism%2Clength%2Csequence%2C3d%2Ccomment(FUNCTION)%2Ccomment(SUBUNIT%20STRUCTURE)%2Cgo(molecular%20function)%2Cgo(cellular%20component)%2Ccomment(SUBCELLULAR%20LOCATION)%2Cfeature(TOPOLOGICAL%20DOMAIN)%2Cfeature(TRANSMEMBRANE)%2Cfeature(INTRAMEMBRANE)%2Cfeature(MODIFIED%20RESIDUE)%2Cfeature(SIGNAL)%2C3d%2Cdatabase(PDB)%2Cdatabase(ProteinModelPortal)%2Cdatabase(Pfam)"
     //uni_column = "id,protein%20names";
     //var url = "https://www.uniprot.org/uniprot/?query="+aname.split("_").join("+")+"&sort=score&columns=id,entry%20name,reviewed,protein%20names,genes,organism,length&format=tab";
     var url = "https://www.uniprot.org/uniprot/?query=" + aname.split("_").join("+") +
