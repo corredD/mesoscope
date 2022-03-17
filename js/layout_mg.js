@@ -346,6 +346,8 @@ var ngl_widget_options_collapsible = ''+
   '<div class="meso_content">'+
     '<div><input type="checkbox"  id="showgeommb" onclick="NGL_showGeomMembrane(this)" checked>' +
     '<label for="showgeommb"> Show 3D Membrane used (red:outside, blue:inside) </label></div>'+
+    //'<div><input type="checkbox"  id="invert_opm" onclick="NGL_InvertMembrane(this)">' +
+    //'<label for="invert_opm"> Invert 3D Membrane</label></div>'+
     '<label id="pcpLabel">Principal Axis (shift+control left click)</label>' +
     '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpX" type="range" min="-100" max="100" step="1" style="width:70%" />' +
     '<input class="inputNumber" id="num1" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
@@ -897,7 +899,7 @@ localforage.getItem('savedRecipe').then(function(readValue) {
 }),
 
 console.log("savedRecipe", savedRecipe !== null, savedRecipe);
-var current_version = {"version":1.31};
+var current_version = {"version":1.32};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()

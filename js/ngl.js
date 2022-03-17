@@ -151,8 +151,10 @@ function NGL_resetPcp()
   acomp.setRotation([0,0,0,1]);
   acomp.setPosition([0,0,0]);
   var acomp2 = stage.getComponentsByName("arrowfiber").list[0];
-  acomp2.setRotation([0,0,0,1]);
-  acomp2.setPosition([0,0,0]);
+  if (acomp2) {
+    acomp2.setRotation([0,0,0,1]);
+    acomp2.setPosition([0,0,0]);
+  }
   var axis = new NGL.Vector3(0, 0, 1);//quat.multiplyVector3(new NGL.Vector3(0, 0, 1));
   var offset = new NGL.Vector3(0, 0, 0);
   if (node_selected){
@@ -161,6 +163,7 @@ function NGL_resetPcp()
       var center = ngl_current_structure.gcenter;
       offset = [center.x,center.y,center.z];
       axis = [0,0,1];
+      if (node_selected.data.opm_inverted) axis = [0,0,-1];
     }
   }
   //offset.applyQuaternion() quat.inverse().multiplyVector3(pos);
@@ -175,6 +178,15 @@ function NGL_resetPcp()
     $(offset_elem[i]).siblings('.inputNumber').val(offset_elem[i].value);
   }
   NGL_applyPcp(axis,offset);
+}
+
+function NGL_InvertMembrane(e) {
+  NGL_InvertMembrane_cb(e.checked);
+  NGL_resetPcp();
+}
+
+function NGL_InvertMembrane_cb(toggle){
+  node_selected.data.opm_inverted = toggle;
 }
 
 function NGL_applyOffsetY2D(value){
@@ -3780,7 +3792,7 @@ function buildWithKmeans(o, center, ncluster) {
     //var R = o.viewer.bRadius;//Math.max.apply(null, biszea) / 4; //beads0.radius
     //V = 4*Math.PI*(R*R*R)/3.0;
     var nProxy = parseInt(Math.ceil(bvol/Vproxy));
-    if (nProxy <= 2) nProxy = 2
+    if (nProxy <= 3) nProxy = 3
     else nProxy = nProxy + 2 // padding
     ncluster = nProxy;
     console.log("ncluster "+ nProxy.toString()+" "+nAtom.toString())
@@ -4340,6 +4352,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str, onfinish_cb = null) {
         if (setopm){//ngl_current_node.data.opm === 1) {
           offset = [center.x,center.y,center.z];
           axis = [0,0,1];
+          if (ngl_current_node.data.opm_inverted) axis = [0,0,-1];
           ngl_load_params.axis.offset = offset;
           ngl_load_params.axis.axis = axis;
           NGL_updatePcpElem();
@@ -4815,11 +4828,11 @@ function NGL_LoadHeadless(purl, aname, bu, sel_str, anode){
         else if (anode.data.opm === 0)
         {
             //check if exists
-            var search_url = opm_url+aname+ ".mmtf";
+            var search_url = opm_url+aname+ ".pdb";
             var results = syncCall(search_url);
             if (results !=="")
             {
-              purl = opm_url + aname + ".mmtf";
+              purl = opm_url + aname + ".pdb";
               anode.data.opm = 1;
             }
             else {
