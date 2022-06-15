@@ -16,7 +16,9 @@ var pdb_id_elem;
 var ngl_current_pickingProxy;
 var nlg_preview_isosurface = true;
 var pcp_elem = [];
+var fpcp_elem = [];
 var offset_elem = [];
+var foffset_elem = [];
 var yoffset_2d_elem;
 var ylength_2d_elem;
 var ngl_geom_opacity = 1.0;
@@ -145,6 +147,81 @@ function NGL_updatePcpElem() {
   }
 }
 
+function NGL_updateFiberPcpElem() {
+  if (!ngl_load_params.axis) return;
+  if (!ngl_load_params.axis.faxis) {
+    ngl_load_params.axis.faxis = ngl_load_params.axis.axis;
+  };
+  if (!ngl_load_params.axis.foffset) {
+    ngl_load_params.axis.foffset = ngl_load_params.axis.offset;
+  };    
+  for (var i = 0; i < 4; i++) {
+    if (i == 3) fpcp_elem[i].value = ngl_load_params.axis.faxis[i];
+    else fpcp_elem[i].value = ngl_load_params.axis.faxis[i] * 100;
+    $(fpcp_elem[i]).siblings('.inputNumber').val(fpcp_elem[i].value);
+    if (i < 3){
+      foffset_elem[i].value = ngl_load_params.axis.foffset[i];
+      $(foffset_elem[i]).siblings('.inputNumber').val(foffset_elem[i].value);
+    }
+  }
+}
+
+function NGL_buildFiberAxisChain(){
+  var chainid1=0;
+  var chainid2=1;
+  var cname1 = ngl_current_structure.structure.chainStore.getChainname(chainid1);
+  var cname2 = ngl_current_structure.structure.chainStore.getChainname(chainid2);
+  var center1 = NGL_GetGeometricCenter(ngl_current_structure, new NGL.Selection(":"+cname1)).center; 
+  var center2 = NGL_GetGeometricCenter(ngl_current_structure, new NGL.Selection(":"+cname2)).center;
+  console.log("center1", center1);
+  console.log("center2", center2);
+  console.log("gcenter", ngl_current_structure.gcenter);
+  var toward = new NGL.Vector3(center2.x-center1.x,
+                               center2.y-center1.y,
+                               center2.z-center1.z);
+  var foffset = [toward.x,toward.y,toward.z];
+  console.log("foffset", foffset);
+  var L = toward.length();
+  var faxis = toward.normalize();
+  node_selected.data.fiberAxis = [faxis.x,faxis.y,faxis.z,L];
+  node_selected.data.fiberOffset = foffset;
+  ngl_load_params.axis.faxis = [faxis.x,faxis.y,faxis.z,L];
+  ngl_load_params.axis.foffset = foffset;
+  console.log("foffset", ngl_load_params.axis.foffset);
+  NGL_updateFiberPcpElem();
+  NGL_ShowFiberAxis(node_selected);
+}
+
+function NGL_buildFiberAxisBu(){
+  //apply BU id 0 and 1 on selection
+  //get the center direction and length
+  var o = ngl_current_structure;
+  var mat1 = o.object.biomolDict['BU1'].partList[0].matrixList[1];
+  var mat2 = o.object.biomolDict['BU1'].partList[0].matrixList[2];
+  console.log("gcenter", ngl_current_structure.gcenter);//the selection center
+  var center1 = new NGL.Vector3(ngl_current_structure.gcenter.x,ngl_current_structure.gcenter.y,ngl_current_structure.gcenter.z);
+  center1.applyMatrix4(mat1);
+  var center2 = new NGL.Vector3(ngl_current_structure.gcenter.x,ngl_current_structure.gcenter.y,ngl_current_structure.gcenter.z);
+  center2.applyMatrix4(mat2);  
+  console.log("center1", center1);
+  console.log("center2", center2);
+  console.log("gcenter", ngl_current_structure.gcenter);
+  var toward = new NGL.Vector3(center2.x-center1.x,
+                               center2.y-center1.y,
+                               center2.z-center1.z);
+  var foffset = [toward.x,toward.y,toward.z];
+  console.log("foffset", foffset);
+  var L = toward.length();
+  var faxis = toward.normalize();
+  node_selected.data.fiberAxis = [faxis.x,faxis.y,faxis.z,L];
+  node_selected.data.fiberOffset = foffset;
+  ngl_load_params.axis.faxis = [faxis.x,faxis.y,faxis.z,L];
+  ngl_load_params.axis.foffset = foffset;
+  console.log("foffset", ngl_load_params.axis.foffset);
+  NGL_updateFiberPcpElem();
+  NGL_ShowFiberAxis(node_selected);  
+}
+
 function NGL_resetPcp()
 {
   var acomp = stage.getComponentsByName("mb").list[0];
@@ -242,6 +319,53 @@ function NGL_applyPcp(axis,offset,asyncloop=false) {
   }
 }
 
+
+function NGL_applyFiberPcp(faxis,foffset) {
+  if (!faxis) faxis = [fpcp_elem[0].value / 100.0, fpcp_elem[1].value / 100.0, fpcp_elem[2].value / 100.0, fpcp_elem[3].value];
+  ngl_load_params.axis.faxis = faxis;
+  if (!foffset) foffset = [foffset_elem[0].value / 1.0, foffset_elem[1].value / 1.0, foffset_elem[2].value / 1.0];
+  ngl_load_params.axis.foffset = foffset;  
+  //update table and node
+  if (ngl_current_item_id) {
+    //updateDataGridRowElem(0, ngl_current_item_id, "pcpalAxis", axis);
+    //updateDataGridRowElem(0, ngl_current_item_id, "offset", offset);
+  }
+  if (node_selected) {
+    node_selected.data.fiberAxis = faxis;
+    node_selected.data.fiberOffset = foffset;
+    if (node_selected.data.sprite){
+      if (node_selected.data.sprite.scale2d!==0) {
+          /*var acomp = stage.getComponentsByName("mb").list[0];
+          var o = new NGL.Vector3(offset[0], offset[1], offset[2]);
+          var off = o.length();
+          if (acomp)
+          {
+            var screen_pos = NGL_getScreenPosition(acomp.position);
+            if (screen_pos.y < viewport.offsetHeight/2) {off = -off;}
+          }
+          node_selected.data.sprite.offsety = off;
+          */       
+          /*
+          var q = new NGL.Quaternion();
+          q.setFromUnitVectors(new NGL.Vector3(0, 0, 1), new NGL.Vector3(axis[0], axis[1], axis[2]));
+          var o = new NGL.Vector3(offset[0], offset[1], offset[2]);
+          var c = ngl_current_structure.gcenter;
+          o.add(c);
+          var d = NGL_getDistanceOnScreen(o,c);
+          */
+          
+      }
+    }
+    console.log("update node", node_selected);
+  } else {
+    var arow = gridArray[0].dataView.getItemById(ngl_current_item_id);
+    var anode_selected_indice = parseInt(arow.id.split("_")[1]);
+    var anode_selected = graph.nodes[node_selected_indice];
+    anode_selected.data.fiberAxis = faxis;
+    anode_selected.data.fiberOffset = foffset;
+    console.log("update anode", anode_selected);
+  }
+}
 //picking spheres and moving them ?>
 //stage.signals.clicked.add(function (pickingProxy) {...});
 //type,sphere,mesh,component
@@ -511,7 +635,7 @@ function NGL_AlignPcpTo(vFrom,vTo,pTo) {
 }
 
 function NGL_updateArrowDrag(acomp) {
-    //update arrowfiber
+    //update arrowfiber e.g. fiberAxis
     if (!acomp) acomp = stage.getComponentsByName("arrowfiber").list[0];
     var pos = acomp.position; //global position
     var quat = acomp.quaternion; //local rotation
@@ -519,15 +643,15 @@ function NGL_updateArrowDrag(acomp) {
     axis.applyQuaternion(quat);
     var offset = pos;
     //offset.applyQuaternion() quat.inverse().multiplyVector3(pos);
-    pcp_elem[0].value = axis.x*100;
-    pcp_elem[1].value = axis.y*100;
-    pcp_elem[2].value = axis.z*100;
-    offset_elem[0].value = offset.x;
-    offset_elem[1].value = offset.y;
-    offset_elem[2].value = offset.z;
+    fpcp_elem[0].value = axis.x*100;
+    fpcp_elem[1].value = axis.y*100;
+    fpcp_elem[2].value = axis.z*100;
+    foffset_elem[0].value = offset.x;
+    foffset_elem[1].value = offset.y;
+    foffset_elem[2].value = offset.z;
     for (var i = 0; i < 3; i++) {
-      $(pcp_elem[i]).siblings('.inputNumber').val(pcp_elem[i].value);
-      $(offset_elem[i]).siblings('.inputNumber').val(offset_elem[i].value);
+      $(fpcp_elem[i]).siblings('.inputNumber').val(fpcp_elem[i].value);
+      $(foffset_elem[i]).siblings('.inputNumber').val(foffset_elem[i].value);
     }
 }
 
@@ -552,27 +676,42 @@ function NGL_updateMBcompDrag(acomp) {
   }
 }
 
-function NGL_updateMBcomp() {
+function NGL_updateMBcomp(force_mb) {
   //get the other two ?
   var axis = [pcp_elem[0].value / 100.0, pcp_elem[1].value / 100.0, pcp_elem[2].value / 100.0];
   var offset = [offset_elem[0].value / 1.0, offset_elem[1].value / 1.0, offset_elem[2].value / 1.0];
   var acomp = stage.getComponentsByName("mb").list[0];
-  if (node_selected.data.ingtype=="fiber" || document.getElementById("showaxis").checked ) acomp = stage.getComponentsByName("arrowfiber").list[0];;
+  if (node_selected.data.ingtype == "fiber" && !force_mb ) {
+    acomp = stage.getComponentsByName("arrowfiber").list[0];;
+    axis = [fpcp_elem[0].value / 100.0, fpcp_elem[1].value / 100.0, fpcp_elem[2].value / 100.0];
+    offset = [foffset_elem[0].value / 1.0, foffset_elem[1].value / 1.0, foffset_elem[2].value / 1.0];
+  }
   if (!acomp) return;
   var q = new NGL.Quaternion();
   axis = new NGL.Vector3(axis[0], axis[1], axis[2]);//normalize ?
   q.setFromUnitVectors(new NGL.Vector3(0, 0, 1), axis.normalize());
   //console.log(q,new NGL.Vector3(axis[0],axis[1],axis[2]));
   acomp.setRotation(q);
-  if (node_selected.data.ingtype!="fiber" && !document.getElementById("showaxis").checked ) acomp.setPosition([-offset[0], -offset[1], -offset[2]]);
+  if (node_selected.data.ingtype!="fiber" || force_mb  ) acomp.setPosition([-offset[0], -offset[1], -offset[2]]);
   else acomp.setPosition([offset[0], offset[1], offset[2]]);
   console.log("NGL_update axis ?", axis, offset);
   //change the grid ? or the data or both ?
-  pcp_elem[0].value = axis.x*100;
-  pcp_elem[1].value = axis.y*100;
-  pcp_elem[2].value = axis.z*100;
-  for (var i = 0; i < 3; i++) {
-    $(pcp_elem[i]).siblings('.inputNumber').val(pcp_elem[i].value);
+  if (node_selected.data.ingtype=="fiber" && !force_mb)
+  {
+    fpcp_elem[0].value = axis.x*100;
+    fpcp_elem[1].value = axis.y*100;
+    fpcp_elem[2].value = axis.z*100;
+    for (var i = 0; i < 3; i++) {
+      $(fpcp_elem[i]).siblings('.inputNumber').val(fpcp_elem[i].value);
+    }
+  }
+  else {
+    pcp_elem[0].value = axis.x*100;
+    pcp_elem[1].value = axis.y*100;
+    pcp_elem[2].value = axis.z*100;
+    for (var i = 0; i < 3; i++) {
+      $(pcp_elem[i]).siblings('.inputNumber').val(pcp_elem[i].value);
+    }
   }
 }
 
@@ -657,9 +796,19 @@ function NGL_Setup() {
   pcp_elem.push(document.getElementById("pcpY"));
   pcp_elem.push(document.getElementById("pcpZ"));
 
+  fpcp_elem.push(document.getElementById("fpcpX"));
+  fpcp_elem.push(document.getElementById("fpcpY"));
+  fpcp_elem.push(document.getElementById("fpcpZ"));
+  fpcp_elem.push(document.getElementById("fpcpW"));
+
   offset_elem.push(document.getElementById("offsetX"));
   offset_elem.push(document.getElementById("offsetY"));
   offset_elem.push(document.getElementById("offsetZ"));
+
+  
+  foffset_elem.push(document.getElementById("foffsetX"));
+  foffset_elem.push(document.getElementById("foffsetY"));
+  foffset_elem.push(document.getElementById("foffsetZ"));
 
   yoffset_2d_elem = document.getElementById("2d_yoffset_range");
   ylength_2d_elem  = document.getElementById("2d_length_range");
@@ -675,7 +824,7 @@ function NGL_Setup() {
 
   $('.inputRange, .inputNumber').on('input', function() {
     $(this).siblings('.inputRange, .inputNumber').val(this.value);
-    //console.log(this.id)
+    console.log(this.id)
     //console.log(this)
     if (this.id.startsWith("2d_yoffset")) 
     {
@@ -703,8 +852,13 @@ function NGL_Setup() {
       radius_scale = parseFloat(this.value);
       mapRadiusToProperty_cb(document.getElementById("canvas_map_r").value);
     }
+    else if (this.id.startsWith("fpcp") || this.id.startsWith("foffset") || this.id.startsWith("fnum")){
+      //fiber Axis
+      NGL_updateMBcomp(false);
+      NGL_applyFiberPcp();
+    }
     else {
-      NGL_updateMBcomp();
+      NGL_updateMBcomp(true);
       NGL_applyPcp();
     }
   });
@@ -858,63 +1012,56 @@ function NGL_Setup() {
   stage.mouseObserver.signals.dragged.add(
     function (deltaX,deltaY){
       if (ngl_scene_control.checked) return;
-    //update
-    //console.log(ngl_current_pickingProxy);
-    //console.log(node_selected.data.nodetype);
-    //console.log(node_selected);
-    //console.log(ngl_current_pickingProxy.component.name);
-    //console.log(ngl_current_pickingProxy.position);
-    if (!ngl_current_pickingProxy) return;
-
-    if(ngl_current_pickingProxy.component && ngl_current_pickingProxy.component.name==="mb") {
-      //update pcpAxis and rotaiton
-      NGL_updateMBcompDrag(ngl_current_pickingProxy.component)
-      NGL_applyPcp();
-    }
-    else if(ngl_current_pickingProxy.component && ngl_current_pickingProxy.component.name==="arrowfiber") {
-      //update pcpAxis and rotaiton
-      NGL_updateArrowDrag(ngl_current_pickingProxy.component)
-      NGL_applyPcp();
-    }
-    else if (ngl_current_pickingProxy.sphere) {
-      var asplit = ngl_current_pickingProxy.sphere.name.split("_");
-      var name = asplit[0];
-      if (name === "lod" ){
-        var cpos = new NGL.Vector3();
-        cpos.copy(ngl_current_pickingProxy.position);
-        var lod = parseInt(asplit[1]);
-        var lodid=parseInt(asplit[3]);
-        console.log("lod "+lod.toString()+" "+lodid.toString());
-        var pi = lodid*3;
-        //anode should be the current selected node
-        node_selected.data.pos[lod].coords[pi] = cpos.x;
-        node_selected.data.pos[lod].coords[pi+1] = cpos.y;
-        node_selected.data.pos[lod].coords[pi+2] = cpos.z;
+      if (!ngl_current_pickingProxy) return;
+      if(ngl_current_pickingProxy.component && ngl_current_pickingProxy.component.name==="mb") {
+        //update pcpAxis and rotaiton
+        NGL_updateMBcompDrag(ngl_current_pickingProxy.component)
+        NGL_applyPcp();
       }
-      else 
-      //retrieve the node with this name
-      {
-        var anode = getNodeByName(name);
-        var mbi = parseInt( (asplit.length>1)? asplit[1]:"0");
-        var pi = mbi*3;
-        var cpos = new NGL.Vector3();
-        console.log(name,mbi,pi,anode);
-        console.log("update ",pi,anode.data.pos[0].coords);
-        cpos.copy(ngl_current_pickingProxy.position);
-        anode.data.pos[0].coords[pi] = cpos.x;
-        anode.data.pos[0].coords[pi+1] = cpos.y;
-        anode.data.pos[0].coords[pi+2] = cpos.z;
-        //console.log("update ",pi,anode.data.pos[0].coords);
-        if (nlg_preview_isosurface) {
-          NGL_updateMetaBalls(anode);
-          var geo = ngl_marching_cube.generateGeometry();
-          //how to update the shape mesh instead of recreating it
-          geo.name = name;
-          NGL_MetaBallsGeom(geo);
+      else if(ngl_current_pickingProxy.component && ngl_current_pickingProxy.component.name==="arrowfiber") {
+        //update pcpAxis and rotaiton
+        NGL_updateArrowDrag(ngl_current_pickingProxy.component)
+        NGL_applyFiberPcp();
+      }
+      else if (ngl_current_pickingProxy.sphere) {
+        var asplit = ngl_current_pickingProxy.sphere.name.split("_");
+        var name = asplit[0];
+        if (name === "lod" ){
+          var cpos = new NGL.Vector3();
+          cpos.copy(ngl_current_pickingProxy.position);
+          var lod = parseInt(asplit[1]);
+          var lodid=parseInt(asplit[3]);
+          console.log("lod "+lod.toString()+" "+lodid.toString());
+          var pi = lodid*3;
+          //anode should be the current selected node
+          node_selected.data.pos[lod].coords[pi] = cpos.x;
+          node_selected.data.pos[lod].coords[pi+1] = cpos.y;
+          node_selected.data.pos[lod].coords[pi+2] = cpos.z;
+        }
+        else 
+        //retrieve the node with this name
+        {
+          var anode = getNodeByName(name);
+          var mbi = parseInt( (asplit.length>1)? asplit[1]:"0");
+          var pi = mbi*3;
+          var cpos = new NGL.Vector3();
+          console.log(name,mbi,pi,anode);
+          console.log("update ",pi,anode.data.pos[0].coords);
+          cpos.copy(ngl_current_pickingProxy.position);
+          anode.data.pos[0].coords[pi] = cpos.x;
+          anode.data.pos[0].coords[pi+1] = cpos.y;
+          anode.data.pos[0].coords[pi+2] = cpos.z;
+          //console.log("update ",pi,anode.data.pos[0].coords);
+          if (nlg_preview_isosurface) {
+            NGL_updateMetaBalls(anode);
+            var geo = ngl_marching_cube.generateGeometry();
+            //how to update the shape mesh instead of recreating it
+            geo.name = name;
+            NGL_MetaBallsGeom(geo);
+          }
         }
       }
-  }
-  });
+    });
 
   //if metaballs only ?
   stage.signals.clicked.add(function (pickingProxy){
@@ -1070,6 +1217,27 @@ function NGL_toggleAxisVisibilityControl(e) {
   }
 }
 
+function NGL_toggleFiberAxisVisibilityControl(e) {
+  document.getElementById('fiber').setAttribute("class", e.checked?"show":"hidden");
+  //NGL_updatePcpElem();
+  //NGL_applyPcp();
+  //if (node_selected)
+  //{
+  //   NGL_ShowAxisOffset(node_selected.data.pcpalAxis, node_selected.data.offset, node_selected);
+  //}
+}
+
+function NGL_toggleSurfaceAxisVisibilityControl(e) {
+  //document.getElementById('surface').setAttribute("class", e.checked?"show":"hidden");
+  NGL_updatePcpElem();
+  NGL_applyPcp();
+  if (node_selected)
+  {
+    NGL_ShowAxisOffset(node_selected.data.pcpalAxis, node_selected.data.offset, node_selected);
+  }
+}
+
+
 function NGL_toggleOriginVisibility(e) {
   stage.getRepresentationsByName("beads_0")
     .setVisibility(e.checked);
@@ -1099,50 +1267,21 @@ function NGL_LoadSpheres(pos, rad) {
   for (var i = 0; i < nLod; i++) {
     var lod = i;
     if (!pos[lod].coords) continue;
-    var col = Array(pos[lod].coords.length).fill(0).map(Util_makeARandomNumber);
-    var colors = rad[lod].radii.map(x=>ngl_current_node.data.color);
+    var colors;// = Array(pos[lod].coords.length/3).fill(0).map(Util_makeARandomNumber);
+    if (ngl_current_node.data.color)
+    {
+      colors = rad[lod].radii.map(x=>ngl_current_node.data.color);
+    } else {
+      colors = rad[lod].radii.map(x=>[1,0,0]);
+    }
     //if we are showing a pairs, color differently the binding beads.
     if (ngl_load_params.dobeads_pairs) {
       colors = ngl_load_params.beads.colors[lod].colors
-      //ngl_load_params.beads.colors[lod].colors.map(function(c){
-      //    if (c===[1,1,0]){return "yellow";}
-      //    else {return "red"}
-      //});
-      //NGL_multiSpheresComp("lod_"+lod.toString()+"_", ngl_load_params.beads.pos[lod].coords,
-      //                               ngl_load_params.beads.rad[lod].radii, 
-      //                               ngl_load_params.beads.colors[lod].colors, 1.0)
     }
     NGL_multiSpheresComp("lod_"+lod.toString()+"_",pos[lod].coords,
                     rad[lod].radii,
                     colors,
                     (toggle_cluster_edit.checked)?1.0:0.5);
-    /*
-    //check if exist
-    var rep = stage.getComponentsByName("beads_"+i);
-    if (rep.list.length){
-      rep.list.forEach(function(elem){stage.removeComponent(elem);});
-    }
-
-    var shape = new NGL.Shape("beads_" + lod, {
-      disableImpostor: true,
-      radialSegments: 10
-    });
-    //console.log(labels);
-    var sphereBuffer = new NGL.SphereBuffer({
-      position: new Float32Array(pos[lod].coords),
-      color: new Float32Array(col),
-      radius: new Float32Array(rad[lod].radii)
-      //	labelType:"text",
-      //	labelText:labels
-    });
-    shape.addBuffer(sphereBuffer)
-    var shapeComp = stage.addComponentFromObject(shape)
-    var rep = shapeComp.addRepresentation("beads_" + lod, {
-      opacity: 1.0,
-      visibility: true
-    });
-    console.log("rep", rep);
-    */
     stage.autoView();
   }
 }
@@ -3111,6 +3250,38 @@ function NGL_ShowOrigin() //StructureView
     NGL_toggleOrigin(document.getElementById('showorigin'));
 }
 
+function NGL_ShowFiberAxis(anode){
+  if (anode.data.ingtype=='fiber')
+  {
+    var flength = 100;
+    var axis = [0,1,0];
+    var offset = [0,0,0];
+    if (anode.data.fiberAxis)
+    {
+      axis = [anode.data.fiberAxis[0],anode.data.fiberAxis[1],anode.data.fiberAxis[2]];
+      flength = parseFloat(anode.data.fiberAxis[3]);
+    }
+    if (anode.data.fiberOffset){
+      offset = [anode.data.fiberOffset[0],anode.data.fiberOffset[1],anode.data.fiberOffset[2]];
+    }
+    var rep = stage.getComponentsByName("arrowfiber");
+    if (rep.list.length){
+      rep.list.forEach(function(elem){stage.removeComponent(elem);});
+    }
+    //check if exists
+    var shapemb = new NGL.Shape("arrowfiber");
+    var q = new NGL.Quaternion();
+    q.setFromUnitVectors(new NGL.Vector3(0, 0, 1), new NGL.Vector3(axis[0], axis[1], axis[2]));
+    //position1: Vector3 | Array, position2: Vector3 | Array, color: Color | Array, radius: Float, name: String
+    shapemb.addArrow([ 0, 0, -flength/2.0 ], [ 0, 0, flength/2.0], [ 0, 1, 1 ], 4.0);
+    var shapembComp = stage.addComponentFromObject(shapemb);
+    shapembComp.name = "arrowfiber";
+    var r = shapembComp.addRepresentation("principalVector");
+    shapembComp.setPosition([offset[0], offset[1], offset[2]]);
+    shapembComp.setRotation(q);
+  }  
+}
+
 function NGL_ShowAxisOffset(axis, offset, anode) //StructureView
 {
   //arrow is start, end ,color, radius
@@ -3150,8 +3321,17 @@ function NGL_ShowAxisOffset(axis, offset, anode) //StructureView
       console.log("axis ?", axis);
 
     }
-    else 
+    if (anode.data.ingtype=='fiber')
     {
+      var flength = axislength;
+      if (anode.data.fiberAxis)
+      {
+        axis = new NGL.Vector3(anode.data.fiberAxis[0],anode.data.fiberAxis[1],anode.data.fiberAxis[2]);
+        flength = anode.data.fiberAxis[3];
+      }
+      if (anode.data.fiberOffset){
+        offset = new NGL.Vector3(anode.data.fiberOffset[0],anode.data.fiberOffset[1],anode.data.fiberOffset[2]);
+      }
       var rep = stage.getComponentsByName("arrowfiber");
       if (rep.list.length){
         rep.list.forEach(function(elem){stage.removeComponent(elem);});
@@ -3162,7 +3342,7 @@ function NGL_ShowAxisOffset(axis, offset, anode) //StructureView
         var q = new NGL.Quaternion();
         q.setFromUnitVectors(new NGL.Vector3(0, 0, 1), new NGL.Vector3(axis[0], axis[1], axis[2]));
         //position1: Vector3 | Array, position2: Vector3 | Array, color: Color | Array, radius: Float, name: String
-        shapemb.addArrow([ 0, 0, -50 ], [ 0, 0, 50 ], [ 0, 1, 1 ], 4.0);
+        shapemb.addArrow([ 0, 0, 0 ], [ 0, 0, flength], [ 0, 1, 1 ], 4.0);
         var shapembComp = stage.addComponentFromObject(shapemb);
         shapembComp.name = "arrowfiber";
         var r = shapembComp.addRepresentation("principalVector");
@@ -3170,7 +3350,6 @@ function NGL_ShowAxisOffset(axis, offset, anode) //StructureView
         shapembComp.setPosition([offset[0], offset[1], offset[2]]);
         console.log("NGL_ShowAxisOffset",offset);
       }
-
     }
   }
 }
@@ -4220,6 +4399,9 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str, onfinish_cb = null) {
   var setopm = false;
   if (ngl_current_node && ngl_current_node.data.surface) {
     document.getElementById('surface').setAttribute("class", "show");
+    if (ngl_current_node.data.ingtype == 'fiber') {
+      document.getElementById('fiber').setAttribute("class", "show");
+    } else document.getElementById('fiber').setAttribute("class", "hidden");
     //replace the pdb if exist in opm ?
     if (aname.length === 4){
       aname  = aname.toLowerCase();
@@ -4259,10 +4441,10 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str, onfinish_cb = null) {
   } else {
     document.getElementById('surface').setAttribute("class", "hidden");
   }
-  if (ngl_current_node && (ngl_current_node.data.ingtype == "fiber" || document.getElementById("showaxis").checked )){
+  if (ngl_current_node && (ngl_current_node.data.ingtype == "fiber" )){ //} || document.getElementById("showaxis").checked )){
     //use the axis as principale axis for fiber
-    document.getElementById('surface').setAttribute("class", "show");
-    NGL_updatePcpElem();
+    document.getElementById('fiber').setAttribute("class", "show");
+    NGL_updateFiberPcpElem();
   }
   if (!purl) return;
   var isseq = document.getElementById("sequence_mapping")?document.getElementById("sequence_mapping").checked : false;
@@ -4360,7 +4542,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str, onfinish_cb = null) {
         }
         console.log("offset?", offset,axis);
         NGL_ShowAxisOffset(axis, offset, ngl_current_node);
-        //ngl_load_params.doaxis=false;
+        NGL_ShowFiberAxis(ngl_current_node);
       }
       o.addRepresentation("axes", {
         sele: sele,
@@ -5085,6 +5267,8 @@ function NGL_UpdateWithNode(d, force = false) {
   }
   if ("offset" in d.data) {
     ngl_load_params.axis = {
+      "faxis" : d.data.fiberAxis,
+      "foffset": d.data.fiberOffset,
       "axis": d.data.pcpalAxis,
       "offset": d.data.offset
     }
@@ -5176,6 +5360,8 @@ function NGL_UpdateWithNodePair(d) {
   var pcp = [1,0,0];
   if ("offset" in ngl_current_node.data) {
     ngl_load_params.axis = {
+      "faxis":ngl_current_node.data.fiberAxis,
+      "foffset": d.data.fiberOffset,
       "axis": ngl_current_node.data.pcpalAxis,
       "offset": ngl_current_node.data.offset
     }

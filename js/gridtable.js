@@ -1826,6 +1826,8 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
           console.log("doaxis", "offset" in node_selected.data);
           if ("offset" in node_selected.data) {
             ngl_load_params.axis = {
+              "faxis": node_selected.data.fiberAxis,
+              "foffset": node_selected.data.fiberOffset,
               "axis": node_selected.data.pcpalAxis,
               "offset": node_selected.data.offset
             }

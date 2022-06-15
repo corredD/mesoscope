@@ -953,6 +953,8 @@ function OneCPIngredient(node, surface) {
   aing_dic["meshType"] = node.data.geom_type; //meshfile or v,f,n?
   aing_dic["principalVector"] = node.data.pcpalAxis;
   aing_dic["offset"] = node.data.offset;
+  aing_dic["fiberAxis"] = node.data.fiberAxis;
+  aing_dic["fiberOffset"] = node.data.fiberOffset;  
   aing_dic["uniprot"] = node.data.uniprot;
   aing_dic["label"] = node.data.label;
   aing_dic["Type"] = (node.data.ingtype === "fiber") ? "Grow" : "MultiSphere";

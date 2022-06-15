@@ -131,6 +131,8 @@ function oneIngredientSerialized(singr, node) {
   singr["nbMol"] = node.data.count;
   singr["molarity"] = node.data.molarity;
   singr["principalVector"] = node.data.pcpalAxis;
+  singr["fiberAxis"] = node.data.fiberAxis;
+  singr["fiberOffset"] = node.data.fiberOffset;   
   singr["description"] = node.data.label;
   singr["radius"] = node.data.radius;
   if (node.data.pos && node.data.radii) {
@@ -415,7 +417,9 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
     geom = (("meshFile" in ing_dic) && (ing_dic["meshFile"] !== null)) ? ing_dic["meshFile"] : "";
   } //(("meshFile" in ing_dic)&&(ing_dic["meshFile"]!==null))? ing_dic["meshFile"].split("\\").pop() : "";
 
-  var principalVector = ("principalVector" in ing_dic) ? ing_dic["principalVector"] : [0, 0, 0];
+  var principalVector = ("principalVector" in ing_dic) ? ing_dic["principalVector"] : [0, 0, 1];
+  var fiberAxis = ("fiberAxis" in ing_dic) ? ing_dic["fiberAxis"] : [0, 0, 1, 50];
+  var fiberOffset = ("fiberOffset" in ing_dic) ? ing_dic["fiberOffset"] : [0, 0, 0];
   //var offset = ("offset" in ing_dic.source.transform)? ing_dic.source.transform.offset : [0,0,0];
   var confidence = ("confidence" in ing_dic) ? ing_dic["confidence"] : 0.0; //overall confidence
   //var spheres = getSpheres(ing_dic);
@@ -479,6 +483,8 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
     "uniprot": uniprot_id,
     "pcpalAxis": principalVector,
     "offset": offset,
+    "fiberAxis": fiberAxis,
+    "fiberOffset": fiberOffset,    
     "pos": p,
     "radii": r,
     "ingtype": ingtype,
@@ -801,8 +807,11 @@ function OneIngredient(ing_dic, surface) {
   if (!mw) mw = 0.0;
   var confidence = ("confidence" in ing_dic) ? ing_dic["confidence"] : 0.0; //overall confidence
   if (!confidence) confidence = 0.0;
-  var principalVector = ("principalVector" in ing_dic) ? ing_dic["principalVector"] : [0, 0, 0];
+  var principalVector = ("principalVector" in ing_dic) ? ing_dic["principalVector"] : [0, 0, 1];
   var offset = ("offset" in ing_dic) ? ing_dic["offset"] : [0, 0, 0];
+  var fiberAxis = ("fiberAxis" in ing_dic) ? ing_dic["fiberAxis"] : [0, 0, 1, 50];
+  var fiberOffset = ("fiberOffset" in ing_dic) ? ing_dic["fiberOffset"] : [0, 0, 0];
+  
   //var spheres = getSpheres(ing_dic);
   if ((!principalVector) || principalVector === 0 || principalVector === "" || principalVector === [0] || principalVector.length === 1) principalVector = [0, 0, 1];
   if ((!offset) || offset === 0 || offset === "" || offset === [0] || offset.length === 1) offset = [0, 0, 0];
@@ -875,6 +884,8 @@ function OneIngredient(ing_dic, surface) {
     "uniprot": uniprot,
     "pcpalAxis": principalVector,
     "offset": offset,
+    "fiberAxis": fiberAxis,
+    "fiberOffset": fiberOffset,    
     "pos": p,
     "radii": r,
     "nodetype": "ingredient",

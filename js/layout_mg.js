@@ -242,7 +242,7 @@ var ngl_widget_options = ''+
   '<div class="hidden" id="surface">' +
     '<div><input type="checkbox"  id="showgeommb" onclick="NGL_showGeomMembrane(this)" checked>' +
     '<label for="showgeommb"> Show Membrane used </label></div>'+
-    '<label id="pcpLabel">Principal Axis (shift+control left click)</label>' +
+    '<label id="pcpLabel">Surface Axis (shift+control left click)</label>' +
     '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpX" type="range" min="-100" max="100" step="1" style="width:70%" />' +
     '<input class="inputNumber" id="num1" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
     '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpY" type="range" min="-100" max="100" step="1" style="width:70%" />' +
@@ -316,60 +316,87 @@ var canvas_widget_options_collapsible = ''+
 
 var ngl_widget_options_collapsible = ''+
   '<div class="NGLOptions">'+
-  '<button class="meso_collapsible">Molecule header</button>'+
-  '<div class="meso_content">'+
-  '<div><label id="ProteinId">protein name</label></div>' +
-  '<div><label id="pdb_id">pdb id</label></div>' + 
-  '<div><label id="pdb_title">pdb TITLE</label></div>' +
-  '</div>'+
-  '<button class="meso_collapsible">Molecule options</button>'+
-  '<div class="meso_content">'+
-      '<div>'+
-        '<label for="rep_type">Selection</label>'+
-        '<input type="text" id="sel_str" style="width:55%" placeholder="Selection" onchange="NGL_ChangeSelection(this)"/>'+
-        layout_getMultiSelect("selection_ch_checkboxes") +
+    '<button class="meso_collapsible">Molecule header</button>'+
+    '<div class="meso_content">'+
+      '<div><label id="ProteinId">protein name</label></div>' +
+      '<div><label id="pdb_id">pdb id</label></div>' + 
+      '<div><label id="pdb_title">pdb TITLE</label></div>' +
+    '</div>'+
+    '<button class="meso_collapsible">Molecule options</button>'+
+    '<div class="meso_content">'+
+        '<div>'+
+          '<label for="rep_type">Selection</label>'+
+          '<input type="text" id="sel_str" style="width:55%" placeholder="Selection" onchange="NGL_ChangeSelection(this)"/>'+
+          layout_getMultiSelect("selection_ch_checkboxes") +
+        '</div>'+
+        '<label id="ngl_status"></label>' +
+        getSelect("rep_type", "options_elems", "Representation",
+                              "NGL_ChangeRepresentation(this)", ngl_styles,"cartoon")+
+        getSelect("ass_type", "options_elems", "Assembly",
+                              "NGL_ChangeBiologicalAssembly(this)", ["AU"],"AU")+
+        getSelect("mod_type", "options_elems", "Model",
+                              "NGL_ChangeModel(this)", ["0"],"0")+
+        getSelect("color_type", "options_elems", "Color",
+                              "NGL_ChangeColorScheme(this)", ngl_available_color_schem,"atomindex")+
+        getSelect("label_elem", "options_elems", "Label",
+                              "NGL_Changelabel(this)", ["None","Chain"],"None")+
+    '</div>'+
+    '<div class="hidden" id="surface">' +
+      '<button class="meso_collapsible">3D Membrane options</button>'+
+      '<div class="meso_content">'+
+        '<div>' +
+          '<input type="checkbox"  id="showgeommb" onclick="NGL_showGeomMembrane(this)" checked>' +
+          '<label for="showgeommb"> Show 3D Membrane used (red:outside, blue:inside) </label>'+
+        '</div>'+
+        //'<div><input type="checkbox"  id="invert_opm" onclick="NGL_InvertMembrane(this)">' +
+        //'<label for="invert_opm"> Invert 3D Membrane</label></div>'+
+        '<label id="pcpLabel">Surface Axis (shift+control left click)</label>' +
+        '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpX" type="range" min="-100" max="100" step="1" style="width:70%" />' +
+        '<input class="inputNumber" id="num1" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
+        '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpY" type="range" min="-100" max="100" step="1" style="width:70%" />' +
+        '<input class="inputNumber" id="num2" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
+        '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpZ" type="range" min="-100" max="100" step="1" style="width:70%"/>' +
+        '<input class="inputNumber" id="num3" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
+        '<label id="offsetLabel">Offset (shift+control right click)</label>' +
+        '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetX" type="range" min="-450" max="450" step="1" style="width:70%" />' +
+        '<input class="inputNumber" id="num4" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
+        '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetY" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
+        '<input class="inputNumber" id="num5" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
+        '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetZ" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
+        '<input class="inputNumber" id="num6" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
+        '</div>' +
+        //'<button onclick="NGL_applyPcp()">Apply To Ingredient</button>' +
+        '<button onclick="NGL_resetPcp()">Reset</button>' +
+      '</div>' +
+    '</div>'+
+    '<div class="hidden" id="fiber">' +
+      '<button class="meso_collapsible">Fiber</button>'+
+      '<div class="meso_content">'+  
+        '<label id="fpcpLabel">Fiber Axis (shift+control left click)</label>' +
+        '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="fpcpX" type="range" min="-100" max="100" step="1" style="width:70%" />' +
+        '<input class="inputNumber" id="fnum1" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
+        '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="fpcpY" type="range" min="-100" max="100" step="1" style="width:70%" />' +
+        '<input class="inputNumber" id="fnum2" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
+        '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="fpcpZ" type="range" min="-100" max="100" step="1" style="width:70%"/>' +
+        '<input class="inputNumber" id="fnum3" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
+        '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="fpcpW" type="range" min="0" max="100" step="1" style="width:70%"/>' +
+        '<input class="inputNumber" id="fnum4" min="0" max="100" type="number" value="1" style="width:30%"/>' +  
+        '</div>'+
+        '<label id="foffsetLabel">Fiber Offset</label>' +
+        '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="foffsetX" type="range" min="-450" max="450" step="1" style="width:70%" />' +
+        '<input class="inputNumber" id="fnum4" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
+        '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="foffsetY" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
+        '<input class="inputNumber" id="fnum5" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
+        '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="foffsetZ" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
+        '<input class="inputNumber" id="fnum6" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
+        '</div>' +
+        '<button onclick="NGL_buildFiberAxisChain()">Build with Chain</button>' +  
+        '<button onclick="NGL_buildFiberAxisBu()">Build with BU</button>' +    
       '</div>'+
-      '<label id="ngl_status"></label>' +
-      getSelect("rep_type", "options_elems", "Representation",
-                            "NGL_ChangeRepresentation(this)", ngl_styles,"cartoon")+
-      getSelect("ass_type", "options_elems", "Assembly",
-                            "NGL_ChangeBiologicalAssembly(this)", ["AU"],"AU")+
-      getSelect("mod_type", "options_elems", "Model",
-                            "NGL_ChangeModel(this)", ["0"],"0")+
-      getSelect("color_type", "options_elems", "Color",
-                            "NGL_ChangeColorScheme(this)", ngl_available_color_schem,"atomindex")+
-      getSelect("label_elem", "options_elems", "Label",
-                            "NGL_Changelabel(this)", ["None","Chain"],"None")+
-  '</div>'+
-  '<div class="hidden" id="surface">' +
-  '<button class="meso_collapsible">3D Membrane options</button>'+
-  '<div class="meso_content">'+
-    '<div><input type="checkbox"  id="showgeommb" onclick="NGL_showGeomMembrane(this)" checked>' +
-    '<label for="showgeommb"> Show 3D Membrane used (red:outside, blue:inside) </label></div>'+
-    //'<div><input type="checkbox"  id="invert_opm" onclick="NGL_InvertMembrane(this)">' +
-    //'<label for="invert_opm"> Invert 3D Membrane</label></div>'+
-    '<label id="pcpLabel">Principal Axis (shift+control left click)</label>' +
-    '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpX" type="range" min="-100" max="100" step="1" style="width:70%" />' +
-    '<input class="inputNumber" id="num1" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
-    '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpY" type="range" min="-100" max="100" step="1" style="width:70%" />' +
-    '<input class="inputNumber" id="num2" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
-    '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="pcpZ" type="range" min="-100" max="100" step="1" style="width:70%"/>' +
-    '<input class="inputNumber" id="num3" min="-100" max="100" type="number" value="0" style="width:30%"/>' +
-    '<label id="offsetLabel">Offset (shift+control right click)</label>' +
-    '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetX" type="range" min="-450" max="450" step="1" style="width:70%" />' +
-    '<input class="inputNumber" id="num4" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
-    '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetY" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
-    '<input class="inputNumber" id="num5" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
-    '</div><div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="offsetZ" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
-    '<input class="inputNumber" id="num6" min="-350" max="350" type="number" value="0" style="width:30%"/>' +
-    '</div>' +
-    //'<button onclick="NGL_applyPcp()">Apply To Ingredient</button>' +
-    '<button onclick="NGL_resetPcp()">Reset</button>' +
-    '</div>' +
-  '</div>'+
-  '<button class="meso_collapsible">Beads and Geom options</button>'+
-  '<div class="meso_content">'+
-    '<div>'+
+    '</div>'+
+    '<button class="meso_collapsible">Beads and Geom options</button>'+
+    '<div class="meso_content">'+
+      '<div>'+
         '<input type="checkbox"  id="showgeom" onclick="NGL_showGeomNode(this)">' +
         '<label for="showgeom">&nbsp;Show Geometry used </label> '+
         '<button onclick="NGL_buildCMS()">Rebuild Geometry</button>'+getSpinner("stopbuildgeom","stopGeom()")+
@@ -415,50 +442,48 @@ var ngl_widget_options_collapsible = ''+
       '<div id="query_search">' +
         '<label id="heading"></label>' +
       '</div> ' +
-  '</div>'+
-
+    '</div>'+
     '<button class="meso_collapsible">Sprites options</button>'+
     '<div class="meso_content">'+
-    '<div><button onclick="NGL_UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite From NGL</button></div>' +
-    '<div><button onclick="NGL_Illustrate()" style="">Update Thumbnail/Sprite From Illustrate</button></div>' +
-    '<div><input type="checkbox" id="ill_style" checked="true">Coarse Illustration</input></div>' +
-    '<div><input type="checkbox" id="ill_chain" checked="true">Color by chains (Grey)</input></div>' +    
-    '<div>'+
-    '<div class="spinner hidden" id="spinnerILL" style="width:200px;height:20px;" >' +
-    '	  <div class="rect1"></div>' +
-    '	  <div class="rect2"></div>' +
-    '	  <div class="rect3"></div>' +
-    '	  <div class="rect4"></div>' +
-    '	  <div class="rect5"></div>' +
-    //'   <button onclick="stopAll()">Stop query search</button>' +
-    '	</div>'+
-    '</div>'+
-    '<div><input type="checkbox" id="savethumbnail" checked="true">Save Thumbnail/Sprite</input></div>' +    
-    //add offset y
-    '<label id="labeloffsety">2D membrane Y offset</label>' +
-    '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="2d_yoffset_range" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
-    '<input class="inputNumber" id="2d_yoffset_num" min="-350" max="350" type="number" value="0" style="width:30%"/></div>' +
+      '<div><button onclick="NGL_UpdateThumbnailCurrent()" style="">Update Thumbnail/Sprite From NGL</button></div>' +
+      '<div><button onclick="NGL_Illustrate()" style="">Update Thumbnail/Sprite From Illustrate</button></div>' +
+      '<div><input type="checkbox" id="ill_style" checked="true">Coarse Illustration</input></div>' +
+      '<div><input type="checkbox" id="ill_chain" checked="true">Color by chains (Grey)</input></div>' +    
+      '<div>'+
+        '<div class="spinner hidden" id="spinnerILL" style="width:200px;height:20px;" >' +
+        '	  <div class="rect1"></div>' +
+        '	  <div class="rect2"></div>' +
+        '	  <div class="rect3"></div>' +
+        '	  <div class="rect4"></div>' +
+        '	  <div class="rect5"></div>' +
+        //'   <button onclick="stopAll()">Stop query search</button>' +
+        '	</div>'+
+      '</div>'+
+      '<div><input type="checkbox" id="savethumbnail" checked="true">Save Thumbnail/Sprite</input></div>' +    
+      //add offset y
+      '<label id="labeloffsety">2D membrane Y offset</label>' +
+      '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="2d_yoffset_range" type="range" min="-450" max="450" step="1" style="width:70%"/>' +
+      '<input class="inputNumber" id="2d_yoffset_num" min="-350" max="350" type="number" value="0" style="width:30%"/></div>' +
 
-    '<label id="labellengthy">2D fiber X length</label>' +
-    '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="2d_length_range" type="range" min="0" max="450" step="1" style="width:70%"/>' +
-    '<input class="inputNumber" id="2d_length_num" min="0" max="450" type="number" value="0" style="width:30%"/></div>' +
-
+      '<label id="labellengthy">2D fiber X length</label>' +
+      '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="2d_length_range" type="range" min="0" max="450" step="1" style="width:70%"/>' +
+      '<input class="inputNumber" id="2d_length_num" min="0" max="450" type="number" value="0" style="width:30%"/></div>' +
     '</div>'+
     '<button class="meso_collapsible">View options</button>'+
     '<div class="meso_content">'+
-        '<div class="clusterBtn">' +
+      '<div class="clusterBtn">' +
         '<button onclick="NGL_CenterView()" style="">Center Camera</button>' +
-        '</div>' +
+      '</div>' +
       '<div><input type="checkbox"  id="showbox" onclick="NGL_showBox(this)">' +
       '<label for="showbox"> Show Bounding Box </label></div>'+
       '<div><input type="checkbox"  id="showorigin" onclick="NGL_toggleOrigin(this)">' +
       '<label for="showorigin"> Show Origin </label></div>'+
-      '<div><input type="checkbox"  id="showaxis" onclick="NGL_toggleAxisVisibilityControl(this)">' +
-      '<label for="showaxis"> Show Principal Axis </label></div>'+      
+      '<div><input type="checkbox"  id="showaxis" onclick="NGL_toggleSurfaceAxisVisibilityControl(this)">' +
+      '<label for="showaxis"> Show Surface Axis </label></div>'+     
+      '<div><input type="checkbox"  id="showaxis" onclick="NGL_toggleFiberAxisVisibilityControl(this)">' +
+      '<label for="showaxis"> Show Fiber Axis </label></div>'+           
     '</div>'+
   '</div>';
-
-
 
 var object_properties = '<div style="display:flex;flex-flow:column;" id="objectOptions"></div>';
 
@@ -899,7 +924,7 @@ localforage.getItem('savedRecipe').then(function(readValue) {
 }),
 
 console.log("savedRecipe", savedRecipe !== null, savedRecipe);
-var current_version = {"version":1.32};
+var current_version = {"version":1.33};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()
