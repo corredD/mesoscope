@@ -220,6 +220,9 @@ function NGL_buildFiberAxisBu(){
   console.log("foffset", ngl_load_params.axis.foffset);
   NGL_updateFiberPcpElem();
   NGL_ShowFiberAxis(node_selected);  
+  // normal is 
+  // a = new NGL.Vector3(ngl_current_structure.gcenter.x, ngl_current_structure.gcenter.y,0).normalize()
+  // node_selected.data.pcpalAxis = [a.x,a.y,a.z]
 }
 
 function NGL_resetPcp()
@@ -4981,6 +4984,9 @@ function NGL_getUrlStructure(anode,pdbname){
         return cellpack_repo+"other/" + pdbname;
       }
     }
+    else if (pdbname.startsWith("AF-")){
+      return "https://alphafold.ebi.ac.uk/files/" + pdbname;
+    }
     else
     {
       //what about emdb
@@ -5568,6 +5574,11 @@ function NGL_Load(pdbname, bu, sel_str, onfinish_cb = null) {
       {
         pdb_id_elem.innerHTML = '<a href="https://www.ebi.ac.uk/pdbe/entry/emdb/' + pdbname.split(".")[0] + '" target="_blank">' + pdbname + '</a>';
       }
+    }
+    else if (pdbname.startsWith("AF-")) {
+      var purl = "https://alphafold.ebi.ac.uk/files/"+pdbname;
+      console.log("load AF purl ",purl);
+      NGL_LoadOneProtein(purl, pdbname, bu, sel_str);
     }
     else {
       //what about emdb

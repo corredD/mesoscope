@@ -1552,6 +1552,74 @@ function query_ResizeFromNbBeadsLvl(){
   });
 }
 
+async function asyncForEach(array, callback) {
+  for (let index = 0; index < array.length; index++) {
+      await callback(array[index], index, array);
+  }
+}
+
+
+//use a promise ?
+async function query_AlphaFold() {
+  document.getElementById('stopbeads').setAttribute("class", "spinner");
+  document.getElementById("stopbeads_lbl").setAttribute("class", "show");
+  document.getElementById("stopbeads_lbl").innerHTML = "querying " + 0 + " / " + graph.nodes.length;  
+  const p = await Promise.all(graph.nodes.map(function(d) {
+    if (!d.children) {
+      var source = d.data.source.pdb;
+      if (source === "") {
+        var uniprots = d.data.uniprot.split(";")
+        uniprots.forEach(uniprot => {
+          var af = "AF-"+uniprot+"-F1-model_v2.pdb";
+          var search_url = "https://alphafold.ebi.ac.uk/files/"+af;
+          var results = urlExists(search_url);
+          if (results === 200) {
+            d.data.source.pdb = af;
+            updateCellValue(gridArray[0],"pdb",d.data.id,af);
+            updateCellValue(gridArray[0],"uniprot",d.data.id,uniprot);
+            return;
+          }
+        });
+      }
+      document.getElementById("stopbeads_lbl").innerHTML = "querying " + d.data.id + " / " + graph.nodes.length;
+    }
+  }));
+  console.log(p);
+  document.getElementById('stopbeads').setAttribute("class", "spinner hidden");
+  document.getElementById("stopbeads_lbl").setAttribute("class", "hidden");    
+}
+
+function query_AlphaFold1() {
+  document.getElementById('stopbeads').setAttribute("class", "spinner");
+  document.getElementById("stopbeads_lbl").setAttribute("class", "show");
+  document.getElementById("stopbeads_lbl").innerHTML = "querying " + 0 + " / " + graph.nodes.length;
+  // await asyncForEach(graph.nodes, async (d) => {
+  //asyncForEach
+  graph.nodes.forEach(function(d){
+    if (!d.children) {
+      var source = d.data.source.pdb;
+      if (source === "") {
+        var uniprots = d.data.uniprot.split(";")
+        uniprots.forEach(uniprot => {
+          var af = "AF-"+uniprot+"-F1-model_v2.pdb";
+          var search_url = "https://alphafold.ebi.ac.uk/files/"+af;
+          var results = urlExists(search_url);
+          if (results === 200) {
+            d.data.source.pdb = af;
+            updateCellValue(gridArray[0],"pdb",d.data.id,af);
+            updateCellValue(gridArray[0],"uniprot",d.data.id,uniprot);
+            return;
+          }
+        });
+      }
+      document.getElementById("stopbeads_lbl").innerHTML = "querying " + d.data.id + " / " + graph.nodes.length;
+    }
+  }); 
+  document.getElementById('stopbeads').setAttribute("class", "spinner hidden");
+  document.getElementById("stopbeads_lbl").setAttribute("class", "hidden");   
+}
+
+
 function query_IllustrateAll() {
   //query NGL_illustrate for all nodes
   stop_current_compute = false;

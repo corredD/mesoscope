@@ -594,6 +594,7 @@ var gridoptions = ''
   ' <button style="display:block;" onclick="query_BuildAll(false)">AutoFix Recipe only beads </button>' + getSpinner("stopbeads","stopBeads()")+
   ' <button style="display:block;" onclick="query_ResizeAll()">Resize based on encapsulating radius </button>' + getSpinner("stopbeads","stopBeads()")+
   ' <button style="display:block;" onclick="query_ResizeFromNbBeadsLvl()">Resize based on number of beads in lvl</button>' + getSpinner("stopbeads","stopBeads()")+
+  ' <button style="display:block;" onclick="query_AlphaFold()">Query AlphaFold from uniprot ID</button>' + getSpinner("stopbeads","stopBeads()")+
   '</div>'+
   '<label id="LoaderTxt" class="hidden" for="aloader"></label>' +
   '<div class="spinner hidden" id="spinner" style="width:200px;height:20px;" >' +
@@ -924,7 +925,7 @@ localforage.getItem('savedRecipe').then(function(readValue) {
 }),
 
 console.log("savedRecipe", savedRecipe !== null, savedRecipe);
-var current_version = {"version":1.33};
+var current_version = {"version":1.34};
 var session_version = localStorage.getItem('session_version');
 
 sessionStorage.clear()

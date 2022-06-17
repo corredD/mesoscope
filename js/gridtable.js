@@ -1945,10 +1945,22 @@ function CreateGrid(elementId, parentId, some_data, some_column, some_options, i
        if (!(arow)) arow = node_selected.data;
        var query_ = $(e.target).attr("data");
        var query = arow[query_];
+       if (query_ === "alphafold")
+       {
+         query = arow["uniprot"];
+       }
        console.log("query PDB for " + query_+" "+query);
        if ( "undefined" !== typeof query && query !== "protein_name" && query !== "" && query !== null) {
          document.getElementById("Query_4").value = query.split("_").join(" ");
          if (query_ === "uniprot") queryPDBfromUniprot(query);
+         else if (query_ === "alphafold") {
+           //use uniprot id to get alphafold structure url
+           var af = "AF-"+query+"-F1-model_v2.pdb"
+           // set pdb raw to AF
+           node_selected.data.source.pdb = af;
+           arow.pdb = af;
+           NGL_Load(arow.pdb, arow.bu, arow.selection);
+         }
          else queryPDBfromName(query);
          if (ngl_load_params.dogeom) {
            NGL_LoadAShapeObj(null,ngl_load_params.geom);
