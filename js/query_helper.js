@@ -1558,6 +1558,15 @@ async function asyncForEach(array, callback) {
   }
 }
 
+//example ChangeAllKeyValue("center",false)
+function ChangeAllKeyValue(akey, new_value){
+  graph.nodes.forEach(function(d){
+    if (d.data.ingtype !== "compartment")
+    {
+      d.data[akey]=new_value;
+    }
+  });
+}
 
 //use a promise ?
 async function query_AlphaFold() {

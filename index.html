@@ -556,6 +556,7 @@
               <li><a href="#" for="colormap_input" onclick="$('#colormap_input').trigger('click');">Load Color Mapping (Properties-Colors)</a></li>
             </ul>
           </li>
+          <li class='last'><a href="#" for="molarity_input" onclick="$('#molarity_input').trigger('click');">Load Molarity/Count</a></li>
           <li class='last'><a href="#" for="file_input" onclick="$('#file_input').trigger('click');">Setup Data Directory (PDB,geoms)</a></li>
 
         </ul>
@@ -598,6 +599,8 @@
   <input class="hidden" type="file" id="img_file_input" onclick="forceSelect(this)" onchange="grid_selectImgFile(event)"/>
   <input class="hidden" type="file" id="colorpalette_input" onclick="forceSelect(this)" onchange="cp_DeserializedColorSchem_cb(event)"/>
   <input class="hidden" type="file" id="colormap_input" onclick="forceSelect(this)" onchange="cp_DeserializedColorMap_cb(event)"/>
+  <input class="hidden" type="file" id="molarity_input" onclick="forceSelect(this)" onchange="cp_DeserializedMolarity_cb(event)"/>
+
 
   <input class="hidden" type="file" id="modelfile_input" accept=".bin" type="file" onclick="forceSelect(this)" onchange="load_binary_model1(event)" />
   <input class="hidden" type="file" id="modelfile_input2" accept=".bin" type="file" onclick="forceSelect(this)" onchange="load_binary_model(event)" />

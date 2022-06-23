@@ -340,6 +340,7 @@ var ngl_widget_options_collapsible = ''+
                               "NGL_ChangeColorScheme(this)", ngl_available_color_schem,"atomindex")+
         getSelect("label_elem", "options_elems", "Label",
                               "NGL_Changelabel(this)", ["None","Chain"],"None")+
+        // '<input type="checkbox"  id="center_molecule" onclick="NGL_center_molecule(this)" checked>' +
     '</div>'+
     '<div class="hidden" id="surface">' +
       '<button class="meso_collapsible">3D Membrane options</button>'+

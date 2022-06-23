@@ -115,9 +115,14 @@ class sIngredientFiber {
 
 
 function oneIngredientSerialized(singr, node) {
-  if (!node.data.source) node.data.source = {};
-  node.data.source.transform = {};
-  node.data.source.transform.offset = node.data.offset;
+  if (!node.data.source) {
+    node.data.source = {};
+  }
+  if (!node.data.source.transform) {
+    node.data.source.transform = {};
+    node.data.source.transform.offset = node.data.offset;
+  }
+  node.data.source.transform.center = node.data.center;
   //add the selection and the bu in the source
   if (!(node.data.source.selection) || node.data.source.selection === '')
     node.data.source.selection =
@@ -380,11 +385,16 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
   var name = ing_dic["name"];
   var pdb = ("pdb" in ing_dic) ? ing_dic["pdb"] : "None";
   var offset = [0, 0, 0];
+  var center = true;
   var source = {
     "pdb": pdb,
     "bu": "BU1",
     "model": "",
-    "selection": ""
+    "selection": "",
+    "transform":{
+      "offset":[0,0,0],
+      "center":true
+    }
   };
   if ("source" in ing_dic && ing_dic["source"] != null) { //} && pdb === "None") {
     source = ing_dic["source"];
@@ -394,13 +404,20 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
     if (!("model" in source)) source.model = "";
     if (!("selection" in source)) source.selection = "";
     if ('emdb' in source) source.pdb = "EMD-" + source.emdb + ".map"; //"EMD-5241.map"
-    if ('transform' in source)
+    if ('transform' in source){
       if ('offset' in source.transform)
         offset = ing_dic.source.transform.offset;
+      else 
+        source.transform.offset = offset;
+      if ('center' in source.transform)
+        center = ing_dic.source.transform.center;
+      else 
+        source.transform.center = center;
+    }
   }
-
   if (source.pdb && source.pdb.length != 4) {
-    if ((source.pdb.slice(-4, source.pdb.length) !== ".pdb") && (!source.pdb.startsWith("EMD"))) source.pdb = source.pdb + ".pdb";
+    var s = source.pdb.slice(-4, source.pdb.length)
+    if ((s !== ".cif") &&(s !== ".pdb") && (!source.pdb.startsWith("EMD"))) source.pdb = source.pdb + ".pdb";
   }
 
   var label = ("description" in ing_dic) ? ing_dic["description"] : "";
@@ -481,6 +498,7 @@ function OneIngredientDeserialized(ing_dic, surface, comp) {
     "geom_type": geom_type,
     "label": label,
     "uniprot": uniprot_id,
+    "center":center,
     "pcpalAxis": principalVector,
     "offset": offset,
     "fiberAxis": fiberAxis,
@@ -791,7 +809,8 @@ function OneIngredient(ing_dic, surface) {
     if (!("selection" in source)) source.selection = "";
   }
   if (source.pdb && source.pdb.length != 4) {
-    if ((source.pdb.slice(-4, source.pdb.length) !== ".pdb") && (!source.pdb.startsWith("EMD"))) source.pdb = source.pdb + ".pdb";
+    var s = source.pdb.slice(-4, source.pdb.length)
+    if ((s !== ".cif") &&(s !== ".pdb") && (!source.pdb.startsWith("EMD"))) source.pdb = source.pdb + ".pdb";
   }
   var label = ("label" in ing_dic) ? ing_dic["label"] : name;
   var uniprot = ("uniprot" in ing_dic) ? ing_dic["uniprot"] : "";
@@ -1098,7 +1117,8 @@ function OneIngredientXML(ing_dic){
       "selection": ""
     }; //should be id,type,model,chain,bu
     if (source.pdb && source.pdb.length != 4) {
-      if ((source.pdb.slice(-4, source.pdb.length) !== ".pdb") && (!source.pdb.startsWith("EMD"))) source.pdb = source.pdb + ".pdb";
+      var s = source.pdb.slice(-4, source.pdb.length)
+      if ((s !== ".cif") &&(s !== ".pdb") && (!source.pdb.startsWith("EMD"))) source.pdb = source.pdb + ".pdb";
     }
     var label = ing_dic.getAttribute("label");
     var uniprot = ing_dic.getAttribute("uniprot");
@@ -1399,6 +1419,55 @@ function cp_SerializedMolarity(){
   console.log(JSON.stringify(molarity_count_mapping_js));
   download(JSON.stringify(molarity_count_mapping_js), 'molarity.json', 'text/plain');
 }
+
+function cp_DeserializedMolarity_cb(e){
+  var theFiles = e.target.files;
+  var thefile = theFiles[0];
+  if (window.FileReader) {
+    // FileReader is supported.
+  } else {
+    alert('FileReader is not supported in this browser.');
+  }
+  var reader = new FileReader();
+  reader.onload = function(event) {
+    var data = reader.result;
+    data = data.replace(/\\n\\r/gm,'newChar');
+    cp_DeserializedMolarity(data);
+  }
+  reader.readAsText(thefile, 'UTF-8');
+}
+
+
+function cp_DeserializedMolarity(data){
+  var molarity_count_mapping_js = JSON.parse(data);//name-color
+  console.log(molarity_count_mapping_js);
+  graph.nodes.forEach(function(d){
+    if (!d.children)
+    {
+      var name_path = d.ancestors().reverse().map(function(d) {
+        return (d.children) ? d.data.name : "";
+      }).join('.').slice(0, -1);
+      //check if surfaces
+      //is it root or a compartment
+      if (d.parent.data.name !== "root"){
+        if ("surface" in d.data && d.data.surface){
+          name_path = name_path+".surface.proteins."+d.data.name;
+        }
+        else {
+          name_path =  name_path+".interior.proteins."+d.data.name;
+        }
+      }
+      else name_path = name_path+".proteins."+d.data.name;
+      if (name_path in molarity_count_mapping_js)
+      {
+        var c = molarity_count_mapping_js[name_path];
+        d.data.molarity = c.molarity;
+        d.data.count = c.count;
+      }
+    }
+  });
+}
+
 
 function cp_SerializedColorSchem(){
   //save in json dictionary current color mapping only

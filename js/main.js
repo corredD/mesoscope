@@ -1172,9 +1172,9 @@ function parseSpreadSheetRecipe(data_header,jsondic,rootName)
         //console.log(name);
         var source = (source_index!==-1)?idata[source_index]:"";
 	      var geom = ((source ) & (source!==""))?source.replace(".pdb","")+"_cms.dae":""; //default to check if its on the server
-        if (source && source.length!=4){
-            if (source.slice(-4,source.length) !== ".pdb" ) source = source+".pdb";
-        }
+        //if (source && source.length!=4){
+        //    if (source.slice(-4,source.length) !== ".pdb" ) source = source+".pdb";
+        // }
         //console.log(source);
         var acount = (count_index!==-1)?idata[count_index]:0;
         if (!acount ) acount = 0;
