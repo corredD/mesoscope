@@ -1865,6 +1865,65 @@ function LoadExampleMycoplasmaGenitaliumCurated(){
     });	
 }
 
+/* YASARA PET WORLD EXAMPLE */
+// directly in molstar
+// https://molstar.org/viewer/?structure-url=https%3A%2F%2Fmesoscope.scripps.edu%2Fbeta%2Fdata%2Fyasara_petworld%2Fsarscov2_atom_instances.cif&structure-url-format=mmcif
+function LoadExampleYasaraSARSCOV2(){
+	stage.removeAllComponents();
+	var url = "data/yasara_petworld/sarscov2.zip";//repo MG
+	fetch(url)
+	.then(res => res.blob())
+	.then(data => {
+		//code to handle the response
+		alert("The full model will be loaded in the molstar window, the loading can take serveral minutes, membrane loading is " + ms_membrane.checked.toString());
+		unzipAndLoad( data );
+	}).catch(err => {
+		console.error('Error: ', err);
+	});	
+}
+
+function LoadExampleYasaraHIV(){
+	stage.removeAllComponents();
+	var url = "data/yasara_petworld/hiv.zip";//repo MG
+	fetch(url)
+	.then(res => res.blob())
+	.then(data => {
+		//code to handle the response
+		alert("The full model will be loaded in the molstar window, the loading can take serveral minutes, membrane loading is " + ms_membrane.checked.toString());
+		unzipAndLoad( data );
+	}).catch(err => {
+		console.error('Error: ', err);
+	});	
+}
+
+function LoadExampleYasaraSynapse(){
+	stage.removeAllComponents();
+	var url = "data/yasara_petworld/synvesicle.zip";//repo MG
+	fetch(url)
+	.then(res => res.blob())
+	.then(data => {
+		//code to handle the response
+		alert("The full model will be loaded in the molstar window, the loading can take serveral minutes, membrane loading is " + ms_membrane.checked.toString());
+		unzipAndLoad( data );
+	}).catch(err => {
+		console.error('Error: ', err);
+	});	
+}
+
+function LoadExampleYasaraPreSynapse(){
+	stage.removeAllComponents();
+	var url = "data/yasara_petworld/presynapse.zip";//repo MG
+	fetch(url)
+	.then(res => res.blob())
+	.then(data => {
+		//code to handle the response
+		alert("The full model will be loaded in the molstar window, the loading can take serveral minutes, membrane loading is " + ms_membrane.checked.toString());
+		unzipAndLoad( data );
+	}).catch(err => {
+		console.error('Error: ', err);
+	});	
+}
+
 function MergeExampleBlood(){
   stage.removeAllComponents();
   var url = "data/BloodPlasma_serialized.json";
@@ -3103,11 +3162,13 @@ function applyColorModeToIngredient(){
   //for all node apply the current color to data.color
   graph.nodes.forEach(function(d){
     var color = colorNode(d);//return "rbg()"
+	if (!color) return;
     var dcolor = d3v4.color(color);
+	if (!dcolor) return;
     //if (!d.children && "data" in d ){
-      if (!(d.data.color) || !( "color" in d.data )) d.data.color=[1,0,0];
-      if (!("_color" in d.data)) d.data._color=[d.data.color[0],d.data.color[1],d.data.color[2]];
-      d.data.color=[dcolor.r/255.0,dcolor.g/255.0,dcolor.b/255.0];
+	if (!(d.data.color) || !( "color" in d.data )) d.data.color=[1,0,0];
+	if (!("_color" in d.data)) d.data._color=[d.data.color[0],d.data.color[1],d.data.color[2]];
+	d.data.color=[dcolor.r/255.0,dcolor.g/255.0,dcolor.b/255.0];
     //}
   })
   //switch the UI ?
@@ -3640,6 +3701,7 @@ function ticked(e) {
 		//canvas =  document.querySelector("canvas");
 		//context = canvas.getContext("2d");
 	}
+	if (graph.nodes.length === 0) return;
     context.clearRect(0, 0, canvas.width, canvas.height);
 	if (graph.nodes[0].data.color)
 		context.fillStyle = 'rgb('+ Math.floor(graph.nodes[0].data.color[0]*255)+","

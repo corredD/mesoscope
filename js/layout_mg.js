@@ -1439,6 +1439,7 @@ $(document).ready(function() {
     else {
       LoadExampleInfluenza_envelope();
     }
+    MS_setupcallback();
     evaluate_interval = setInterval(EvaluateCurrentReadyState,10000);//in ms, Do every 10 seconds
     var checkboxes = document.getElementById("selection_ch_checkboxes");
     checkboxes.style.display = "none";

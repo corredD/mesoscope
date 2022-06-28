@@ -516,15 +516,15 @@
             <ul>
               <li>
               <li><a href='#'  onclick="CreateNew();"><span>Empty Recipe</span></a></li>
-              <li><a href="#" onclick="selectDB()">From Current database</a></li>
+              <li><a href="#" for="jsfile_input" onclick="$('#jsfile_input').trigger('click');">From File (.json, _serialized.json,.xlsx,.csv,.zip)</a></li>
               <li class='has-sub'><a href="#">From Examples</a>
               <ul>
-                  <li><a href="#" onclick="LoadExampleHIV()">HIV mature</a-->
-                  <li><a href="#" onclick="LoadExampleHIVimmature()">HIV immature</a-->
+                  <li><a href="#" onclick="LoadExampleHIV()">HIV mature</a></li>
+                  <li><a href="#" onclick="LoadExampleHIVimmature()">HIV immature</a></li>
                   <li><a href="#" onclick="LoadExampleBloodHIV()">HIV mature and Blood plasma</a></li>
-                  <li><a href="#" onclick="LoadExampleHIVimmatureBlood()">HIV immature and Blood plasma</a-->
-                  <li><a href="#" onclick="LoadExampleInfluenza_envelope()">Influenza envelope</a-->
-                  <li><a href="#" onclick="LoadExampleInfluenza_complete()">Influenza complete</a-->
+                  <li><a href="#" onclick="LoadExampleHIVimmatureBlood()">HIV immature and Blood plasma</a></li>
+                  <li><a href="#" onclick="LoadExampleInfluenza_envelope()">Influenza envelope</a></li>
+                  <li><a href="#" onclick="LoadExampleInfluenza_complete()">Influenza complete</a></li>
                   <li><a href="#" onclick="LoadExampleExosome()">Exosome</a></li>
                   <li><a href="#" onclick="LoadExampleMycoplasmaGenitaliumAuto()">Mycoplasma Genitalium auto</a></li>
                   <li><a href="#" onclick="LoadExampleMycoplasmaGenitaliumCurated()">Mycoplasma Genitalium curated</a></li>
@@ -533,7 +533,14 @@
                   
               </ul>
               </li>
-              <li><a href="#" for="jsfile_input" onclick="$('#jsfile_input').trigger('click');">From File (.json, _serialized.json,.xlsx,.csv,.zip)</a></li>
+              <li class='has-sub'><a href="#">From YASARA Petworld</a>
+              <ul>
+                  <li><a href="#" onclick="LoadExampleYasaraSARSCOV2()">Sars-cov-2 mature</a></li>
+                  <li><a href="#" onclick="LoadExampleYasaraHIV()">HIV</a></li>
+                  <li><a href="#" onclick="LoadExampleYasaraSynapse()">Synapse vesicle</a></li>
+                  <li><a href="#" onclick="LoadExampleYasaraPreSynapse()">PreSynapse</a></li>
+              </ul>
+              </li>              
           </ul>
           </li>
           <li class='has-sub'><a href="#">Append From</span></a>

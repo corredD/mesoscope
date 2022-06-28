@@ -13,7 +13,7 @@ var ms_model_loaded = false;
 //https://molstar.org/viewer/?snapshot-url=https://ghcdn.rawgit.org/ccsb-scripps/MycoplasmaGenitalium/main/Models/cellpack_atom_instances_149_curated.zip&snapshot-url-type=cif&structure-url-is-binary=1
 //https://molstar.org/viewer/?structure-url=https://ghcdn.rawgit.org/ccsb-scripps/MycoplasmaGenitalium/main/Models/cellpack_atom_instances_149_curated.bcif&structure-url-format=mmcif&structure-url-is-binary=1
 //https://molstar.org/viewer/?structure-url=https://ghcdn.rawgit.org/ccsb-scripps/MycoplasmaGenitalium/main/Models/cellpack_atom_instances_149_curated.zip&structure-url-format=mmcif
-function MS_molstart_init(){
+async function MS_molstart_init(){
     BasicMolStarWrapper.init('molstar', {
         layoutShowControls: false,
         viewportShowExpand: false,
@@ -21,60 +21,63 @@ function MS_molstart_init(){
         layoutControlsDisplay: false
         //pdbProvider: pdbProvider || 'pdbe',
         //emdbProvider: emdbProvider || 'pdbe',
+    }).then(function() {
+      BasicMolStarWrapper.setBackground(0xffffff);
+      MS_setupcallback();
+      //MS_applyAllColors();
+      //BasicMolStarWrapper.coloring.applyCellPACKColor();
+      MS_inited = true;
+      ms_trace_only = document.getElementById("ms_trace_only");
+      ms_spacefill = document.getElementById("ms_spacefill");
+      ms_membrane = document.getElementById("ms_membrane");
     });
-    BasicMolStarWrapper.setBackground(0xffffff);
-    MS_setupcallback();
-    //MS_applyAllColors();
-    //BasicMolStarWrapper.coloring.applyCellPACKColor();
-    MS_inited = true;
-    ms_trace_only = document.getElementById("ms_trace_only");
-    ms_spacefill = document.getElementById("ms_spacefill");
-    ms_membrane = document.getElementById("ms_membrane");
 }
 
 function MS_setupcallback(){
   const canvas3d = BasicMolStarWrapper.plugin.canvas3d;
   //this.suscribe(canvas3d.interaction.hover, e => this.plugin.behaviors.interaction.hover.next(e));
-  canvas3d.input.move.subscribe(({x, y, inside, buttons, button, modifiers }) => {
+  if (canvas3d) {
+    canvas3d.input.move.subscribe(({x, y, inside, buttons, button, modifiers }) => {
+        if (mousein) return;
+        if (!inside) return;
+        if (!ms_model_loaded) return;
+        const pickingId = canvas3d.identify(x, y);
+        //console.log("move found pickingId ",x,y,pickingId);
+        //let label = '';
+        if (pickingId) {
+            const reprLoci = canvas3d.getLoci(pickingId.id);
+            //label = lociLabel(reprLoci.loci);
+            //console.log(reprLoci);
+            if (reprLoci.loci.kind === "element-loci") MS_callback(reprLoci.loci.elements[0].unit.model.entryId);
+            else clearHighLight();   
+        } else {
+            clearHighLight();
+        }
+    });
+    canvas3d.input.click.subscribe(({x, y, buttons, button, modifiers })=> {
+      //this should be a selection
       if (mousein) return;
-      if (!inside) return;
       if (!ms_model_loaded) return;
       const pickingId = canvas3d.identify(x, y);
-      //console.log("move found pickingId ",x,y,pickingId);
-      //let label = '';
+      //console.log("click pickingId ",x,y,pickingId);
       if (pickingId) {
-          const reprLoci = canvas3d.getLoci(pickingId.id);
-          //label = lociLabel(reprLoci.loci);
-          //console.log(reprLoci);
-          if (reprLoci.loci.kind === "element-loci") MS_callback(reprLoci.loci.elements[0].unit.model.entryId);
-          else clearHighLight();   
-      } else {
-          clearHighLight();
+        //console.log("click found pickingId ",pickingId);
+        const reprLoci = canvas3d.getLoci(pickingId.id);
+        console.log(reprLoci,reprLoci.loci.kind);
+        if (reprLoci.loci.kind === "element-loci") MS_callback(reprLoci.loci.elements[0].unit.model.entryId, click = true);
+        else {
+          if (node_selected) node_selected.highlight = false;
+          node_selected = null;
+          clearHighLight();       
+        }
       }
-  });
-  canvas3d.input.click.subscribe(({x, y, buttons, button, modifiers })=> {
-    //this should be a selection
-    if (mousein) return;
-    if (!ms_model_loaded) return;
-    const pickingId = canvas3d.identify(x, y);
-    //console.log("click pickingId ",x,y,pickingId);
-    if (pickingId) {
-      //console.log("click found pickingId ",pickingId);
-      const reprLoci = canvas3d.getLoci(pickingId.id);
-      console.log(reprLoci,reprLoci.loci.kind);
-      if (reprLoci.loci.kind === "element-loci") MS_callback(reprLoci.loci.elements[0].unit.model.entryId, click = true);
       else {
         if (node_selected) node_selected.highlight = false;
         node_selected = null;
-        clearHighLight();       
+        clearHighLight();
       }
-    }
-    else {
-      if (node_selected) node_selected.highlight = false;
-      node_selected = null;
-      clearHighLight();
-    }
-  });
+    });
+  }
 }
 
 function MS_callback(entryId, click = false){
