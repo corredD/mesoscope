@@ -134,6 +134,7 @@ function MS_HighlightNode(anode){
     //fiber use the ingredient name
     if (anode.data.ingtype === "fiber") aname = anode.data.name;
     MS_Highlight(aname);
+    MS_Highlight(anode.data.name);
   }
 }
 
@@ -242,6 +243,7 @@ async function MS_mapColorSchem(){
         else {
           if (d.data.ingtype === "fiber") aname = d.data.name;
           color_mapping_js[aname]=node_color;
+          color_mapping_js[d.data.name]=node_color;
           //color_mapping_js[aname.replace(".pdb","")]=node_color;
         }
         //fiber use the ingredient name
@@ -280,6 +282,7 @@ async function MS_ChangeColor(node,acolor)
     }
     if (node.data.ingtype === "fiber") aname = node.data.name;
     BasicMolStarWrapper.coloring.changeColorStructure(aname,acolor);
+    BasicMolStarWrapper.coloring.changeColorStructure(node.data.name,acolor);
     //if (node.data.ingtype === "fiber") aname = node.data.name;
     //console.log(aname,acolor)
     let pr = BasicMolStarWrapper.coloring.applyCellPACKRandom();
