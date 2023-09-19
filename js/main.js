@@ -4460,6 +4460,7 @@ function addIngredient(){
 	row_to_edit.include = true;
 	row_to_edit.ingtype = "protein";
 	row_to_edit.buildtype = "random";
+	row_to_edit.comments = "";
 	row_to_edit.compartment = graph.nodes[0].data.name;//should be root
 	for (var i=0;i<additional_data.length;i++){
 		var key = additional_data[i];

@@ -803,3 +803,16 @@ const blobToBase64 = blob => {
     };
   });
 };
+
+/*
+graph.nodes.forEach(function(d){
+  if (!d.children)
+    {
+      var n = d.data.name;
+      if (n.startsWith("SYN3A")){
+        var nid = n.split("_")[1];
+        d.data.name = "JCVISYN3A_"+nid;
+      }
+    }
+});
+*/

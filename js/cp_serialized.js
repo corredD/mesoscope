@@ -170,7 +170,12 @@ function oneIngredientSerialized(singr, node) {
   if (additional_data.length !== 0) {
     for (var i=0;i<additional_data.length;i++){
       var key = additional_data[i];
-      singr[key] = node.data[key];
+      var value = node.data[key];
+      if (current_data_header !== null){
+        var key_label = current_data_header[allfield[key]]
+        key = key_label;
+      }
+      singr[key] = value;
       singr["custom_data"].push(key);
     }
   }

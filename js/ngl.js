@@ -4905,7 +4905,7 @@ function LM_getUrlStructure(anode,pdbname){
       };
       //this is async!
       console.log("try to load ", pdbname, ext);
-      if (ext !== ".map") pdbname = pdbname + ".map";
+      // if (ext !== ".map") pdbname = pdbname + ".map";
       if (folder_elem && folder_elem.files.length != "")
       {
         return pathList_[pdbname];
@@ -4974,7 +4974,7 @@ function NGL_getUrlStructure(anode,pdbname){
       };
       //this is async!
       console.log("try to load ", pdbname, ext);
-      if (ext !== ".map") pdbname = pdbname + ".map";
+      //if (ext !== ".map") pdbname = pdbname + ".map";
       if (folder_elem && folder_elem.files.length != "")
       {
         return pathList_[pdbname];
@@ -5367,7 +5367,7 @@ function NGL_UpdateWithNodePair(d) {
   if ("offset" in ngl_current_node.data) {
     ngl_load_params.axis = {
       "faxis":ngl_current_node.data.fiberAxis,
-      "foffset": d.data.fiberOffset,
+      "foffset": ngl_current_node.data.fiberOffset,
       "axis": ngl_current_node.data.pcpalAxis,
       "offset": ngl_current_node.data.offset
     }
@@ -5559,7 +5559,7 @@ function NGL_Load(pdbname, bu, sel_str, onfinish_cb = null) {
       };
       //this is async!
       console.log("try to load ", pdbname, ext);
-      if (ext !== ".map") pdbname = pdbname + ".map";
+      //if (ext !== ".map") pdbname = pdbname + ".map";
       if (folder_elem && folder_elem.files.length != "" && pdbname in pathList_ ) {
         console.log("try to load ", folder_elem.files.length);
         //ftp://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-5239/map/emd_5239.map.gz

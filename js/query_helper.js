@@ -1539,6 +1539,24 @@ function query_ResizeAll() {
   //build beads
 }
 
+function switchLOD(){
+  graph.nodes.forEach(function(d){
+    if (!d.children) {
+      if (d.data.radii.length !=0)
+      {var radii1 = d.data.radii[0].radii;
+      var radii2 = d.data.radii[1].radii;
+      var pos1 = d.data.pos[0].coords;
+      var pos2 = d.data.pos[1].coords;      
+      //switch
+      d.data.pos[0].coords = pos2;
+      d.data.pos[1].coords = pos1;
+      d.data.radii[0].radii = radii2;
+      d.data.radii[1].radii = radii1;     
+      } 
+    }
+  });
+}
+
 function query_ResizeFromNbBeadsLvl(){
   //use current level
   var cutoff = 100000;
