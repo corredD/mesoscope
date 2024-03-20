@@ -21,6 +21,7 @@ var offset_elem = [];
 var foffset_elem = [];
 var yoffset_2d_elem;
 var ylength_2d_elem;
+var scale_2d_elem;
 var ngl_geom_opacity = 1.0;
 var use_mglserver_beads = false;
 var ill_style = document.getElementById("ill_style");
@@ -275,6 +276,10 @@ function NGL_applyOffsetY2D(value){
 
 function NGL_applyLengthY2D(value){
     node_selected.data.sprite.lengthy = value;
+}
+
+function NGL_applyScale2D(value){
+   node_selected.data.sprite.scale2d = value;
 }
 
 function NGL_applyPcp(axis,offset,asyncloop=false) {
@@ -815,6 +820,7 @@ function NGL_Setup() {
 
   yoffset_2d_elem = document.getElementById("2d_yoffset_range");
   ylength_2d_elem  = document.getElementById("2d_length_range");
+  scale_2d_elem = document.getElementById("2d_scale_num");
   /* for (var i=0;i<3;i++){
   			pcp_elem[i].oninput = function(e) {
   					NGL_updateMBcomp();
@@ -836,6 +842,10 @@ function NGL_Setup() {
     else if (this.id.startsWith("2d_length")) 
     {
       NGL_applyLengthY2D(this.value)
+    }
+    else if (this.id.startsWith("2d_scale")) 
+    {
+      NGL_applyScale2D(this.value)
     }
     else if (this.id.endsWith("Force")) 
     {
@@ -2687,6 +2697,23 @@ function NGL_writeAtoms() {
     return _records.join('\n');
 }
 
+function NGL_CalculateScale(){
+  //given the current node bounding box and current sprite image width estimate pixel size
+  var bbox = ngl_current_structure.getBox(); //min and max of box
+  // if bu re-calculate bounds. 
+  /*if (assembly_elem.selectedOptions[0].value !== "AU") {
+    var bounds = Util_ComputeBounds(node_selected.data.pos[0].coords,node_selected.data.radii[0].radii);
+    bbox.min = new NGL.Vector3(bounds.min.x, bounds.min.y, bounds.min.z);
+    bbox.max = new NGL.Vector3(bounds.max.x, bounds.max.y, bounds.max.z);
+  }*/
+  var w = node_selected.data.thumbnail.width;
+  var h = node_selected.data.thumbnail.height;
+  var scale = Math.max(bbox.max.x-bbox.min.x,bbox.max.y-bbox.min.y,bbox.max.z-bbox.min.z);
+  var pixel_size = Math.max(w,h)/scale;
+  NGL_applyScale2D(pixel_size);
+  //update div element
+  scale_2d_elem.value = pixel_size;
+}
 
 function NGL_Illustrate(){
     if(!node_selected) return;
@@ -4526,7 +4553,7 @@ function NGL_LoadOneProtein(purl, aname, bu, sel_str, onfinish_cb = null) {
       console.log("gcenter", center, ngl_force_build_beads);
       o.setPosition([-center.x, -center.y, -center.z]); //center molecule
       //ngl_force_build_beads
-
+      scale_2d_elem.value = ngl_current_node.data.sprite.scale2d;
       if (ngl_force_build_beads) NGL_autoBuildBeads(o, center);
       if (ngl_load_params.doaxis) {
         //o.setPosition([ 0,0,0 ]);
@@ -5549,7 +5576,7 @@ function NGL_Load(pdbname, bu, sel_str, onfinish_cb = null) {
   }
 
   if (pdbname.length === 4) {
-    NGL_LoadOneProtein("rcsb://" + pdbname + ".cif", pdbname, bu, sel_str, onfinish_cb = onfinish_cb);
+    NGL_LoadOneProtein("rcsb://" + pdbname + ".pdb", pdbname, bu, sel_str, onfinish_cb = onfinish_cb);
   }
   else {
     var ext = pdbname.slice(-4, pdbname.length);

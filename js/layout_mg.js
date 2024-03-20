@@ -461,6 +461,10 @@ var ngl_widget_options_collapsible = ''+
         '	</div>'+
       '</div>'+
       '<div><input type="checkbox" id="savethumbnail" checked="true">Save Thumbnail/Sprite</input></div>' +    
+      '<label id="labelscale2d">2D pixel scale</label>' +
+      '<div><button onclick="NGL_CalculateScale()" style="">Update Pixel Scale</button></div>' +
+      '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="2d_scale_range" type="range" min="-100" max="100" step="0.1" style="width:70%"/>' +
+      '<input class="inputNumber" id="2d_scale_num" min="-100" max="100" type="number" value="1" style="width:30%"/></div>' +
       //add offset y
       '<label id="labeloffsety">2D membrane Y offset</label>' +
       '<div style="display:flex;flex-flow: row wrap;"><input class="inputRange" id="2d_yoffset_range" type="range" min="-450" max="450" step="1" style="width:70%"/>' +

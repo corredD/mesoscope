@@ -127,6 +127,7 @@ function MS_HighlightNode(anode){
   if (!MS_inited) return;
   if (anode.data && anode.data.source ) {
     var aname = anode.data.source.pdb;
+    if (aname === null) return;
     if (aname.length === 4 ) {
       aname = aname.toUpperCase();
     } 

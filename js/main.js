@@ -935,6 +935,7 @@ function isInteger(n) {
 function IsSurface(cellValue) {
 	console.log("IsSurface(cellValue)",cellValue);
 	if (!cellValue) return false;//undefined
+	if (cellValue === true) return true;
 	for (var j=0;j<surface_tag.length;j++) {
 		let comon = findLongestCommonSubstring(surface_tag[j].toLowerCase(),cellValue.toLowerCase().replace(" ",""))
 		//console.log(surface_tag[j],cellValue.toLowerCase(),comon);
@@ -980,7 +981,7 @@ function ParseBU(cellvalue)
 		//cab a string:number
 		//has to be a numbers
 		if (!cellvalue || cellvalue ==="") return "BU1";
-		let elem = cellvalue.split(":");
+		let elem = cellvalue.toString().split(":");
 		if (elem.length===1) {
 			//is it with //
 			if (elem[0].startsWith("BA")) return elem[0].split("BA")[1];
@@ -5313,7 +5314,8 @@ function drawCircularText(ctx, text, fontSize, titleFont, centerX, centerY, radi
 	ctx.fillStyle = "rgba(0,0,0,1)";
 
 	startAngle = startAngle * (Math.PI / 180); // convert to radians
-	text = text.split("").reverse().join(""); // Reverse letters
+	// console.log("drawCircularText",text);
+	text = text.toString().split("").reverse().join(""); // Reverse letters
 
 	//Rotate 50% of total angle for center alignment
 	for (var j = 0; j < text.length; j++) {

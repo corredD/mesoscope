@@ -171,7 +171,8 @@ function oneIngredientSerialized(singr, node) {
     for (var i=0;i<additional_data.length;i++){
       var key = additional_data[i];
       var value = node.data[key];
-      if (current_data_header !== null){
+      if (key === null) continue;
+      if (current_data_header !== null && key in allfield){
         var key_label = current_data_header[allfield[key]]
         key = key_label;
       }
@@ -271,6 +272,28 @@ function AddPartnerSerialized(ingdic, node, some_links) {
   return ingdic;
 }
 
+function AddCompartmentToList(node, cname, list_comp, sCompartment_static_id) {
+  comp = new sCompartment(cname, sCompartment_static_id);
+  comp = oneCompartment(comp, node);
+  sCompartment_static_id += 1;
+  list_comp[cname] = comp;
+  //if (!(node.parent.name in list_comp))
+  if (node.parent.data.name in list_comp) {
+    //list_comp[node.parent.data.name].addCompartment(comp);
+  } else {
+    var acomp = new sCompartment(node.parent.data.name,
+                                  sCompartment_static_id);
+    var anode = node.parent; //getNodeByName(node.parent.data.name);
+    acomp = oneCompartment(acomp, anode);
+    sCompartment_static_id += 1;
+    list_comp[node.parent.data.name] = acomp;
+    //console.log("list ??", list_comp);
+  }
+  list_comp[node.parent.data.name].addCompartment(comp);
+
+  return [list_comp, sCompartment_static_id];
+}
+
 function serializedRecipe(some_data, some_links) {
   var list_comp = {};
   var sCompartment_static_id = 0,
@@ -300,6 +323,9 @@ function serializedRecipe(some_data, some_links) {
       var cname = node.data.name;
       var comp;
       //add a compartment
+      console.log(i, ' compartment ', node.data.name, node.parent.data.name);
+      if (!(cname in list_comp)) [list_comp, sCompartment_static_id] = AddCompartmentToList(node, cname, list_comp, sCompartment_static_id);
+      /*
       if (!(cname in list_comp)) {
         comp = new sCompartment(cname, sCompartment_static_id);
         comp = oneCompartment(comp, node);
@@ -319,6 +345,7 @@ function serializedRecipe(some_data, some_links) {
         }
         list_comp[node.parent.data.name].addCompartment(comp);
       }
+      */
       continue;
     }
     if (!node.children && node.data.nodetype !== "compartment") //ingredient
@@ -345,7 +372,9 @@ function serializedRecipe(some_data, some_links) {
         pgroup.addIngredient(sing);
       } else if (node.data.surface) {
         //surface = new sCompartment("surface")
+        console.log("check cname ", cname + "_surface", list_comp);
         if (!(cname + "_surface" in list_comp)) {
+          if (!(cname in list_comp)) [list_comp, sCompartment_static_id] = AddCompartmentToList(node.parent, cname, list_comp, sCompartment_static_id);
           var acomp = new sCompartment("surface", sCompartment_static_id);
           //sCompartment_static_id+=1;
           list_comp[cname + "_surface"] = acomp;
@@ -362,7 +391,9 @@ function serializedRecipe(some_data, some_links) {
         }
         pgroup.addIngredient(sing);
       } else {
+        console.log("check cname ", cname + "_interior",list_comp);
         if (!(cname + "_interior" in list_comp)) {
+          if (!(cname in list_comp)) [list_comp, sCompartment_static_id] = AddCompartmentToList(node.parent, cname, list_comp, sCompartment_static_id);
           var acomp = new sCompartment("interior", sCompartment_static_id);
           //sCompartment_static_id+=1;
           list_comp[cname + "_interior"] = acomp;
