@@ -47,7 +47,7 @@ def sql_query(conn, sql, vals=None, displayNRecords=None):
         else:
             cursor.execute(sql)
     except Error as e:
-        print "ERROR in sql_query():", e, "SQL:", sql, "VALUES:", vals
+        print("ERROR in sql_query():", e, "SQL:", sql, "VALUES:", vals)
         return None
     res = cursor.fetchall()
 
@@ -72,7 +72,7 @@ def add_row(tablename, data, conn):
     """data is a list of [columnname, value] pairs
     """
     sql = "INSERT INTO %s" % tablename
-    columns, vals = zip(*data)
+    columns, vals = list(zip(*data))
     colstr ="("
     valstr = "("
     for i, column in enumerate(columns):
@@ -86,9 +86,9 @@ def add_row(tablename, data, conn):
     try:
         res = cur.execute(sql, tuple(vals))
     except Error as e:
-        print "Error in add_row:", (e), ". SQL:",  sql, vals
+        print("Error in add_row:", (e), ". SQL:",  sql, vals)
         return None
-    print "SQL:", sql, vals
+    print("SQL:", sql, vals)
     rowid = cur.lastrowid
     conn.commit()
     return rowid
@@ -151,7 +151,7 @@ class JsonRecipeParser:
         if "cytoplasme" in jsondic:
             rnode = jsondic["cytoplasme"]
             cname=jsondic["recipe"]["name"]+"cytoplasme"
-            if not self.compartments.has_key(cname):
+            if cname not in self.compartments:
                 compid = self.addCompartmentToDB(compname=cname, parent=rootid)
                 self.compartments[cname] = compid
             else:
@@ -178,7 +178,7 @@ class JsonRecipeParser:
         table_dic={"name":None,"source":None,"organism":None,
                 "molarity":0.0,"protein_count":0,"uniprot_id":None,
                 "sphere_file":None,"localisation_id":2,"group_id":1, "binding_partners":[]}
-        for k , vv in KW_mapping.items():
+        for k , vv in list(KW_mapping.items()):
             if vv in ingr_dic :
                 val = ingr_dic[vv]
                 if val is not None:
@@ -211,9 +211,9 @@ class JsonRecipeParser:
             data.append(["parent_id", parent])
         cid = add_row ("compartments", data, self.conn)
         if cid is not None:
-            print ("added compartment to db:", compname, cid, "parent_id:", parent)
+            print(("added compartment to db:", compname, cid, "parent_id:", parent))
         else:
-            print "ERROR in addCompartmentToDB", compname, data
+            print("ERROR in addCompartmentToDB", compname, data)
         #print (name,cid)
         return cid
 
@@ -230,12 +230,12 @@ class JsonRecipeParser:
         # else if a record with cpecified name exists - check if the group_id and source fields are filled.
         #    If they are Null - add field values for the record.
         binding_partners = []
-        if table_dic.has_key("binding_partners"):
+        if "binding_partners" in table_dic:
             binding_partners = table_dic.pop("binding_partners")
         fields = []
         values = []
         data =[]
-        for k, val in table_dic.items():
+        for k, val in list(table_dic.items()):
             if val is not None:
                 data.append([k, val])
                 fields.append(k)
@@ -253,7 +253,7 @@ class JsonRecipeParser:
                     if r[1] is None and r[2] is None:
                         # There is a record without a group_id and source: will add data to it
                         ing_id = r[0]
-                        print "UPDATING ingredients table for name %s, id %d" % (ingredName, r[0])
+                        print("UPDATING ingredients table for name %s, id %d" % (ingredName, r[0]))
                         sql = "UPDATE ingredients SET "
                         for i, field in enumerate(fields):
                             if i > 0:
@@ -265,7 +265,7 @@ class JsonRecipeParser:
                         try:
                             cursor.execute(sql, tuple(values))
                         except Error as e:
-                            print "Error in addIngredientToCompartment", (e), "SQL:", sql, values
+                            print("Error in addIngredientToCompartment", (e), "SQL:", sql, values)
                             return None
                         break
                     elif r[1] is not None and r[2] == source:
@@ -305,7 +305,7 @@ class JsonRecipeParser:
                     if not len(res):
                         add_row("binding_partners",[["id1", ing_id], ["id2", partner_id]], self.conn)
         else:
-            print "WARNING in addIngredientToDB: did not add/update ingredient table with %s" % ingredName
+            print("WARNING in addIngredientToDB: did not add/update ingredient table with %s" % ingredName)
 
         return ing_id
 
@@ -317,7 +317,7 @@ class JsonRecipeParser:
         if compid is None:
             compid = self.addCompartmentToDB(compname=name, parent=parent)
             if compid is None:
-                print "EROOR in parseOneCompartment, compname=%s", name
+                print("EROOR in parseOneCompartment, compname=%s", name)
                 return
         if "surface" in comp_dic:
             snode = comp_dic["surface"]
@@ -379,12 +379,12 @@ class JsonRecipeParser:
 
         ingred_id = self.find_ingredient_id(ingred_name)
         if ingred_id is None:
-            print "add_binding_partners_by_name(): could not select ingredient %s" % ingred_name
+            print("add_binding_partners_by_name(): could not select ingredient %s" % ingred_name)
             return
         for pname in partner_names:
             partner_id =  self.find_ingredient_id(ingred_name)
             if partner_id is None:
-                print "add_binding_partners_by_name(): could not add binding partner %s" % pname
+                print("add_binding_partners_by_name(): could not add binding partner %s" % pname)
                 continue
             self.add_binding_partner_id(ingred_id, partner_id, checkExists=checkExists)
 
@@ -405,7 +405,7 @@ class JsonRecipeParser:
         if res is None: # ERROR
             return None
         if not len(res): # did not find any matching records
-            print "find_ingredient_id(): No matching records in ingredient table for name %s:" % name
+            print("find_ingredient_id(): No matching records in ingredient table for name %s:" % name)
             return None
         return res[0][0]
 
@@ -414,7 +414,7 @@ class JsonRecipeParser:
         if ingred_id is None:
             ingred_id = self.find_ingredient_id(name)
             if ingred_id is None:
-                print "In find_ingredient_partners() FAILED to SELECT id of ingredient %s" % name
+                print("In find_ingredient_partners() FAILED to SELECT id of ingredient %s" % name)
                 return
         sql = "SELECT id1 FROM binding_partners WHERE id2=? UNION SELECT id2 FROM binding_partners WHERE id1=?"
         partner_ids = sql_query (self.conn, sql, (ingred_id, ingred_id))

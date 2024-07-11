@@ -42,7 +42,7 @@ def displayForm(file = "", seq = ""):
     aStr += htmlRule()
     aStr += htmlMsg("</form>")
     aStr += htmlTailer()
-    print aStr
+    print(aStr)
 
 def displayFormPreview(PDBID):
     aStr = ""
@@ -104,7 +104,7 @@ function onClick(){
     #aStr+="stage.autoView(200);\n"
     aStr+="</script>\n"
     aStr += htmlTailer()
-    print aStr
+    print(aStr)
 #need to gather pos and rot and pass it to cgi
 #var rotation = new THREE.Euler().setFromQuaternion( quaternion, eulerOrder );
 #stage.animationControls.controls.rotation
@@ -122,11 +122,11 @@ class processObj:
     def __init__(self, theDict, values = None, formArgs = None, verbose = 0):
 
         # We setup de default values
-        self.tmpKey = `int(random.random()*1000000)`
+        self.tmpKey = repr(int(random.random()*1000000))
         self.queryId = ""
 
         self.data = {}
-        for aKey in theDict.keys():
+        for aKey in list(theDict.keys()):
             self.data[aKey] = theDict[aKey][0]
 
     # We setup a parameter value
@@ -143,7 +143,7 @@ class processObj:
         elif mode == "html":
             sep = "<br>"
             fun = htmlMsg
-        for aKey in self.data.keys():
+        for aKey in list(self.data.keys()):
             if mode == "text":
                 aStr += aKey+":"+str(self.data[aKey])+sep
             elif mode == "html":
@@ -155,8 +155,8 @@ class processObj:
     # To fill the object with new values from a form
     def formParse(self, form, theDict, verbose = 0):
         # params = {}
-        for aKey in form.keys():
-            if self.data.has_key(aKey) == 0:
+        for aKey in list(form.keys()):
+            if (aKey in self.data) == 0:
                 continue
             # params[aKey] = None
             if theDict[aKey][1] == "value":
@@ -250,39 +250,39 @@ ATOM  H--------- 0,9999,.5,.5,.5,1.6
 
 #selection is wild card for chain for instance
 def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0]):
-    if (form.has_key("rotation")) :
+    if ("rotation" in form) :
         rotobj = json.loads(form["rotation"].value)
         rotation = [math.degrees(rotobj['_x']),math.degrees(rotobj['_y']),math.degrees(rotobj['_z'])]
-    if (form.has_key("position")) :
+    if ("position" in form) :
         transobj = json.loads(form["position"].value)
         trans= [transobj['x'],transobj['y'],transobj['z']]
-    if (form.has_key("scale")) :
+    if ("scale" in form) :
         scale = form["scale"].value
     shadow = False
     ao = True
-    if form.has_key("shadow"):
+    if "shadow" in form:
         shadow = True if form["shadow"].value == 'true' else False
-    if form.has_key("ao"):
+    if "ao" in form:
         ao = True if form["ao"].value == 'true' else False
     params_ao = [0.0023,2.0,1.0,0.7]
-    if form.has_key("ao_params"):
+    if "ao_params" in form:
         params_ao_obj = json.loads(form["ao_params"].value)
         params_ao= [float(params_ao_obj['_x']),
                     float(params_ao_obj['_y']),
                     float(params_ao_obj['_z']),
                     float(params_ao_obj['_w'])]
     contour_params=[]
-    if form.has_key("contour_params1"):
+    if "contour_params1" in form:
         at_p_obj = json.loads(form["contour_params1"].value)
         contour_params.append(at_p_obj)
     else :
         contour_params.append(["3.","10.","3.","8.","4","0.","5."])
-    if form.has_key("contour_params2"):
+    if "contour_params2" in form:
         sub_p_obj = json.loads(form["contour_params2"].value)
         contour_params.append(sub_p_obj)
     else :
         contour_params.append(["3.","10."])
-    if form.has_key("contour_params3"):
+    if "contour_params3" in form:
         ch_p_obj = json.loads(form["contour_params3"].value)
         contour_params.append(ch_p_obj)
     else :
@@ -290,7 +290,7 @@ def prepareInput(pdbId,form,scale=12.0,center=True,trans=[0,0,0],rotation=[0,0,0
     astr="read\n"
     astr+=pdbId+".pdb\n"
     style=2
-    if form.has_key("style"):
+    if "style" in form:
         style = int(form["style"].value)
     astr+=prepareWildCard(style)
     if (center):
@@ -340,7 +340,7 @@ def fbuffer(f, chunk_size=10000):
 def queryForm(form, verbose = 0):
     id = 0
     idprovided = False
-    if form.has_key("_id") and int(form["_id"].value) != -1:
+    if "_id" in form and int(form["_id"].value) != -1:
         id = form["_id"].value
         idprovided = True
     else :
@@ -359,17 +359,17 @@ def queryForm(form, verbose = 0):
     proj_name = "illustrated"
     #no more than 20character
     force_pdb = False
-    if form.has_key("force_pdb"):
+    if "force_pdb" in form:
         force_pdb = form["force_pdb"].value
-    if form.has_key("name") :
+    if "name" in form :
         proj_name = form["name"].value
-    if form.has_key("PDBID") :
+    if "PDBID" in form :
         queryTXT = form["PDBID"].value
         fetch = True
         tmpPDBName = wrkDir+"/"+proj_name+".pdb"
-        if not form.has_key("name") :
+        if "name" not in form :
             proj_name = queryTXT
-    elif form.has_key("PDBtxt") :
+    elif "PDBtxt" in form :
         queryTXT = form["PDBtxt"].value
         tmpPDBName = wrkDir+"/"+proj_name+".pdb"
         if not os.path.isfile(tmpPDBName) or force_pdb:
@@ -377,7 +377,7 @@ def queryForm(form, verbose = 0):
             f.write(queryTXT)
             f.close()
         queryTXT = proj_name
-    elif form.has_key("PDBfile") :
+    elif "PDBfile" in form :
         #queryTXT = form["PDBfile"].file.read()#readlines()
         tmpPDBName = wrkDir+"/"+proj_name+".pdb"
         if not os.path.isfile(tmpPDBName) or force_pdb:
@@ -396,10 +396,10 @@ def queryForm(form, verbose = 0):
 
     #did the user send in the input file?
     inpfile = wrkDir+"/"+proj_name+".inp"
-    if form.has_key("input_file"):
+    if "input_file" in form:
         filename = cgi.escape(form["input_file"].filename)
         inpstring = form["input_file"].file.read()
-    elif form.has_key("input_txt"):
+    elif "input_txt" in form:
         inpstring = form["input_txt"].value
     else :
         inpstring = prepareInput(queryTXT,form)
@@ -419,10 +419,10 @@ def queryForm(form, verbose = 0):
     httpfile="https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/"+proj_name+".pdb"
     httpimg="https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/"+proj_name+".png"
 
-    print "Access-Control-Allow-Origin: *"
-    print 'Content-type: application/json\n'
-    print
-    print "{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(id)+"\"}"
+    print("Access-Control-Allow-Origin: *")
+    print('Content-type: application/json\n')
+    print()
+    print("{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(id)+"\"}")
     #displayResult(tmpPDBName,httpfile,httpimg,queryTXT)
     cleanup(wrkDir, "1 days")
     return
@@ -439,7 +439,7 @@ def processForm(form, returnpage=True, verbose = 0):
     queryTXT = string.upper(x.data["PDBID"])
     id = 0
     idprovided = False
-    if form.has_key("_id") and int(form["_id"].value) != -1:
+    if "_id" in form and int(form["_id"].value) != -1:
         id = form["_id"].value
         idprovided = True
     else :
@@ -451,10 +451,10 @@ def processForm(form, returnpage=True, verbose = 0):
     curentD = os.path.abspath(os.curdir)
     if not os.path.isdir(wrkDir):
         os.mkdir(wrkDir)
-    if form.has_key("input_file"):
+    if "input_file" in form:
         filename = cgi.escape(form["input_file"].filename)
         inpstring = form["input_file"].file.readlines()
-    elif form.has_key("input_txt"):
+    elif "input_txt" in form:
         inpstring = form["input_txt"].value
     else :
         inpstring = prepareInput(queryTXT,form)
@@ -483,23 +483,23 @@ def processForm(form, returnpage=True, verbose = 0):
     #sys.stdout.write("%s" % htmlRedirectToPage("https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/illustrator.html"))
     #sys.stdout.flush()
     if (returnpage and not idprovided) :
-        print "Content-type: text/html"
-        print
+        print("Content-type: text/html")
+        print()
         #print 'Content-Type: text/html\r\n'
-        print ''# HTTP says you have to have a blank line between headers and content
-        print '<html>\r\n'
-        print '  <head>\r\n'
-        print '    <meta http-equiv="refresh" content="0;url=%s" />\r\n' % redirectURL
-        print '    <title>You are going to be redirected</title>\r\n'
-        print '  </head>\r\n'
-        print '  <body>\r\n'
-        print '    Redirecting... <a href="%s">Click here if you are not redirected</a>\r\n' % redirectURL
-        print '  </body>\r\n'
-        print '</html>\r\n'
+        print('')# HTTP says you have to have a blank line between headers and content
+        print('<html>\r\n')
+        print('  <head>\r\n')
+        print('    <meta http-equiv="refresh" content="0;url=%s" />\r\n' % redirectURL)
+        print('    <title>You are going to be redirected</title>\r\n')
+        print('  </head>\r\n')
+        print('  <body>\r\n')
+        print('    Redirecting... <a href="%s">Click here if you are not redirected</a>\r\n' % redirectURL)
+        print('  </body>\r\n')
+        print('</html>\r\n')
     else :
-        print "Access-Control-Allow-Origin: *"
-        print 'Content-type: application/json\n'
-        print "{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(id)+"\"}"
+        print("Access-Control-Allow-Origin: *")
+        print('Content-type: application/json\n')
+        print("{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(id)+"\"}")
     #displayResult(tmpPDBName,httpfile,httpimg,queryTXT)
     cleanup(wrkDir, "1 days")
     return
@@ -640,18 +640,18 @@ function onClick(){
     return aStr
 
 def printDebug(form):
-    print "Content-type:text/html\r\n\r\n"
-    print '<html>'
-    print '<head>'
-    print '<title>Hello Word - First CGI Program</title>'
-    print '</head>'
-    print '<body>'
-    print form
+    print("Content-type:text/html\r\n\r\n")
+    print('<html>')
+    print('<head>')
+    print('<title>Hello Word - First CGI Program</title>')
+    print('</head>')
+    print('<body>')
+    print(form)
     #print form["PDBfile"]
     #print form["PDBfile"].filename
     #print form["PDBfile"].file.readlines()
-    print '</body>'
-    print '</html>'
+    print('</body>')
+    print('</html>')
 ### ===========================================================
 ### Begin actual script
 ### ===========================================================
@@ -672,10 +672,10 @@ if __name__=='__main__':
             statuskey = None
 
         if statuskey == "process":
-            if (form.has_key("preview")):displayFormPreview(form["PDBID"].value)
+            if ("preview" in form):displayFormPreview(form["PDBID"].value)
             else : processForm(form,True)
         elif statuskey == "processpreview":
-            if (form.has_key("preview")):displayFormPreview(form["PDBID"].value)
+            if ("preview" in form):displayFormPreview(form["PDBID"].value)
             else :
                 #printDebug(form)
                 #print True if form["shadow"].value == 'true' else False

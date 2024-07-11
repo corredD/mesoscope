@@ -220,7 +220,7 @@ def displayFormError(msg):
     aStr += htmlMsg("<h3><font color=Red>Sorry: </font>"+msg+"</b></h3><p>")
     aStr += htmlMsg("<b>Please check the form fields.</b>")
     aStr += htmlTailer()
-    print aStr
+    print(aStr)
     raise SystemExit
 
 
