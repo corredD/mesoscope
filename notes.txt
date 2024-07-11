@@ -1,7 +1,7 @@
 https://www.digitalocean.com/community/tutorials/how-to-set-up-automatic-deployment-with-git-with-a-vps
 use the git --bar system to update the beta and production website
 mkdir mesoscope_beta.git;cd mesoscope_beta.git; git init --bare;
-on mgl2 there is two bar repo in /usr/local/repos/ and they are hook to the www projects/mesoscope and projects/mesoscopebeta
+on mgl2 there is two bar repo in /usr/local/repos/ or /usr/local and they are hook to the www projects/mesoscope and projects/mesoscopebeta
 on push live master and push beta master change are automatically pass
 here is the hoook as a shell script (e.g. repo/hooks/post-receive):
 #!/bin/sh
@@ -32,3 +32,5 @@ git push beta_virtual master
 
 alternative could be to use the hook directly on origin but for a particular branch
 #python -m http.server --cgi
+
+also need to chown the /var/html/ folders so the hook has permission to write.
