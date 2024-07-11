@@ -33,4 +33,4 @@ git push beta_virtual master
 alternative could be to use the hook directly on origin but for a particular branch
 #python -m http.server --cgi
 
-also need to chown the /var/html/ folders so the hook has permission to write.
+# also need to chown the /var/html/ folders so the hook has permission to write.
