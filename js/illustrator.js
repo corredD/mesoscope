@@ -540,7 +540,8 @@ function getText(url){
 }
 
 function readWildCard(filename){
-    var url="https://mesoscope.scripps.edu/beta/data/"+filename;//https://mesoscope.scripps.edu/beta
+    // var url="https://mesoscope.scripps.edu/beta/data/"+filename;//https://mesoscope.scripps.edu/beta
+    var url=window.location.hostname+"/beta/data/"+filename;
     var outer_text = getText(url);
     return outer_text;
 }
@@ -2040,7 +2041,7 @@ function onClick(){
     //console.log(formData);
     //show progress bar
     var xhr = new XMLHttpRequest();
-    var url = 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py'
+    var url = window.location.hostname+'/beta/cgi-bin/illustrator.py' // 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py'
     xhr.open('POST', url);
     xhr.timeout = 1000000000;
     xhr.ontimeout = function () {
@@ -2062,7 +2063,8 @@ function onClick(){
       document.getElementById("aprogress_holder").style.display = "none";
       img.style.display = "block";
       linkimg.href = data.image;
-      current_query.innerHTML="<h4>Current PDB and working Id :"+PDBID+" <a href='https://mesoscope.scripps.edu/data/tmp/ILL/"+_id+"'> "+_id+"</a></h4>";
+      var url = window.location.hostname+"/data/tmp/ILL/"+_id;
+      current_query.innerHTML="<h4>Current PDB and working Id :"+PDBID+" <a href='"+url+"'> "+_id+"</a></h4>";
       i=i+1;
     };
     xhr.send(formData);

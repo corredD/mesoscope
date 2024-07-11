@@ -34,3 +34,4 @@ alternative could be to use the hook directly on origin but for a particular bra
 #python -m http.server --cgi
 
 # also need to chown the /var/html/ folders so the hook has permission to write.
+# check  SELinuc on the server for cgi-execution  httpd_sys_script_exec_t
