@@ -35,3 +35,10 @@ alternative could be to use the hook directly on origin but for a particular bra
 
 # also need to chown the /var/html/ folders so the hook has permission to write.
 # check  SELinuc on the server for cgi-execution  httpd_sys_script_exec_t
+# restart apache sudo systemctl restart httpd
+
+sudo setsebool -P httpd_unified 1
+sudo setsebool -P httpd_tmp_exec 1
+sudo setsebool -P httpd_enable_homedirs 1
+sudo chcon -R -t httpd_sys_script_rw_t www/data/tmp/ILL
+sudo chmod 1777 tmp/
