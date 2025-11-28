@@ -4179,7 +4179,7 @@ function getThumbnail(aNode){
 			var ipdb = ("source" in aNode.data && aNode.data.source.pdb) ? aNode.data.source.pdb.split("_")[0].toLowerCase():"";
 			var twoletters = ipdb[1] + ipdb[2];
 			//pdbe url is https://www.ebi.ac.uk/pdbe/static/entry/5c6e_deposited_chain_front_image-800x800.png//5c6e_deposited_chain_front_image-200x200.png
-			var url = "https://www.ebi.ac.uk/pdbe/static/entry/"+ipdb+"_deposited_chain_front_image-400x400.png"
+			var url = "https://www.ebi.ac.uk/pdbe/static/entry/"+ipdb+"_deposited_chain_front_image-200x200.png"
 			//var url = "https://cdn.rcsb.org/images/rutgers/" + twoletters + "/" + ipdb + "/" + ipdb + ".pdb1-250.jpg";
 			//console.log(html);
 			aNode.data.thumbnail.src = url;
@@ -5860,7 +5860,8 @@ $(document).bind("contextmenu", function (event) {
     if (rgb === null || !rgb) rgb = [1,0,0];
     node_over_to_use.data.color = rgb;
 	var colorby = canvas_color.selectedOptions[0].value;
-	if (node_over.parent !== null && !use_color_mapping && default_options.indexOf(colorby) == -1 && use_unique_array){
+	console.log("colorby ",colorby)
+	if (!use_color_mapping && default_options.indexOf(colorby) == -1 && use_unique_array){ //node_over.parent !== null && 
 		var indice = unique_array.indexOf(node_over_to_use.data[colorby]);
 		document.getElementById("node_color").value = property_mapping[colorby].colors[indice];
 	}
