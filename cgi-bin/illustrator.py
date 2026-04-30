@@ -419,7 +419,7 @@ def queryForm(form, verbose = 0):
     httpfile="https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/"+proj_name+".pdb"
     httpimg="https://mesoscope.scripps.edu/data/tmp/ILL/"+id+"/"+proj_name+".png"
 
-    print("Access-Control-Allow-Origin: *")
+    #print("Access-Control-Allow-Origin: *")
     print('Content-type: application/json\n')
     print()
     print("{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(id)+"\"}")
@@ -497,7 +497,7 @@ def processForm(form, returnpage=True, verbose = 0):
         print('  </body>\r\n')
         print('</html>\r\n')
     else :
-        print("Access-Control-Allow-Origin: *")
+        #print("Access-Control-Allow-Origin: *")
         print('Content-type: application/json\n')
         print("{\"image\":\""+httpimg+"\",\"url\":\""+redirectURL+"\",\"id\":\""+str(id)+"\"}")
     #displayResult(tmpPDBName,httpfile,httpimg,queryTXT)

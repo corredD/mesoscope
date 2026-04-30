@@ -613,7 +613,7 @@ def queryForm(form, verbose = 0):
     result +="\"scale\":\""+str(scale)+"\",\"color_bychain\":\""+str(color_bychain)+"\",\"resize\":\""+str(resize)+"\","
     result +="\"model\":\""+str(model)+"\",\"pdbid\":\""+str(pdbid)
     if not debug :
-        print ("Access-Control-Allow-Origin: *")
+        #print ("Access-Control-Allow-Origin: *")
         print ('Content-type: application/json\n')
         print ()
     result +="\"}"

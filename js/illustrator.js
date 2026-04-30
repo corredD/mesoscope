@@ -430,7 +430,7 @@ function changePDB(e){
   var colorStyle = getStyleNGL();
   var colorsc = colorStyle.scheme;
   var color = colorStyle.color;//"rgb(255,0,0)";
-  stage.loadFile('rcsb://'+PDBID).then(function (o) {
+  stage.loadFile('https://files.rcsb.org/download/'+PDBID+'.pdb').then(function (o) {
       o.addRepresentation("spacefill", {
         sele: "polymer and /0 and not _H",
         name: "polymer",
@@ -2041,7 +2041,7 @@ function onClick(){
     //console.log(formData);
     //show progress bar
     var xhr = new XMLHttpRequest();
-    var url = 'https://'+window.location.hostname+'/beta/cgi-bin/illustrator.py' // 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py'
+    var url = 'https://mesoscope.scripps.edu/beta/cgi-bin/illustrator.py'
     xhr.open('POST', url);
     xhr.timeout = 1000000000;
     xhr.ontimeout = function () {

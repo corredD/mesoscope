@@ -245,7 +245,7 @@ def main():
     print astr[:-1]+'}}'
 
 try:
-    print "Access-Control-Allow-Origin: *"
+    #print "Access-Control-Allow-Origin: *"
     print 'Content-type: text/html\n'
     #print "Hello"
     main()
