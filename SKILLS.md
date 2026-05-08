@@ -67,6 +67,9 @@ the CSV and serialized JSON must still be valid.
 When files are written locally, return clickable links to the generated JSON,
 CSV, and notes so the user can download or inspect them directly.
 
+For viral recipes, treat the output as incomplete unless the genome, vRNP,
+nucleocapsid/RNP, or packaged DNA/RNA is present as a loadable ingredient.
+
 ## Evidence Rules
 
 For evidence-backed biological recipes:
@@ -82,6 +85,98 @@ For evidence-backed biological recipes:
   `low confidence`.
 - Cite compact identifiers inline where possible: PDB, EMDB, UniProt, NCBI
   Taxonomy, DOI, PMID, or source database IDs.
+
+## Genome And Nucleic Acid Rule
+
+Do not omit the packaged genome or nucleic-acid material from biological recipes.
+For viruses, this is mandatory: every viral recipe must include at least one
+genome-related ingredient in the narrative, evidence CSV, compact CSV, and
+serialized JSON.
+
+Choose the biologically packaged representation first:
+
+- Segmented negative-strand RNA viruses such as influenza: prefer one vRNP
+  ingredient per segment when segment identities/accessions are known; otherwise
+  include one coarse `vRNP genome` ingredient with `nbMol` equal to the segment
+  count and list the missing segment accessions as an uncertainty.
+- Nonsegmented RNA viruses: include an RNA genome, nucleocapsid, RNP, or
+  genome-protein complex ingredient as appropriate for the virus.
+- Retroviruses: include the packaged RNA genome as two copies when supported,
+  with nucleocapsid/RNP assumptions clearly stated.
+- DNA viruses: include a DNA genome or capsid-packaged DNA ingredient.
+- Cells, organelles, and bacteria: include chromosomes, plasmids, nucleoids,
+  chromatin, mRNA pools, or other major nucleic-acid polymers when they are part
+  of the modeled entity.
+
+Use accession-backed provenance when available:
+
+- Record GenBank, RefSeq, NCBI Nucleotide, or segment accessions in the narrative
+  and CSV `Key references` column.
+- In JSON, keep Mesoscope-loadable structure fields and add accession metadata
+  through `comments` and `custom_data`, for example:
+  `custom_data:["genbank_accession","genome_type","genome_length_nt"]`.
+- If an accession cannot be resolved, still include a coarse genome ingredient
+  and mark the accession as the main uncertainty. Do not silently omit it.
+
+Model nucleic acids as fibers or coarse polymers unless a better vRNP,
+nucleocapsid, chromatin, or genome density representation is available. Local
+recipe examples use this pattern: `data/Mpn_1.0_2.json` has interior `DNA` and
+`mRNA` ingredients with `Type:"Grow"`, `source.pdb:"dna_single_base"` or
+`source.pdb:"RNA_G_Base"`, and explicit `length`; `data/hivfull_serialized.json`
+uses an RNA fiber ingredient with `source.pdb:"RNA_G_Base.pdb"`.
+
+Recommended serialized JSON defaults for genome ingredients:
+
+```json
+{
+  "ingredient_id": 0,
+  "name": "RNA genome",
+  "path": "",
+  "partners_properties": [],
+  "encapsulatingRadius": 40,
+  "source": {
+    "pdb": "RNA_G_Base.pdb",
+    "transform": { "offset": [0, 0, 0] },
+    "bu": "",
+    "model": "",
+    "selection": ""
+  },
+  "nbMol": 1,
+  "molarity": 0,
+  "principalVector": [0, 0, 1],
+  "fiberAxis": [0, 0, 1, 50],
+  "fiberOffset": [0, 0, 0],
+  "description": "Coarse packaged genome ingredient",
+  "positions": [],
+  "radii_lod": [],
+  "meshFile": "",
+  "meshType": "None",
+  "ingtype": "fiber",
+  "Type": "Grow",
+  "buildtype": "random",
+  "comments": "Include GenBank/RefSeq accessions and genome packaging assumptions here.",
+  "color": [1.0, 0.5, 0.3],
+  "uniprot": "",
+  "confidence": 0.6,
+  "molecularweight": 0,
+  "length": 0,
+  "genbank_accession": "",
+  "genome_type": "RNA",
+  "genome_length_nt": 0,
+  "custom_data": ["genbank_accession", "genome_type", "genome_length_nt"],
+  "sprite": {
+    "image": "RNA_genome.png",
+    "offsety": 0,
+    "scale2d": 1
+  }
+}
+```
+
+Use `source.pdb:"DNA_oneTurn.pdb"` or the local convention
+`source.pdb:"dna_single_base"` for DNA polymers. Use `source.pdb:"RNA_G_Base.pdb"`
+or `source.pdb:"RNA_G_Base"` for RNA polymers. For vRNP or nucleocapsid models,
+use the best available PDB/EMDB/AlphaFold/homology source and still include the
+genome accessions in `comments` or `custom_data`.
 
 For explicit ingredient recipes:
 
@@ -213,6 +308,16 @@ python3 -m py_compile localCGIServer.py
 For manual inspection, compare hierarchy and ingredient fields to
 `data/HIV_serialized.json`.
 
+For viral recipes, also verify:
+
+- At least one ingredient represents `genome`, `vRNP`, `RNP`, `nucleocapsid`,
+  `RNA`, or `DNA`.
+- The ingredient is present in all outputs, not only the narrative.
+- GenBank, RefSeq, NCBI Nucleotide, or segment accessions are recorded when
+  available; otherwise the missing accession is listed as an uncertainty.
+- The JSON ingredient has `ingtype:"fiber"` for a coarse genome polymer, or a
+  justified protein/complex representation for vRNP/nucleocapsid.
+
 ## Mesoscope Loading
 
 ### Local Legacy Server
@@ -312,6 +417,13 @@ For every compartment and ingredient, separate experimentally supported
 information, homologous/inferred information, computational predictions,
 modeling assumptions, and uncertainty. Use confidence labels exactly as high
 confidence, medium confidence, or low confidence.
+
+If the entity is a virus, include a mandatory genome-related ingredient. Prefer
+the packaged biological form: vRNP/RNP/nucleocapsid for RNA viruses when
+appropriate, or packaged DNA for DNA viruses. Include GenBank, RefSeq, NCBI
+Nucleotide, or segment accessions when available. If exact accessions are not
+known, still include a coarse genome ingredient and mark the accession as the
+main uncertainty.
 
 Return:
 1. A concise narrative recipe with architecture, surface components, internal
