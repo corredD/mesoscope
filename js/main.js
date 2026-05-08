@@ -1794,7 +1794,29 @@ function copyTextToClipboardFallback(text) {
 	});
 }
 
+function confirmSkillsSafetyDisclaimer() {
+	var msg = [
+		"Mesoscope LLM Recipe Skill — Safety Notice",
+		"",
+		"This skill is strictly for computational 3D visualization and educational",
+		"modeling. All outputs are static digital scene files (CSV, JSON, MD) for",
+		"Mesoscope, cellPACK, Mol*, Blender, Unity, etc. No wet-lab protocols,",
+		"genetic sequences for synthesis, or engineering instructions are produced.",
+		"",
+		"Heads up: recent safety-tuned LLMs (e.g. Claude Opus 4.7, Claude Haiku 4.5,",
+		"GPT-5.5) may still flag or refuse this prompt — especially when a smaller",
+		"model is dispatched (Opus 4.7 routing to Haiku 4.5, etc.) — because it",
+		"references viruses, genomes, and nucleic acids. If your model refuses,",
+		"try a model with a longer/structural-biology context, or run it with the",
+		"prompt's safety disclaimer kept in place.",
+		"",
+		"Continue and copy/open the skill?"
+	].join("\n");
+	return window.confirm(msg);
+}
+
 function CopyRecipeSkillsForLLM() {
+	if (!confirmSkillsSafetyDisclaimer()) return;
 	fetch("SKILLS.md", {cache: "no-store"})
 		.then(function(response) {
 			if (!response.ok) throw new Error(response.status + " " + response.statusText);
@@ -1810,6 +1832,11 @@ function CopyRecipeSkillsForLLM() {
 			console.error("Unable to copy Mesoscope LLM recipe skill", err);
 			alert("Unable to copy the Mesoscope LLM recipe skill: " + err.message + "\\nOpen SKILLS.md from the Skills menu instead.");
 		});
+}
+
+function OpenSkillsMd() {
+	if (!confirmSkillsSafetyDisclaimer()) return;
+	window.open("SKILLS.md", "_blank");
 }
 
 function getRecipeUrlFromLocation() {
