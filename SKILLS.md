@@ -334,7 +334,7 @@ Open:
 http://localhost:8080/
 ```
 
-The menu item `Load -> New Recipe -> From LLM/Codex Recipe` loads:
+The legacy bridge recipe can be loaded directly from:
 
 ```text
 data/codex_recipe_serialized.json
