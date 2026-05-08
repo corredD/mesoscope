@@ -1432,7 +1432,23 @@ $(document).ready(function() {
       else setuped = true;
     }
     clearInterval(interval);
-    if (savedRecipe !== null && usesavedState) {
+    var recipeJson = (typeof getRecipeJsonFromLocation === "function") ? getRecipeJsonFromLocation() : null;
+    var recipeUrl = (typeof getRecipeUrlFromLocation === "function") ? getRecipeUrlFromLocation() : null;
+    if (recipeJson) {
+      var recipeJsonFormat = (typeof getRecipeFormatFromLocation === "function") ? getRecipeFormatFromLocation() : "auto";
+      try {
+        LoadRecipeFromJsonString(recipeJson, {format: recipeJsonFormat, source: "recipe_json URL parameter"});
+      }
+      catch (err) {
+        console.error("Unable to load recipe_json parameter", err);
+        alert("Unable to load recipe_json parameter: " + err.message);
+      }
+    }
+    else if (recipeUrl) {
+      var recipeFormat = (typeof getRecipeFormatFromLocation === "function") ? getRecipeFormatFromLocation() : "auto";
+      LoadRecipeFromUrl(recipeUrl, {format: recipeFormat});
+    }
+    else if (savedRecipe !== null && usesavedState) {
       try {
         LoadSaveState(savedRecipe);
       }
