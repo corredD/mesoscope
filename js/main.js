@@ -1724,6 +1724,173 @@ function LoadExampleHIV(){
 		MS_LoadExample('HIV-1_0.1.6-8_mixed_radii_pdb.json');
 }
 
+function LoadCodexRecipe(){
+		LoadRecipeFromUrl("data/codex_recipe_serialized.json", {format: "serialized"});
+}
+
+function getMesoscopeBaseUrl() {
+	var origin = window.location.origin || (window.location.protocol + "//" + window.location.host);
+	var path = window.location.pathname || "/";
+	if (path.lastIndexOf("/") !== path.length - 1) path = path.substring(0, path.lastIndexOf("/") + 1);
+	return origin + path;
+}
+
+function buildRecipeSkillsCopyText(skillText) {
+	var baseUrl = getMesoscopeBaseUrl();
+	return [
+		"Use the following Mesoscope recipe skill to generate a recipe I can load in Mesoscope.",
+		"",
+		"Required final outputs:",
+		"1. A serialized JSON recipe file named codex_recipe_serialized.json.",
+		"2. A review CSV named codex_recipe.csv.",
+		"3. A compact import CSV named codex_recipe_import.csv.",
+		"4. A notes file named codex_recipe_notes.md.",
+		"5. A Mesoscope direct URL using this exact pattern for small recipes:",
+		baseUrl + "?recipe_json=<encodeURIComponent(JSON.stringify(serializedRecipeJson))>&recipe_format=serialized",
+		"",
+		"For larger recipes, tell me to POST the serialized JSON to:",
+		baseUrl + "recipe_json",
+		"",
+		"When using a recipe file URL, pass only an absolute http:// or https:// URL. Do not use local filesystem paths or file:// URLs.",
+		"",
+		"After generating the JSON, also provide a minified URL-encoded version in the recipe_json parameter so I can paste the URL directly into Mesoscope.",
+		"",
+		"--- BEGIN MESOSCOPE SKILL ---",
+		skillText,
+		"--- END MESOSCOPE SKILL ---"
+	].join("\n");
+}
+
+function copyTextToClipboard(text) {
+	if (navigator.clipboard && navigator.clipboard.writeText) {
+		return navigator.clipboard.writeText(text).catch(function() {
+			return copyTextToClipboardFallback(text);
+		});
+	}
+	return copyTextToClipboardFallback(text);
+}
+
+function copyTextToClipboardFallback(text) {
+	return new Promise(function(resolve, reject) {
+		var textarea = document.createElement("textarea");
+		textarea.value = text;
+		textarea.setAttribute("readonly", "");
+		textarea.style.position = "fixed";
+		textarea.style.left = "-9999px";
+		textarea.style.top = "0";
+		document.body.appendChild(textarea);
+		textarea.focus();
+		textarea.select();
+		try {
+			var ok = document.execCommand("copy");
+			document.body.removeChild(textarea);
+			if (ok) resolve();
+			else reject(new Error("Clipboard copy command was not accepted"));
+		}
+		catch (err) {
+			document.body.removeChild(textarea);
+			reject(err);
+		}
+	});
+}
+
+function CopyRecipeSkillsForLLM() {
+	fetch("SKILLS.md", {cache: "no-store"})
+		.then(function(response) {
+			if (!response.ok) throw new Error(response.status + " " + response.statusText);
+			return response.text();
+		})
+		.then(function(skillText) {
+			return copyTextToClipboard(buildRecipeSkillsCopyText(skillText));
+		})
+		.then(function() {
+			alert("Mesoscope LLM recipe skill copied. Paste it into your LLM to generate recipe files and a direct Mesoscope URL.");
+		})
+		.catch(function(err) {
+			console.error("Unable to copy Mesoscope LLM recipe skill", err);
+			alert("Unable to copy the Mesoscope LLM recipe skill: " + err.message + "\\nOpen SKILLS.md from the Skills menu instead.");
+		});
+}
+
+function getRecipeUrlFromLocation() {
+	if (!window.URLSearchParams) return null;
+	var params = new URLSearchParams(window.location.search);
+	return params.get("recipe") || params.get("recipe_url") || params.get("load_recipe");
+}
+
+function getRecipeJsonFromLocation() {
+	if (!window.URLSearchParams) return null;
+	var params = new URLSearchParams(window.location.search);
+	return params.get("recipe_json") || params.get("json_recipe");
+}
+
+function getRecipeFormatFromLocation() {
+	if (!window.URLSearchParams) return "auto";
+	var params = new URLSearchParams(window.location.search);
+	return params.get("recipe_format") || params.get("format") || "auto";
+}
+
+function recipeNeedsProxy(url) {
+	try {
+		var parsed = new URL(url, window.location.href);
+		return (parsed.protocol === "http:" || parsed.protocol === "https:") && parsed.origin !== window.location.origin;
+	}
+	catch (err) {
+		return false;
+	}
+}
+
+function recipeFetchUrl(url) {
+	if (recipeNeedsProxy(url)) return "/recipe_proxy?url=" + encodeURIComponent(url);
+	return url;
+}
+
+function isSerializedRecipePayload(json, url, format) {
+	if (format === "serialized") return true;
+	if (format === "classic") return false;
+	if (json && (json.Compartments || json.IngredientGroups)) return true;
+	return findLongestCommonSubstring(String(url || ""), "serialized").length >= 9;
+}
+
+function LoadRecipeFromUrl(url, options){
+		options = options || {};
+		var format = options.format || "auto";
+
+		fetch(recipeFetchUrl(url), {cache: "no-store"})
+			.then(function(response) {
+				if (!response.ok) throw new Error(response.status + " " + response.statusText);
+				return response.text();
+			})
+			.then(function(text) {
+				LoadRecipeFromJsonString(text, {format: format, source: url});
+			})
+			.catch(function(err) {
+				console.error("Unable to load recipe URL", url, err);
+				alert("Unable to load recipe URL: " + url + "\\n" + err.message);
+			});
+}
+
+function LoadRecipeFromJsonString(text, options) {
+	options = options || {};
+	var data = String(text).replace(/\\n\\r/gm,'newChar');
+	var json = JSON.parse(data);
+	LoadRecipeFromJsonObject(json, options);
+}
+
+function LoadRecipeFromJsonObject(json, options) {
+	options = options || {};
+	var source = options.source || "inline JSON";
+	var format = options.format || "auto";
+	if (stage) stage.removeAllComponents();
+	csv_mapping = false;
+	comp_column = false;
+	var serialized = isSerializedRecipePayload(json, source, format);
+	var adata = serialized ? parseCellPackRecipeSerialized(json) : parseCellPackRecipe(json);
+	update_graph(adata.nodes, adata.links);
+	recipe_file = new Blob([JSON.stringify(json)], {type: 'application/json'});
+	console.log("Loaded recipe from", source);
+}
+
 function LoadExampleInfluenza_envelope(){
 	stage.removeAllComponents();
 	var url = "data/InfluenzaA.json";

@@ -517,6 +517,7 @@
               <li>
               <li><a href='#'  onclick="CreateNew();"><span>Empty Recipe</span></a></li>
               <li><a href="#" for="jsfile_input" onclick="$('#jsfile_input').trigger('click');">From File (.json, _serialized.json,.xlsx,.csv,.zip)</a></li>
+              <li><a href="#" onclick="LoadCodexRecipe()">From LLM/Codex Recipe</a></li>
               <li class='has-sub'><a href="#">From Examples</a>
               <ul>
                   <li><a href="#" onclick="LoadExampleHIV()">HIV mature</a></li>
@@ -580,7 +581,7 @@
           <!--li><a href="#" >Spreadsheet XL</a></li-->
         </ul>
       </li>
-      <li class='last has-sub'><a href='#'><span>Layout Options</span></a>
+      <li class='has-sub'><a href='#'><span>Layout Options</span></a>
         <ul>
         <li id ="sequence"><a href="#" onclick="layout_toggleSequenceFeatures()">Show Sequence Feature</a></li>
         <li id ="object"><a href="#" onclick="layout_toggleObjectProperties()">Show Objects Properties</a></li>
@@ -591,6 +592,12 @@
         <li><a href="#" onclick="on('About')">About Us</a></li>
         <li><a href="#" onclick="on('FAQ')">FAQ</a></li>
         <li><a href="#" onclick="on('Contact')">Contact</a></li-->
+        </ul>
+      </li>
+      <li class='last has-sub'><a href='#'><span>Skills</span></a>
+        <ul>
+          <li><a href="#" onclick="CopyRecipeSkillsForLLM(); return false;">Copy LLM Recipe Skill</a></li>
+          <li><a href="SKILLS.md" target="_blank">Open SKILLS.md</a></li>
         </ul>
       </li>
    </ul>
