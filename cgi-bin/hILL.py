@@ -575,11 +575,12 @@ def queryForm(form, verbose = 0):
         if debug :
             print ("<br> inverse_rotation "+str(inverse_rotation))
         if (len(r)):
-            if len(r[0]):
-                if inverse_rotation : 
-                    rotation = r[0][0].inv().as_euler('xyz', degrees=True)
-                else :
-                    rotation = r[0][0].as_euler('xyz', degrees=True)
+            # R.align_vectors() returns (rotation, rssd); r[0] is a single Rotation
+            rot = r[0]
+            if inverse_rotation :
+                rotation = rot.inv().as_euler('xyz', degrees=True)
+            else :
+                rotation = rot.as_euler('xyz', degrees=True)
 
     inpfile = wrkDir+"/"+proj_name+".inp"
     if "input_file" in form:
