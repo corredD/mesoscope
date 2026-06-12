@@ -209,6 +209,8 @@ ill_style.addEventListener("selected", function() {
     current_style = ill_style.selected;
     if (current_style == "One" || current_style== "OneRange") ucolor.style.display = "";
     else ucolor.style.display = "none";
+    //match the mesoscope ingredient sprite resolution (6 pixels/Angstrom)
+    if (current_style == "GreyChain") scale.value = 6;
     if (current_style == "Custom"){
         customStyle.style = "";
     }
@@ -1349,6 +1351,44 @@ HETATM---------- 0,9999, 1.0,1.0,1.0, 1.5\n\
 ";
 }
 
+//range of grey used to differentiate chains (matches mesoscope js/illustrate.js lower_grey)
+var ill_lower_grey = 0.2;
+//grey-per-chain wildcard, reproducing the mesoscope ingredient sprite preset.
+//one grey value per (selected) chain, coarse radius so it pairs with the
+//CA/P-only atoms written for the "GreyChain" style. See ill_prepareWildCardChains
+//in js/illustrate.js.
+function getWildCardGreyByChain(){
+  if (!structure) return "";
+  var _records = [];
+  //distinct selected chain names, in structure order
+  var chnames = [];
+  structure.structure.eachChain(function(chain){
+    if (testSelectedChain(chain.chainname) && $.inArray(chain.chainname, chnames) === -1)
+      chnames.push(chain.chainname);
+  });
+  var nchains = chnames.length;
+  var step = (nchains > 0) ? ill_lower_grey / nchains : 0;
+  var done = [];
+  structure.structure.eachChain(function(chain){
+    if (!testSelectedChain(chain.chainname)) return;
+    if ($.inArray(chain.chainname, done) !== -1) return;
+    done.push(chain.chainname);
+    var cid = $.inArray(chain.chainname, chnames);
+    var c = 1.0 - step * cid;
+    _records.push(sprintf(IllAtomFormat,
+                        Ill_defaults("----", '----'),
+                        Ill_defaults("", '---'),
+                        Ill_defaults(chain.chainname, '-'),
+                        0,
+                        9999,
+                        Ill_defaults(c, 1.0),
+                        Ill_defaults(c, 1.0),
+                        Ill_defaults(c, 1.0),
+                        Ill_defaults("", 5.0) ) );
+  });
+  return _records.join('\n') + "\n";
+}
+
 function prepareWildCard(style){
     //ignore hydrogen
     var astr=""
@@ -1397,6 +1437,12 @@ ATOM  -C5-- D--- 0,9999 1.00, 0.75, 0.40, 5.0\n\
 ATOM  -CA------- 0,9999 0.50, 0.70, 1.00, 5.0\n\
 HETATM-C-------- 0,9999 0.60, 0.95, 0.60, 1.6\n\
 HETATM---------- 0,9999 0.50, 0.95, 0.50, 1.5\n";
+        chain_outlines_params_elem[2].value = 6000;
+    }
+    else if (style=="GreyChain")
+    {
+        //grey-per-chain coarse sprite, same as mesoscope ingredient thumbnails
+        astr+=getWildCardGreyByChain();
         chain_outlines_params_elem[2].value = 6000;
     }
     else if (style=="Generic")
@@ -1846,7 +1892,7 @@ function writeAtoms() {
     }
     if (asele == "" && current_model != null ) asele = "/"+model_elem.selected;
     if (asele === "") asele = "polymer";  
-    if (current_style == "Coarse"){
+    if (current_style == "Coarse" || current_style == "GreyChain"){
       asele="("+asele+") and (.CA or .P or .C1')";
     }
     console.log(asele);
