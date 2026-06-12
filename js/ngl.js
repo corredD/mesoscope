@@ -127,7 +127,7 @@ function NGL_Clear(){
 function NGL_GetPDBURL(aname) {
   console.log(aname);
   if (aname.length === 4)
-    return "rcsb://" + aname + ".pdb";
+    return "rcsb://" + aname + ".cif";
   else {
     if (folder_elem && folder_elem.files.length != "") {
       return pathList_[aname]; //alert(pathList_[d.data.source]),
@@ -5576,7 +5576,7 @@ function NGL_Load(pdbname, bu, sel_str, onfinish_cb = null) {
   }
 
   if (pdbname.length === 4) {
-    NGL_LoadOneProtein("rcsb://" + pdbname + ".pdb", pdbname, bu, sel_str, onfinish_cb = onfinish_cb);
+    NGL_LoadOneProtein("rcsb://" + pdbname + ".cif", pdbname, bu, sel_str, onfinish_cb = onfinish_cb);
   }
   else {
     var ext = pdbname.slice(-4, pdbname.length);
