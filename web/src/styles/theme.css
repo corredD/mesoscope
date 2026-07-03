@@ -1,0 +1,70 @@
+/**
+ * Design tokens for the light/dark theme (`themeStore.ts` sets `data-theme`
+ * on `<html>`). Replaces the ad hoc, inconsistent gray values previously
+ * hardcoded per-component (`#333`/`#555`/`#666`/`#777`/`#ccc`/`#ddd` doing
+ * overlapping jobs across files with no shared source of truth, and system
+ * colors like `Canvas`/`CanvasText` mixed in without the rest of the chrome
+ * adapting) — every component file should reference these variables instead
+ * of a literal color.
+ *
+ * One accent color (`--color-accent`) is used consistently for every
+ * "active/selected" state (active tab, selected table row, primary button,
+ * focus ring) instead of reusing the neutral gray ramp for that role, which
+ * is what made the previous palette read as flat/undesigned.
+ */
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --color-bg: #ffffff;
+  --color-bg-canvas: #ffffff;
+  --color-bg-subtle: #f4f5f7;
+  --color-bg-muted: #e8eaed;
+  --color-border: #d8dade;
+  --color-border-strong: #b9bcc4;
+
+  --color-text: #1f2328;
+  --color-text-muted: #5b6270;
+  --color-text-inverse: #ffffff;
+
+  --color-surface-strong: #2b2f36;
+  --color-surface-strong-hover: #3d424b;
+
+  --color-accent: #2f6fed;
+  --color-accent-hover: #2559c4;
+  --color-accent-soft: #e4ecfc;
+  --color-accent-text: #ffffff;
+
+  --color-danger: #b3261e;
+
+  --color-shadow: rgba(15, 18, 22, 0.16);
+  --color-overlay: rgba(15, 18, 22, 0.4);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-bg: #1c1f24;
+  --color-bg-canvas: #20242a;
+  --color-bg-subtle: #262a31;
+  --color-bg-muted: #323740;
+  --color-border: #3c414b;
+  --color-border-strong: #4d525d;
+
+  --color-text: #e7e9ec;
+  --color-text-muted: #9aa1ac;
+  --color-text-inverse: #ffffff;
+
+  --color-surface-strong: #16181c;
+  --color-surface-strong-hover: #262a31;
+
+  --color-accent: #5b8dfb;
+  --color-accent-hover: #7ba2fc;
+  --color-accent-soft: rgba(91, 141, 251, 0.18);
+  --color-accent-text: #0e1116;
+
+  --color-danger: #ff6b6b;
+
+  --color-shadow: rgba(0, 0, 0, 0.5);
+  --color-overlay: rgba(0, 0, 0, 0.55);
+}

@@ -1,0 +1,30 @@
+.panel-body {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 8px;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.recipe-summary {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  margin: 0 0 12px;
+  color: var(--color-text);
+}
+
+.recipe-summary dt {
+  font-weight: 600;
+}
+
+.recipe-summary dd {
+  margin: 0;
+}
+
+.panel-note {
+  font-style: italic;
+  color: var(--color-text-muted);
+}

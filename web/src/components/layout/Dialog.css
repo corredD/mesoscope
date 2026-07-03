@@ -1,0 +1,43 @@
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.dialog {
+  background: var(--color-bg-canvas);
+  color: var(--color-text);
+  min-width: 280px;
+  max-width: 480px;
+  border-radius: 4px;
+  box-shadow: 0 4px 16px var(--color-shadow);
+}
+
+.dialog-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--color-surface-strong);
+  color: var(--color-text-inverse);
+  border-radius: 4px 4px 0 0;
+  font-weight: 600;
+}
+
+.dialog-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1.1rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.dialog-body {
+  padding: 12px;
+  font-size: 0.9rem;
+}

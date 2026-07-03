@@ -1,0 +1,27 @@
+.search-panel-controls {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.search-panel-controls input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.search-panel-error {
+  color: var(--color-danger);
+}
+
+.search-panel-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.search-panel-table th,
+.search-panel-table td {
+  border: 1px solid var(--color-border);
+  padding: 2px 4px;
+  text-align: left;
+}

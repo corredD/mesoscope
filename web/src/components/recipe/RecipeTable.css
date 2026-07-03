@@ -1,0 +1,26 @@
+.recipe-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.recipe-table th,
+.recipe-table td {
+  border: 1px solid var(--color-border);
+  padding: 2px 4px;
+  text-align: left;
+}
+
+.recipe-table input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 0.8rem;
+}
+
+.recipe-table input[type='number'] {
+  width: 6em;
+}
+
+.recipe-table tbody tr.selected {
+  background: var(--color-accent-soft);
+}

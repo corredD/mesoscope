@@ -1,0 +1,63 @@
+.ingredient-options {
+  overflow-y: auto;
+  height: 100%;
+  font-size: 0.85em;
+}
+
+.ingredient-options section {
+  border-bottom: 1px solid var(--color-border);
+  padding: 6px 8px;
+}
+
+.ingredient-options h4 {
+  margin: 0 0 6px;
+  font-size: 0.95em;
+}
+
+.ingredient-options label {
+  display: block;
+  margin: 4px 0;
+}
+
+.ingredient-options-row {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.ingredient-options-chains {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.ingredient-options-chain,
+.ingredient-options-lod-level {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.ingredient-options-vec3 {
+  margin: 4px 0;
+}
+
+.ingredient-options-vec3 label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 0;
+}
+
+.ingredient-options-vec3 input[type='number'] {
+  width: 4.5em;
+}
+
+.ingredient-options-sprite-preview {
+  max-width: 100%;
+  max-height: 120px;
+  display: block;
+  margin: 4px 0;
+  border: 1px solid var(--color-border);
+}

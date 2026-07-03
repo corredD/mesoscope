@@ -1,0 +1,13 @@
+/* dockview owns all sizing/splitting internally now (see Workspace.tsx) —
+   this just gives it a full-size flex child to fill. */
+.workspace {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.workspace .dv-dockview {
+  flex: 1 1 auto;
+}

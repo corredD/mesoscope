@@ -1,0 +1,26 @@
+.column-mapping-hint {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+}
+
+.column-mapping-grid {
+  display: grid;
+  gap: 4px;
+  max-height: 50vh;
+  overflow: auto;
+}
+
+.column-mapping-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.column-mapping-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
