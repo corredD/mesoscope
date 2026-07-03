@@ -245,7 +245,32 @@ export function IngredientOptions() {
   // live inside the effect (so a later trigger always targets the level/chain-filter/structure
   // current at that moment) — just not dependencies that themselves cause a rebuild, matching
   // legacy switching-ingredient-doesn't-silently-rebuild-beads behavior.
+  //
+  // Guarded against running on mount by comparing against the *previous* values of these
+  // four, not a "consumed once" flag — found live once this panel became a workspace-preset-
+  // removable panel (see Workspace.tsx's `WORKSPACE_PRESETS`): `useEffect` always fires once
+  // on mount regardless of its dependency array, and since this component can now unmount/
+  // remount (switching to a preset without "Ingredient Options" and back), every remount was
+  // silently re-clustering and overwriting the selected ingredient's Level 0 bead data from
+  // the freshly-reset default state — a real, user-visible data mutation triggered purely by
+  // a layout change, not any bead-control interaction. A "consumed once" ref flag (tried
+  // first) does NOT survive React 19 StrictMode's dev-only double-invoke of effects (mount →
+  // effect → cleanup → effect again, all synchronous, with no fresh ref in between) — the
+  // flag flips to "consumed" on the first synthetic pass and no longer guards the second, so
+  // the bug still reproduced. Comparing against the last-seen values instead is robust to
+  // being invoked any number of times for the same underlying state: it only proceeds when
+  // something actually differs from what was last recorded, which is true exactly once for a
+  // genuine user change and never for a mount (synthetic or real).
+  const prevBeadOptions = useRef({ beadCount, autoBeadCountOn, overwriteRadiusOn, overwriteRadius })
   useEffect(() => {
+    const prev = prevBeadOptions.current
+    const changed =
+      prev.beadCount !== beadCount ||
+      prev.autoBeadCountOn !== autoBeadCountOn ||
+      prev.overwriteRadiusOn !== overwriteRadiusOn ||
+      prev.overwriteRadius !== overwriteRadius
+    prevBeadOptions.current = { beadCount, autoBeadCountOn, overwriteRadiusOn, overwriteRadius }
+    if (!changed) return
     if (!structure || !data) return
     const chainFilter = selectedChains.size > 0 && selectedChains.size < chains.length ? selectedChains : undefined
     const points = getAtomPositions(structure, chainFilter)

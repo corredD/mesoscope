@@ -12,6 +12,14 @@
  *  - searchTable:      "Uniprot search table", "PDB search table"
  *
  * All start visible, matching the legacy default layout on load.
+ *
+ * `setVisibility` (added for the workspace presets in `Workspace.tsx`'s
+ * `WORKSPACE_PRESETS`) sets several of these atomically — a preset needs to
+ * land on a specific combination in one go, not compute it via repeated
+ * `toggle()` inversions. This store stays the single owner of these four
+ * groups regardless of who's setting them (the "Layout Options" menu or a
+ * preset) — the existing `TOGGLE_GROUPS`/`syncGroupPanels` effect in
+ * `Workspace.tsx` reacts to this state either way, unchanged.
  */
 import { create } from 'zustand'
 
@@ -26,6 +34,7 @@ export type LayoutToggle = keyof LayoutVisibility
 
 interface LayoutStore extends LayoutVisibility {
   toggle: (key: LayoutToggle) => void
+  setVisibility: (partial: Partial<LayoutVisibility>) => void
 }
 
 export const useLayoutStore = create<LayoutStore>((set) => ({
@@ -34,4 +43,5 @@ export const useLayoutStore = create<LayoutStore>((set) => ({
   interactionTable: true,
   searchTable: true,
   toggle: (key) => set((state) => ({ [key]: !state[key] })),
+  setVisibility: (partial) => set(partial),
 }))

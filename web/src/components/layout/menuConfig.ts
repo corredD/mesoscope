@@ -14,10 +14,12 @@
  * the "not yet available" dialog. Layout Options items are real from Phase 3.
  */
 import type { LayoutToggle, LayoutVisibility } from '../../state/layoutStore'
+import type { PresetId } from '../../state/presetStore'
 
 export type MenuAction =
   | { kind: 'placeholder' }
   | { kind: 'toggle'; flag: LayoutToggle }
+  | { kind: 'preset'; id: PresetId }
   | { kind: 'load-empty' }
   | { kind: 'load-example'; url: string }
   | { kind: 'merge-example'; url: string }
@@ -35,7 +37,7 @@ export type MenuAction =
 
 export interface MenuLeaf {
   kind: 'leaf'
-  label: string | ((layout: LayoutVisibility) => string)
+  label: string | ((layout: LayoutVisibility, preset: PresetId) => string)
   action: MenuAction
 }
 
@@ -61,6 +63,15 @@ function toggleLeaf(flag: LayoutToggle, shownLabel: string, hiddenLabel: string)
     kind: 'leaf',
     label: (layout) => (layout[flag] ? hiddenLabel : shownLabel),
     action: { kind: 'toggle', flag },
+  }
+}
+
+/** A workspace-preset menu item — label gets a "(current)" suffix while its preset is active. */
+function presetLeaf(id: PresetId, label: string): MenuLeaf {
+  return {
+    kind: 'leaf',
+    label: (_layout, preset) => (preset === id ? `${label} (current)` : label),
+    action: { kind: 'preset', id },
   }
 }
 
@@ -123,6 +134,18 @@ export const MENU: MenuGroup[] = [
       leaf('Color palette', { kind: 'save-color-palette' }),
       leaf('Color mapping'),
       leaf('Molarity/Count', { kind: 'save-molarity' }),
+    ],
+  },
+  {
+    // Task-oriented whole-arrangement switches, layered on top of "Layout Options" below
+    // rather than replacing it (confirmed with the user) — a preset sets sensible defaults
+    // for those 4 toggles as part of switching, but they stay manually adjustable afterward.
+    // See Workspace.tsx's `WORKSPACE_PRESETS` for what each preset actually shows/hides.
+    label: 'Workspace',
+    items: [
+      presetLeaf('default', 'Default (all panels)'),
+      presetLeaf('recipeCreation', 'Recipe creation'),
+      presetLeaf('recipeCuration', 'Recipe curation'),
     ],
   },
   {

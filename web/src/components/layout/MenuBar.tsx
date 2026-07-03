@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLayoutStore, type LayoutVisibility } from '../../state/layoutStore'
+import { usePresetStore, type PresetId } from '../../state/presetStore'
 import { useThemeStore } from '../../state/themeStore'
 import { useRecipeStore } from '../../state/recipeStore'
 import { RecipeLoader, type RecipeLoaderHandle } from '../recipe/RecipeLoader'
@@ -9,19 +10,20 @@ import { Dialog } from './Dialog'
 import { MENU, type MenuLeaf, type MenuNode } from './menuConfig'
 import './MenuBar.css'
 
-function resolveLabel(label: MenuLeaf['label'], layout: LayoutVisibility): string {
-  return typeof label === 'function' ? label(layout) : label
+function resolveLabel(label: MenuLeaf['label'], layout: LayoutVisibility, preset: PresetId): string {
+  return typeof label === 'function' ? label(layout, preset) : label
 }
 
 function MenuNodeList({ items, onLeafClick }: { items: MenuNode[]; onLeafClick: (leaf: MenuLeaf) => void }) {
   const layout = useLayoutStore()
+  const preset = usePresetStore((s) => s.current)
   return (
     <ul className="menu-list">
       {items.map((node, i) => (
         <li key={i}>
           {node.kind === 'leaf' ? (
             <button type="button" className="menu-item" onClick={() => onLeafClick(node)}>
-              {resolveLabel(node.label, layout)}
+              {resolveLabel(node.label, layout, preset)}
             </button>
           ) : (
             <details className="menu-branch">
@@ -41,6 +43,8 @@ export function MenuBar() {
   const [placeholderLabel, setPlaceholderLabel] = useState<string | null>(null)
   const toggle = useLayoutStore((s) => s.toggle)
   const layout = useLayoutStore()
+  const preset = usePresetStore((s) => s.current)
+  const setPreset = usePresetStore((s) => s.setPreset)
   const theme = useThemeStore((s) => s.theme)
   const toggleTheme = useThemeStore((s) => s.toggle)
   const loadEmpty = useRecipeStore((s) => s.loadEmpty)
@@ -71,6 +75,9 @@ export function MenuBar() {
     switch (leaf.action.kind) {
       case 'toggle':
         toggle(leaf.action.flag)
+        return
+      case 'preset':
+        setPreset(leaf.action.id)
         return
       case 'load-empty':
         loadEmpty()
@@ -115,7 +122,7 @@ export function MenuBar() {
         saver.saveMolarity()
         return
       case 'placeholder':
-        setPlaceholderLabel(resolveLabel(leaf.label, layout))
+        setPlaceholderLabel(resolveLabel(leaf.label, layout, preset))
     }
   }
 

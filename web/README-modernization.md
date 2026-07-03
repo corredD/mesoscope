@@ -1249,6 +1249,157 @@ readable UI (light: white/light-gray panels with a blue accent; dark: dark
 charcoal panels with a lighter blue accent), with the previously-flat,
 undifferentiated gray chrome gone.
 
+### Task-oriented workspace layout presets (user-directed, not in the numbered list)
+
+**User feedback: every task started from the same one-size-fits-all
+arrangement.** Wanted named presets that rearrange the workspace for what
+the user is actually doing — recipe creation (compartments/ingredients +
+PDB/UniProt search) vs. recipe curation (an existing ingredient's details +
+sequence/domain features) — with future 2D/3D "painting" presets flagged as
+out of scope for this pass but not architecturally precluded. Researched
+first: confirmed legacy has zero precedent (`js/layout_mg.js` instantiates
+exactly one Golden Layout config; a `toggleLayout(layoutId)` stub exists but
+its body is entirely commented out) — genuinely new feature.
+
+**Design, confirmed with the user**: keep the existing 4-boolean "Layout
+Options" menu exactly as it was (still independently usable for manual
+fine-tuning), add a new "Workspace" menu for whole-arrangement presets, and
+persist the chosen preset like the theme already is. `layoutStore.ts` grew
+one addition, `setVisibility(partial)`, so a preset can set several of the
+four existing toggles atomically; `TOGGLE_GROUPS`/`syncGroupPanels` in
+`Workspace.tsx` are otherwise untouched. A new `presetStore.ts` (zustand,
+`localStorage`-persisted the same plain-`getItem`/`setItem` way
+`themeStore.ts` already does) holds the current preset id.
+
+**The 7 previously-hardcoded-always-on panels** (`recipeOptions`,
+`recipeView`, `ingredientOptions`, `ingredientView`, `molstar`,
+`tableOptions`, `recipeTable`) needed a real mechanism to become
+preset-dependent, since only the 4 toggle groups could disappear before.
+Replaced `Workspace.tsx`'s hardcoded `onReady` construction chain with a
+`WORKSPACE_PRESETS: Record<PresetId, WorkspacePreset>` table (`default` —
+today's exact prior arrangement, kept as an escape hatch back to "show
+everything"; `recipeCreation`; `recipeCuration`) and an `applyPreset(api,
+preset)` function that removes any core panel the new preset doesn't want,
+adds any it does (reusing the same "narrow rails split off last" sizing
+rule already learned the hard way for the default layout), and sets
+`layoutStore`'s 4 booleans to the preset's chosen defaults — which the
+*existing*, unmodified `TOGGLE_GROUPS` effect then reacts to on its own, so
+there's no duplicated logic for those 4 groups.
+
+**Two real bugs found only by cycling through presets live with a real
+structure loaded — not by reading either dockview's docs or this file's own
+prior "Mol-star is expensive to reinitialize" notes carefully enough the
+first time:**
+
+1. **A silent bead-data mutation from purely switching layouts.**
+   `IngredientOptions.tsx`'s automatic LOD-rebuild effect (from the earlier
+   "bead building made automatic" follow-up) fires once on every mount
+   regardless of its dependency array — harmless when this panel was always
+   mounted exactly once for the app's lifetime, but `recipeCreation` removes
+   it and switching back re-adds it (a genuine unmount/remount, since it's
+   not one of the two Mol-star-backed panels). Every remount was silently
+   re-clustering and overwriting the selected ingredient's Level 0 bead data
+   from freshly-reset default state, visibly replacing the ingredient's real
+   structure with a plain bounding sphere. First fix attempt (a "consumed
+   once" `useRef` flag skipping the first effect run) did *not* actually
+   work — confirmed via added debug logging that React 19 StrictMode's
+   dev-only double-invoke of effects (mount → effect → cleanup → effect
+   again, synchronously, same ref) flips the flag on the first synthetic
+   pass and no longer guards the second. Fixed properly by comparing
+   against the *previous* values of the four watched inputs instead of a
+   one-shot flag — a comparison-based guard is inherently robust to being
+   invoked any number of times for the same underlying state, unlike a flag
+   that gets consumed.
+2. **`activatePanel` (making a sequence-feature tab the visible one in
+   `recipeCuration`, instead of Mol-*) silently unmounted Mol-star's WebGL
+   context anyway.** `recipeCuration`'s sequence-feature tabs share
+   `molstar`'s dockview group (`TOGGLE_GROUPS`'s `sequenceFeatures` anchors
+   there), so making one of those tabs active makes `molstar`'s own tab
+   *inactive* — and dockview's default panel renderer is `'onlyWhenVisible'`
+   (confirmed by reading `dockview-core`'s source earlier this same
+   follow-up), meaning an inactive tab's content unmounts exactly like
+   `removePanel` would have. Measured directly (`canvas` count on the page
+   dropped from 2 to 1 the moment `recipeCuration` was applied) before
+   trusting the "we never call `removePanel` on these two" reasoning was
+   sufficient — it wasn't, since inactivity is a second, independent path to
+   the same unmount. Fixed by setting `renderer: 'always'` specifically on
+   `molstar`/`ingredientView` when `applyPreset` adds them, which keeps
+   their content mounted regardless of active/visible tab state — closing
+   this off structurally rather than just avoiding `activatePanel` combined
+   with these two panels sharing a group, which the next preset to need
+   both could easily reintroduce.
+
+**Verified live in a browser** (dockview needs real layout measurement,
+same as the rest of this panel): switched between all three presets and
+confirmed each shows exactly its intended panel set; loaded a real structure
+(`3hvt`) and cycled through all three presets five times in a row —
+`canvas` count on the page stayed at exactly 2 throughout (one per
+Mol-star-backed panel, confirming neither ever unmounted), zero new console
+errors beyond the two pre-existing benign StrictMode warnings, and the
+structure remained correctly rendered (not reset to a bounding sphere) in
+the final screenshot; confirmed the "Layout Options" menu's 4 toggles still
+independently show/hide their panels after a preset has been applied;
+confirmed the chosen preset survives a page reload. 129 tests still pass
+(no new pure-function surface — this is layout/wiring and a mount-lifecycle
+bug fix, both verified live rather than unit-tested, consistent with the
+rest of this panel).
+
+### Follow-up: switching back to "Default" didn't actually restore the layout
+
+**User-reported: applying "Recipe curation" and then switching to "Default
+(all panels)" left the layout wrong**, not reset to the real default
+arrangement. Reproduced first with a width/order probe (reading actual
+`getBoundingClientRect()`s and tab text, not just eyeballing screenshots)
+before touching any code, confirming two compounding bugs in `applyPreset`'s
+original design:
+
+1. **The "first panel in a preset's list needs no `position`" convention only
+   holds on a truly empty grid.** That's only ever true the very first time
+   `Workspace` ever mounts — after even one preset switch, the grid is never
+   empty again (`molstar`/`ingredientView` persist forever by design). Every
+   preset's list had `recipeView` or `ingredientView` first with no
+   `position`, silently assuming "this becomes the row's root" — on a
+   non-empty grid, an unpositioned `addPanel` call just drops the panel into
+   whatever group happens to be active, which is how "Recipe View" ended up
+   missing from its own column and doubled up as a stray tab elsewhere.
+   Fixed by always listing `ingredientView` first with no `position` (it's
+   the one core panel guaranteed to already exist after the first switch, by
+   virtue of being in `NEVER_REMOVE`) and anchoring every other panel in
+   every preset's list to it, directly or transitively — never assuming an
+   empty canvas.
+2. **`molstar`/`ingredientView` surviving a preset switch were only ever
+   resized, never repositioned**, disclosed as a known simplification when
+   this feature first shipped ("repositioning an already-mounted panel
+   across presets is a possible future refinement") — the user's report is
+   exactly that refinement turning out to be load-bearing, not optional.
+   Fixed with dockview's `panel.api.group.api.moveTo(...)`, called whenever
+   an existing core panel's target preset gives it a `position`. Moving the
+   panel's *group* rather than the panel itself mattered: an initial attempt
+   moving just the `molstar` panel relocated it alone and stranded its
+   `sequenceFeatures` tab-mates (`seq`/`protvista`/`topo`/`uniprot`, sharing
+   its group) behind as their own orphaned group — because `TOGGLE_GROUPS`
+   only positions those tabs once, at add time, and never re-syncs them when
+   their anchor later moves for an unrelated reason. Moving the whole group
+   carries every tab in it along together, which is correct here since
+   nothing besides a panel and its own toggle-group tabs ever shares a group
+   in this app.
+
+Used dockview's own exported `directionToPosition` helper (`dockview-core`'s
+`dnd/droptarget.ts`) to convert between this file's `left`/`right`/`below`/
+`within` vocabulary and dockview's `Position` type for `moveTo`, rather than
+hand-rolling the same mapping `addPanel`'s `direction` already uses
+internally.
+
+**Verified live**: switching "Recipe curation" → "Default" now reproduces
+the exact same tab order and pixel widths as the very first, freshly-loaded
+"Default" state (confirmed via the same width/order probe, before vs. after
+— identical down to the pixel). Re-ran the full mount-safety check from the
+original follow-up on top of this fix: loaded a real structure, cycled
+through all three presets 7 times, `canvas` count stayed at exactly 2
+throughout, zero new console errors, structure still correctly rendered,
+"Layout Options" manual toggle still independently works afterward. 129
+tests still pass.
+
 ### Known gaps in the Phase 2 data layer (carry into Phase 4, don't assume covered)
 
 - `helper_getFiberIngredientDescription` (legacy fiber-description lookup enrichment,
