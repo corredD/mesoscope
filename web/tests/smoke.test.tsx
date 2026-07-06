@@ -89,7 +89,7 @@ describe('AppShell', () => {
       expect(screen.getByText(panel)).toBeInTheDocument()
     }
     // gated by the four Layout Options toggles, all visible by default
-    for (const panel of ['Object Properties', 'Sequence features', 'protvista', 'Topology', 'Uniprot mapping', 'Interaction table', 'Uniprot search table', 'PDB search table']) {
+    for (const panel of ['Object Properties', 'Sequence features', 'Topology', 'Uniprot mapping', 'Interaction table', 'Uniprot search table', 'PDB search table']) {
       expect(screen.getByText(panel)).toBeInTheDocument()
     }
     // no recipe loaded yet
@@ -142,12 +142,12 @@ describe('AppShell', () => {
     expect(screen.getByText('Show Interaction Table')).toBeInTheDocument()
   })
 
-  it('toggling sequence features hides its four tabs but keeps Mol-* in the same stack', () => {
+  it('toggling sequence features hides its three tabs but keeps Mol-* in the same stack', () => {
     render(<AppShell />)
     fireEvent.click(screen.getByRole('button', { name: 'Layout Options' }))
     fireEvent.click(screen.getByText('Hide Sequence Feature'))
 
-    for (const panel of ['Sequence features', 'protvista', 'Topology', 'Uniprot mapping']) {
+    for (const panel of ['Sequence features', 'Topology', 'Uniprot mapping']) {
       expect(screen.queryByText(panel)).not.toBeInTheDocument()
     }
     expect(screen.getByText('Mol-*')).toBeInTheDocument()

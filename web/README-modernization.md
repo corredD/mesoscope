@@ -1400,6 +1400,85 @@ throughout, zero new console errors, structure still correctly rendered,
 "Layout Options" manual toggle still independently works afterward. 129
 tests still pass.
 
+### Sequence Features panel: real Nightingale (ProtVista) integration, synced to Ingredient View
+
+**User-directed**: replace the "Sequence features" placeholder with a real feature viewer,
+built on Nightingale (`github.com/ebi-webcomponents/nightingale`) and synced to the existing
+"Ingredient View" Mol-star instance. Researched before building, not assumed: confirmed via
+npm registry + GitHub that `@nightingale-elements/*` (not the older unscoped `protvista-*`
+packages) is EBI's actively-maintained continuation of ProtVista — `uniprot.org`'s own live
+feature-viewer page is itself assembled from `@nightingale-elements/*` components.
+
+**Deliberately not `@nightingale-elements/nightingale-structure`** — it wraps its own embedded
+Mol-star (v3.44.0), which would be a third, version-mismatched Mol-star instance alongside this
+app's existing two (`molstar` v5.10.1). Built a thin custom sync to the *existing* Ingredient
+View instance instead: `SequenceFeaturesPanel.tsx` uses just `nightingale-sequence`/
+`nightingale-track`/`nightingale-manager` for display, plus two new domain modules —
+`uniprotFeatures.ts` (fetches `rest.uniprot.org/uniprotkb/{accession}.json`, same fetch pattern
+as `pdbSearch.ts`'s `searchUniprot`) and `residueHighlight.ts` (the actual Mol-star sync).
+
+**This app's first Web Component integration** — confirmed by reading the actually-installed
+packages' own bundled source rather than trusting documentation or a prior research pass's
+educated guess: Nightingale elements dispatch a plain `"change"` `CustomEvent` (not the
+differently-named `"highlight-event"` a first research pass guessed from a `HIGHLIGHT_EVENT`
+constant that turned out to just be an *attribute name* check, not the dispatched event type),
+`detail: {eventType, feature, ...}`. New `src/types/nightingale.d.ts` augments
+`declare module 'react' { namespace JSX { interface IntrinsicElements {...} } }` for the three
+custom tags (verified against this repo's actual `@types/react` output, not assumed);
+`sequence`/`data` are set as JS properties via refs, not JSX attributes, since Nightingale's own
+type defs (`set data(data: Feature[])`) show they hold non-attribute-serializable data.
+
+**Residue-numbering caveat, disclosed in the UI, not just in code**: maps UniProt sequence
+position directly onto the structure's `auth_seq_id` (not `label_seq_id`, which always starts
+at 1 and would be wrong by a construct's start offset whenever a modeled fragment doesn't begin
+at UniProt residue 1). `auth_seq_id` is frequently set by depositors to match UniProt numbering
+for straightforward, tag-free entries, so this is often correct in practice but not guaranteed —
+a visible note renders in the panel itself. Legacy's `mapping[uniprot][chain]` (a SIFTS-style
+mapping) was apparently pre-baked into recipe JSON at authoring time, not computed live, so
+porting it isn't shovel-ready; a real SIFTS/PDBe-mappings lookup is a separate, unattempted v2.
+
+**Sync is one-way for v1** (Nightingale feature click/hover → Mol-star highlight only),
+matching an existing precedent in this codebase (`MolstarViewer.tsx`'s own docstring already
+scopes out "bidirectional highlight sync" for a structurally similar gap).
+
+**Tab cleanup, confirmed with the user**: removed the now-redundant "protvista" placeholder tab
+entirely (Nightingale *is* the modern ProtVista, so a separate tab pointing at the same library
+would read as duplicated functionality). "Topology"/"Uniprot mapping" remain untouched
+placeholders — RCSB's separate, non-Nightingale PDB Component Library, out of scope here.
+
+**Two real things found only by testing live, not from documentation:**
+
+1. **`smoke.test.tsx` broke immediately** — jsdom has no `ResizeObserver`, and Nightingale's
+   `withResizable` mixin references it eagerly as soon as the custom elements are defined (the
+   side-effect imports in `SequenceFeaturesPanel.tsx` run at module load, before any component
+   even mounts). Fixed with a minimal no-op `ResizeObserver` polyfill in `vitest.setup.ts` — a
+   standard, low-risk fix for this exact gap, different from how dockview's mock works
+   elsewhere in this same file (dockview needs *real* layout measurement jsdom can't provide at
+   all, so that one mocks the whole library; Nightingale's elements just need to not throw on
+   mount, so a polyfill is enough).
+2. **The first real test ingredient picked (`LDHA` from `data/exosome_catalase.json`) silently
+   showed "no UniProt accession"** despite the file visibly containing `"uniprot": "P00338"` —
+   turned out that value lives at `LDHA.source.uniprot`, while the ingredient's *own* top-level
+   `uniprot` field (what the parser actually reads, and what `UniprotSearchPanel.tsx`'s "Apply"
+   button writes) is empty for this specific ingredient — a pre-existing inconsistency in that
+   source file, not a bug in this feature. Switched to `ALB` (top-level `uniprot: "P02768"`,
+   matching its `source.uniprot`) for verification instead.
+
+**Verified live in a browser**: selected `ALB` (real accession P02768, real structure `1e7i`)
+in the Recipe table — the sequence + a real feature track (UniProt's actual domain/site
+annotations for serum albumin) rendered next to the correctly-loaded Mol-star structure;
+clicked a feature rect and confirmed a highlighted region appeared on the 3D structure, with
+Mol-star's own hover-info readout confirming real residues were targeted ("SERUM ALBUMIN | 1E7I
+| ... | HIS 3 [+ 15 other Residues]") — screenshot-confirmed. One console warning appeared on
+first mount (`<rect> attribute width: A negative value is not valid`) from an internal
+Nightingale layout pass before its `ResizeObserver` reports the container's real size; confirmed
+it does not recur on later interaction (clicking, switching tabs away and back) and does not
+affect the final rendered output — a disclosed, non-blocking cosmetic artifact, not a
+functional bug. Confirmed both guard paths (no ingredient selected; ingredient with no UniProt
+accession) show the right message with no errors. New dependencies:
+`@nightingale-elements/nightingale-sequence`/`nightingale-track`/`nightingale-manager`. 135
+tests pass (6 new, `uniprot-features.test.ts`).
+
 ### Known gaps in the Phase 2 data layer (carry into Phase 4, don't assume covered)
 
 - `helper_getFiberIngredientDescription` (legacy fiber-description lookup enrichment,

@@ -1,0 +1,20 @@
+.sequence-features-panel {
+  height: 100%;
+  overflow: auto;
+}
+
+.sequence-features-caveat {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+}
+
+nightingale-manager {
+  display: block;
+  width: 100%;
+}
+
+nightingale-sequence,
+nightingale-track {
+  display: block;
+  width: 100%;
+}

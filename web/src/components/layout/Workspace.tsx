@@ -20,6 +20,7 @@ import { IngredientViewer } from '../pdb/IngredientViewer'
 import { IngredientOptions } from '../pdb/IngredientOptions'
 import { PdbSearchPanel } from '../pdb/PdbSearchPanel'
 import { UniprotSearchPanel } from '../pdb/UniprotSearchPanel'
+import { SequenceFeaturesPanel } from '../pdb/SequenceFeaturesPanel'
 import { RecipeCanvas } from '../recipe/RecipeCanvas'
 import { RecipeTable } from '../recipe/RecipeTable'
 import './Panel.css'
@@ -95,10 +96,13 @@ import './Workspace.css'
  * View" and rebuilt on Mol-star instead of NGL — see `IngredientOptions.tsx`/
  * `IngredientViewer.tsx` for that scope.
  *
- * "Sequence features"/"protvista"/"Topology"/"Uniprot mapping" (ProtVista +
- * PDB Component Library) and "Object Properties" remain placeholders; those
- * libraries didn't have a clear npm-package answer in the viewer-mount
- * investigation and need their own follow-up.
+ * "Sequence features" is real — `SequenceFeaturesPanel.tsx`, built on Nightingale
+ * (github.com/ebi-webcomponents/nightingale, EBI's actively-maintained continuation
+ * of ProtVista), synced to "Ingredient View"'s Mol-star instance. The redundant
+ * "protvista" tab this replaced (Nightingale *is* the modern ProtVista) was removed
+ * entirely, confirmed with the user. "Topology"/"Uniprot mapping" (RCSB's separate,
+ * non-Nightingale PDB Component Library) and "Object Properties" remain placeholders —
+ * out of scope for the Nightingale integration, need their own follow-up.
  *
  * dockview's own theme (`dockview-theme-light`/`dockview-theme-dark`) is
  * driven by the same `themeStore` as the rest of the app's CSS custom
@@ -134,7 +138,6 @@ type PanelId =
   | 'ingredientView'
   | 'molstar'
   | 'seq'
-  | 'protvista'
   | 'topo'
   | 'uniprot'
   | 'tableOptions'
@@ -198,14 +201,6 @@ function MolstarPanel() {
   )
 }
 
-function SeqFeaturesPanel() {
-  return <div className="panel-body">Phase 4: wraps js/pfv_util.js / PDB Component Library sequence viewer.</div>
-}
-
-function ProtVistaPanel() {
-  return <div className="panel-body">Phase 4: wraps the ProtVista feature viewer.</div>
-}
-
 function TopologyPanel() {
   return <div className="panel-body">Phase 4: wraps the PDB Component Library topology viewer.</div>
 }
@@ -253,8 +248,7 @@ const components: Record<PanelId, React.FunctionComponent> = {
   objectProperties: ObjectPropertiesPanel,
   ingredientView: IngredientViewPanel,
   molstar: MolstarPanel,
-  seq: SeqFeaturesPanel,
-  protvista: ProtVistaPanel,
+  seq: SequenceFeaturesPanel,
   topo: TopologyPanel,
   uniprot: UniprotMappingPanel,
   tableOptions: TableOptionsPanel,
@@ -286,7 +280,6 @@ const TOGGLE_GROUPS: { flag: LayoutToggle; anchor: PanelId; panels: GroupPanelSp
     anchor: 'molstar',
     panels: [
       { id: 'seq', title: 'Sequence features' },
-      { id: 'protvista', title: 'protvista' },
       { id: 'topo', title: 'Topology' },
       { id: 'uniprot', title: 'Uniprot mapping' },
     ],
