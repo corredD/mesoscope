@@ -1409,24 +1409,62 @@ npm registry + GitHub that `@nightingale-elements/*` (not the older unscoped `pr
 packages) is EBI's actively-maintained continuation of ProtVista — `uniprot.org`'s own live
 feature-viewer page is itself assembled from `@nightingale-elements/*` components.
 
-**Deliberately not `@nightingale-elements/nightingale-structure`** — it wraps its own embedded
-Mol-star (v3.44.0), which would be a third, version-mismatched Mol-star instance alongside this
-app's existing two (`molstar` v5.10.1). Built a thin custom sync to the *existing* Ingredient
-View instance instead: `SequenceFeaturesPanel.tsx` uses just `nightingale-sequence`/
-`nightingale-track`/`nightingale-manager` for display, plus two new domain modules —
-`uniprotFeatures.ts` (fetches `rest.uniprot.org/uniprotkb/{accession}.json`, same fetch pattern
-as `pdbSearch.ts`'s `searchUniprot`) and `residueHighlight.ts` (the actual Mol-star sync).
+**Superseded by a follow-up correction — now `protvista-uniprot`, not hand-rolled low-level
+tracks.** The first build above hand-assembled the panel directly on
+`nightingale-sequence`/`nightingale-track`/`nightingale-manager`, flattening every UniProt
+feature into one overlapping track row and only recognizing old-style type codes for coloring —
+the user compared it against UniProt's real reference feature-viewer page (categorized accordion
+sidebar: "Domains & sites," "PTM," "Structural features," etc., each colored and grouped) and it
+didn't match; most modern feature-type strings rendered as unreadable black marks with no
+grouping, confirmed live. Investigation found the reference page is rendered by
+`protvista-uniprot` (`github.com/ebi-webcomponents/protvista-uniprot`, npm package last published
+days before this correction) — a self-contained widget that takes just an `accession` and does
+its own fetching/categorization/coloring. This reverses part of the original design decision
+above: `@nightingale-elements/*` is still the actively-maintained low-level family, but the
+unscoped `protvista-*` name isn't uniformly stale — `protvista-uniprot` itself is the real,
+current thing, just built one layer up on top of `@nightingale-elements/*` internally.
+
+Two things were verified by reading the actually-installed/packed source before installing, not
+assumed: (1) `protvista-uniprot`'s `nostructure` prop gates whether its own embedded structure
+sub-component (`@nightingale-elements/nightingale-structure`, its own bundled Mol-star) is ever
+inserted into the render tree at all — confirmed via its Lit `render()` method's conditional, so
+no insertion means no `connectedCallback`, means no Mol-star ever instantiated, not just hidden;
+this is the same "avoid a third, version-mismatched Mol-star" concern the original design solved
+by avoiding `nightingale-structure` directly, just satisfied through `protvista-uniprot`'s own
+opt-out instead. (2) `protvista-uniprot`'s internal categorized tracks
+(`nightingale-track-canvas` elements) dispatch the exact same `"change"` `CustomEvent` contract
+(`detail: {eventType, feature}`, via the shared `createEvent` helper in
+`@nightingale-elements/nightingale-new-core`, confirmed against its installed `bindEvents.ts`)
+that the existing Mol-star sync bridge (`residueHighlight.ts`) already listens for — so the
+bridge logic didn't need to change, only what renders above it.
+
+This was a user-confirmed tradeoff, not unilateral: presented as a choice between the heavier
+dependency (~10 more `@nightingale-elements/*` sub-packages pulled in transitively, plus a global
+`<style>` injection into `<head>` since `protvista-uniprot` deliberately avoids shadow DOM — "we
+are not using shadowDOM because of Mol*," per its own source comment) versus hand-rolling a
+type→color→category mapping in-house; user chose to install `protvista-uniprot`.
+
+`npm install protvista-uniprot`; removed the now-redundant direct dependencies
+`@nightingale-elements/nightingale-sequence`/`nightingale-track`/`nightingale-manager`
+(`protvista-uniprot` bundles its own copies internally). `uniprotFeatures.ts` (the manual
+`rest.uniprot.org/uniprotkb/{accession}.json` fetch module described above) is now dead code —
+deleted, along with its test (`uniprot-features.test.ts`); nothing else imported either.
+`SequenceFeaturesPanel.tsx` now renders `<protvista-uniprot key={accession} accession={accession}
+nostructure />` inside a wrapper div, with a single `"change"` listener on that div (not
+shadow-DOM-scoped, since `protvista-uniprot` uses light DOM) bridging to the same
+`highlightResidueRange`/`clearResidueHighlight` functions as before — the sync bridge itself is
+unchanged. `SequenceFeaturesPanel.css` simplified to just `protvista-uniprot { display: block;
+width: 100%; }` (no more per-element Nightingale selectors).
 
 **This app's first Web Component integration** — confirmed by reading the actually-installed
-packages' own bundled source rather than trusting documentation or a prior research pass's
-educated guess: Nightingale elements dispatch a plain `"change"` `CustomEvent` (not the
-differently-named `"highlight-event"` a first research pass guessed from a `HIGHLIGHT_EVENT`
-constant that turned out to just be an *attribute name* check, not the dispatched event type),
-`detail: {eventType, feature, ...}`. New `src/types/nightingale.d.ts` augments
-`declare module 'react' { namespace JSX { interface IntrinsicElements {...} } }` for the three
-custom tags (verified against this repo's actual `@types/react` output, not assumed);
-`sequence`/`data` are set as JS properties via refs, not JSX attributes, since Nightingale's own
-type defs (`set data(data: Feature[])`) show they hold non-attribute-serializable data.
+package's own bundled source rather than trusting documentation. `src/types/nightingale.d.ts` now
+types a single tag, `<protvista-uniprot accession nostructure notooltip>`, via
+`declare module 'react' { namespace JSX { interface IntrinsicElements {...} } }`.
+`accession`/`nostructure`/`notooltip` are declared `reflect: true` properties (confirmed by
+reading `protvista-uniprot.ts`'s `static get properties()`), meaning they're also real HTML
+attributes Lit keeps in sync — so plain JSX attributes work directly, unlike the old
+`nightingale-track`'s `data`/`sequence`, which held non-attribute-serializable data and needed
+imperative property assignment via a ref.
 
 **Residue-numbering caveat, disclosed in the UI, not just in code**: maps UniProt sequence
 position directly onto the structure's `auth_seq_id` (not `label_seq_id`, which always starts
@@ -1464,20 +1502,42 @@ placeholders — RCSB's separate, non-Nightingale PDB Component Library, out of 
    source file, not a bug in this feature. Switched to `ALB` (top-level `uniprot: "P02768"`,
    matching its `source.uniprot`) for verification instead.
 
-**Verified live in a browser**: selected `ALB` (real accession P02768, real structure `1e7i`)
-in the Recipe table — the sequence + a real feature track (UniProt's actual domain/site
-annotations for serum albumin) rendered next to the correctly-loaded Mol-star structure;
-clicked a feature rect and confirmed a highlighted region appeared on the 3D structure, with
-Mol-star's own hover-info readout confirming real residues were targeted ("SERUM ALBUMIN | 1E7I
-| ... | HIS 3 [+ 15 other Residues]") — screenshot-confirmed. One console warning appeared on
-first mount (`<rect> attribute width: A negative value is not valid`) from an internal
-Nightingale layout pass before its `ResizeObserver` reports the container's real size; confirmed
-it does not recur on later interaction (clicking, switching tabs away and back) and does not
-affect the final rendered output — a disclosed, non-blocking cosmetic artifact, not a
-functional bug. Confirmed both guard paths (no ingredient selected; ingredient with no UniProt
-accession) show the right message with no errors. New dependencies:
-`@nightingale-elements/nightingale-sequence`/`nightingale-track`/`nightingale-manager`. 135
-tests pass (6 new, `uniprot-features.test.ts`).
+**Dockview width bug found during the correction's live verification, fixed**: the default
+column width for the shared "Mol-*"/"Sequence features" dockview group (236px in both the
+`default` and `recipeCuration` `WORKSPACE_PRESETS` entries) was far too narrow for
+`protvista-uniprot`'s categorized accordion + tracks to render legibly at all — confirmed
+functional from ~420px up, unusable below, via live width probing. Fixed by adding
+`initialWidth: 480` to the `molstar` panel entry in both presets (`Workspace.tsx`). 480 was
+chosen empirically to balance legibility against not starving the neighboring
+`ingredientOptions`/`ingredientView` panels into dockview's tab-overflow dropdown on a common
+~1440px-wide window — an initial attempt at 700 looked fine on a wide 1800px window but visibly
+starved those neighbors at 1440px, found live by testing both widths, not assumed.
+
+**Verified live in a browser (re-verified after the correction)**: selected `ALB` (real
+accession P02768) in the Recipe table. Initial headless-Chromium (Playwright) verification
+showed the panel stuck permanently in a loading state with zero data — root cause, confirmed via
+a curl A/B test, is that EBI's legacy Proteins API (`www.ebi.ac.uk/proteins/api/*`, which several
+of `protvista-uniprot`'s categories fetch from) silently hangs (no response, no error) any
+request whose User-Agent string contains "HeadlessChrome"; an otherwise-identical request with
+that substring stripped from the UA returns instantly. This is server-side bot detection on
+EBI's end, unrelated to the app or to real users (whose browsers don't send "HeadlessChrome") —
+an environment quirk of the verification setup, not an app bug. Re-verified with a Playwright
+browser context using a realistic Chrome UA override: full correct rendering of the real
+categorized accordion (Molecule processing, Sequence information, Domains, Sites, PTM, Epitopes,
+Antigenic sequences, Mutagenesis, Variants, Proteomics, PDBe 3D structure coverage,
+AlphaMissense), correct per-type coloring (e.g. Domain = the reference's blue `#9999FF`), and,
+via a synthetic `"change"` event dispatched directly on a `nightingale-track-canvas` element
+(bypassing canvas-coordinate-click flakiness), confirmed the Mol-star highlight bridge still
+fires correctly with zero console errors. Canvas count stayed at exactly 2 real WebGL contexts
+throughout (11 additional lightweight 2D `<canvas>` elements appeared, one per
+`protvista-uniprot` track row — expected and harmless, not a regression of the "avoid a second
+Mol-star" invariant). Confirmed both guard paths (no ingredient selected; ingredient with no
+UniProt accession) still show the right message with no errors.
+
+New dependency: `protvista-uniprot` (replacing the three `@nightingale-elements/*` direct
+dependencies above, which it now bundles internally). `npm run typecheck`/`npm run lint` clean.
+129/129 tests pass (19 files) — down from 135/135 (6 new) in the original build, reflecting the
+deletion of `uniprotFeatures.ts` and `uniprot-features.test.ts` as dead code.
 
 ### Known gaps in the Phase 2 data layer (carry into Phase 4, don't assume covered)
 

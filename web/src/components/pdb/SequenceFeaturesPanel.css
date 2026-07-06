@@ -8,13 +8,7 @@
   font-size: 0.8rem;
 }
 
-nightingale-manager {
-  display: block;
-  width: 100%;
-}
-
-nightingale-sequence,
-nightingale-track {
+protvista-uniprot {
   display: block;
   width: 100%;
 }

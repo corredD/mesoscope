@@ -388,7 +388,13 @@ const WORKSPACE_PRESETS: Record<PresetId, WorkspacePreset> = {
       { id: 'ingredientView', title: 'Ingredient View' },
       { id: 'ingredientOptions', title: 'Ingredient Options', position: { referencePanel: 'ingredientView', direction: 'left' } },
       { id: 'recipeView', title: 'Recipe View', position: { referencePanel: 'ingredientOptions', direction: 'left' } },
-      { id: 'molstar', title: 'Mol-*', position: { referencePanel: 'ingredientView', direction: 'right' } },
+      // `protvista-uniprot` (the "Sequence features" tab, sharing this column/group — see
+      // `TOGGLE_GROUPS`) needs real width to show its accordion sidebar + tracks side by
+      // side rather than one clipping the other — confirmed live down to ~420px. 480 gives
+      // it a legible default without starving `ingredientOptions`/`ingredientView` into
+      // dockview's tab-overflow dropdown on a typical ~1440px window (700 did exactly that,
+      // found live). Still user-resizable afterwards, like every other dockview split.
+      { id: 'molstar', title: 'Mol-*', initialWidth: 480, position: { referencePanel: 'ingredientView', direction: 'right' } },
       { id: 'recipeOptions', title: 'Recipe Options', initialWidth: 160, position: { referencePanel: 'recipeView', direction: 'left' } },
       { id: 'recipeTable', title: 'Recipe table', initialHeight: 260, position: { direction: 'below' } },
       { id: 'tableOptions', title: 'Table Options', initialWidth: 160, position: { referencePanel: 'recipeTable', direction: 'left' } },
@@ -426,7 +432,10 @@ const WORKSPACE_PRESETS: Record<PresetId, WorkspacePreset> = {
     panels: [
       { id: 'ingredientView', title: 'Ingredient View' },
       { id: 'ingredientOptions', title: 'Ingredient Options', initialWidth: 260, position: { referencePanel: 'ingredientView', direction: 'left' } },
-      { id: 'molstar', title: 'Mol-*', position: { referencePanel: 'ingredientView', direction: 'right' } },
+      // Same `protvista-uniprot` minimum-width reasoning as the `default` preset's `molstar`
+      // entry — this is the preset that makes the sequence-feature tabs the active focus
+      // (`activatePanel` below), so it needs the width even more.
+      { id: 'molstar', title: 'Mol-*', initialWidth: 480, position: { referencePanel: 'ingredientView', direction: 'right' } },
       { id: 'recipeTable', title: 'Recipe table', initialHeight: 320, position: { direction: 'below' } },
       { id: 'tableOptions', title: 'Table Options', initialWidth: 160, position: { referencePanel: 'recipeTable', direction: 'left' } },
     ],
