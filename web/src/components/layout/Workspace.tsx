@@ -381,9 +381,15 @@ interface WorkspacePreset {
  * an already-placed panel.
  */
 const WORKSPACE_PRESETS: Record<PresetId, WorkspacePreset> = {
+  // User-directed: the four `TOGGLE_GROUPS` panels (sequence features/topology/uniprot
+  // mapping, object properties, interaction table, uniprot+PDB search tables) start hidden
+  // here — a deliberate reversal of this preset's earlier "show everything" role (previously
+  // labeled "Default (all panels)"). They're still one click away via the "Layout Options"
+  // menu, which is exactly why hiding them by default costs nothing real: nothing here removes
+  // the panels, it just changes which of `layoutStore`'s four booleans this preset lands on.
   default: {
     id: 'default',
-    label: 'Default (all panels)',
+    label: 'Default',
     panels: [
       { id: 'ingredientView', title: 'Ingredient View' },
       { id: 'ingredientOptions', title: 'Ingredient Options', position: { referencePanel: 'ingredientView', direction: 'left' } },
@@ -399,7 +405,7 @@ const WORKSPACE_PRESETS: Record<PresetId, WorkspacePreset> = {
       { id: 'recipeTable', title: 'Recipe table', initialHeight: 260, position: { direction: 'below' } },
       { id: 'tableOptions', title: 'Table Options', initialWidth: 160, position: { referencePanel: 'recipeTable', direction: 'left' } },
     ],
-    layoutToggles: { sequenceFeatures: true, objectProperties: true, interactionTable: true, searchTable: true },
+    layoutToggles: { sequenceFeatures: false, objectProperties: false, interactionTable: false, searchTable: false },
   },
   // Recipe creation: building compartments/ingredients and finding structures for them.
   // Emphasizes Recipe Options/View/Table + PDB/UniProt search; de-emphasizes the

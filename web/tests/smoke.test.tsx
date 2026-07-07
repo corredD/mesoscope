@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppShell } from '../src/components/layout/AppShell'
-import { useLayoutStore } from '../src/state/layoutStore'
 import { useRecipeStore } from '../src/state/recipeStore'
 
 // Mol-star needs a real WebGL context (THREE.WebGLRenderer), which jsdom doesn't provide — it's
@@ -69,17 +68,16 @@ vi.mock('dockview-react', () => {
 })
 
 beforeEach(() => {
-  useLayoutStore.setState({
-    sequenceFeatures: true,
-    objectProperties: true,
-    interactionTable: true,
-    searchTable: true,
-  })
+  // Not asserting a starting layoutStore state here on purpose — `Workspace.tsx`'s mount
+  // effect always re-applies the current `presetId`'s `layoutToggles` (the `default` preset's
+  // are all-hidden, user-directed) over whatever's set before `<AppShell />` renders, so
+  // presetting this store would just get overwritten. `useRecipeStore` has no such
+  // preset-driven effect, so it still needs resetting between tests.
   useRecipeStore.setState({ graph: null, format: null, error: null, loading: false, selectedNode: null })
 })
 
 describe('AppShell', () => {
-  it('renders the four legacy menu groups and the default viewer-row/table-row panels', () => {
+  it('renders the four legacy menu groups and the always-present viewer-row/table-row panels, with the four toggle groups hidden by default', () => {
     render(<AppShell />)
     for (const label of ['Load', 'Save', 'Layout Options', 'Skills']) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
@@ -88,9 +86,9 @@ describe('AppShell', () => {
     for (const panel of ['Recipe Options', 'Recipe View', 'Ingredient Options', 'Ingredient View', 'Mol-*', 'Table Options', 'Recipe table']) {
       expect(screen.getByText(panel)).toBeInTheDocument()
     }
-    // gated by the four Layout Options toggles, all visible by default
+    // gated by the four Layout Options toggles, all hidden by default (user-directed)
     for (const panel of ['Object Properties', 'Sequence features', 'Topology', 'Uniprot mapping', 'Interaction table', 'Uniprot search table', 'PDB search table']) {
-      expect(screen.getByText(panel)).toBeInTheDocument()
+      expect(screen.queryByText(panel)).not.toBeInTheDocument()
     }
     // no recipe loaded yet
     expect(screen.getByText(/No recipe loaded/)).toBeInTheDocument()
@@ -127,23 +125,38 @@ describe('AppShell', () => {
     expect(screen.getByRole('dialog')).toHaveTextContent('No recipe is loaded')
   })
 
-  it('toggles the interaction-table tab via Layout Options, matching legacy Show/Hide label flipping', () => {
+  it('toggles the interaction-table tab via Layout Options, matching legacy Show/Hide label flipping — hidden by default, shown on demand', () => {
     render(<AppShell />)
-    expect(screen.getByText('Interaction table')).toBeInTheDocument()
+    expect(screen.queryByText('Interaction table')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Layout Options' }))
-    fireEvent.click(screen.getByText('Hide Interaction Table'))
+    expect(screen.getByText('Show Interaction Table')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Show Interaction Table'))
 
-    expect(screen.queryByText('Interaction table')).not.toBeInTheDocument()
+    expect(screen.getByText('Interaction table')).toBeInTheDocument()
     // the rest of that tab group's siblings are untouched
     expect(screen.getByText('Recipe table')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Layout Options' }))
-    expect(screen.getByText('Show Interaction Table')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Hide Interaction Table'))
+    expect(screen.queryByText('Interaction table')).not.toBeInTheDocument()
   })
 
-  it('toggling sequence features hides its three tabs but keeps Mol-* in the same stack', () => {
+  it('toggling sequence features shows/hides its three tabs but leaves Mol-* in the same stack alone', () => {
     render(<AppShell />)
+    for (const panel of ['Sequence features', 'Topology', 'Uniprot mapping']) {
+      expect(screen.queryByText(panel)).not.toBeInTheDocument()
+    }
+    expect(screen.getByText('Mol-*')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Layout Options' }))
+    fireEvent.click(screen.getByText('Show Sequence Feature'))
+
+    for (const panel of ['Sequence features', 'Topology', 'Uniprot mapping']) {
+      expect(screen.getByText(panel)).toBeInTheDocument()
+    }
+    expect(screen.getByText('Mol-*')).toBeInTheDocument()
+
     fireEvent.click(screen.getByRole('button', { name: 'Layout Options' }))
     fireEvent.click(screen.getByText('Hide Sequence Feature'))
 

@@ -6,12 +6,15 @@
  * mirrors those exact groupings so Phase 4 can wire real panel content in
  * without re-deriving them:
  *
- *  - sequenceFeatures: "Sequence features", "Topology", "Uniprot mapping", "protvista"
+ *  - sequenceFeatures: "Sequence features", "Topology", "Uniprot mapping"
  *  - objectProperties: "Object Properties"
  *  - interactionTable: "Interaction table"
  *  - searchTable:      "Uniprot search table", "PDB search table"
  *
- * All start visible, matching the legacy default layout on load.
+ * All start hidden (user-directed, diverging from legacy's all-visible default layout) — the
+ * `default` workspace preset's `layoutToggles` in `Workspace.tsx` sets the same, so this is
+ * really just documentation of what a from-scratch launch (no preset applied yet) lands on;
+ * the preset's own effect is what actually takes effect on every mount, per `PresetId`.
  *
  * `setVisibility` (added for the workspace presets in `Workspace.tsx`'s
  * `WORKSPACE_PRESETS`) sets several of these atomically — a preset needs to
@@ -38,10 +41,10 @@ interface LayoutStore extends LayoutVisibility {
 }
 
 export const useLayoutStore = create<LayoutStore>((set) => ({
-  sequenceFeatures: true,
-  objectProperties: true,
-  interactionTable: true,
-  searchTable: true,
+  sequenceFeatures: false,
+  objectProperties: false,
+  interactionTable: false,
+  searchTable: false,
   toggle: (key) => set((state) => ({ [key]: !state[key] })),
   setVisibility: (partial) => set(partial),
 }))

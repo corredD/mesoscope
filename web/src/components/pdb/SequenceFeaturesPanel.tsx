@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useRecipeStore } from '../../state/recipeStore'
 import { useIngredientViewerStore } from '../../state/ingredientViewerStore'
 import { isIngredientNode } from '../../domain/recipe/types'
-import { highlightResidueRange, clearResidueHighlight } from '../../domain/pdb/residueHighlight'
+import { highlightResidueRange, clearResidueHighlight, selectResidueRangeWithStickBalls } from '../../domain/pdb/residueHighlight'
 import 'protvista-uniprot'
 import './SequenceFeaturesPanel.css'
 
@@ -39,11 +39,19 @@ import './SequenceFeaturesPanel.css'
  * `"change"` CustomEvent contract (`detail: {eventType, feature, ...}`) this app's original
  * Mol-star bridge was already built against, via the same shared `createEvent` helper — so the
  * bridge logic itself didn't need to change, only what renders above it.
+ *
+ * Click and hover are deliberately different Mol-star operations, not the same call with a
+ * different trigger: mouseover uses `highlightResidueRange` (Mol-star's built-in ephemeral
+ * hover overlay, cleared on mouseout — no new geometry), click uses
+ * `selectResidueRangeWithStickBalls` (a real `ball-and-stick` component that persists until
+ * the next click) — so hovering around the track previews regions cheaply, while clicking one
+ * commits to showing its atoms.
  */
 export function SequenceFeaturesPanel() {
   const selectedNode = useRecipeStore((s) => s.selectedNode)
   const plugin = useIngredientViewerStore((s) => s.plugin)
   const structure = useIngredientViewerStore((s) => s.structure)
+  const structureRef = useIngredientViewerStore((s) => s.structureRef)
 
   const data = selectedNode && isIngredientNode(selectedNode) ? selectedNode.data : undefined
   const accession = data?.uniprot || undefined
@@ -56,17 +64,19 @@ export function SequenceFeaturesPanel() {
 
     const onChange = (evt: Event) => {
       const detail = (evt as CustomEvent).detail as { eventType?: string; feature?: { start?: number; end?: number } } | undefined
-      if (!plugin || !structure || !detail?.feature) return
-      if (detail.eventType === 'click' || detail.eventType === 'mouseover') {
-        const { start, end } = detail.feature
-        if (start != null && end != null) highlightResidueRange(plugin, structure, start, end)
+      if (!plugin || !detail?.feature) return
+      const { start, end } = detail.feature
+      if (detail.eventType === 'click') {
+        if (structureRef && start != null && end != null) void selectResidueRangeWithStickBalls(plugin, structureRef, start, end)
+      } else if (detail.eventType === 'mouseover') {
+        if (structure && start != null && end != null) highlightResidueRange(plugin, structure, start, end)
       } else if (detail.eventType === 'mouseout' || detail.eventType === 'reset') {
         clearResidueHighlight(plugin)
       }
     }
     container.addEventListener('change', onChange)
     return () => container.removeEventListener('change', onChange)
-  }, [plugin, structure])
+  }, [plugin, structure, structureRef])
 
   if (!data) return <p className="panel-note">Select an ingredient (Recipe table or Recipe View) to see its sequence features.</p>
   if (!accession) return <p className="panel-note">This ingredient has no UniProt accession — apply one from the UniProt search table first.</p>

@@ -143,7 +143,7 @@ export const MENU: MenuGroup[] = [
     // See Workspace.tsx's `WORKSPACE_PRESETS` for what each preset actually shows/hides.
     label: 'Workspace',
     items: [
-      presetLeaf('default', 'Default (all panels)'),
+      presetLeaf('default', 'Default'),
       presetLeaf('recipeCreation', 'Recipe creation'),
       presetLeaf('recipeCuration', 'Recipe curation'),
     ],

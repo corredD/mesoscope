@@ -1539,6 +1539,58 @@ dependencies above, which it now bundles internally). `npm run typecheck`/`npm r
 129/129 tests pass (19 files) — down from 135/135 (6 new) in the original build, reflecting the
 deletion of `uniprotFeatures.ts` and `uniprot-features.test.ts` as dead code.
 
+### Sequence Features panel follow-up: click = persistent selection, not just hover
+
+**User-directed**: mouseover on a `protvista-uniprot` feature already gave a cheap hover
+highlight (`highlightResidueRange`); click did the exact same thing, which didn't distinguish
+"previewing" from "committing to a region." Click now calls a new
+`selectResidueRangeWithStickBalls` (`residueHighlight.ts`) instead: same residue-range MolScript
+expression as the highlight path, but built into a real component +
+`ball-and-stick`/`element-symbol` representation via
+`tryCreateComponentFromExpression`/`representation.addRepresentation` — the same pair
+`buildIngredientRepresentation` (`ingredientViewControls.ts`) already uses — so the clicked
+region persists as visible sticks-and-balls on top of the structure's own cartoon until the next
+click, rather than disappearing on mouseout like the hover highlight does. Replaces (deletes,
+doesn't add alongside) any previous click-selection component before creating the new one, via
+the same per-plugin operation-queue pattern (`enqueueSelection`) already used in
+`ingredientViewControls.ts`/`molstarCustomShapes.ts` for this exact class of read-then-delete
+race. If the structure itself gets rebuilt in the meantime (switching ingredients), the stale
+ref is simply absent from `plugin.state.data.cells` on the next call — no extra listener needed.
+`SequenceFeaturesPanel.tsx`'s `onChange` bridge now branches on `eventType` three ways (`click`
+→ select, `mouseover` → highlight, `mouseout`/`reset` → clear highlight only, leaving any
+click-selection in place) instead of treating click and mouseover identically. Verified live:
+clicking the "Domain" feature (residues 19–210, `ALB`/P02768) rendered sticks-and-balls for
+exactly that region on the Ingredient View structure, screenshot-confirmed against a before/after
+pair of just the Mol-star canvas; zero console errors. 129 tests still green (no new pure-function
+surface — this is a Mol-star scene-graph change, verified live like its sibling functions in
+`ingredientViewControls.ts`).
+
+### Layout Options: the four toggle groups now default to hidden, not visible
+
+**User-directed reversal** of this project's own earlier default. `layoutStore.ts`'s four
+booleans (`sequenceFeatures`/`objectProperties`/`interactionTable`/`searchTable`) now start
+`false`, and the `default` workspace preset's `layoutToggles` (`Workspace.tsx`) match — the
+preset's mount effect (`setLayoutVisibility(preset.layoutToggles)`) always re-applies on load
+regardless of the store's own module-level initial value, so both had to change together for
+this to actually take effect, not just the store. Renamed the `default` preset's label from
+"Default (all panels)" to "Default" in both `Workspace.tsx` and the independently-hardcoded
+menu label in `menuConfig.ts` (`presetLeaf('default', ...)`, not sourced from
+`WORKSPACE_PRESETS` — found live, a second hardcoded copy of the same string) — it no longer
+shows all panels, so the old label became inaccurate. Nothing is actually removed: every one of
+the four groups is still one "Layout Options" click away via the pre-existing `toggleLeaf`
+Show/Hide menu items, unchanged. Updated `smoke.test.tsx` (the panel-presence test now asserts
+these seven panels are *absent* by default, not present; the two toggle tests now exercise a
+full show→hide or hide→show→hide round trip instead of assuming a visible starting point) and
+`layout-store.test.ts` (dropped the blanket `beforeEach` that forced all four `true` before every
+test — it was masking the real default rather than testing it; the "defaults to hidden" test now
+reads the store's untouched state, and the two toggle-mechanics tests set their own explicit
+starting point inline instead of relying on a shared fixture). 129 tests still green. Verified
+live in a fresh browser (no `localStorage`): only the seven always-present panels
+(`Recipe Options`/`Recipe View`/`Ingredient Options`/`Ingredient View`/`Mol-*`/`Table
+Options`/`Recipe table`) render on load; the "Workspace" menu shows "Default (current)" and
+"Layout Options" shows "Show X" for all four groups, confirming the label-state wiring still
+reflects reality correctly after the rename.
+
 ### Known gaps in the Phase 2 data layer (carry into Phase 4, don't assume covered)
 
 - `helper_getFiberIngredientDescription` (legacy fiber-description lookup enrichment,
