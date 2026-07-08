@@ -1591,6 +1591,460 @@ Options`/`Recipe table`) render on load; the "Workspace" menu shows "Default (cu
 "Layout Options" shows "Show X" for all four groups, confirming the label-state wiring still
 reflects reality correctly after the rename.
 
+### Recipe canvas: Edit Mode — drag-to-reparent, membrane surface constraint, cluster/group-by force, ingredient-interaction support
+
+**User-directed, full recipe-view feature recovery.** `RecipeCanvas.tsx`'s original build ported
+circle-packing/click-select/zoom but explicitly deferred everything that makes the legacy recipe
+view an *editing* surface: drag-to-reparent, the surface/cluster forces, and ingredient
+interactions. Audited legacy's real canvas toolbar (`js/layout_mg.js:155-181`) before building:
+a wired-up "Node group by" dropdown (`ClusterNodeBy`, confirmed live, not dead code — unlike
+"Node label"'s handler, `ChangeCanvasLabel`, which genuinely is a no-op stub) alongside "Add
+ingredient"/"Add compartment"/"Add interaction" buttons gated by an "Edit Mode" checkbox
+(`switchMode`). Confirmed the exact mechanics: drag-to-reparent hit-tests the pointer against
+every packed circle during the drag (`anotherSubject`, main.js:4863-4909 — deepest circle
+containing the point, excluding the dragged node's own subtree) and splices the node between
+`children[]` arrays on drop; the surface constraint and cluster force are both hand-rolled
+velocity nudges inside a live, continuously-ticking D3 force simulation; `addLink` pairs a
+Ctrl+click multi-selection into `graph.links` entries whose fields are the *exact* shape the
+modern `RawRecipeLink` type already mirrors.
+
+Three scope/architecture questions were put to the user directly: **Edit Mode gates the three
+Add buttons too** (matches legacy's one-flag semantics); **surface/cluster forces use a
+synchronous, bounded `d3-force` solve** (not a live animation loop, not a purely static
+geometric nudge — real collision-resolution without a tick-driven re-render loop); **interaction
+creation matches legacy's Ctrl+click multi-select exactly**, not a simplified button+dropdown
+alternative.
+
+**New files**: `state/uiModeStore.ts` (`editMode`, Ctrl+click `selectedNodes[]`, `groupBy` — a
+third small single-purpose Zustand store; connects `RecipeCanvasToolbar` and `RecipeCanvas`,
+which are sibling dockview panels, not nested React components, so props don't reach between
+them), `domain/recipe/computeRecipeLayout.ts` (extracts `d3.pack()` out of the old inline
+`useMemo`, then runs a `d3.forceSimulation` seeded from the packed positions — `forceCollide`
+plus custom surface-boundary and cluster-attraction forces — ticked ~200 times in a plain loop
+with no `requestAnimationFrame`/`.on('tick', ...)`, then discarded; only ingredient leaves
+participate, since `d3.pack()` already guarantees sibling/cousin subtrees don't overlap, so
+legacy's per-depth collision partitioning isn't needed here), `domain/recipe/propertyMapping.ts`
+(`computePropertyMapping` — numeric min/max stats, reusable later for color/size-by-property;
+`listGroupableProperties` — the actual "Group by" dropdown source, see the real bug below),
+`components/recipe/RecipeCanvasToolbar.tsx` (replaces the "Recipe Options" placeholder —
+legacy's real `canvasOption` toolbar equivalent, scoped to Edit Mode + Add buttons + Group by;
+label/color/size-by-property dropdowns stay deferred), `components/recipe/InteractionTable.tsx`
+(replaces the "Interaction table" placeholder, modeled directly on `RecipeTable.tsx`'s pattern —
+plain table, inline-editable cells, trailing Delete, not a different shape).
+
+**`recipeStore.ts` additions**: `reparentNode` (guards no-op moves and dropping into your own
+descendant via `ancestorsSelfFirst`), `addLink`/`deleteLink`/`updateLink`/`setLinkEndpoint`
+(endpoint reassignment kept structurally separate from plain-field patches), `addIngredient`/
+`addCompartment` (blank defaults, matching legacy's "create blank, edit via the table
+afterward" ergonomics — adapted to the modern types' full required-field set), `selectedLink`.
+Link `.id` uses a running counter, not `.length`-based ids — confirmed `serializeRecipe.ts`
+never reads a link's `.id` at all, so this is about avoiding same-session id collisions after
+deletions, not correctness.
+
+**`RecipeCanvas.tsx` changes**: renders `graph.links` as `<line>` elements (flat stroke color
+for v1, not legacy's gradient-blend/hover-highlight — a named, disclosed cosmetic deferral, not
+a silent drop) before the circles in DOM order; drag uses plain React pointer events
+(`onPointerDown/Move/Up`), not a second `d3.drag()`-owned event path, since this file already
+mixes React-rendered SVG with `d3.zoom` for the group transform only — pointer events fit the
+existing style better. Screen coordinates convert to pack-space via `svg.getScreenCTM().inverse()`
+composed with the current zoom transform's own `.invert()`.
+
+**Two real bugs found only by testing live, neither of which a code read would have caught:**
+
+1. **The "Group by" dropdown only offered numeric properties, missing exactly the categorical
+   case the user's own example asked for** ("cluster by function"). `computePropertyMapping`
+   (numeric-only, by design — matches legacy's `property_mapping` scan) was the wrong source for
+   dropdown *options*; grouping itself already worked correctly for any scalar value via
+   `computeRecipeLayout.ts`'s direct `String(value)` bucketing, but nothing offered `ingtype`/
+   `buildtype` (the realistic "function"-like fields) as a choice. Fixed by adding
+   `listGroupableProperties` (includes string/number/boolean scalars with 2+ distinct values,
+   excluding per-ingredient identifiers like `name`/`label` that would produce one cluster per
+   ingredient) as the toolbar's actual options source, keeping `computePropertyMapping` for its
+   original numeric-stats purpose.
+2. **Drag-to-reparent computed a pack-space position that barely moved regardless of real
+   cursor movement, only discovered by comparing logged `clientX/clientY` (which varied
+   correctly) against the computed pack-space output (which didn't).** Root cause: `d3.zoom`
+   binds its own native pan-drag listener directly on the `<svg>` DOM node (via `.call(zoom)`);
+   that listener fires during real DOM bubbling *before* the event ever reaches React's
+   synthetic dispatch, since React delegates listeners at the app root, further up the tree than
+   the SVG element. So a circle's `onPointerDown` calling `event.stopPropagation()` was always
+   too late — `d3.zoom`'s own pan gesture had already started in parallel, and its continuously
+   updating transform happened to roughly cancel out the real cursor movement in the final
+   computed position, which is why the symptom looked like "the transform math is broken" rather
+   than "two drags are fighting." Fixed with `d3.zoom().filter(...)` — its own supported
+   mechanism for excluding certain event targets from ever starting a zoom gesture — rather than
+   trying to out-race it from React. Also fixed as part of the same investigation: a genuinely
+   empty compartment (reachable for the first time via "Add compartment") rendered as a filled
+   ingredient circle instead of an empty ring, because `d3.hierarchy`'s children-accessor treats
+   an *empty* array as "no children" (its internal `childs && childs.length` check is falsy for
+   `[]`), so `RecipeCanvas.tsx`'s old `isLeaf = !packedNode.children` check misclassified it —
+   fixed by checking `node.data.nodetype === 'ingredient'` directly instead of relying on d3's
+   reconstructed `.children` presence.
+
+**Explicitly deferred, named individually** (still real legacy features, out of scope for this
+slice): sprite/thumbnail rendering, curved compartment name labels, the remaining ~12
+color/label/size-by-property modes (`ChangeCanvasColor`'s live modes beyond explicit-color/
+depth/new group-by; `mapRadiusToProperty`; `ChangeCanvasLabel` is legacy dead code, nothing to
+port), "Apply to ingredient color" color-bake-in, interaction-line gradient/hover-highlight
+cosmetics. No right-click/keyboard-shortcut affordances exist in legacy either (audited, not a
+real gap).
+
+Verified live end-to-end for all four areas against the Exosome fixture (47 ingredients, 2
+compartments: `root`/`root.exosome`): Edit Mode toggle shows/hides the three Add buttons; "Add
+ingredient"/"Add compartment" append a blank node visible immediately in `RecipeTable`; "Group
+by: ingtype" visibly clusters ingredients (and a dedicated unit test confirms within-group
+distance < across-group distance mathematically, not just visually); Ctrl+click two ingredients
+→ "Add interaction" draws a line on the canvas and adds a row to the new Interaction table,
+confirmed both via DOM query (`.recipe-canvas-link` count) and the table; dragging `ALB` from
+`root` onto the `root.exosome` ring changes its `RecipeTable` compartment cell from `root` to
+`root.exosome`, screenshot-confirmed before/after. 157 tests pass (22 files, up from 151) —
+`compute-recipe-layout.test.ts` (5, including a deterministic-given-same-input check and the
+surface/cluster force assertions above), `property-mapping.test.ts` (6), `interaction-table.test.tsx`
+(6), plus 6 new cases added to `recipe-store.test.ts` for the new actions. `npm run
+typecheck`/`npm run lint` clean.
+
+**Process note, not a code finding**: mid-session, a plain `npx tsc --noEmit` (rather than
+`npm run typecheck`, i.e. `tsc -b --noEmit`) was discovered to silently check nothing at all —
+this repo's root `tsconfig.json` uses TypeScript project references with `"files": []`, so the
+bare command has no files to check and exits 0 regardless of real errors. Every earlier
+`npx tsc --noEmit` invocation this session had been a false-positive "clean" signal; confirmed
+via `git stash -u` that the actual last-committed state genuinely typechecked correctly before
+this was caught, so nothing shipped was actually broken, but every check from that point onward
+in this feature's development used the real `npm run typecheck` script instead.
+
+### Recipe canvas: full `canvasOption` toolbar parity — color modes, size-by-property, sprites, curved labels, legend (user-directed follow-up)
+
+**Follow-up to the Edit Mode slice above.** That slice explicitly deferred everything in legacy's
+`canvasOption` toolbar beyond Edit Mode + Group by; this closes the rest of it. Re-audited
+legacy's real (live, not dead-code) canvas toolbar in `js/main.js`/`js/layout_mg.js` before
+building: a 16-mode "Node color" dropdown (`ChangeCanvasColor`/`colorNode`, `main.js:3211-3388`,
+options list at `main.js:28-30`), min/max gradient color pickers plus an "Apply to ingredient
+color" bake-in button (`ChangeMinColor`/`ChangeMaxColor`/`applyColorModeToIngredient`,
+`main.js:3336-3371`), a "Node size" dropdown (`mapRadiusToProperty`/`mapRadiusToProperty_cb`,
+`main.js:3597-3646`), sprite/thumbnail rendering (`getThumbnail`/`drawThumbnailInCanvas`,
+`main.js:4308-4392`, plus membrane/fiber marker overlays at `main.js:3989-4022`), curved
+compartment name labels (`drawCircularText`, `main.js:5500-5536`), a "Node label" dropdown that
+does render real text despite its own `onchange` handler (`ChangeCanvasLabel`, `main.js:3105`)
+being confirmed dead/no-op code, a zoom-dependent label visibility threshold
+(`transform.k > 1.5`, `main.js:3828`/`4214`), a canvas background color read from the root
+compartment, and a categorical-mode color legend (`DrawColorLegend`, `main.js:3848-3889`).
+
+**New file — `web/src/domain/recipe/colorModes.ts`**: `computeNodeColor`, `resolveFillColor`,
+`hslPalette`, `computeCategoricalPalette`, `depthColorScale`, and `BUILTIN_COLOR_MODES` (all 16
+legacy option strings, in their original order). Implements all three families of legacy color
+mode, confirmed from each function body rather than trusted from the option list alone (the same
+"option list doesn't always match reality" caution the Edit Mode slice raised about
+`ChangeCanvasLabel`): validation/binary (`pdb`/`geom`/`pcpalAxis`/`offset`/`Beads`/
+`count_molarity` — red if the referenced field is missing/empty, else `null` signals "fall back
+to depth color"), continuous gradient (`confidence`/`size`/`molecularweight` use a linear scale,
+`count`/`molarity` use a sqrt scale — legacy's own inconsistent choice between the two, preserved
+exactly since this is a 1:1 parity port, not a cleanup), and explicit/direct (`color`/`default`/
+`interaction` read `data._color` if present else `data.color`; `viewed` reads a visited-flag;
+`automatic` assigns one color per ingredient grouped by compartment). A generic fallback handles
+any other property name — e.g. a custom CSV column — numeric values get the same linear-gradient
+treatment, string values get a categorical palette. `automatic`'s exact legacy algorithm
+(`GenerateNColor`/`GenerateOneColorRangePalette`, `main.js:3141-3178`) depends on two extra
+libraries not present in this app (`chroma.js`, a `paletteGenerator` force-vector color-distance
+tool) — deliberately not added just for this one mode; `hslPalette`, an even-hue-rotation
+palette, produces the same qualitative "N visually distinct colors" outcome. Root's own explicit
+color always wins regardless of mode (`main.js:3378-3383`); non-root compartments only get their
+explicit color under `"color"` mode specifically, since every other mode's branches guard on
+`!d.children` and fall through to the depth-color ordinal scale for compartments — both rules
+live in one shared `resolveFillColor` function so `RecipeCanvas.tsx` (rendering) and the
+toolbar's "Apply to ingredient color" button can never silently compute two different colors for
+the same node. 19 unit tests in `tests/color-modes.test.ts`.
+
+**`web/src/domain/recipe/propertyMapping.ts`** (file already existed from the Edit Mode slice):
+added `listGroupableProperties` alongside the existing `computePropertyMapping` — see the real
+bug below; `computePropertyMapping` is now also reused for the color gradient's numeric min/max
+and as the "Node size" dropdown's extra custom-property options.
+
+**`web/src/domain/recipe/computeRecipeLayout.ts`**: added a `sizeBy` parameter. Legacy's
+`mapRadiusToProperty_cb` (`main.js:3597-3646`) sets `d.r` directly per a hand-coded formula per
+property — `radius_molecularweight` uses `Util_getRadiusFromMW` (`js/util.js:30-33`, a real
+mass→volume→radius sphere approximation, `V = mw*1.21` then solved for radius), `molecularweight`
+uses a cube-root, `default`/`size` are simple constants, anything else is linearly mapped into
+`[1, 50]` — then manually re-packs siblings and restarts the force simulation. This port takes a
+different path deliberately: the same radius formulas are preserved exactly (`radiusForSizeBy`),
+then squared into an area-equivalent weight fed into the same `d3.pack()`'s own `.sum()` that
+already exists in this pipeline (a two-pass hierarchy walk — first pass gathers
+`computePropertyMapping` stats for any generic numeric `sizeBy` property, second pass assigns
+weights) — rather than adding a second, manual packing pass. Same visible outcome (ingredients
+sized proportionally, compartments enlarging to fit), simpler mechanism, no second packing call
+to maintain. 6 unit tests added to `tests/compute-recipe-layout.test.ts`, including one that
+confirms `sizeBy` actually changes which of two ingredients ranks bigger under `"size"` vs
+`"molecularweight"`.
+
+**`web/src/domain/pdb/structureSource.ts`**: added `resolveSpriteImageUrl` alongside the existing
+`resolveStructureSource`. Legacy's `getThumbnail` (`main.js:4308-4383`) resolves `sprite.image` (a
+filename) from the same cellPACK_data GitHub repo as structure files — confirmed live via a real
+file, `images/Albumin_C.png`, 200 OK — but a different subfolder (`images/`) than
+`resolveStructureSource`'s `other/`; falls back to a PDBe-generated chain-image thumbnail keyed by
+`source.pdb` when there's no `sprite.image`. Local-folder overrides (legacy's `pathList_`
+priority) aren't available yet, same disclosed scope gap `resolveStructureSource` already has
+(Phase 4 item 8, "Setup Data Directory," still a placeholder). 5 new unit tests in
+`tests/structure-source.test.ts`.
+
+**`web/src/state/uiModeStore.ts`**: significantly expanded beyond the Edit Mode slice's
+`editMode`/`selectedNodes`/`groupBy` — `colorMode`/`minColor`/`maxColor`, `sizeBy`, `labelBy`
+(`'name' | 'None' | 'pdb' | 'uniprot' | 'label'`), `showSprites`, `showLegend`, and
+`visitedNodes: Set<RecipeNode>` + `markVisited`. All UI-only, deliberately not touching
+`IngredientData`/serialization — legacy's `data.visited` would otherwise round-trip through
+save/export if it were a real ingredient field, same reasoning already established for
+`editMode`/`selectedNodes`/`groupBy`.
+
+**`web/src/state/recipeStore.ts`**: added `applyColorModeToIngredient(colorFor: (node) => string)`.
+Takes a resolver callback rather than a color-mode name so `recipeStore` doesn't need to depend on
+`uiModeStore`/`colorModes.ts` — the toolbar (which already reads both) supplies the actual
+per-node CSS color string it's currently rendering. Bakes it into `data.color` (parsed via the
+`d3-color` submodule, handling `rgb()`/`hsl()`/named colors uniformly, matching legacy's
+`d3v4.color(...)`), backing up the previous value into a new optional `IngredientData._color`
+field the *first* time only (never overwrites an existing backup). `_color` was added to
+`KNOWN_INGREDIENT_FIELDS` in `web/src/domain/recipe/types.ts` specifically so it's excluded from
+`custom_data` export — an internal backup field should stay invisible to save/export, not leak
+into a spreadsheet column. 4 new unit tests in `tests/recipe-store.test.ts`.
+
+**`RecipeCanvas.tsx` changes**: renders sprite `<image>` elements per ingredient (fiber
+ingredients repeat the image 3× side-by-side instead of legacy's angstrom-precise
+`sprite.lengthy` spacing — deliberately simplified to a fixed fraction of each ingredient's own
+variable circle radius, since legacy's spacing math was calibrated for a fixed-size screen-space
+popup panel, not a small in-context circle; same reasoning for the membrane marker lines, which
+use a fixed fraction of the circle radius instead of `offsety`/`scale2d`), a larger popup
+thumbnail for the selected ingredient (fixed corner, outside the zoom-pan group), curved
+compartment name labels via native SVG `<textPath>` on a semicircular arc path (replacing
+legacy's manual per-character canvas-rotation algorithm — SVG has text-on-a-path built in, so
+this is genuinely simpler than the mechanism it replaces, not just a port), ingredient label text
+gated by both selection state and a `zoomLevel > 1.5` threshold (mirrored into React state from
+the `d3.zoom` transform via a new `zoomLevel` state variable, since the transform was previously
+only kept in a ref — refs don't trigger re-renders), an SVG background `<rect>` colored from the
+root compartment's `data.color` (fallback `rgb(225, 225, 225)`, legacy's exact default), and a
+categorical-mode color legend (swatch + label per unique value, shown only for a custom string
+property in categorical mode, not for `automatic`, whose colors are per-compartment rather than
+one global category list, so a flat legend wouldn't mean the same thing). Also ported, beyond
+what the original audit called out explicitly: interaction lines now gradient-blend between
+their two endpoints' resolved colors via a per-link SVG `<linearGradient>`, matching legacy's
+`DrawConnections` (`main.js:3765-3800`) — a selected link stays a flat orange highlight rather
+than also gradient-blended, matching legacy's own selected-link treatment. Link hover-highlight
+is **not** ported (`d.highlight` in `DrawConnections` — no equivalent hover entry point exists on
+these lines today; named explicitly, not silently dropped).
+
+**`RecipeCanvasToolbar.tsx`**: added the "Node color" dropdown (16 builtin modes plus extra
+custom properties from `listGroupableProperties`), min/max color `<input type="color">` pickers,
+"Apply to ingredient color" button, "Node size" dropdown, "Node label" dropdown, and "Node image"/
+"Show legend" checkboxes.
+
+**Two real things found only by testing live:**
+
+1. **A second, distinct instance of the "numeric-only dropdown" gap the Edit Mode slice already
+   found once for "Group by."** Building the "Node color" and "Node size" dropdowns' extra
+   custom-property options, `computePropertyMapping` (numeric-only by design, confirmed again by
+   re-reading its own docstring rather than assuming the earlier fix generalized) was the wrong
+   source for the same reason as before — it would silently omit categorical fields like
+   `ingtype`/`buildtype` from both dropdowns' custom-property tails. Reused
+   `listGroupableProperties` (the fix already made for "Group by") as the shared options source
+   for all three dropdowns instead of re-deriving a third bespoke list, catching the recurrence
+   before it shipped rather than after.
+2. **The root tsconfig's test-exclusion gap** (`tsconfig.json` uses TypeScript project references,
+   `"files": [], "references": [...]`, listing only `tsconfig.app.json`'s `src/` and
+   `tsconfig.node.json` — `tests/` is never included in any referenced project) meant
+   `npm run typecheck` (`tsc -b --noEmit`) stayed clean when `computeRecipeLayout`'s signature
+   gained a new required `sizeBy` parameter, while running the actual test file
+   (`npx vitest run tests/compute-recipe-layout.test.ts`) failed with `NaN` assertion errors: old
+   4-argument test calls silently passed a number (`600`) where `sizeBy: string` was now
+   expected, shifting `width`/`height` out of position with no compile-time error to catch it.
+   Fixed the call sites (added the missing argument); the underlying tooling gap — `tests/` never
+   type-checked by `tsc -b` at all — is disclosed here as a known, unresolved gap in this repo's
+   setup, distinct from the Edit Mode slice's own process note about a bare `npx tsc --noEmit`
+   checking nothing due to the same root `tsconfig.json`.
+
+Verified live end-to-end against the Exosome fixture (47 ingredients, `root`/`root.exosome`,
+Playwright headless Chromium, `--use-gl=swiftshader`, this project's established live-verification
+method): real PDBe sprite thumbnails load over the network for real ingredients; membrane marker
+lines appear on `surface: true` ingredients; the "pdb" validation color mode was initially
+misread as broken during manual screenshot review (most circles looked "red") until directly
+inspecting each circle's `fill` attribute showed the reddish tone was actually
+`d3.schemeTableau10`'s `#e15759` depth-color fallback (correctly meaning "valid pdb"), not the
+literal `'red'` string — confirmed by adding one deliberately-blank ingredient via "Add
+ingredient" and confirming *it* was the only circle rendering literal `red`; "automatic" mode
+showed genuinely distinct per-ingredient colors; "viewed" mode correctly showed all-red until a
+click turned exactly one ingredient yellow; "Node size: molecularweight" visibly resized circles,
+matching the unit test's own size-vs-molecularweight ranking assertion; curved compartment labels
+("root"/"exosome") were legible once zoomed past `MIN_LABEL_RADIUS`; "Node label: pdb" showed PDB
+filenames once zoomed past the 1.5× threshold; the legend showed "protein"/"fiber" swatches
+matching `ingtype` categorical coloring; "Apply to ingredient color" was confirmed to actually
+persist colors (baked `data.color` values differed across 41 of 47 ingredients under "automatic"
+mode and remained after switching to "default," which reads the baked `data.color`).
+
+`npm run typecheck`/`npm run lint` clean. `npm run test -- --run` → 23 test files, 186 tests
+passing (up from 157 before this follow-up).
+
+**Addendum — the two remaining named gaps closed immediately after the above**: interaction
+lines now gradient-blend between their two endpoints' `resolveFillColor` results via a real SVG
+`<linearGradient>` per link (one `<defs>` entry, `gradientUnits="userSpaceOnUse"`, matching
+legacy's `DrawConnections`, main.js:3765-3800 — a selected link stays the existing flat orange
+highlight rather than also gradient-blending, matching legacy's own selected-link treatment).
+Node mouseover-highlight is also ported (legacy's `d.highlight`/`Highlight`, main.js:3672-3690):
+`onMouseEnter`/`onMouseLeave` track a `hoveredNode` in local component state (not a store — this
+is transient, render-only, single-canvas-instance state, unlike `uiModeStore`'s cross-panel
+concerns), giving the hovered circle a black outline, forcing its ingredient label to show
+regardless of the zoom threshold, and taking over the popup thumbnail from whatever's currently
+selected — all three matching legacy's own `d.highlight || transform.k > 1.5` / `node_selected
+or node_over` conditions exactly. Link mouseover-highlight itself (a separate, second `d.highlight`
+usage inside `DrawConnections`) is the one remaining not-ported item — links have no pointer
+handlers today, and adding hover-tracking for them is a distinct, smaller follow-up rather than
+part of this pass. Verified live: dispatching a synthetic hover on an ingredient circle showed a
+`black` stroke, exactly one `.recipe-canvas-ingredient-label`, and exactly one
+`.recipe-canvas-popup-thumbnail`, all clearing to their non-hovered state on mouseout. 186 tests
+still green (no new pure-function surface — both additions are JSX-level rendering logic already
+covered by `resolveFillColor`'s existing test suite, verified live rather than re-tested in
+isolation, consistent with how the sprite/legend/background rendering above was verified).
+
+**Addendum — a third re-audit pass found `automatic` mode was gated by a second, previously-
+missed checkbox.** A deeper grep of `js/main.js` for every `[Dd]raw|[Cc]anvas|[Nn]ode|[Cc]olor`
+function definition (the "loop" the standing legacy-parity goal asks for) turned up
+`toggleColorMapping`/`use_color_mapping` (`js/layout_mg.js:286`) — a real, independently wired
+"Use color linear mapping" checkbox, default `checked`, that `colorNode`'s `automatic` branch
+reads but that nothing in the option-list scan above had surfaced, since it isn't one of the 16
+`canvas_color_options` entries — it's a second control gating one specific mode's *sub-behavior*.
+Checked (the default) means a linear gradient indexed by each node's raw position in the
+flattened `graph.nodes` array, reusing the exact same `gradientColor`/min-max-color machinery
+already built for `confidence`/`size`/etc.; unchecked is the discrete per-compartment HSL palette
+this app had already built as `automatic`'s only behavior. Added `uiModeStore.useColorMapping`
+(boolean, default `true`) + `toggleUseColorMapping`; extended `ColorModeContext` with
+`useColorMapping`/`nodeIndex`/`nodeCount` (both `RecipeCanvas.tsx`'s render-path context and
+`RecipeCanvasToolbar.tsx`'s "Apply to ingredient color" context build these identically, so the
+canvas and the bake-in button can't disagree); added a "Use color linear mapping" checkbox to the
+toolbar next to the existing min/max pickers. Verified live: with a real recipe (Exosome, 47
+ingredients) and "Node color" set to `automatic`, the checkbox checked produced a smooth
+`rgb(250,5,4)` → `rgb(224,31,23)`-style gradient across ingredients (matching the `minColor`/
+`maxColor` pickers), unchecking it switched the same ingredients to discrete `hsl(0,65%,55%)`,
+`hsl(28,65%,55%)`, ... per-compartment hues — confirmed via computed `fill` attributes, not
+screenshot comparison, consistent with this project's established verification method. 186 tests
+still green (no new pure-function surface beyond the existing `color-modes.test.ts` coverage of
+`automatic`'s branch logic).
+
+### Recipe canvas: node CRUD (rename/delete/recolor via context menu), radius_scale/stroke_line_width globals, Forces Options tuning (fourth legacy re-scan)
+
+**Continuation of the "loop" the standing legacy-parity goal asks for.** A dedicated audit pass
+(reading every remaining `Node`/`Canvas`/`Graph`/`Drag`/`Force`/`Cluster` function in
+`js/main.js` not already covered by prior passes) found a consolidated, ranked list of real,
+unported gaps. Two items were explicitly scoped out rather than built: `getPairInteracting`'s
+"Color Beads: interacting" NGL mode (a different panel/viewer, already covered by this plan's
+"wrap NGL indefinitely" row — not the recipe canvas) and `RecipeTable.tsx`'s narrower
+editable-field set vs. legacy's grid-cell-edit path (confirmed as a deliberate prior scope cut,
+documented in that component's own header comment, not a new finding). The rest — 1–7 below —
+were built.
+
+Before building, confirmed three legacy semantics that weren't obvious from the function names
+alone (a dedicated read-only investigation pass, quoted with line numbers):
+
+- **`DeleteNodeOver` on a compartment does neither cascade-delete nor reparent its children** —
+  it only splices the compartment itself out of its parent's `children[]` and `graph.nodes`,
+  leaving descendants as dangling orphans still present in `graph.nodes` (confirmed: no
+  recursion over `.children` exists in the function body at all). This is a latent legacy bug,
+  not a considered design — not replicated. `recipeStore.deleteCompartment` cascade-deletes the
+  entire subtree instead (ordinary "delete folder" semantics), removing every descendant from
+  `graph.nodes` and any link touching one.
+- **Compartment rename needs no path-cascade in the modern app.** Legacy's
+  `traverseTreeForCompartmentNameUpdate` only refreshes a cached SlickGrid display column
+  (`compartment`), never anything read by either serializer (`getCurrentNodesAsCP_JSON`/
+  `serializedRecipe` both read `node.parent.data.name` live). Since `buildAncestorCompartmentPath`
+  already derives that path live from `.parent` on every read, `recipeStore.renameNode` mutating
+  `data.name` alone keeps every descendant's displayed path correct for free — confirmed with a
+  dedicated test (`renames a compartment, and descendant compartment-path lookups ... reflect it
+  immediately`).
+- **Per-node manual radius override (`ResizeNodeOver`) doesn't survive save/reload even in
+  legacy** — it writes `node.r`, a transient pack-layout field the serializers never read and
+  that legacy's own repack/remap logic silently overwrites within the same session. Given the
+  modern app's `sizeBy`-driven `computeRecipeLayout` already fully owns sizing declaratively,
+  adding an imperative per-node override that gets silently wiped on the next layout recompute
+  would be inconsistent with this app's architecture for no persisted benefit — deliberately not
+  ported, disclosed here rather than silently dropped. Per-node **color** override
+  (`ChangeColorNodeOver`) is different: its direct-color branch writes `node.data.color`, which
+  *does* survive save/reload (confirmed via `oneIngredientSerialized`/`OneCPIngredient` both
+  reading it) — that branch was ported as `recipeStore.setNodeColor`. Its other branch (remapping
+  a live color-by-property legend entry, not writing a per-node value) was not ported — it's a
+  legend-editing feature orthogonal to per-node color, not a persisted per-node override.
+
+Built:
+
+1. **`recipeStore.renameNode(node, name)`** — works for either node type, single-field mutation.
+2. **`recipeStore.deleteCompartment(node)`** — cascade-delete (see above); no-op on root (no
+   parent to detach from); clears `selectedNode`/`selectedLink` if either was inside the removed
+   subtree.
+3. **`recipeStore.setNodeColor(node, hex)`** — direct `data.color` write via `d3-color` parsing,
+   same persisted field `applyColorModeToIngredient` uses, but never backs up to `_color` (this
+   *is* the direct override action, not a bulk mode bake-in).
+4. **Right-click context menu on canvas nodes** (`RecipeCanvas.tsx`) — Rename/Delete/Set color,
+   delivered as a floating menu at the click point, matching legacy's `.custom-menu-node`
+   delivery mechanism (`index.html:671-676`) rather than folding these into `RecipeTable`/the
+   toolbar — consistent with the "match legacy exactly" precedent already set for interaction
+   creation earlier this session. Delete is disabled for the root node (`!node.parent`).
+5. **`radius_scale`/`stroke_line_width` globals** (`js/layout_mg.js:294,297` — confirmed live via
+   `js/ngl.js:864-865`'s change handler and `main.js:3611-3617`/`main.js:3678`+'s reads; an
+   earlier pass had wrongly written `radius_scale` off as dead since no consumer was checked at
+   the time). `uiModeStore` gained `radiusScale`/`strokeWidth`; new "Scale Radius by"/"Stroke
+   Line width" number inputs in `RecipeCanvasToolbar.tsx`. **Real design problem found and fixed
+   before shipping**: naively multiplying every leaf's pack *weight* by `radiusScale²` (the
+   initial implementation) turned out to be a mathematical no-op — `d3.pack().size(...)`
+   auto-normalizes to fit its fixed container box, so uniformly scaling every weight by the same
+   constant cannot change the fitted layout (ratios, and therefore the fit, are invariant to a
+   global multiplier) — caught immediately by a failing unit test
+   (`expected 293.03... to be close to 586.06...`), not by visual inspection. Legacy doesn't hit
+   this because its own re-pack (`d3.packSiblings`/`d3.packEnclose`) packs circles at their
+   literal given radii without renormalizing to a fixed viewport. Fixed by applying `radiusScale`
+   to the pack's own container dimensions instead, so the whole diagram (compartments and
+   ingredients together) grows/shrinks as one — the actually observable effect the control's name
+   implies, verified live (24.18px → 49.97px, ~2×, on a real ingredient circle).
+6. **"Forces Options" tuning** (`js/layout_mg.js:266-275`'s `getForcesInputs`/legacy `AllForces`,
+   `main.js:177-183`) — `computeRecipeLayout`'s surface/cluster force strengths were previously
+   hardcoded constants; now a `ForceTuning` parameter with five sliders in
+   `RecipeCanvasToolbar.tsx` (`ParentForce`/`SurfaceForce`/`LinkForce`/`ClusterByForce`/
+   `CollisionForce`), one number input each rather than legacy's redundant paired range+number
+   controls for the same value — same knob, simplified UI, matching this feature's "modern
+   approach, easy to maintain" framing. `surfaceForce`/`clusterByForce` defaults deliberately do
+   NOT copy legacy's raw numbers (`0.5`/`0.01`) verbatim: those were tuned for a simulation that
+   ticks forever in a live animation loop, while this port ticks a fixed 200 times — at legacy's
+   literal `0.01` cluster strength, 200 ticks produces no visible separation at all. Defaults here
+   are re-tuned to be visually effective within the bounded-tick model while exposing the same
+   knobs legacy does.
+7. **`LinkForce` — a real force over interaction links, not previously ported at all** (only the
+   link *line rendering* existed; no force pulled linked ingredients together). Added a
+   `d3.forceLink` over `graph.links`, filtered to links whose both endpoints resolve to a
+   simulated leaf (a link to a compartment, which isn't part of the force solve, is skipped) —
+   object identity via the existing `posMap` lets `d3.forceLink` resolve endpoints directly
+   without a string `.id()` accessor. Also added a **boundary-containment force**
+   (`AllForces.ParentForce`) — a simplified port of legacy's "nudge a non-surface leaf back
+   toward its parent's center if it's drifted outside the boundary" correction
+   (`main.js:5468-5471`), dropping legacy's `d.parent.parent` special-case (only correcting
+   leaves whose parent isn't itself top-level) since it has no clean analog once packing nests
+   compartments differently — disclosed, not silently copied.
+
+13 new unit tests (7 `recipeStore` — rename/delete-cascade/set-color — plus 2 `computeRecipeLayout`
+— radiusScale/linkForce). 199 tests total (up from 186), `npm run typecheck`/`npm run lint`
+clean. Verified live end-to-end against the Exosome fixture (47 ingredients, 2 compartments):
+radius-scale growth, stroke-width change, a force slider edit, right-click → Rename (native
+`prompt()`, consistent with this codebase's existing precedent of using native dialogs for
+one-off interactions, e.g. `SkillMenu.tsx`) with the menu title updating live, right-click → Set
+color changing the rendered `fill`, right-click → Delete on an ingredient (47→46), and right-click
+→ Delete on a compartment cascading correctly (2→1 compartments, 46→11 ingredients — confirming
+the whole subtree was removed, not orphaned like legacy).
+
+**Confirming re-scan, done — recipe-view parity holds.** One more pass over every
+`Node`/`Canvas`/`Graph`/`Drag`/`Force`/`Cluster`/`Highlight`/`Draw`/`Select`-named function in
+`js/main.js`/`js/layout_mg.js` turned up only dead code (`cluster()` referencing an undefined
+global — superseded by the real `clusterByForce` mechanism; `merge_graph`/`merge_node` gated
+behind a hardcoded-`false` flag never toggled; `drawTrafficLight`/`drawPalette`/`DrawCluster`/
+`CenterCanvas` all unreachable or stubbed-out with their real logic commented out), functions
+already confirmed ported under a different name (`Highlight` → the node hover-highlight,
+`ClusterNodeBy` → `groupBy`/`clusterByForce`), and different-panel code (NGL's own options
+block, not the recipe canvas). One UX nuance flagged, not a gap: legacy's drag-based rubber-band
+line for interaction-link creation (`updateTempLink`) is superseded by this app's already-chosen
+Ctrl+click multi-select pattern (confirmed with the user during planning), not a missing
+capability. Recipe-view 1:1 legacy parity — canvas render, pan/zoom, drag-to-reparent, every
+force (surface/cluster/parent/link/collision, all tunable), every coloring mode, node/compartment
+CRUD, and interaction links — is confirmed reached.
+
 ### Known gaps in the Phase 2 data layer (carry into Phase 4, don't assume covered)
 
 - `helper_getFiberIngredientDescription` (legacy fiber-description lookup enrichment,

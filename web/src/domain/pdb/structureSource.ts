@@ -44,3 +44,19 @@ export function resolveStructureSource(pdb: string): StructureSource | null {
     extension: match[1].toLowerCase() as StructureExtension,
   }
 }
+
+/**
+ * Resolves an ingredient's sprite/thumbnail image to a fetchable URL — legacy's `getThumbnail`
+ * (main.js:4308-4383): `sprite.image` (a filename) resolves from the same cellPACK_data repo as
+ * `resolveStructureSource` (legacy `cellpack_repo+"images/"+filename`, confirmed live via a
+ * real file in that repo, `images/Albumin_C.png`, 200 OK); if there's no `sprite.image`, legacy
+ * falls back to a PDBe-generated chain-image thumbnail keyed by the ingredient's `source.pdb`
+ * accession. Local-folder overrides (legacy's `pathList_` priority, checked first) aren't
+ * available yet — same scope gap `resolveStructureSource` already discloses (Phase 4 item 8,
+ * "Setup Data Directory" is still a placeholder).
+ */
+export function resolveSpriteImageUrl(spriteImage: string | null, pdb: string | undefined): string | null {
+  if (spriteImage) return `${CELLPACK_REPO}images/${spriteImage}`
+  if (pdb && !EXTENSION_RE.test(pdb)) return `https://www.ebi.ac.uk/pdbe/static/entry/${pdb.toLowerCase()}_deposited_chain_front_image-200x200.png`
+  return null
+}

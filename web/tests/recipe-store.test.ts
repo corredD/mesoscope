@@ -8,7 +8,7 @@ function loadFixture(name: string): unknown {
 }
 
 beforeEach(() => {
-  useRecipeStore.setState({ graph: null, format: null, error: null, loading: false, selectedNode: null })
+  useRecipeStore.setState({ graph: null, format: null, error: null, loading: false, selectedNode: null, selectedLink: null })
 })
 
 describe('recipeStore.loadEmpty', () => {
@@ -209,5 +209,320 @@ describe('recipeStore.selectNode / applyPdbPick', () => {
     useRecipeStore.getState().selectNode(ha)
     useRecipeStore.getState().deleteIngredient(ha)
     expect(useRecipeStore.getState().selectedNode).toBeNull()
+  })
+})
+
+describe('recipeStore.reparentNode', () => {
+  it('moves the node into the new parent, updating both sides\' children arrays', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const ha = graph.nodes.find((n) => n.data.name === 'Hemagglutinin')!
+    const oldParent = ha.parent!
+    const root = graph.nodes[0]
+    expect(oldParent).not.toBe(root)
+
+    useRecipeStore.getState().reparentNode(ha, root)
+
+    expect(ha.parent).toBe(root)
+    expect(oldParent.children).not.toContain(ha)
+    expect(root.children).toContain(ha)
+    expect(useRecipeStore.getState().graph).not.toBe(graph)
+  })
+
+  it('is a no-op if newParent is already the node\'s parent', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const ha = graph.nodes.find((n) => n.data.name === 'Hemagglutinin')!
+    useRecipeStore.getState().reparentNode(ha, ha.parent!)
+    expect(useRecipeStore.getState().graph).toBe(graph)
+  })
+
+  it('is a no-op if newParent is one of the node\'s own descendants', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const root = graph.nodes[0]
+    const envelope = root.children!.find((n) => n.data.name === 'envelope')!
+    useRecipeStore.getState().reparentNode(root, envelope)
+    expect(useRecipeStore.getState().graph).toBe(graph)
+    expect(root.parent).toBeNull()
+  })
+})
+
+describe('recipeStore.addLink / deleteLink / updateLink / setLinkEndpoint', () => {
+  it('addLink creates a link between the two nodes with blank editable fields', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const ha = graph.nodes.find((n) => n.data.name === 'Hemagglutinin')!
+    const na = graph.nodes.find((n) => n.data.name === 'Neuraminidase')!
+
+    useRecipeStore.getState().addLink(ha, na)
+
+    const after = useRecipeStore.getState().graph!
+    expect(after.links).toHaveLength(1)
+    const link = after.links[0]
+    expect(link.source).toBe(ha)
+    expect(link.target).toBe(na)
+    expect(link.name1).toBe('Hemagglutinin')
+    expect(link.name2).toBe('Neuraminidase')
+  })
+
+  it('addLink is a no-op when source === target', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const ha = graph.nodes.find((n) => n.data.name === 'Hemagglutinin')!
+    useRecipeStore.getState().addLink(ha, ha)
+    expect(useRecipeStore.getState().graph!.links).toHaveLength(0)
+  })
+
+  it('updateLink patches only the given link\'s editable fields', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const ha = graph.nodes.find((n) => n.data.name === 'Hemagglutinin')!
+    const na = graph.nodes.find((n) => n.data.name === 'Neuraminidase')!
+    useRecipeStore.getState().addLink(ha, na)
+    const link = useRecipeStore.getState().graph!.links[0]
+
+    useRecipeStore.getState().updateLink(link, { pdb1: '1RVT', sel1: ':A' })
+
+    expect(link.pdb1).toBe('1RVT')
+    expect(link.sel1).toBe(':A')
+  })
+
+  it('setLinkEndpoint reassigns one endpoint to a different node', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const ha = graph.nodes.find((n) => n.data.name === 'Hemagglutinin')!
+    const na = graph.nodes.find((n) => n.data.name === 'Neuraminidase')!
+    const root = graph.nodes[0]
+    useRecipeStore.getState().addLink(ha, na)
+    const link = useRecipeStore.getState().graph!.links[0]
+
+    useRecipeStore.getState().setLinkEndpoint(link, 'target', root)
+
+    expect(link.target).toBe(root)
+    expect(link.source).toBe(ha)
+  })
+
+  it('deleteLink removes the link and clears selection if it was selected', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const ha = graph.nodes.find((n) => n.data.name === 'Hemagglutinin')!
+    const na = graph.nodes.find((n) => n.data.name === 'Neuraminidase')!
+    useRecipeStore.getState().addLink(ha, na)
+    const link = useRecipeStore.getState().graph!.links[0]
+    useRecipeStore.getState().selectLink(link)
+
+    useRecipeStore.getState().deleteLink(link)
+
+    expect(useRecipeStore.getState().graph!.links).toHaveLength(0)
+    expect(useRecipeStore.getState().selectedLink).toBeNull()
+  })
+})
+
+describe('recipeStore.addIngredient / addCompartment', () => {
+  it('addIngredient pushes one new blank ingredient into root, appearing in graph.nodes and root.children', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const before = useRecipeStore.getState().graph!
+    const root = before.nodes[0]
+    const countBefore = before.nodes.length
+    const rootChildCountBefore = root.children!.length
+
+    useRecipeStore.getState().addIngredient()
+
+    const after = useRecipeStore.getState().graph!
+    expect(after.nodes).toHaveLength(countBefore + 1)
+    const added = after.nodes[after.nodes.length - 1]
+    expect(added.data.nodetype).toBe('ingredient')
+    expect(added.parent).toBe(root)
+    expect(root.children).toHaveLength(rootChildCountBefore + 1)
+    expect(root.children).toContain(added)
+  })
+
+  it('addCompartment pushes one new blank compartment into root', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const before = useRecipeStore.getState().graph!
+    const root = before.nodes[0]
+
+    useRecipeStore.getState().addCompartment()
+
+    const after = useRecipeStore.getState().graph!
+    const added = after.nodes[after.nodes.length - 1]
+    expect(added.data.nodetype).toBe('compartment')
+    expect(added.parent).toBe(root)
+    expect(root.children).toContain(added)
+  })
+
+  it('is a no-op when no recipe is loaded', () => {
+    useRecipeStore.getState().addIngredient()
+    expect(useRecipeStore.getState().graph).toBeNull()
+  })
+})
+
+describe('recipeStore.renameNode', () => {
+  it('renames an ingredient in place', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const ha = graph.nodes.find((n) => n.data.name === 'Hemagglutinin')!
+
+    useRecipeStore.getState().renameNode(ha, 'HA-renamed')
+
+    expect(ha.data.name).toBe('HA-renamed')
+    expect(useRecipeStore.getState().graph).not.toBe(graph)
+  })
+
+  it('renames a compartment, and descendant compartment-path lookups (derived live) reflect it immediately', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const envelope = graph.nodes.find((n) => n.data.name === 'envelope')!
+    const ha = graph.nodes.find((n) => n.data.name === 'Hemagglutinin')!
+
+    useRecipeStore.getState().renameNode(envelope, 'envelope-renamed')
+
+    expect(envelope.data.name).toBe('envelope-renamed')
+    // no separate cached path to update — buildAncestorCompartmentPath derives live from .parent
+    expect(ha.parent!.data.name).toBe('envelope-renamed')
+  })
+
+  it('is a no-op when no recipe is loaded', () => {
+    const node = { data: { nodetype: 'compartment' as const, name: 'x', geom: '', geom_type: '', thickness: 0, color: null }, parent: null, children: [] }
+    useRecipeStore.getState().renameNode(node, 'y')
+    expect(useRecipeStore.getState().graph).toBeNull()
+  })
+})
+
+describe('recipeStore.deleteCompartment', () => {
+  it('cascade-deletes the compartment and every descendant, unlike legacy which orphans them', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const root = graph.nodes[0]
+    const envelope = graph.nodes.find((n) => n.data.name === 'envelope')!
+    const descendantNames = graph.nodes.filter((n) => n.parent && (n.parent === envelope || n.parent.parent === envelope)).map((n) => n.data.name)
+    expect(descendantNames.length).toBeGreaterThan(0)
+
+    useRecipeStore.getState().deleteCompartment(envelope)
+
+    const after = useRecipeStore.getState().graph!
+    expect(after.nodes).not.toContain(envelope)
+    expect(root.children).not.toContain(envelope)
+    for (const name of descendantNames) {
+      expect(after.nodes.some((n) => n.data.name === name)).toBe(false)
+    }
+  })
+
+  it('removes links referencing any deleted descendant', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const ha = graph.nodes.find((n) => n.data.name === 'Hemagglutinin')!
+    const na = graph.nodes.find((n) => n.data.name === 'Neuraminidase')!
+    useRecipeStore.getState().addLink(ha, na)
+    expect(useRecipeStore.getState().graph!.links).toHaveLength(1)
+
+    useRecipeStore.getState().deleteCompartment(ha.parent!)
+
+    expect(useRecipeStore.getState().graph!.links).toHaveLength(0)
+  })
+
+  it('is a no-op on the root compartment (no parent to detach from)', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const root = graph.nodes[0]
+
+    useRecipeStore.getState().deleteCompartment(root)
+
+    expect(useRecipeStore.getState().graph).toBe(graph)
+  })
+
+  it('clears selectedNode/selectedLink if either was inside the deleted subtree', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const envelope = graph.nodes.find((n) => n.data.name === 'envelope')!
+    const ha = graph.nodes.find((n) => n.data.name === 'Hemagglutinin')!
+    useRecipeStore.setState({ selectedNode: ha })
+
+    useRecipeStore.getState().deleteCompartment(envelope)
+
+    expect(useRecipeStore.getState().selectedNode).toBeNull()
+  })
+})
+
+describe('recipeStore.setNodeColor', () => {
+  it('writes a normalized [0,1] rgb triplet directly to data.color, unlike applyColorModeToIngredient it never backs up to _color', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const ha = graph.nodes.find((n) => n.data.name === 'Hemagglutinin')!
+
+    useRecipeStore.getState().setNodeColor(ha, '#ff0080')
+
+    expect(ha.data.color).toEqual([1, 0, 128 / 255])
+    expect(ha.data._color).toBeUndefined()
+  })
+
+  it('also works on a compartment node', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const envelope = graph.nodes.find((n) => n.data.name === 'envelope')!
+
+    useRecipeStore.getState().setNodeColor(envelope, '#00ff00')
+
+    expect(envelope.data.color).toEqual([0, 1, 0])
+  })
+
+  it('is a no-op for an unparseable color', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const ha = graph.nodes.find((n) => n.data.name === 'Hemagglutinin')!
+    const before = ha.data.color
+
+    useRecipeStore.getState().setNodeColor(ha, 'not-a-color')
+
+    expect(ha.data.color).toBe(before)
+  })
+
+  it('is a no-op when no recipe is loaded', () => {
+    const node = { data: { nodetype: 'compartment' as const, name: 'x', geom: '', geom_type: '', thickness: 0, color: null }, parent: null, children: [] }
+    useRecipeStore.getState().setNodeColor(node, '#ffffff')
+    expect(useRecipeStore.getState().graph).toBeNull()
+  })
+})
+
+describe('recipeStore.applyColorModeToIngredient', () => {
+  it('bakes the resolved color into data.color, normalized to [0,1]', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const ha = graph.nodes.find((n) => n.data.name === 'Hemagglutinin')!
+
+    useRecipeStore.getState().applyColorModeToIngredient(() => 'rgb(255, 0, 128)')
+
+    expect(ha.data.color).toEqual([1, 0, 128 / 255])
+  })
+
+  it('backs up the previous color into _color only the first time', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const ha = graph.nodes.find((n) => n.data.name === 'Hemagglutinin')!
+    const originalColor = ha.data.color
+
+    useRecipeStore.getState().applyColorModeToIngredient(() => 'red')
+    expect(ha.data._color).toEqual(originalColor)
+
+    useRecipeStore.getState().applyColorModeToIngredient(() => 'blue')
+    expect(ha.data._color).toEqual(originalColor) // still the ORIGINAL, not overwritten by 'red'
+    expect(ha.data.color).toEqual([0, 0, 1])
+  })
+
+  it('skips compartment nodes and nodes an unparseable color resolver returns', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    const graph = useRecipeStore.getState().graph!
+    const root = graph.nodes[0]
+    const rootColorBefore = root.data.color
+
+    useRecipeStore.getState().applyColorModeToIngredient(() => 'not-a-real-color')
+
+    expect(root.data.color).toBe(rootColorBefore)
+  })
+
+  it('is a no-op when no recipe is loaded', () => {
+    useRecipeStore.getState().applyColorModeToIngredient(() => 'red')
+    expect(useRecipeStore.getState().graph).toBeNull()
   })
 })

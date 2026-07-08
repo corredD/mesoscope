@@ -1,7 +1,12 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as d3 from 'd3'
 import { useRecipeStore } from '../../state/recipeStore'
-import { isIngredientNode, nodeKey, type IngredientData, type RecipeNode } from '../../domain/recipe/types'
+import { useUiModeStore } from '../../state/uiModeStore'
+import { ancestorsSelfFirst, isIngredientNode, nodeKey, type IngredientData, type RecipeNode } from '../../domain/recipe/types'
+import { computeRecipeLayout, type PackedNode } from '../../domain/recipe/computeRecipeLayout'
+import { computePropertyMapping } from '../../domain/recipe/propertyMapping'
+import { BUILTIN_COLOR_MODES, computeCategoricalPalette, resolveFillColor, type ColorModeContext } from '../../domain/recipe/colorModes'
+import { resolveSpriteImageUrl } from '../../domain/pdb/structureSource'
 import './RecipeCanvas.css'
 
 /**
@@ -19,32 +24,66 @@ import './RecipeCanvas.css'
  * simpler to keep declarative in React, and at recipe-sized node counts
  * (tens to low hundreds) SVG's per-element overhead isn't a real concern.
  *
- * Ported: `d3.hierarchy` + `d3.pack` circle-packing layout (main.js:5576-5581,
- * pack instance main.js:2896-2898) — compartments as rings, ingredients as
- * filled circles nested inside, sized by `size` and colored by `data.color`
- * when set (matches the [r,g,b] 0-1 float convention already used by
- * `domain/colors/colorPalette.ts`) or an ordinal depth scale otherwise.
- * Click-to-select feeds `recipeStore.selectNode`, the same seam RecipeTable
- * and the PDB/UniProt search panels already use (legacy's `node_selected`).
- * Basic zoom/pan via `d3.zoom` (main.js:2957-2960/3091) since it's cheap on
- * an SVG group transform.
+ * Ported: `d3.hierarchy` + `d3.pack` circle-packing layout, now via
+ * `computeRecipeLayout` (which also runs the synchronous surface/cluster
+ * force solve — see that file's docstring). Compartments as rings,
+ * ingredients as filled circles nested inside, sized by `sizeBy` (see
+ * `computeRecipeLayout`) and colored via `resolveFillColor`
+ * (`colorModes.ts` — the full 16-mode legacy `ChangeCanvasColor`/`colorNode`
+ * port). Click feeds `recipeStore.selectNode` and `uiModeStore.markVisited`
+ * (the "viewed" color mode's visited-flag); Ctrl+click in Edit Mode feeds
+ * `uiModeStore.toggleNodeSelection` instead (multi-select for "Add
+ * interaction"). Basic zoom/pan via `d3.zoom`. `graph.links` render as lines
+ * between resolved endpoints. Drag-to-reparent (Edit Mode only): pointer
+ * events on each circle rather than `d3.drag()` — this file already mixes
+ * React-rendered SVG with `d3.zoom` for the group transform only, so plain
+ * `onPointerDown/Move/Up` fits the existing style better than a second,
+ * separate d3-owned event-binding path for drag; `event.stopPropagation()`
+ * on pointer-down still prevents `d3.zoom`'s own pan handling from also
+ * firing on the same gesture.
  *
- * NOT ported (each a separate, larger slice — see the audit in
- * web/README-modernization.md's "Phase 4 progress: recipe canvas" section):
- * the force-simulation collision settling (main.js's `simulation`, cosmetic
- * only — `d3.pack` alone already produces a non-overlapping static layout),
- * drag-to-reparent between compartments (mutates persistent structure in
- * legacy's edit mode), sprite/thumbnail image rendering
- * (`drawThumbnailInCanvas`), curved compartment name labels
- * (`drawCircularText`), the many `colorNode` property-mapping modes beyond
- * the explicit-color/depth default, and cross-panel sync equivalents to
- * `NGL_UpdateWithNode`/Mol* highlighting beyond the existing `selectedNode`
- * seam those panels already read from.
+ * Also ported (the "full 1:1 parity" follow-up to the Edit Mode slice above):
+ * sprite/thumbnail images (`resolveSpriteImageUrl`, SVG `<image>` — fiber
+ * ingredients repeat it 3x, surface ingredients get 3 membrane marker lines,
+ * a larger popup thumbnail renders for the selected ingredient), curved
+ * compartment name labels (native SVG `<textPath>` on a semicircular arc,
+ * replacing legacy's manual per-character canvas rotation — SVG has this
+ * built in), the ingredient "Node label" dropdown + its `transform.k > 1.5`
+ * zoom-dependent visibility threshold, the canvas background color (root's
+ * `data.color`, defaulting to legacy's light-grey fallback), and a
+ * categorical-mode color legend. The membrane-marker and fiber-image
+ * spacing are deliberately a fixed fraction of each ingredient's own
+ * (variable) circle radius rather than legacy's angstrom-precise `offsety`/
+ * `scale2d` conversion — that conversion was calibrated for a fixed-size
+ * screen-space popup panel, not a small in-context circle, so reusing it
+ * literally wouldn't produce a meaningful result here. Interaction lines also
+ * gradient-blend between their two endpoints' resolved colors via an SVG
+ * `<linearGradient>` per link (legacy's `DrawConnections`,
+ * main.js:3765-3800) — a selected link stays a flat orange highlight rather
+ * than also gradient-blended, matching legacy's own selected-link treatment.
+ * Node hover (`onMouseEnter`/`Leave`) is a black-outline highlight distinct
+ * from click-selection (legacy's `d.highlight`/`Highlight`,
+ * main.js:3672-3690) — it also forces the ingredient label to show
+ * regardless of the zoom threshold and takes over the popup thumbnail from
+ * whatever's selected, both matching legacy's own `d.highlight ||
+ * transform.k > 1.5` / `node_selected or node_over` conditions.
+ *
+ * NOT ported: link mouseover-highlight (legacy's `d.highlight` on
+ * `DrawConnections`, a separate hover-tracking mechanism this canvas has no
+ * equivalent entry point for — links have no pointer handlers today).
  */
 
 const WIDTH = 600
 const HEIGHT = 600
-const depthColor = d3.scaleOrdinal(d3.schemeTableau10)
+/** Ingredient labels only render past this zoom level (unless selected) — legacy's
+ *  `transform.k > 1.5` gate in `DrawLabels` (main.js:3828). */
+const LABEL_ZOOM_THRESHOLD = 1.5
+/** Compartments smaller than this skip their curved name label — legacy's `fontSizeTitle > 4`
+ *  gate (main.js: `fontSizeTitle = Math.round(d.r / 10)`), i.e. `r > 40`. */
+const MIN_LABEL_RADIUS = 40
+const DEFAULT_BACKGROUND = 'rgb(225, 225, 225)'
+
+const BUILTIN_COLOR_MODES_SET = new Set<string>(BUILTIN_COLOR_MODES)
 
 function explicitColor(color: number[] | null | undefined): string | null {
   if (!color || color.length < 3) return null
@@ -52,34 +91,125 @@ function explicitColor(color: number[] | null | undefined): string | null {
   return `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`
 }
 
-function fillColor(node: RecipeNode, depth: number): string {
-  return explicitColor(node.data.color) ?? depthColor(String(depth))
+/** Same source data as `explicitColor` but as `#rrggbb`, for the context menu's `<input
+ *  type="color">` (which only accepts hex, unlike SVG's `fill`/`stroke`). */
+function explicitColorHex(color: number[] | null | undefined): string {
+  if (!color || color.length < 3) return '#808080'
+  const toHex = (c: number) => Math.round(Math.min(Math.max(c, 0), 1) * 255).toString(16).padStart(2, '0')
+  return `#${toHex(color[0])}${toHex(color[1])}${toHex(color[2])}`
 }
 
-/** Legacy `d.size` (main.js:5576's `.sum(d => d.size)`) — only leaves carry weight. */
-function packWeight(node: RecipeNode): number {
-  if (!isIngredientNode(node)) return 0
-  return Math.max((node.data as IngredientData).size || 1, 0.1)
+/** Text shown for an ingredient under the current "Node label" mode — legacy's `DrawLabels`
+ *  (main.js:3828-3844); real rendering despite `ChangeCanvasLabel`'s handler being dead code,
+ *  see `uiModeStore.ts`'s docstring. */
+function labelText(data: IngredientData, labelBy: string): string {
+  if (labelBy === 'pdb') return data.source?.pdb || data.name
+  if (labelBy === 'uniprot') return data.uniprot || ''
+  if (labelBy === 'label') return data.label || data.name
+  return data.name // 'name' and 'None' both show the ingredient name, matching legacy exactly
+}
+
+/**
+ * Deepest compartment whose packed circle contains `(x, y)`, excluding `dragged`'s own subtree
+ * — the modern equivalent of legacy's `anotherSubject` (main.js:4863-4909). A linear scan over
+ * `descendants` is deliberate, not a placeholder for something smarter: at recipe-sized node
+ * counts this is sub-millisecond, and compartments render `fill="none"` so there's no cheaper
+ * DOM-based hit-test available anyway.
+ */
+function findDropTarget(descendants: PackedNode[], x: number, y: number, dragged: RecipeNode): RecipeNode | null {
+  let best: PackedNode | null = null
+  for (const d of descendants) {
+    if (d.data === dragged) continue
+    if (d.data.data.nodetype !== 'compartment') continue
+    if (ancestorsSelfFirst(d.data).includes(dragged)) continue // d is inside dragged's own subtree
+    const dist = Math.hypot(x - d.x, y - d.y)
+    if (dist > d.r) continue
+    if (!best || d.depth > best.depth) best = d
+  }
+  return best?.data ?? null
 }
 
 export function RecipeCanvas() {
   const graph = useRecipeStore((s) => s.graph)
   const selectedNode = useRecipeStore((s) => s.selectedNode)
   const selectNode = useRecipeStore((s) => s.selectNode)
+  const reparentNode = useRecipeStore((s) => s.reparentNode)
+  const selectedLink = useRecipeStore((s) => s.selectedLink)
+  const editMode = useUiModeStore((s) => s.editMode)
+  const selectedNodes = useUiModeStore((s) => s.selectedNodes)
+  const toggleNodeSelection = useUiModeStore((s) => s.toggleNodeSelection)
+  const groupBy = useUiModeStore((s) => s.groupBy)
+  const sizeBy = useUiModeStore((s) => s.sizeBy)
+  const colorMode = useUiModeStore((s) => s.colorMode)
+  const minColor = useUiModeStore((s) => s.minColor)
+  const maxColor = useUiModeStore((s) => s.maxColor)
+  const useColorMapping = useUiModeStore((s) => s.useColorMapping)
+  const visitedNodes = useUiModeStore((s) => s.visitedNodes)
+  const markVisited = useUiModeStore((s) => s.markVisited)
+  const labelBy = useUiModeStore((s) => s.labelBy)
+  const showSprites = useUiModeStore((s) => s.showSprites)
+  const showLegend = useUiModeStore((s) => s.showLegend)
+  const radiusScale = useUiModeStore((s) => s.radiusScale)
+  const strokeWidth = useUiModeStore((s) => s.strokeWidth)
+  const parentForce = useUiModeStore((s) => s.parentForce)
+  const surfaceForce = useUiModeStore((s) => s.surfaceForce)
+  const linkForce = useUiModeStore((s) => s.linkForce)
+  const clusterByForce = useUiModeStore((s) => s.clusterByForce)
+  const collisionForce = useUiModeStore((s) => s.collisionForce)
+  const renameNode = useRecipeStore((s) => s.renameNode)
+  const deleteIngredient = useRecipeStore((s) => s.deleteIngredient)
+  const deleteCompartment = useRecipeStore((s) => s.deleteCompartment)
+  const setNodeColor = useRecipeStore((s) => s.setNodeColor)
+
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomGroupRef = useRef<SVGGElement>(null)
+  const transformRef = useRef(d3.zoomIdentity)
+
+  const [drag, setDrag] = useState<{ node: RecipeNode; x: number; y: number; dropTarget: RecipeNode | null } | null>(null)
+  // Reactive mirror of `transformRef.current.k` — the ref alone doesn't trigger a re-render,
+  // but ingredient-label visibility (`LABEL_ZOOM_THRESHOLD`) needs to react to zoom changes.
+  const [zoomLevel, setZoomLevel] = useState(1)
+  // Mouseover-only highlight, distinct from click-selection — legacy's `d.highlight`
+  // (main.js:5046, cleared on mouseout main.js:5038): a black outline plus forcing the
+  // ingredient label to show regardless of the zoom threshold (main.js:3828/4214's
+  // `d.highlight || transform.k > 1.5` condition).
+  const [hoveredNode, setHoveredNode] = useState<RecipeNode | null>(null)
+  // Right-click context menu (Rename/Delete/Set color) — legacy's `.custom-menu-node`
+  // (`index.html:671-676`, shown via a `contextmenu` interception, main.js:6044-6077).
+  // Delivered the same way legacy does (a floating menu at the click point) rather than folding
+  // these into RecipeTable/the toolbar, matching the "match legacy exactly" precedent already
+  // set for interaction creation earlier this session.
+  const [contextMenu, setContextMenu] = useState<{ node: RecipeNode; x: number; y: number } | null>(null)
 
   const root = graph?.nodes[0] ?? null
 
-  const packed = useMemo(() => {
-    if (!root) return null
-    const hierarchy = d3.hierarchy(root, (d) => d.children).sum(packWeight)
-    const pack = d3.pack<RecipeNode>().size([WIDTH - 8, HEIGHT - 8]).padding(3)
-    return pack(hierarchy).descendants()
+  const layout = useMemo(() => {
+    if (!root || !graph) return null
+    return computeRecipeLayout(root, groupBy, sizeBy, WIDTH, HEIGHT, graph.links, {
+      radiusScale,
+      parentForce,
+      surfaceForce,
+      linkForce,
+      clusterByForce,
+      collisionForce,
+    })
     // `graph` (not just `root`) is a dependency: node data mutates in place
-    // (updateIngredient/applyPdbPick/color import) without changing identity.
+    // (updateIngredient/applyPdbPick/color import/reparentNode) without changing identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [root, graph])
+  }, [root, graph, groupBy, sizeBy, radiusScale, parentForce, surfaceForce, linkForce, clusterByForce, collisionForce])
+
+  // Color context — see `colorModes.ts`'s docstring for why `resolveFillColor` is the single
+  // shared resolver between here and `RecipeCanvasToolbar.tsx`'s "Apply to ingredient color".
+  const colorCtx: ColorModeContext = useMemo(() => {
+    const propertyMapping = graph ? computePropertyMapping(graph.nodes) : {}
+    const categoricalPalettes = new Map<string, ReadonlyMap<string, string>>()
+    if (graph && !BUILTIN_COLOR_MODES_SET.has(colorMode)) {
+      categoricalPalettes.set(colorMode, computeCategoricalPalette(graph.nodes, colorMode))
+    }
+    const nodeIndex = new Map<RecipeNode, number>(graph ? graph.nodes.map((n, i) => [n, i]) : [])
+    return { mode: colorMode, minColor, maxColor, propertyMapping, visitedNodes, categoricalPalettes, useColorMapping, nodeIndex, nodeCount: graph?.nodes.length ?? 0 }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [graph, colorMode, minColor, maxColor, visitedNodes, useColorMapping])
 
   useEffect(() => {
     const svg = svgRef.current
@@ -88,8 +218,21 @@ export function RecipeCanvas() {
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.2, 8])
+      // Excludes node circles from starting a pan — `d3.zoom` binds its own native listener
+      // directly on the SVG element (via this `.call(zoom)` below), which fires during real DOM
+      // bubbling *before* the event ever reaches React's synthetic dispatch (React delegates at
+      // the app root, further up the tree). That means a circle's `onPointerDown` calling
+      // `event.stopPropagation()` is always too late to stop `d3.zoom`'s own pan-drag from also
+      // starting — found live: dragging a node also panned the whole canvas at the same time,
+      // and the two competing transforms mostly canceled out, making the node's computed
+      // drop position barely move at all despite the pointer moving normally. `.filter()` is
+      // `d3.zoom`'s own supported mechanism for this exact case (excluding certain event
+      // targets from ever starting a zoom gesture), not a workaround bolted on top of it.
+      .filter((event) => !(event.target instanceof Element && event.target.closest('.recipe-canvas-ingredient, .recipe-canvas-compartment')))
       .on('zoom', (event) => {
+        transformRef.current = event.transform
         group.setAttribute('transform', event.transform.toString())
+        setZoomLevel(event.transform.k)
       })
     const selection = d3.select(svg)
     selection.call(zoom)
@@ -98,42 +241,287 @@ export function RecipeCanvas() {
     }
   }, [])
 
-  if (!graph || !root) {
+  if (!graph || !root || !layout) {
     return <p className="panel-note">No recipe loaded. Use Load &gt; New Recipe.</p>
   }
-  if (!packed) return null
+
+  const { descendants, posMap } = layout
+
+  /** Screen (client) coordinates → pack-space, inverting the SVG viewBox scale then the current zoom transform. */
+  function toPackSpace(clientX: number, clientY: number): [number, number] {
+    const svg = svgRef.current!
+    const ctm = svg.getScreenCTM()!.inverse()
+    const viewBoxPoint = new DOMPoint(clientX, clientY).matrixTransform(ctm)
+    return transformRef.current.invert([viewBoxPoint.x, viewBoxPoint.y])
+  }
+
+  function handlePointerDown(event: React.PointerEvent<SVGCircleElement>, node: RecipeNode) {
+    if (event.ctrlKey || event.metaKey) {
+      event.stopPropagation()
+      if (editMode) toggleNodeSelection(node)
+      return
+    }
+    if (!editMode) return
+    event.stopPropagation()
+    const [x, y] = toPackSpace(event.clientX, event.clientY)
+    setDrag({ node, x, y, dropTarget: null })
+  }
+
+  function handlePointerMove(event: React.PointerEvent<SVGSVGElement>) {
+    if (!drag) return
+    const [x, y] = toPackSpace(event.clientX, event.clientY)
+    const dropTarget = findDropTarget(descendants, x, y, drag.node)
+    setDrag({ ...drag, x, y, dropTarget })
+  }
+
+  function handlePointerUp() {
+    if (!drag) return
+    if (drag.dropTarget) reparentNode(drag.node, drag.dropTarget)
+    setDrag(null)
+  }
+
+  // Root compartment can't be renamed/deleted/recolored via the context menu — legacy's own
+  // menu is only ever attached per-node via the canvas hit-test, but the root has nowhere
+  // meaningful to be "deleted" or reparented from; excluded explicitly here instead.
+  function handleRename() {
+    if (!contextMenu) return
+    const name = window.prompt('Please enter new name', contextMenu.node.data.name)
+    if (name != null) renameNode(contextMenu.node, name)
+    setContextMenu(null)
+  }
+
+  function handleDelete() {
+    if (!contextMenu) return
+    if (isIngredientNode(contextMenu.node)) deleteIngredient(contextMenu.node)
+    else deleteCompartment(contextMenu.node)
+    setContextMenu(null)
+  }
+
+  function handleSetColor(event: React.ChangeEvent<HTMLInputElement>) {
+    if (!contextMenu) return
+    setNodeColor(contextMenu.node, event.target.value)
+  }
+
+  const backgroundColor = explicitColor(root.data.color) ?? DEFAULT_BACKGROUND
+
+  // Legend: legacy's `DrawColorLegend` (main.js:3848-3889) shows categorical swatches for a
+  // custom string-valued column — not for `automatic` (whose colors are per-compartment, not
+  // one global category list) or any of the other builtin modes (all numeric/validation/
+  // explicit, none of which have a meaningful "list of categories").
+  const legendPalette = !BUILTIN_COLOR_MODES_SET.has(colorMode) ? colorCtx.categoricalPalettes.get(colorMode) : undefined
+  const legendEntries = showLegend && legendPalette ? [...legendPalette.entries()].filter(([value]) => value !== '') : []
+
+  // Popup thumbnail triggers on selection OR hover — legacy's "node_selected or node_over"
+  // condition (main.js:3969-4027); hover takes priority when both are set, matching legacy
+  // showing whatever's currently under the pointer over a stale selection.
+  const popupNode = (hoveredNode && isIngredientNode(hoveredNode) ? hoveredNode : null) ?? (selectedNode && isIngredientNode(selectedNode) ? selectedNode : null)
+  const popupIngredientData = popupNode ? (popupNode.data as IngredientData) : null
+  const popupSpriteUrl = popupIngredientData ? resolveSpriteImageUrl(popupIngredientData.sprite?.image ?? null, popupIngredientData.source?.pdb) : null
 
   return (
+    <>
     <svg
       ref={svgRef}
       className="recipe-canvas"
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-      onClick={() => selectNode(null)}
+      onClick={() => {
+        selectNode(null)
+        setContextMenu(null)
+      }}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
     >
+      <rect x={0} y={0} width={WIDTH} height={HEIGHT} fill={backgroundColor} />
       <g ref={zoomGroupRef}>
-        {packed.map((node) => {
-          const isLeaf = !node.children
-          const selected = node.data === selectedNode
+        <g className="recipe-canvas-links">
+          {/* Gradient blend between each link's endpoint colors — legacy's `DrawConnections`
+              (main.js:3765-3800): `createLinearGradient` from `colorNode(source)` to
+              `colorNode(target)`. Selected stays a flat orange/yellow highlight (legacy's own
+              selected-link treatment) rather than also gradient-blended. */}
+          <defs>
+            {graph.links.map((link) => {
+              const s = posMap.get(link.source)
+              const t = posMap.get(link.target)
+              if (!s || !t || link === selectedLink) return null
+              const sourceColor = resolveFillColor(link.source, s.depth, isIngredientNode(link.source), colorCtx)
+              const targetColor = resolveFillColor(link.target, t.depth, isIngredientNode(link.target), colorCtx)
+              return (
+                <linearGradient key={link.id} id={`recipe-canvas-link-grad-${link.id}`} gradientUnits="userSpaceOnUse" x1={s.x} y1={s.y} x2={t.x} y2={t.y}>
+                  <stop offset="0" stopColor={sourceColor} />
+                  <stop offset="1" stopColor={targetColor} />
+                </linearGradient>
+              )
+            })}
+          </defs>
+          {graph.links.map((link) => {
+            const s = posMap.get(link.source)
+            const t = posMap.get(link.target)
+            if (!s || !t) return null
+            const selected = link === selectedLink
+            return (
+              <line
+                key={link.id}
+                x1={s.x}
+                y1={s.y}
+                x2={t.x}
+                y2={t.y}
+                className="recipe-canvas-link"
+                stroke={selected ? '#ff8800' : `url(#recipe-canvas-link-grad-${link.id})`}
+                strokeWidth={selected ? strokeWidth * 1.5 : strokeWidth}
+              />
+            )
+          })}
+        </g>
+        {descendants.map((packedNode) => {
+          const node = packedNode.data
+          // Not `!packedNode.children`: `d3.hierarchy`'s children-accessor treats an *empty*
+          // array as "no children" (its `childs && childs.length` check is falsy for `[]`), so
+          // a genuinely empty compartment (e.g. freshly added via "Add compartment") would
+          // otherwise get misclassified as a leaf/ingredient — found live, real bug, only
+          // surfaced once "Add compartment" made an empty compartment reachable at all.
+          const isLeaf = node.data.nodetype === 'ingredient'
+          const isDragged = drag?.node === node
+          const cx = isDragged ? drag.x : packedNode.x
+          const cy = isDragged ? drag.y : packedNode.y
+          const selected = node === selectedNode
+          const multiSelected = selectedNodes.includes(node)
+          const isDropTarget = drag?.dropTarget === node
+          const color = resolveFillColor(node, packedNode.depth, isLeaf, colorCtx)
+          const data = node.data as IngredientData
+          const spriteUrl = isLeaf ? resolveSpriteImageUrl(data.sprite?.image ?? null, data.source?.pdb) : null
+          const isFiber = isLeaf && data.ingtype === 'fiber'
+          const hovered = node === hoveredNode
+          const showLabelText = isLeaf && (selected || multiSelected || hovered || zoomLevel > LABEL_ZOOM_THRESHOLD)
+          const arcId = `recipe-canvas-arc-${nodeKey(node)}`
+
           return (
-            <circle
-              key={nodeKey(node.data)}
-              cx={node.x}
-              cy={node.y}
-              r={node.r}
-              className={isLeaf ? 'recipe-canvas-ingredient' : 'recipe-canvas-compartment'}
-              fill={isLeaf ? fillColor(node.data, node.depth) : 'none'}
-              stroke={selected ? '#ff8800' : isLeaf ? 'none' : fillColor(node.data, node.depth)}
-              strokeWidth={selected ? 3 : isLeaf ? 0 : 1.5}
-              onClick={(event) => {
-                event.stopPropagation()
-                selectNode(node.data)
-              }}
-            >
-              <title>{node.data.data.name}</title>
-            </circle>
+            <g key={nodeKey(node)}>
+              <circle
+                cx={cx}
+                cy={cy}
+                r={packedNode.r}
+                className={isLeaf ? 'recipe-canvas-ingredient' : 'recipe-canvas-compartment'}
+                fill={isLeaf ? color : 'none'}
+                stroke={isDropTarget ? '#00b894' : selected ? '#ff8800' : multiSelected ? '#0984e3' : hovered ? 'black' : isLeaf ? 'none' : color}
+                strokeWidth={isDropTarget || selected || multiSelected || hovered ? strokeWidth * 2 : isLeaf ? 0 : strokeWidth}
+                strokeDasharray={isDropTarget ? '4 3' : undefined}
+                opacity={isDragged ? 0.6 : 1}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  if (!event.ctrlKey && !event.metaKey) {
+                    selectNode(node)
+                    markVisited(node)
+                  }
+                }}
+                onPointerDown={(event) => handlePointerDown(event, node)}
+                onContextMenu={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  setContextMenu({ node, x: event.clientX, y: event.clientY })
+                }}
+                onMouseEnter={() => setHoveredNode(node)}
+                onMouseLeave={() => setHoveredNode((current) => (current === node ? null : current))}
+              >
+                <title>{node.data.name}</title>
+              </circle>
+
+              {/* Sprite/thumbnail image — legacy's per-node thumbnail in `DrawIngredients`
+                  (main.js:3740-3751), gated by the "Node image" checkbox. Fiber ingredients
+                  repeat the image 3 times (legacy main.js:4017-4022, spaced by
+                  `sprite.lengthy`) — simplified here to a fixed fraction of the circle's own
+                  diameter rather than replicating legacy's angstrom-precise spacing, which was
+                  calibrated for a fixed large screen-space popup, not a small in-context
+                  circle whose radius varies per ingredient. */}
+              {showSprites && spriteUrl && !isFiber && (
+                <image href={spriteUrl} x={cx - packedNode.r} y={cy - packedNode.r} width={packedNode.r * 2} height={packedNode.r * 2} preserveAspectRatio="xMidYMid meet" pointerEvents="none" />
+              )}
+              {showSprites && spriteUrl && isFiber && (
+                <>
+                  {[-1, 0, 1].map((offset) => (
+                    <image
+                      key={offset}
+                      href={spriteUrl}
+                      x={cx + offset * packedNode.r * 0.9 - packedNode.r * 0.5}
+                      y={cy - packedNode.r * 0.5}
+                      width={packedNode.r}
+                      height={packedNode.r}
+                      preserveAspectRatio="xMidYMid meet"
+                      pointerEvents="none"
+                    />
+                  ))}
+                </>
+              )}
+
+              {/* Membrane markers — legacy's three offsety-derived lines (main.js:3989-4015):
+                  green = center, red = outer leaflet, blue = inner leaflet. Positioned as a
+                  fixed fraction of the circle's own radius rather than legacy's angstrom
+                  `offsety`/`scale2d` conversion, for the same in-context-circle reason as the
+                  fiber sprite spacing above. */}
+              {isLeaf && data.surface && (
+                <g pointerEvents="none">
+                  <line x1={cx - packedNode.r * 0.6} y1={cy} x2={cx + packedNode.r * 0.6} y2={cy} stroke="green" strokeWidth={1} />
+                  <line x1={cx - packedNode.r * 0.6} y1={cy - packedNode.r * 0.3} x2={cx + packedNode.r * 0.6} y2={cy - packedNode.r * 0.3} stroke="red" strokeWidth={1} />
+                  <line x1={cx - packedNode.r * 0.6} y1={cy + packedNode.r * 0.3} x2={cx + packedNode.r * 0.6} y2={cy + packedNode.r * 0.3} stroke="blue" strokeWidth={1} />
+                </g>
+              )}
+
+              {/* Curved compartment name — legacy's `drawCircularText` (main.js:5500-5536),
+                  ported to SVG's native `<textPath>` along a semicircular arc instead of
+                  manually rotating the canvas per character (SVG has this built in). */}
+              {!isLeaf && packedNode.r > MIN_LABEL_RADIUS && (
+                <>
+                  <path id={arcId} d={`M ${cx - packedNode.r} ${cy} A ${packedNode.r} ${packedNode.r} 0 0 1 ${cx + packedNode.r} ${cy}`} fill="none" stroke="none" />
+                  <text className="recipe-canvas-compartment-label" fontSize={Math.min(Math.round(packedNode.r / 10), 16)}>
+                    <textPath href={`#${arcId}`} startOffset="50%" textAnchor="middle">
+                      {node.data.name}
+                    </textPath>
+                  </text>
+                </>
+              )}
+
+              {showLabelText && (
+                <text x={cx} y={cy + packedNode.r + 10} textAnchor="middle" className="recipe-canvas-ingredient-label" pointerEvents="none">
+                  {labelText(data, labelBy)}
+                </text>
+              )}
+            </g>
           )
         })}
       </g>
+
+      {legendEntries.length > 0 && (
+        <g className="recipe-canvas-legend">
+          {legendEntries.map(([value, swatchColor], i) => (
+            <g key={value} transform={`translate(4, ${4 + i * 20})`}>
+              <rect width={16} height={16} fill={swatchColor} />
+              <text x={20} y={13} fontSize={12}>
+                {value}
+              </text>
+            </g>
+          ))}
+        </g>
+      )}
+
+      {popupSpriteUrl && (
+        <image href={popupSpriteUrl} x={WIDTH - 108} y={HEIGHT - 108} width={100} height={100} preserveAspectRatio="xMidYMid meet" pointerEvents="none" className="recipe-canvas-popup-thumbnail" />
+      )}
     </svg>
+    {contextMenu && (
+      <div className="recipe-canvas-context-menu" style={{ left: contextMenu.x, top: contextMenu.y }} onClick={(event) => event.stopPropagation()}>
+        <div className="recipe-canvas-context-menu-title">{contextMenu.node.data.name}</div>
+        <button type="button" onClick={handleRename}>
+          Rename
+        </button>
+        <button type="button" onClick={handleDelete} disabled={!contextMenu.node.parent}>
+          Delete
+        </button>
+        <label>
+          Color
+          <input type="color" value={explicitColorHex(contextMenu.node.data.color)} onChange={handleSetColor} />
+        </label>
+      </div>
+    )}
+    </>
   )
 }

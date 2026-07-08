@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { resolveStructureSource } from '../src/domain/pdb/structureSource'
+import { resolveStructureSource, resolveSpriteImageUrl } from '../src/domain/pdb/structureSource'
 
 describe('resolveStructureSource', () => {
   it('treats a bare accession (no extension) as an ID for automatic loading', () => {
@@ -62,5 +62,30 @@ describe('resolveStructureSource', () => {
     const resolved = pdbValues.map(resolveStructureSource)
     expect(resolved.filter((r) => r?.kind === 'id')).toHaveLength(8)
     expect(resolved.filter((r) => r?.kind === 'repo-file')).toHaveLength(18)
+  })
+})
+
+describe('resolveSpriteImageUrl', () => {
+  it('resolves a sprite.image filename from the cellPACK_data images/ folder', () => {
+    expect(resolveSpriteImageUrl('Albumin_C.png', undefined)).toBe(
+      'https://raw.githubusercontent.com/mesoscope/cellPACK_data/master/cellPACK_database_1.1.0/images/Albumin_C.png',
+    )
+  })
+
+  it('falls back to a PDBe chain-image thumbnail keyed by the PDB accession when there is no sprite.image', () => {
+    expect(resolveSpriteImageUrl(null, '1e7i')).toBe('https://www.ebi.ac.uk/pdbe/static/entry/1e7i_deposited_chain_front_image-200x200.png')
+  })
+
+  it('does not treat a repo-file pdb (has an extension) as a PDBe accession', () => {
+    expect(resolveSpriteImageUrl(null, 'MA_matrix_G1.pdb')).toBeNull()
+  })
+
+  it('returns null when neither sprite.image nor a usable pdb accession is present', () => {
+    expect(resolveSpriteImageUrl(null, undefined)).toBeNull()
+    expect(resolveSpriteImageUrl(null, '')).toBeNull()
+  })
+
+  it('prefers sprite.image over the pdb fallback when both are present', () => {
+    expect(resolveSpriteImageUrl('Albumin_C.png', '1e7i')).toContain('Albumin_C.png')
   })
 })

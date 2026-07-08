@@ -77,6 +77,10 @@ export interface IngredientData {
   npartner?: number
   include?: boolean
   children?: never
+  /** Legacy's pre-"Apply to ingredient color" backup of the original `color`
+   *  (`recipeStore.applyColorModeToIngredient`) — see `KNOWN_INGREDIENT_FIELDS`'s comment for
+   *  why this is excluded from export. */
+  _color?: number[] | null
   // Custom columns imported from CSV/XLSX (legacy `additional_data`/`custom_data`).
   [customField: string]: unknown
 }
@@ -163,6 +167,11 @@ export const KNOWN_INGREDIENT_FIELDS = new Set<string>([
   'uniprot', 'pcpalAxis', 'offset', 'fiberAxis', 'fiberOffset', 'pos',
   'radii', 'ingtype', 'buildtype', 'color', 'sprite', 'results', 'center',
   'npartner', 'include', 'children',
+  // `_color` (legacy's pre-"Apply to ingredient color" backup, see
+  // `recipeStore.applyColorModeToIngredient`) is deliberately included here so it's never
+  // treated as a custom column — an internal backup field should stay invisible to export,
+  // not leak into `custom_data`.
+  '_color',
 ])
 
 export function customIngredientFields(data: IngredientData): string[] {

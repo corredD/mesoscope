@@ -22,7 +22,9 @@ import { PdbSearchPanel } from '../pdb/PdbSearchPanel'
 import { UniprotSearchPanel } from '../pdb/UniprotSearchPanel'
 import { SequenceFeaturesPanel } from '../pdb/SequenceFeaturesPanel'
 import { RecipeCanvas } from '../recipe/RecipeCanvas'
+import { RecipeCanvasToolbar } from '../recipe/RecipeCanvasToolbar'
 import { RecipeTable } from '../recipe/RecipeTable'
+import { InteractionTable } from '../recipe/InteractionTable'
 import './Panel.css'
 import './Workspace.css'
 
@@ -147,7 +149,11 @@ type PanelId =
   | 'pdbSearch'
 
 function RecipeOptionsPanel() {
-  return <div className="panel-body">Phase 4: wraps the canvas view option controls.</div>
+  return (
+    <div className="panel-body">
+      <RecipeCanvasToolbar />
+    </div>
+  )
 }
 
 function RecipeViewPanel() {
@@ -222,7 +228,11 @@ function RecipeTablePanel() {
 }
 
 function InteractionTablePanel() {
-  return <div className="panel-body">Phase 4: wraps the SlickGrid `grid_interaction` table.</div>
+  return (
+    <div className="panel-body">
+      <InteractionTable />
+    </div>
+  )
 }
 
 function UniprotSearchTablePanel() {
