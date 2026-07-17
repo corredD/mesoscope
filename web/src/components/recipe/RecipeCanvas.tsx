@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import * as d3 from 'd3'
 import { useRecipeStore } from '../../state/recipeStore'
 import { useUiModeStore } from '../../state/uiModeStore'
-import { ancestorsSelfFirst, isIngredientNode, nodeKey, type IngredientData, type RecipeNode } from '../../domain/recipe/types'
-import { computeRecipeLayout, type PackedNode } from '../../domain/recipe/computeRecipeLayout'
+import { ancestorsSelfFirst, isIngredientNode, nodeKey, type CompartmentData, type IngredientData, type RecipeNode } from '../../domain/recipe/types'
+import { type PackedNode } from '../../domain/recipe/computeRecipeLayout'
+import { useRecipeSimulation } from '../../domain/recipe/useRecipeSimulation'
 import { computePropertyMapping } from '../../domain/recipe/propertyMapping'
 import { BUILTIN_COLOR_MODES, computeCategoricalPalette, resolveFillColor, type ColorModeContext } from '../../domain/recipe/colorModes'
 import { resolveSpriteImageUrl } from '../../domain/pdb/structureSource'
@@ -23,24 +24,47 @@ import './RecipeCanvas.css'
  * Legacy draws on a single 2D `<canvas>`; this draws SVG circles instead —
  * simpler to keep declarative in React, and at recipe-sized node counts
  * (tens to low hundreds) SVG's per-element overhead isn't a real concern.
+ * Confirmed with the user over a canvas-2D rewrite when this file switched
+ * from a bounded one-shot layout to a live simulation (see below) — reuses
+ * the sprite/label/legend/context-menu JSX almost entirely unchanged.
  *
- * Ported: `d3.hierarchy` + `d3.pack` circle-packing layout, now via
- * `computeRecipeLayout` (which also runs the synchronous surface/cluster
- * force solve — see that file's docstring). Compartments as rings,
- * ingredients as filled circles nested inside, sized by `sizeBy` (see
- * `computeRecipeLayout`) and colored via `resolveFillColor`
+ * **Live physics, not a one-shot snapshot.** Position — `d3.hierarchy` +
+ * `d3.pack` circle-packing plus a genuinely live, continuously-ticking
+ * `d3.forceSimulation` for the surface/cluster/parent-containment/link
+ * forces — is owned by `useRecipeSimulation` (see that file's docstring for
+ * the full live-simulation architecture and why an earlier bounded-tick
+ * version made every control change "snap" instead of visibly flow). This
+ * component's job is split cleanly along that hook's own core principle:
+ * **React owns appearance, the hook's tick handler owns geometry,
+ * imperatively.** Every leaf's `<g>` and every link's `<line>`/
+ * `<linearGradient>` gets its position (`transform`/`x1,y1,x2,y2`) written
+ * directly via `hook.getNodeRef`/`getLinkLineRef`/`getLinkGradientRef` —
+ * stable, cached ref-callbacks, NOT inline closures (an inline `(el) => ...`
+ * would get a new identity every render, causing React to re-fire it on
+ * every unrelated re-render and re-stamp a stale initial position, fighting
+ * the tick handler) — and `transform`/`x1..y2` are deliberately NOT set as
+ * ordinary React JSX props on these elements, so React's reconciliation
+ * never touches (or fights) them once mounted. Compartments use the same
+ * `getNodeRef` mechanism; the hook updates the whole packed subtree
+ * imperatively when a compartment is dragged.
+ *
+ * Compartments as rings, ingredients as filled circles nested inside, sized
+ * by `sizeBy` (see `computeRecipeLayout`) and colored via `resolveFillColor`
  * (`colorModes.ts` — the full 16-mode legacy `ChangeCanvasColor`/`colorNode`
  * port). Click feeds `recipeStore.selectNode` and `uiModeStore.markVisited`
  * (the "viewed" color mode's visited-flag); Ctrl+click in Edit Mode feeds
  * `uiModeStore.toggleNodeSelection` instead (multi-select for "Add
- * interaction"). Basic zoom/pan via `d3.zoom`. `graph.links` render as lines
- * between resolved endpoints. Drag-to-reparent (Edit Mode only): pointer
- * events on each circle rather than `d3.drag()` — this file already mixes
- * React-rendered SVG with `d3.zoom` for the group transform only, so plain
- * `onPointerDown/Move/Up` fits the existing style better than a second,
- * separate d3-owned event-binding path for drag; `event.stopPropagation()`
- * on pointer-down still prevents `d3.zoom`'s own pan handling from also
- * firing on the same gesture.
+ * interaction"). Basic zoom/pan via `d3.zoom`, layered independently on top
+ * of the hook's per-node transforms (`d3.zoom` only ever writes the outer
+ * `<g ref={zoomGroupRef}>` transform; the hook writes inner, per-node
+ * transforms nested inside it — two independent, multiplicatively-stacking
+ * transform layers, no conflict). `graph.links` render as lines between
+ * live-resolved endpoints. Every non-root node is directly draggable; Edit
+ * Mode adds persistent drag-to-reparent behavior. Pointer events call
+ * `hook.pin(node, x, y)` rather than setting React-rendered coordinates —
+ * ingredients reheat the simulation and compartments move as rigid subtrees.
+ * `event.stopPropagation()` on pointer-down still prevents `d3.zoom`'s own
+ * pan handling from also firing on the same gesture.
  *
  * Also ported (the "full 1:1 parity" follow-up to the Edit Mode slice above):
  * sprite/thumbnail images (`resolveSpriteImageUrl`, SVG `<image>` — fiber
@@ -73,8 +97,8 @@ import './RecipeCanvas.css'
  * equivalent entry point for — links have no pointer handlers today).
  */
 
-const WIDTH = 600
-const HEIGHT = 600
+const DEFAULT_WIDTH = 600
+const DEFAULT_HEIGHT = 600
 /** Ingredient labels only render past this zoom level (unless selected) — legacy's
  *  `transform.k > 1.5` gate in `DrawLabels` (main.js:3828). */
 const LABEL_ZOOM_THRESHOLD = 1.5
@@ -162,10 +186,22 @@ export function RecipeCanvas() {
   const setNodeColor = useRecipeStore((s) => s.setNodeColor)
 
   const svgRef = useRef<SVGSVGElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
   const zoomGroupRef = useRef<SVGGElement>(null)
   const transformRef = useRef(d3.zoomIdentity)
+  const [canvasSize, setCanvasSize] = useState({ width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT })
 
-  const [drag, setDrag] = useState<{ node: RecipeNode; x: number; y: number; dropTarget: RecipeNode | null } | null>(null)
+  // Tracks which node is being dragged and its current drop target for HIGHLIGHTING purposes
+  // only — position is no longer React state at all. `hook.pin(node, x, y)` fixes the node's
+  // live simulation position (`fx`/`fy`) directly; the tick handler renders wherever the physics
+  // settles, which the DOM already reflects imperatively by the time this component re-renders
+  // for any other reason.
+  const [drag, setDrag] = useState<{
+    node: RecipeNode
+    dropTarget: RecipeNode | null
+    offsetX: number
+    offsetY: number
+  } | null>(null)
   // Reactive mirror of `transformRef.current.k` — the ref alone doesn't trigger a re-render,
   // but ingredient-label visibility (`LABEL_ZOOM_THRESHOLD`) needs to react to zoom changes.
   const [zoomLevel, setZoomLevel] = useState(1)
@@ -183,20 +219,43 @@ export function RecipeCanvas() {
 
   const root = graph?.nodes[0] ?? null
 
-  const layout = useMemo(() => {
-    if (!root || !graph) return null
-    return computeRecipeLayout(root, groupBy, sizeBy, WIDTH, HEIGHT, graph.links, {
-      radiusScale,
-      parentForce,
-      surfaceForce,
-      linkForce,
-      clusterByForce,
-      collisionForce,
+  // The old fixed 600×600 viewBox made the root/background look like a square floating inside
+  // wide or tall dockview panels. Observe the actual stage and use those dimensions for both the
+  // SVG coordinate system and d3.pack(), preserving circular geometry while filling any panel
+  // aspect ratio. ResizeObserver also catches dock/undock and splitter drags, not just window
+  // resizes.
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage) return
+
+    const updateSize = (width: number, height: number) => {
+      const next = {
+        width: Math.max(Math.round(width), 240),
+        height: Math.max(Math.round(height), 200),
+      }
+      setCanvasSize((current) => (current.width === next.width && current.height === next.height ? current : next))
+    }
+
+    updateSize(stage.clientWidth, stage.clientHeight)
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect
+      if (rect) updateSize(rect.width, rect.height)
     })
-    // `graph` (not just `root`) is a dependency: node data mutates in place
-    // (updateIngredient/applyPdbPick/color import/reparentNode) without changing identity.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [root, graph, groupBy, sizeBy, radiusScale, parentForce, surfaceForce, linkForce, clusterByForce, collisionForce])
+    observer.observe(stage)
+    return () => observer.disconnect()
+  }, [root])
+
+  // Owns the live d3-force simulation (pack seed + continuous ticking) — see
+  // `useRecipeSimulation.ts`'s docstring for the full lifecycle (CREATE/REHEAT/UPDATE tiers) and
+  // why position is written imperatively rather than through this component's own React state.
+  const { descendants, posMap, pin, release, getNodeRef, getLinkLineRef, getLinkGradientRef } = useRecipeSimulation(root, graph, groupBy, sizeBy, canvasSize.width, canvasSize.height, {
+    radiusScale,
+    parentForce,
+    surfaceForce,
+    linkForce,
+    clusterByForce,
+    collisionForce,
+  })
 
   // Color context — see `colorModes.ts`'s docstring for why `resolveFillColor` is the single
   // shared resolver between here and `RecipeCanvasToolbar.tsx`'s "Apply to ingredient color".
@@ -241,11 +300,9 @@ export function RecipeCanvas() {
     }
   }, [])
 
-  if (!graph || !root || !layout) {
+  if (!graph || !root) {
     return <p className="panel-note">No recipe loaded. Use Load &gt; New Recipe.</p>
   }
-
-  const { descendants, posMap } = layout
 
   /** Screen (client) coordinates → pack-space, inverting the SVG viewBox scale then the current zoom transform. */
   function toPackSpace(clientX: number, clientY: number): [number, number] {
@@ -261,22 +318,34 @@ export function RecipeCanvas() {
       if (editMode) toggleNodeSelection(node)
       return
     }
-    if (!editMode) return
+    // The root represents the full recipe/canvas frame. Panning the viewport moves it; dragging
+    // it as a node would be redundant and would leave no parent boundary to constrain it to.
+    const packed = posMap.get(node)
+    if (!packed?.parent) return
     event.stopPropagation()
     const [x, y] = toPackSpace(event.clientX, event.clientY)
-    setDrag({ node, x, y, dropTarget: null })
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+    // Preserve the point grabbed inside the circle/ring so pointer-down never makes the node jump
+    // its centre under the cursor. Dragging is always available; Edit Mode only adds persistent
+    // reparenting and Ctrl/Cmd multi-selection on top of this spatial interaction.
+    pin(node, packed.x, packed.y)
+    setDrag({ node, dropTarget: null, offsetX: packed.x - x, offsetY: packed.y - y })
   }
 
   function handlePointerMove(event: React.PointerEvent<SVGSVGElement>) {
     if (!drag) return
     const [x, y] = toPackSpace(event.clientX, event.clientY)
-    const dropTarget = findDropTarget(descendants, x, y, drag.node)
-    setDrag({ ...drag, x, y, dropTarget })
+    const targetX = x + drag.offsetX
+    const targetY = y + drag.offsetY
+    pin(drag.node, targetX, targetY)
+    const dropTarget = editMode ? findDropTarget(descendants, targetX, targetY, drag.node) : null
+    setDrag((prev) => (prev ? { ...prev, dropTarget } : null))
   }
 
   function handlePointerUp() {
     if (!drag) return
-    if (drag.dropTarget) reparentNode(drag.node, drag.dropTarget)
+    release(drag.node)
+    if (editMode && drag.dropTarget) reparentNode(drag.node, drag.dropTarget)
     setDrag(null)
   }
 
@@ -319,11 +388,11 @@ export function RecipeCanvas() {
   const popupSpriteUrl = popupIngredientData ? resolveSpriteImageUrl(popupIngredientData.sprite?.image ?? null, popupIngredientData.source?.pdb) : null
 
   return (
-    <>
+    <div ref={stageRef} className="recipe-canvas-stage">
     <svg
       ref={svgRef}
-      className="recipe-canvas"
-      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+      className={`recipe-canvas${drag ? ' is-dragging' : ''}`}
+      viewBox={`0 0 ${canvasSize.width} ${canvasSize.height}`}
       onClick={() => {
         selectNode(null)
         setContextMenu(null)
@@ -332,7 +401,7 @@ export function RecipeCanvas() {
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
     >
-      <rect x={0} y={0} width={WIDTH} height={HEIGHT} fill={backgroundColor} />
+      <rect x={0} y={0} width={canvasSize.width} height={canvasSize.height} fill={backgroundColor} />
       <g ref={zoomGroupRef}>
         <g className="recipe-canvas-links">
           {/* Gradient blend between each link's endpoint colors — legacy's `DrawConnections`
@@ -340,6 +409,10 @@ export function RecipeCanvas() {
               `colorNode(target)`. Selected stays a flat orange/yellow highlight (legacy's own
               selected-link treatment) rather than also gradient-blended. */}
           <defs>
+            {/* No x1/y1/x2/y2 here — `getLinkGradientRef` applies the initial axis imperatively
+                on mount and the simulation's tick handler keeps it current; setting it as a React
+                prop too would let an unrelated re-render reset it to a stale value (see this
+                file's docstring). */}
             {graph.links.map((link) => {
               const s = posMap.get(link.source)
               const t = posMap.get(link.target)
@@ -347,7 +420,7 @@ export function RecipeCanvas() {
               const sourceColor = resolveFillColor(link.source, s.depth, isIngredientNode(link.source), colorCtx)
               const targetColor = resolveFillColor(link.target, t.depth, isIngredientNode(link.target), colorCtx)
               return (
-                <linearGradient key={link.id} id={`recipe-canvas-link-grad-${link.id}`} gradientUnits="userSpaceOnUse" x1={s.x} y1={s.y} x2={t.x} y2={t.y}>
+                <linearGradient key={link.id} ref={getLinkGradientRef(link)} id={`recipe-canvas-link-grad-${link.id}`} gradientUnits="userSpaceOnUse">
                   <stop offset="0" stopColor={sourceColor} />
                   <stop offset="1" stopColor={targetColor} />
                 </linearGradient>
@@ -362,10 +435,7 @@ export function RecipeCanvas() {
             return (
               <line
                 key={link.id}
-                x1={s.x}
-                y1={s.y}
-                x2={t.x}
-                y2={t.y}
+                ref={getLinkLineRef(link)}
                 className="recipe-canvas-link"
                 stroke={selected ? '#ff8800' : `url(#recipe-canvas-link-grad-${link.id})`}
                 strokeWidth={selected ? strokeWidth * 1.5 : strokeWidth}
@@ -375,6 +445,9 @@ export function RecipeCanvas() {
         </g>
         {descendants.map((packedNode) => {
           const node = packedNode.data
+          // The root is the recipe/layout frame, not a biological compartment. Legacy uses its
+          // color as the canvas background but deliberately does not draw its circle; do the same.
+          if (!packedNode.parent) return null
           // Not `!packedNode.children`: `d3.hierarchy`'s children-accessor treats an *empty*
           // array as "no children" (its `childs && childs.length` check is falsy for `[]`), so
           // a genuinely empty compartment (e.g. freshly added via "Add compartment") would
@@ -382,8 +455,6 @@ export function RecipeCanvas() {
           // surfaced once "Add compartment" made an empty compartment reachable at all.
           const isLeaf = node.data.nodetype === 'ingredient'
           const isDragged = drag?.node === node
-          const cx = isDragged ? drag.x : packedNode.x
-          const cy = isDragged ? drag.y : packedNode.y
           const selected = node === selectedNode
           const multiSelected = selectedNodes.includes(node)
           const isDropTarget = drag?.dropTarget === node
@@ -394,37 +465,119 @@ export function RecipeCanvas() {
           const hovered = node === hoveredNode
           const showLabelText = isLeaf && (selected || multiSelected || hovered || zoomLevel > LABEL_ZOOM_THRESHOLD)
           const arcId = `recipe-canvas-arc-${nodeKey(node)}`
+          const compartmentData = !isLeaf ? (node.data as CompartmentData) : null
+          const membraneThickness = Math.max(Number(compartmentData?.thickness) || 0, 1)
+          const membraneHalf = membraneThickness / 2
+          const labelRadius = Math.max(packedNode.r - membraneHalf - 5, 1)
+          const interactionStroke = isDropTarget ? '#00b894' : selected ? '#ff8800' : multiSelected ? '#0984e3' : hovered ? '#111827' : color
+          const interactionStrokeWidth = isDropTarget || selected || multiSelected || hovered ? Math.max(strokeWidth * 1.75, 1.5) : Math.max(strokeWidth, 0.75)
+
+          const selectThisNode = (event: React.MouseEvent<SVGCircleElement>) => {
+            event.stopPropagation()
+            if (!event.ctrlKey && !event.metaKey) {
+              selectNode(node)
+              markVisited(node)
+            }
+          }
+
+          const openContextMenu = (event: React.MouseEvent<SVGCircleElement>) => {
+            event.preventDefault()
+            event.stopPropagation()
+            setContextMenu({ node, x: event.clientX, y: event.clientY })
+          }
 
           return (
-            <g key={nodeKey(node)}>
-              <circle
-                cx={cx}
-                cy={cy}
-                r={packedNode.r}
-                className={isLeaf ? 'recipe-canvas-ingredient' : 'recipe-canvas-compartment'}
-                fill={isLeaf ? color : 'none'}
-                stroke={isDropTarget ? '#00b894' : selected ? '#ff8800' : multiSelected ? '#0984e3' : hovered ? 'black' : isLeaf ? 'none' : color}
-                strokeWidth={isDropTarget || selected || multiSelected || hovered ? strokeWidth * 2 : isLeaf ? 0 : strokeWidth}
-                strokeDasharray={isDropTarget ? '4 3' : undefined}
-                opacity={isDragged ? 0.6 : 1}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  if (!event.ctrlKey && !event.metaKey) {
-                    selectNode(node)
-                    markVisited(node)
-                  }
-                }}
-                onPointerDown={(event) => handlePointerDown(event, node)}
-                onContextMenu={(event) => {
-                  event.preventDefault()
-                  event.stopPropagation()
-                  setContextMenu({ node, x: event.clientX, y: event.clientY })
-                }}
-                onMouseEnter={() => setHoveredNode(node)}
-                onMouseLeave={() => setHoveredNode((current) => (current === node ? null : current))}
-              >
-                <title>{node.data.name}</title>
-              </circle>
+            // No `transform` prop here — `getNodeRef` applies the initial position imperatively
+            // on mount, and (for leaves) the live simulation's tick handler keeps it current on
+            // every frame afterward. Every child below uses LOCAL, origin-relative coordinates
+            // (0,0 = this node's center) instead of absolute `cx`/`cy` math, so the whole group
+            // moves for free whenever the parent `<g>`'s transform is updated — see this file's
+            // docstring. Compartments use the same mechanism; their transforms are updated
+            // imperatively when a rigid subtree is dragged, even though they do not participate
+            // in the continuously-ticking leaf simulation.
+            <g
+              key={nodeKey(node)}
+              ref={getNodeRef(node)}
+              className={`recipe-canvas-node${isDragged ? ' is-dragged' : ''}${hovered ? ' is-hovered' : ''}${selected ? ' is-selected' : ''}`}
+              data-recipe-node="true"
+              data-node-type={isLeaf ? 'ingredient' : 'compartment'}
+              data-node-name={node.data.name}
+              opacity={isDragged ? 0.64 : 1}
+            >
+              {isLeaf ? (
+                <circle
+                  cx={0}
+                  cy={0}
+                  r={packedNode.r}
+                  className="recipe-canvas-ingredient"
+                  fill={color}
+                  stroke={interactionStroke}
+                  strokeWidth={isDropTarget || selected || multiSelected || hovered ? interactionStrokeWidth : 0}
+                  strokeDasharray={isDropTarget ? '4 3' : undefined}
+                  onClick={selectThisNode}
+                  onPointerDown={(event) => handlePointerDown(event, node)}
+                  onContextMenu={openContextMenu}
+                  onMouseEnter={() => setHoveredNode(node)}
+                  onMouseLeave={() => setHoveredNode((current) => (current === node ? null : current))}
+                >
+                  <title>{node.data.name}</title>
+                </circle>
+              ) : (
+                <>
+                  {/* A soft membrane band plus two crisp leaflet edges. The invisible centreline
+                      stroke is deliberately wider than the visible band, making thin/small
+                      compartments easy to hover and drag without inflating their appearance. */}
+                  <circle
+                    className="recipe-canvas-compartment-band"
+                    cx={0}
+                    cy={0}
+                    r={packedNode.r}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={membraneThickness}
+                  />
+                  <circle
+                    className="recipe-canvas-membrane-edge recipe-canvas-membrane-edge-outer"
+                    data-membrane-edge="outer"
+                    cx={0}
+                    cy={0}
+                    r={packedNode.r + membraneHalf}
+                    fill="none"
+                    stroke={interactionStroke}
+                    strokeWidth={interactionStrokeWidth}
+                    strokeDasharray={isDropTarget ? '4 3' : undefined}
+                  />
+                  <circle
+                    className="recipe-canvas-membrane-edge recipe-canvas-membrane-edge-inner"
+                    data-membrane-edge="inner"
+                    cx={0}
+                    cy={0}
+                    r={Math.max(packedNode.r - membraneHalf, 0)}
+                    fill="none"
+                    stroke={interactionStroke}
+                    strokeWidth={interactionStrokeWidth}
+                    strokeDasharray={isDropTarget ? '4 3' : undefined}
+                  />
+                  <circle
+                    className="recipe-canvas-compartment recipe-canvas-compartment-hit"
+                    data-compartment-hit="true"
+                    cx={0}
+                    cy={0}
+                    r={packedNode.r}
+                    fill="none"
+                    stroke="transparent"
+                    strokeWidth={Math.max(membraneThickness + 12, 18)}
+                    pointerEvents="stroke"
+                    onClick={selectThisNode}
+                    onPointerDown={(event) => handlePointerDown(event, node)}
+                    onContextMenu={openContextMenu}
+                    onMouseEnter={() => setHoveredNode(node)}
+                    onMouseLeave={() => setHoveredNode((current) => (current === node ? null : current))}
+                  >
+                    <title>{node.data.name}</title>
+                  </circle>
+                </>
+              )}
 
               {/* Sprite/thumbnail image — legacy's per-node thumbnail in `DrawIngredients`
                   (main.js:3740-3751), gated by the "Node image" checkbox. Fiber ingredients
@@ -434,7 +587,7 @@ export function RecipeCanvas() {
                   calibrated for a fixed large screen-space popup, not a small in-context
                   circle whose radius varies per ingredient. */}
               {showSprites && spriteUrl && !isFiber && (
-                <image href={spriteUrl} x={cx - packedNode.r} y={cy - packedNode.r} width={packedNode.r * 2} height={packedNode.r * 2} preserveAspectRatio="xMidYMid meet" pointerEvents="none" />
+                <image href={spriteUrl} x={-packedNode.r} y={-packedNode.r} width={packedNode.r * 2} height={packedNode.r * 2} preserveAspectRatio="xMidYMid meet" pointerEvents="none" />
               )}
               {showSprites && spriteUrl && isFiber && (
                 <>
@@ -442,8 +595,8 @@ export function RecipeCanvas() {
                     <image
                       key={offset}
                       href={spriteUrl}
-                      x={cx + offset * packedNode.r * 0.9 - packedNode.r * 0.5}
-                      y={cy - packedNode.r * 0.5}
+                      x={offset * packedNode.r * 0.9 - packedNode.r * 0.5}
+                      y={-packedNode.r * 0.5}
                       width={packedNode.r}
                       height={packedNode.r}
                       preserveAspectRatio="xMidYMid meet"
@@ -460,9 +613,9 @@ export function RecipeCanvas() {
                   fiber sprite spacing above. */}
               {isLeaf && data.surface && (
                 <g pointerEvents="none">
-                  <line x1={cx - packedNode.r * 0.6} y1={cy} x2={cx + packedNode.r * 0.6} y2={cy} stroke="green" strokeWidth={1} />
-                  <line x1={cx - packedNode.r * 0.6} y1={cy - packedNode.r * 0.3} x2={cx + packedNode.r * 0.6} y2={cy - packedNode.r * 0.3} stroke="red" strokeWidth={1} />
-                  <line x1={cx - packedNode.r * 0.6} y1={cy + packedNode.r * 0.3} x2={cx + packedNode.r * 0.6} y2={cy + packedNode.r * 0.3} stroke="blue" strokeWidth={1} />
+                  <line x1={-packedNode.r * 0.6} y1={0} x2={packedNode.r * 0.6} y2={0} stroke="green" strokeWidth={1} />
+                  <line x1={-packedNode.r * 0.6} y1={-packedNode.r * 0.3} x2={packedNode.r * 0.6} y2={-packedNode.r * 0.3} stroke="red" strokeWidth={1} />
+                  <line x1={-packedNode.r * 0.6} y1={packedNode.r * 0.3} x2={packedNode.r * 0.6} y2={packedNode.r * 0.3} stroke="blue" strokeWidth={1} />
                 </g>
               )}
 
@@ -471,7 +624,7 @@ export function RecipeCanvas() {
                   manually rotating the canvas per character (SVG has this built in). */}
               {!isLeaf && packedNode.r > MIN_LABEL_RADIUS && (
                 <>
-                  <path id={arcId} d={`M ${cx - packedNode.r} ${cy} A ${packedNode.r} ${packedNode.r} 0 0 1 ${cx + packedNode.r} ${cy}`} fill="none" stroke="none" />
+                  <path id={arcId} d={`M ${-labelRadius} 0 A ${labelRadius} ${labelRadius} 0 0 1 ${labelRadius} 0`} fill="none" stroke="none" />
                   <text className="recipe-canvas-compartment-label" fontSize={Math.min(Math.round(packedNode.r / 10), 16)}>
                     <textPath href={`#${arcId}`} startOffset="50%" textAnchor="middle">
                       {node.data.name}
@@ -481,7 +634,7 @@ export function RecipeCanvas() {
               )}
 
               {showLabelText && (
-                <text x={cx} y={cy + packedNode.r + 10} textAnchor="middle" className="recipe-canvas-ingredient-label" pointerEvents="none">
+                <text x={0} y={packedNode.r + 10} textAnchor="middle" className="recipe-canvas-ingredient-label" pointerEvents="none">
                   {labelText(data, labelBy)}
                 </text>
               )}
@@ -504,7 +657,7 @@ export function RecipeCanvas() {
       )}
 
       {popupSpriteUrl && (
-        <image href={popupSpriteUrl} x={WIDTH - 108} y={HEIGHT - 108} width={100} height={100} preserveAspectRatio="xMidYMid meet" pointerEvents="none" className="recipe-canvas-popup-thumbnail" />
+        <image href={popupSpriteUrl} x={canvasSize.width - 108} y={canvasSize.height - 108} width={100} height={100} preserveAspectRatio="xMidYMid meet" pointerEvents="none" className="recipe-canvas-popup-thumbnail" />
       )}
     </svg>
     {contextMenu && (
@@ -522,6 +675,6 @@ export function RecipeCanvas() {
         </label>
       </div>
     )}
-    </>
+    </div>
   )
 }

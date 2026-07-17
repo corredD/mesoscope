@@ -24,6 +24,18 @@
   margin: 0;
 }
 
+.recipe-view-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.recipe-view-panel .recipe-summary {
+  flex: 0 0 auto;
+}
+
 .panel-note {
   font-style: italic;
   color: var(--color-text-muted);

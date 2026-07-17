@@ -2045,6 +2045,176 @@ capability. Recipe-view 1:1 legacy parity — canvas render, pan/zoom, drag-to-r
 force (surface/cluster/parent/link/collision, all tunable), every coloring mode, node/compartment
 CRUD, and interaction links — is confirmed reached.
 
+### Recipe canvas: live D3 force simulation (dynamic physics rewrite, user-directed)
+
+**The "1:1 parity" audit above checked features, not feel.** Despite every legacy control having
+a modern equivalent, the user reported the canvas still didn't feel like the legacy view: legacy
+runs a **continuously-ticking, never-fully-stopping** D3 force simulation (reheats on drag/mouse-
+enter/structural edits, `main.js:2928-2942`) while the port had computed a **bounded 200-tick
+solve once per change and frozen it** (`computeRecipeLayout.ts`'s original architecture, built
+several follow-ups earlier in this same effort). Root cause, confirmed by reading the actual
+`useMemo` dependency list: every single `recipeStore` mutation — including a pure recolor —
+returns a new spread `{...graph}` object, and the old code depended on that object's identity, so
+*any* store change re-triggered the entire bounded solve from a fresh `d3.pack()` seed. The canvas
+"snapped" to a new static image on every edit instead of visibly flowing.
+
+Re-audited legacy's exact live-simulation mechanics before redesigning (two research passes,
+correcting each other along the way — the first pass's plan-agent summary literally lost its own
+final answer to a stream error and had to be re-asked, and separately claimed "no existing tests"
+for `computeRecipeLayout`/`RecipeCanvas` that turned out to be false — 8 and 4 real tests already
+existed and needed porting, not inventing fresh): `d3v4.forceSimulation().on('tick', ticked)` runs
+forever, re-energized by `simulation.alphaTarget(0.3).restart()` on drag-start/mouse-enter and
+`simulation.alpha(1).alphaTarget(0).restart()` on structural edits (main.js:4627, 4748), cooled via
+`alphaTarget(0)` on drag-end. The custom surface/cluster/parent-containment forces are hand-rolled
+velocity nudges applied *every frame* inside `drawNode()` (main.js:5417-5484), reading a mutable
+global (`AllForces`) fresh each tick — slider changes take effect immediately with zero extra
+plumbing. Confirmed with the user: **keep SVG rendering**, not a canvas-2D rewrite — the physics
+loop drives SVG position updates *imperatively* (direct DOM writes via refs, bypassing React
+state) instead, reusing the existing sprite/label/legend/context-menu/hover-highlight JSX almost
+entirely unchanged, versus a much larger, riskier canvas rewrite with no clear benefit at this
+node scale (tens to a few hundred).
+
+**Architecture — three new/changed files, one core principle: "React owns appearance, the tick
+handler owns geometry, imperatively."**
+
+- **`domain/recipe/computeRecipeLayout.ts`** — stripped down to ONLY the one-shot
+  `d3.hierarchy`+`d3.pack` geometry (weights, radii, `radiusScale`-scaled container size). The
+  bounded-tick force-solve loop and its docstring's "confirmed with the user as the preferred
+  tradeoff over... a live tick-per-frame loop" rationale are both gone — rewritten to explain why
+  that earlier tradeoff was superseded, rather than left as stale, actively misleading prose.
+- **`domain/recipe/recipeForces.ts`** (new) — the 3 custom forces (surface/cluster/parent-
+  containment), extracted into standalone factories. Each takes a `StrengthRef` (`{ get current()
+  }`) rather than a captured plain number, matching legacy's own "read the live global every tick"
+  model — this is what lets a "Forces Options" slider move on an already-running simulation with
+  zero explicit push.
+- **`domain/recipe/useRecipeSimulation.ts`** (new) — owns the live `d3.forceSimulation`'s full
+  lifecycle in three tiers mirroring legacy's own cost structure: **CREATE** (full repack + brand-
+  new simulation — triggered by a `structuralSignature`, node identity + parent edges, deliberately
+  NOT `graph`'s object reference, which is what caused the original "snap on every edit" bug, plus
+  `sizeBy`/`radiusScale`/`width`/`height`), **REHEAT** (same pack/leaves, force config rebuilt from
+  the current `groupBy`/links, `alpha(1).restart()` — triggered by `groupBy` or a `linksSignature`
+  change), **UPDATE** (live strength mutation only, gentle alpha nudge — the 5 "Forces Options"
+  sliders; the 2 d3-built-in forces, `collide`/`link`, cache `.strength()` at call time and need an
+  explicit re-set, the 3 custom ones already read live via `StrengthRef`). Position is written
+  directly to DOM refs on every tick (`transform="translate(x,y)"` on a leaf's `<g>`, `x1/y1/x2/y2`
+  on a link's `<line>`/`<linearGradient>`) — never through `setState`, which would re-render the
+  whole SVG tree up to 60 times a second. `descendants`/`posMap` only enter React state at CREATE/
+  REHEAT time (mounting/unmounting DOM nodes); reading `.x`/`.y` off them later still reflects the
+  live position, since `d3` mutates node objects in place rather than replacing them — this is what
+  lets `RecipeCanvas.tsx`'s drop-target hit-testing during a drag see live positions for free.
+  Compartments deliberately stay OUT of the live simulation (unchanged design decision from the
+  original build) — `d3.pack()` already guarantees non-overlapping sibling/cousin subtrees, so
+  making compartments mobile would need a large, unrequested architectural jump for no surfaced
+  benefit.
+- **`components/recipe/RecipeCanvas.tsx`** — every node's children (sprites, membrane markers,
+  curved compartment label, ingredient label) switched from absolute (`cx - r`) to LOCAL, origin-
+  relative coordinates, so moving the parent `<g>`'s transform moves everything inside it for
+  free. Drag-to-reparent switched from setting a React-rendered position to `hook.pin(node, x, y)`
+  (sets `fx`/`fy`, reheats the simulation) — the rest of the graph now visibly flows around the
+  dragged node live, not a static preview.
+
+**Two real design bugs caught before/during implementation, not after:**
+
+1. **Inline ref-callbacks would have silently broken everything.** The first draft used
+   `ref={(el) => registerNodeEl(node, el)}` directly in JSX — React re-invokes a ref (detach old,
+   attach new) whenever the callback's *identity* changes between renders, and an inline closure
+   gets a new identity every render. Any unrelated re-render (a hover-state change elsewhere on
+   the canvas) would have re-fired every node's ref callback, re-stamping the stale initial
+   position and undoing whatever the tick handler had already moved it to. Fixed by caching one
+   stable callback per node/link (`getNodeRef`/`getLinkLineRef`/`getLinkGradientRef`, one Map
+   lookup each), cleaned up on unmount to avoid unbounded growth across a long edit session.
+2. **The tick handler only updated links participating in the spring force**, leaving a link with
+   a non-simulated endpoint (e.g. to a compartment) frozen at its initial position forever once
+   its OTHER endpoint (a real leaf) drifted away. Fixed by resolving every rendered link's
+   position fresh through `posMap` each tick (works uniformly for leaf-leaf, leaf-compartment, or
+   even compartment-compartment links, since `posMap` covers every node and only leaves are ever
+   mutated) rather than the narrower spring-eligible subset.
+3. **`radiusScale` scaling every leaf's pack *weight*** (an idea considered mid-design) would have
+   been a mathematical no-op — `d3.pack().size(...)` auto-fits to a fixed container box, so
+   uniformly scaling every weight by the same constant cannot change the fitted layout. Confirmed
+   this reasoning already existed from the prior bounded-tick build (radiusScale scales the pack's
+   *container dimensions*, not weights) and carried it forward unchanged.
+
+**`uiModeStore`/`computeRecipeLayout` force-defaults mismatch, found and fixed as part of this
+work**: the store's hardcoded defaults didn't match the layout module's own `DEFAULT_FORCES` — the
+toolbar displayed one set of numbers while the layout silently used another until a slider was
+manually touched once. Fixed with a single source of truth (`uiModeStore` now imports
+`DEFAULT_FORCES` from `useRecipeSimulation.ts`). The *values* themselves were also re-derived, not
+carried over: the bounded-tick model needed `surfaceForce`/`clusterByForce` far stronger than
+legacy's own raw numbers purely because a fixed 200-tick ceiling doesn't give a weak force enough
+time to visibly separate anything; a live simulation running to `alphaMin` via real exponential
+decay doesn't have that ceiling, so legacy's own raw values (`0.01`/`0.5`/`0.1`/`0.01`/`1.0`) are
+the correct defaults again.
+
+**Testability**: the 3 custom forces are tested via direct velocity-delta assertions (construct a
+fixture `SimNode`, call the returned `(alpha) => void` once at `alpha=1`, assert the exact expected
+`vx`/`vy` computed from the same formula) rather than a settled-position-after-N-ticks check, which
+is no longer a meaningful fixed number once the model is live. `compute-recipe-layout.test.ts`
+trimmed to pack/weight-only assertions (determinism, `sizeBy` ranking, `radiusScale` scaling); the
+force-behavior assertions moved to a new `recipe-forces.test.ts` (14 tests, including a dedicated
+test confirming a force reads its strength through the live ref on every call, not a value
+captured at creation — directly exercising the UPDATE lifecycle tier's core assumption) plus a
+`buildSimLinks` wiring test (confirms a link is excluded from the spring force when either endpoint
+isn't a currently-simulated leaf). `recipe-canvas.test.tsx`'s existing 4 cases (none of which assert
+on positions) passed unmodified; added 2 more — clean unmount while the simulation is still
+settling, and a React `StrictMode` mount→unmount→remount cycle without duplicating the simulation
+or the rendered circle count — directly covering the two risks flagged during design (stale
+closures were addressed structurally via `StrengthRef`, not just tested for).
+
+**Verified live in a browser** (Playwright, `--use-gl=swiftshader`, against the Exosome fixture,
+47 ingredients): the diagram visibly settles over ~1s after load (41/49 then 28/49 nodes still
+moving across two sampled windows) and then goes fully idle (0/49 changed after settling — no
+runaway CPU); a pure recolor produces zero position change (confirms the CREATE-trigger fix); a
+force-slider edit visibly re-settles 18/49 nodes without a full re-pack; changing "Group By"
+produces gradual, continuing migration across two sampled windows (47/49 changed in each) rather
+than an instant snap; adding an interaction link pulls its two endpoints from 413px apart to 84px.
+Dragging a node live-displaces it while the rest of the graph reacts: a real drag onto a neighbor
+moved the dragged node ~90px and the neighbor ~49px in response, confirmed via direct `pointerdown`
+/`pointermove` event dispatch on the target elements after discovering that Playwright's
+coordinate-based `page.mouse` was hitting dockview's own invisible panel-drag overlay `<div>`
+sitting on top of the canvas at those screen coordinates — a test-harness artifact of running
+inside a dockable panel layout, not a bug in the drag code itself (confirmed by dispatching the
+same events directly on the target elements instead of relying on coordinate hit-testing). 211
+tests pass (up from 199): `compute-recipe-layout.test.ts` trimmed from 8 to 5 (pack/weight-only),
+a new `recipe-forces.test.ts` adds 13 (the force-behavior assertions that moved out, plus new
+wiring/live-ref-read coverage), `recipe-canvas.test.tsx` grew from 4 to 6 (the two unmount/
+StrictMode cases) — net +12. `npm run typecheck`/`npm run lint` clean.
+
+### Recipe canvas follow-up: direct manipulation, hard membrane constraints, responsive stage
+
+Live user review exposed four interaction gaps that unit-level force parity had hidden: dragging
+was gated behind Edit Mode, the surface force was only an alpha-scaled nudge (so a cooled node
+could stop short of the membrane), the fixed 600×600 SVG viewBox left a square grey field inside
+non-square dock panels, and compartments were excluded from the simulation with no alternate drag
+path. All four are corrected together:
+
+- every non-root node can now be spatially dragged at any time; Edit Mode only adds persistent
+  reparenting and Ctrl/Cmd multi-selection;
+- a post-tick hard projection keeps surface-ingredient centres exactly on their parent's membrane
+  centreline and interior ingredients inside the membrane's inner edge, while preserving
+  tangential membrane motion;
+- `ResizeObserver` drives the SVG viewBox and `d3.pack()` dimensions from the actual dock-panel
+  stage, including splitter drags/docking/window resize, so the background fills wide and tall
+  panels without distorting circles;
+- a compartment drag translates its complete packed subtree rigidly, pins descendant simulation
+  leaves during the gesture, clamps the compartment inside its parent, then rebuilds absolute
+  cluster anchors on release.
+
+A second live-review pass restored the remaining legacy membrane semantics with a cleaner SVG
+presentation: the synthetic root circle is hidden (its color remains the responsive background),
+each compartment is a soft membrane band bounded by two crisp circles, and a wider transparent
+centreline stroke makes the whole membrane easy to hover and grab. Compartment outer edges are
+also hard colliders for foreign ingredients, while sibling/cousin compartment membranes cannot
+overlap during direct manipulation. Surface-protein circles now straddle the membrane rather than
+sitting just inside it.
+
+Unit/component cases cover membrane-centre projection, thickness-aware containment, foreign-node
+and compartment collisions, rigid/clamped subtree translation, responsive viewBox/background
+sizing, hidden-root/two-edge rendering, and compartment dragging with Edit Mode off. The browser
+suite also covers responsive aspect-ratio matching, direct compartment manipulation, and the live
+Influenza surface geometry; all 222 Vitest tests and all 4 Playwright tests pass, with
+typecheck/lint/build clean.
+
 ### Known gaps in the Phase 2 data layer (carry into Phase 4, don't assume covered)
 
 - `helper_getFiberIngredientDescription` (legacy fiber-description lookup enrichment,

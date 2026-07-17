@@ -140,7 +140,9 @@ export function RecipeCanvasToolbar() {
           ))}
         </select>
       </label>
-      {editMode && <p className="panel-note">Drag an ingredient onto a compartment to move it there.</p>}
+      <p className="panel-note">
+        Drag any non-root node to arrange it. {editMode && 'Drop a node onto another compartment to reparent it.'}
+      </p>
 
       <label>
         Node color

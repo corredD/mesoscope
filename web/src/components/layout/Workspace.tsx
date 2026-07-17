@@ -160,7 +160,7 @@ function RecipeViewPanel() {
   const summary = useRecipeSummary()
   const loading = useRecipeStore((s) => s.loading)
   return (
-    <div className="panel-body">
+    <div className="panel-body recipe-view-panel">
       {loading && <p>Loading…</p>}
       {!loading && summary && (
         <dl className="recipe-summary">

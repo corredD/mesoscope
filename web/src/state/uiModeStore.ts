@@ -34,14 +34,19 @@
  *   formulas/`main.js:3678`+'s `context.lineWidth` reads; an earlier pass had wrongly written
  *   `radius_scale` off as a dead control because no consumer was checked at the time), and the
  *   five "Forces Options" tuning values (`js/layout_mg.js:266-275`'s `getForcesInputs`, reading
- *   legacy's `AllForces` global, `main.js:177-183`) feeding `computeRecipeLayout`'s force solve —
- *   `parentForce`/`surfaceForce`/`clusterByForce` are legacy's per-tick boundary/surface/cluster
- *   velocity nudges, `linkForce` is a `d3.forceLink` over `graph.links` (pulls interaction-linked
- *   ingredients together — not previously ported at all, since only the *line rendering* for
- *   links existed, not a force), `collisionForce` scales `forceCollide`'s strength.
+ *   legacy's `AllForces` global, `main.js:177-183`) feeding `useRecipeSimulation`'s LIVE force
+ *   simulation — `parentForce`/`surfaceForce`/`clusterByForce` are legacy's per-tick boundary/
+ *   surface/cluster velocity nudges, `linkForce` is a `d3.forceLink` over `graph.links` (pulls
+ *   interaction-linked ingredients together), `collisionForce` scales `forceCollide`'s strength.
+ *   Defaults for `radiusScale`+the 5 force values are imported from `useRecipeSimulation.ts`'s
+ *   `DEFAULT_FORCES` (a single source of truth) rather than duplicated here — this store used to
+ *   hardcode its own copy that silently drifted out of sync with the layout module's own
+ *   defaults (the toolbar displayed one set of numbers while the layout computation used
+ *   another), a real bug found and fixed when the canvas moved to a live simulation.
  */
 import { create } from 'zustand'
 import type { RecipeNode } from '../domain/recipe/types'
+import { DEFAULT_FORCES } from '../domain/recipe/useRecipeSimulation'
 
 interface UiModeStore {
   editMode: boolean
@@ -130,14 +135,14 @@ export const useUiModeStore = create<UiModeStore>((set) => ({
     }),
   useColorMapping: true,
   toggleUseColorMapping: () => set((state) => ({ useColorMapping: !state.useColorMapping })),
-  radiusScale: 1.0,
+  radiusScale: DEFAULT_FORCES.radiusScale,
   setRadiusScale: (value) => set({ radiusScale: value }),
   strokeWidth: 1,
   setStrokeWidth: (value) => set({ strokeWidth: value }),
-  parentForce: 0.01,
-  surfaceForce: 0.5,
-  linkForce: 0.1,
-  clusterByForce: 0.01,
-  collisionForce: 1.0,
+  parentForce: DEFAULT_FORCES.parentForce,
+  surfaceForce: DEFAULT_FORCES.surfaceForce,
+  linkForce: DEFAULT_FORCES.linkForce,
+  clusterByForce: DEFAULT_FORCES.clusterByForce,
+  collisionForce: DEFAULT_FORCES.collisionForce,
   setForce: (name, value) => set({ [name]: value } as Pick<UiModeStore, typeof name>),
 }))

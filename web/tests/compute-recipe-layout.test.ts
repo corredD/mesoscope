@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { computeRecipeLayout } from '../src/domain/recipe/computeRecipeLayout'
-import type { CompartmentData, IngredientData, RecipeLink, RecipeNode } from '../src/domain/recipe/types'
+import type { CompartmentData, IngredientData, RecipeNode } from '../src/domain/recipe/types'
 
 function ingredient(name: string, overrides: Partial<IngredientData> = {}): IngredientData {
   return {
@@ -44,53 +44,41 @@ function buildRoot(ingredients: IngredientData[]): RecipeNode {
   return root
 }
 
+// `computeRecipeLayout` is now a pure, one-shot `d3.hierarchy`+`d3.pack` computation only — no
+// force solve. The custom-force behavior these tests used to assert on (surface pull, cluster
+// separation, linkForce attraction) moved to `recipe-forces.test.ts`, which tests each force
+// factory directly via velocity-delta assertions — see that file and `useRecipeSimulation.ts`'s
+// docstring for why (this function no longer ticks a simulation at all, so there's no settled
+// position to assert on here).
 describe('computeRecipeLayout', () => {
   it('packs a root with no children without throwing', () => {
     const root = buildRoot([])
-    const { descendants } = computeRecipeLayout(root, null, 'size', 600, 600)
+    const { descendants } = computeRecipeLayout(root, 'size', 1, 600, 600)
     expect(descendants).toHaveLength(1)
+    expect(descendants[0].r).toBeGreaterThan(0)
+    expect(Number.isFinite(descendants[0].r)).toBe(true)
   })
 
-  it('leaves non-surface ingredients near their pack position (no boundary pull)', () => {
+  it('gives an empty child compartment a visible draggable radius', () => {
+    const root = buildRoot([ingredient('a')])
+    const emptyCompartment: RecipeNode = { data: compartment('empty'), parent: root, children: [] }
+    root.children!.push(emptyCompartment)
+    const { posMap } = computeRecipeLayout(root, 'size', 1, 600, 400)
+    expect(posMap.get(emptyCompartment)!.r).toBeGreaterThan(0)
+    expect(Number.isFinite(posMap.get(emptyCompartment)!.r)).toBe(true)
+  })
+
+  it('packs ingredient leaves alongside the root compartment', () => {
     const root = buildRoot([ingredient('a'), ingredient('b')])
-    const { descendants } = computeRecipeLayout(root, null, 'size', 600, 600)
+    const { descendants } = computeRecipeLayout(root, 'size', 1, 600, 600)
     const leaves = descendants.filter((d) => !d.children)
     expect(leaves).toHaveLength(2)
   })
 
-  it('pulls surface ingredients toward their parent boundary', () => {
-    const root = buildRoot([ingredient('interior', { size: 20 }), ingredient('membrane', { size: 20, surface: true })])
-    const { descendants, posMap } = computeRecipeLayout(root, null, 'size', 600, 600)
-    const parent = descendants.find((d) => d.children)!
-    const membraneLeaf = posMap.get(root.children!.find((n) => (n.data as IngredientData).name === 'membrane')!)!
-    const interiorLeaf = posMap.get(root.children!.find((n) => (n.data as IngredientData).name === 'interior')!)!
-    const membraneDist = Math.hypot(membraneLeaf.x - parent.x, membraneLeaf.y - parent.y)
-    const interiorDist = Math.hypot(interiorLeaf.x - parent.x, interiorLeaf.y - parent.y)
-    // the surface ingredient should settle meaningfully closer to the boundary (parent.r) than
-    // the interior one is to the center, relative to the parent's radius.
-    expect(membraneDist / parent.r).toBeGreaterThan(interiorDist / parent.r)
-  })
-
-  it('clusters ingredients sharing a group-by value away from a different value', () => {
-    const ingredients = [
-      ingredient('a1', { ingtype: 'enzyme', size: 8 }),
-      ingredient('a2', { ingtype: 'enzyme', size: 8 }),
-      ingredient('b1', { ingtype: 'structural', size: 8 }),
-      ingredient('b2', { ingtype: 'structural', size: 8 }),
-    ]
-    const root = buildRoot(ingredients)
-    const { posMap } = computeRecipeLayout(root, 'ingtype', 'size', 600, 600)
-    const pos = (name: string) => posMap.get(root.children!.find((n) => (n.data as IngredientData).name === name)!)!
-
-    const withinEnzyme = Math.hypot(pos('a1').x - pos('a2').x, pos('a1').y - pos('a2').y)
-    const acrossGroups = Math.hypot(pos('a1').x - pos('b1').x, pos('a1').y - pos('b1').y)
-    expect(withinEnzyme).toBeLessThan(acrossGroups)
-  })
-
   it('is deterministic given the same input graph', () => {
     const root = buildRoot([ingredient('a', { surface: true }), ingredient('b')])
-    const first = computeRecipeLayout(root, null, 'size', 600, 600)
-    const second = computeRecipeLayout(root, null, 'size', 600, 600)
+    const first = computeRecipeLayout(root, 'size', 1, 600, 600)
+    const second = computeRecipeLayout(root, 'size', 1, 600, 600)
     const firstLeaf = first.descendants.find((d) => !d.children)!
     const secondLeaf = second.descendants.find((d) => !d.children)!
     expect(firstLeaf.x).toBeCloseTo(secondLeaf.x, 6)
@@ -104,8 +92,8 @@ describe('computeRecipeLayout', () => {
       ingredient('small', { size: 40, molecularweight: 1 }),
       ingredient('large', { size: 5, molecularweight: 1000 }),
     ])
-    const bySize = computeRecipeLayout(root, null, 'size', 600, 600)
-    const byMw = computeRecipeLayout(root, null, 'molecularweight', 600, 600)
+    const bySize = computeRecipeLayout(root, 'size', 1, 600, 600)
+    const byMw = computeRecipeLayout(root, 'molecularweight', 1, 600, 600)
     const radiusFor = (layout: ReturnType<typeof computeRecipeLayout>, name: string) =>
       layout.posMap.get(root.children!.find((n) => (n.data as IngredientData).name === name)!)!.r
 
@@ -119,31 +107,10 @@ describe('computeRecipeLayout', () => {
     // constant scale). radiusScale is applied to the pack's container dimensions instead, so the
     // whole diagram (here: the single root compartment's own packed radius) grows as one.
     const root = buildRoot([ingredient('a', { size: 10 }), ingredient('b', { size: 20 })])
-    const unscaled = computeRecipeLayout(root, null, 'size', 600, 600, [], { radiusScale: 1 })
-    const scaled = computeRecipeLayout(root, null, 'size', 600, 600, [], { radiusScale: 2 })
+    const unscaled = computeRecipeLayout(root, 'size', 1, 600, 600)
+    const scaled = computeRecipeLayout(root, 'size', 2, 600, 600)
     const rootUnscaled = unscaled.posMap.get(root)!.r
     const rootScaled = scaled.posMap.get(root)!.r
     expect(rootScaled).toBeCloseTo(rootUnscaled * 2, 5)
-  })
-
-  it('linkForce pulls linked ingredients closer together than an unlinked pair (AllForces.LinkForce)', () => {
-    const a = ingredient('a', { size: 8 })
-    const b = ingredient('b', { size: 8 })
-    const c = ingredient('c', { size: 8 })
-    const root = buildRoot([a, b, c])
-    const [na, nb, nc] = root.children!
-    const link: RecipeLink = { id: 1, source: na, target: nb, name1: 'a', name2: 'b', pdb1: '', sel1: '', sel2: '', coords1: [], coords2: [], beads1: [], beads2: [] }
-
-    const withLink = computeRecipeLayout(root, null, 'size', 600, 600, [link], { linkForce: 0.8 })
-    const withoutLink = computeRecipeLayout(root, null, 'size', 600, 600, [], { linkForce: 0.8 })
-
-    const dist = (layout: typeof withLink, x: RecipeNode, y: RecipeNode) => {
-      const px = layout.posMap.get(x)!
-      const py = layout.posMap.get(y)!
-      return Math.hypot(px.x - py.x, px.y - py.y)
-    }
-
-    expect(dist(withLink, na, nb)).toBeLessThan(dist(withoutLink, na, nb))
-    void nc // (c) only exists so the graph has an unlinked ingredient sharing the same compartment
   })
 })
