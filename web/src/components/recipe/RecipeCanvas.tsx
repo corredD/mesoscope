@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as d3 from 'd3'
 import { useRecipeStore } from '../../state/recipeStore'
+import { useThemeStore } from '../../state/themeStore'
 import { useUiModeStore } from '../../state/uiModeStore'
 import { ancestorsSelfFirst, isIngredientNode, nodeKey, type CompartmentData, type IngredientData, type RecipeNode } from '../../domain/recipe/types'
 import { type PackedNode } from '../../domain/recipe/computeRecipeLayout'
@@ -8,6 +9,7 @@ import { useRecipeSimulation } from '../../domain/recipe/useRecipeSimulation'
 import { computePropertyMapping } from '../../domain/recipe/propertyMapping'
 import { BUILTIN_COLOR_MODES, computeCategoricalPalette, resolveFillColor, type ColorModeContext } from '../../domain/recipe/colorModes'
 import { resolveSpriteImageUrl } from '../../domain/pdb/structureSource'
+import { Button } from '../ui/Button'
 import './RecipeCanvas.css'
 
 /**
@@ -155,6 +157,7 @@ function findDropTarget(descendants: PackedNode[], x: number, y: number, dragged
 
 export function RecipeCanvas() {
   const graph = useRecipeStore((s) => s.graph)
+  const theme = useThemeStore((s) => s.theme)
   const selectedNode = useRecipeStore((s) => s.selectedNode)
   const selectNode = useRecipeStore((s) => s.selectNode)
   const reparentNode = useRecipeStore((s) => s.reparentNode)
@@ -371,7 +374,11 @@ export function RecipeCanvas() {
     setNodeColor(contextMenu.node, event.target.value)
   }
 
-  const backgroundColor = explicitColor(root.data.color) ?? DEFAULT_BACKGROUND
+  // A recipe may still provide its legacy root/canvas color in light mode. Dark mode is an
+  // application-level readability choice, so its theme surface takes precedence over a saved
+  // light-grey root color and returns to the recipe color when light mode is restored.
+  const backgroundColor =
+    theme === 'dark' ? 'var(--color-recipe-canvas-bg)' : explicitColor(root.data.color) ?? DEFAULT_BACKGROUND
 
   // Legend: legacy's `DrawColorLegend` (main.js:3848-3889) shows categorical swatches for a
   // custom string-valued column — not for `automatic` (whose colors are per-compartment, not
@@ -401,7 +408,15 @@ export function RecipeCanvas() {
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
     >
-      <rect x={0} y={0} width={canvasSize.width} height={canvasSize.height} fill={backgroundColor} />
+      <rect
+        className="recipe-canvas-background"
+        data-canvas-theme={theme}
+        x={0}
+        y={0}
+        width={canvasSize.width}
+        height={canvasSize.height}
+        fill={backgroundColor}
+      />
       <g ref={zoomGroupRef}>
         <g className="recipe-canvas-links">
           {/* Gradient blend between each link's endpoint colors — legacy's `DrawConnections`
@@ -663,12 +678,12 @@ export function RecipeCanvas() {
     {contextMenu && (
       <div className="recipe-canvas-context-menu" style={{ left: contextMenu.x, top: contextMenu.y }} onClick={(event) => event.stopPropagation()}>
         <div className="recipe-canvas-context-menu-title">{contextMenu.node.data.name}</div>
-        <button type="button" onClick={handleRename}>
+        <Button variant="menu" size="sm" onClick={handleRename}>
           Rename
-        </button>
-        <button type="button" onClick={handleDelete} disabled={!contextMenu.node.parent}>
+        </Button>
+        <Button variant="danger" size="sm" onClick={handleDelete} disabled={!contextMenu.node.parent}>
           Delete
-        </button>
+        </Button>
         <label>
           Color
           <input type="color" value={explicitColorHex(contextMenu.node.data.color)} onChange={handleSetColor} />

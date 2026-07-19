@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { Button } from '../ui/Button'
 import './Dialog.css'
 
 interface DialogProps {
@@ -22,9 +23,9 @@ export function Dialog({ title, onClose, children }: DialogProps) {
       <div className="dialog" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <header className="dialog-title">
           <span>{title}</span>
-          <button type="button" className="dialog-close" onClick={onClose} aria-label="Close">
+          <Button variant="chrome" size="icon" className="dialog-close" onClick={onClose} aria-label="Close">
             ×
-          </button>
+          </Button>
         </header>
         <div className="dialog-body">{children}</div>
       </div>

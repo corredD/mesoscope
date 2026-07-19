@@ -42,7 +42,10 @@ interface RecipeStore {
   mergeGraph: (incoming: RecipeGraph, options: MergeOptions) => void
   applyColorPalette: (palette: ColorPalette) => void
   applyMolarityCount: (data: Record<string, MolarityCountEntry>) => void
-  updateIngredient: (node: RecipeNode, patch: Partial<Pick<IngredientData, 'name' | 'count' | 'molarity'>>) => void
+  updateIngredient: (
+    node: RecipeNode,
+    patch: Partial<Pick<IngredientData, 'name' | 'count' | 'molarity' | 'source' | 'ingtype'>>,
+  ) => void
   deleteIngredient: (node: RecipeNode) => void
   /** Legacy equivalent: js/main.js's `RenameNodeOver` (main.js:4812-4825) — renames either node
    *  type in place. Legacy also cascades the rename into a cached grid-display `compartment`
@@ -270,7 +273,7 @@ export const useRecipeStore = create<RecipeStore>((set) => ({
   },
 
   // Legacy equivalent: js/gridtable.js:updateAttributesNode (cell edit on grid_recipe),
-  // ported for just the fields the native RecipeTable exposes so far.
+  // ported for the fields the native RecipeTable exposes.
   updateIngredient: (node, patch) => {
     set((state) => {
       if (!state.graph) return state

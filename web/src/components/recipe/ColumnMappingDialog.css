@@ -24,3 +24,7 @@
   justify-content: flex-end;
   gap: 8px;
 }
+
+.column-mapping-create-switch {
+  margin-top: 8px;
+}

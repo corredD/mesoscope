@@ -1,4 +1,5 @@
 import { useRecipeStore } from '../../state/recipeStore'
+import { Button } from '../ui/Button'
 import { buildAncestorCompartmentPath, isIngredientNode, nodeKey, type IngredientData } from '../../domain/recipe/types'
 import './RecipeTable.css'
 
@@ -20,10 +21,11 @@ import './RecipeTable.css'
  *
  * Not yet ported from the legacy grid: image/sprite thumbnail column
  * (`renderImageRecipeCell`), column picker, pager, inline filter panel,
- * `grid_pdb`-style group-by. Name/count/molarity are the only editable
- * fields for now — pcpalAxis/offset edits are read-only here (pdb/uniprot
- * are settable via the PDB/UniProt search panels' "Apply" action).
+ * `grid_pdb`-style group-by. Name/count/molarity/PDB/ingredient type are
+ * editable here; pcpalAxis/offset edits remain in Ingredient Options.
  */
+
+const INGREDIENT_TYPES = ['protein', 'fiber', 'ligand'] as const
 
 export function RecipeTable() {
   const graph = useRecipeStore((s) => s.graph)
@@ -47,6 +49,7 @@ export function RecipeTable() {
           <th>Count</th>
           <th>Molarity</th>
           <th>PDB</th>
+          <th>Type</th>
           <th></th>
         </tr>
       </thead>
@@ -81,11 +84,34 @@ export function RecipeTable() {
                   onBlur={(e) => updateIngredient(node, { molarity: Number(e.target.value) })}
                 />
               </td>
-              <td>{data.source?.pdb}</td>
               <td>
-                <button type="button" onClick={() => deleteIngredient(node)}>
+                <input
+                  aria-label={`${data.name} PDB`}
+                  key={`${key}-pdb-${data.source?.pdb ?? ''}`}
+                  defaultValue={data.source?.pdb ?? ''}
+                  onBlur={(event) => {
+                    const pdb = event.target.value.trim()
+                    if (pdb !== (data.source?.pdb ?? '')) updateIngredient(node, { source: { ...data.source, pdb } })
+                  }}
+                />
+              </td>
+              <td>
+                <select
+                  aria-label={`${data.name} ingredient type`}
+                  value={data.ingtype}
+                  onChange={(event) => updateIngredient(node, { ingtype: event.target.value })}
+                >
+                  {INGREDIENT_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </td>
+              <td>
+                <Button variant="danger" size="sm" onClick={() => deleteIngredient(node)}>
                   Delete
-                </button>
+                </Button>
               </td>
             </tr>
           )

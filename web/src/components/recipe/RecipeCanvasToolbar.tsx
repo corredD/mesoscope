@@ -3,6 +3,9 @@ import { useUiModeStore } from '../../state/uiModeStore'
 import { listGroupableProperties, computePropertyMapping } from '../../domain/recipe/propertyMapping'
 import { ancestorsSelfFirst, isIngredientNode } from '../../domain/recipe/types'
 import { BUILTIN_COLOR_MODES, computeCategoricalPalette, resolveFillColor, type ColorModeContext } from '../../domain/recipe/colorModes'
+import { Button } from '../ui/Button'
+import { Slider } from '../ui/Slider'
+import { Switch } from '../ui/Switch'
 import './RecipeCanvasToolbar.css'
 
 const BUILTIN_COLOR_MODES_SET = new Set<string>(BUILTIN_COLOR_MODES)
@@ -106,21 +109,20 @@ export function RecipeCanvasToolbar() {
 
   return (
     <div className="recipe-canvas-toolbar">
-      <label>
-        <input type="checkbox" checked={editMode} onChange={toggleEditMode} />
+      <Switch checked={editMode} onCheckedChange={toggleEditMode}>
         Edit Mode
-      </label>
+      </Switch>
       {editMode && (
         <div className="recipe-canvas-toolbar-edit-actions">
-          <button type="button" onClick={addIngredient}>
+          <Button size="sm" onClick={addIngredient}>
             Add ingredient
-          </button>
-          <button type="button" onClick={addCompartment}>
+          </Button>
+          <Button size="sm" onClick={addCompartment}>
             Add compartment
-          </button>
-          <button type="button" onClick={handleAddInteraction} disabled={selectedNodes.length < 2}>
+          </Button>
+          <Button variant="primary" size="sm" onClick={handleAddInteraction} disabled={selectedNodes.length < 2}>
             Add interaction
-          </button>
+          </Button>
           {selectedNodes.length > 0 && (
             <p className="panel-note">
               {selectedNodes.length} node{selectedNodes.length === 1 ? '' : 's'} selected (Ctrl+click ingredients on the
@@ -168,14 +170,13 @@ export function RecipeCanvasToolbar() {
         <label>
           Max <input type="color" value={maxColor} onChange={(e) => setMaxColor(e.target.value)} />
         </label>
-        <button type="button" onClick={handleApplyColor}>
+        <Button variant="primary" size="sm" onClick={handleApplyColor}>
           Apply to ingredient color
-        </button>
+        </Button>
       </div>
-      <label>
-        <input type="checkbox" checked={useColorMapping} onChange={toggleUseColorMapping} />
+      <Switch checked={useColorMapping} onCheckedChange={toggleUseColorMapping}>
         Use color linear mapping
-      </label>
+      </Switch>
 
       <label>
         Node size
@@ -193,9 +194,18 @@ export function RecipeCanvasToolbar() {
             ))}
         </select>
       </label>
-      <label>
-        Scale Radius by
+      <div className="recipe-canvas-toolbar-slider-row">
+        <span>Scale Radius by</span>
+        <Slider
+          aria-label="Scale radius"
+          min={0.01}
+          max={10}
+          step={0.01}
+          value={radiusScale}
+          onValueChange={setRadiusScale}
+        />
         <input
+          aria-label="Scale radius value"
           type="number"
           min="0.01"
           max="10"
@@ -203,7 +213,7 @@ export function RecipeCanvasToolbar() {
           value={radiusScale}
           onChange={(e) => setRadiusScale(parseFloat(e.target.value) || 0.01)}
         />
-      </label>
+      </div>
 
       <label>
         Node label
@@ -216,18 +226,25 @@ export function RecipeCanvasToolbar() {
         </select>
       </label>
 
-      <label>
-        <input type="checkbox" checked={showSprites} onChange={toggleShowSprites} />
+      <Switch checked={showSprites} onCheckedChange={toggleShowSprites}>
         Node image
-      </label>
-      <label>
-        <input type="checkbox" checked={showLegend} onChange={toggleShowLegend} />
+      </Switch>
+      <Switch checked={showLegend} onCheckedChange={toggleShowLegend}>
         Show legend
-      </label>
+      </Switch>
 
-      <label>
-        Stroke Line width
+      <div className="recipe-canvas-toolbar-slider-row">
+        <span>Stroke Line width</span>
+        <Slider
+          aria-label="Stroke line width"
+          min={0.01}
+          max={10}
+          step={0.01}
+          value={strokeWidth}
+          onValueChange={setStrokeWidth}
+        />
         <input
+          aria-label="Stroke line width value"
           type="number"
           min="0.01"
           max="10"
@@ -235,35 +252,37 @@ export function RecipeCanvasToolbar() {
           value={strokeWidth}
           onChange={(e) => setStrokeWidth(parseFloat(e.target.value) || 0.01)}
         />
-      </label>
+      </div>
 
       {/* "Forces Options" — legacy's `getForcesInputs`/`AllForces` (js/layout_mg.js:266-275,
-          main.js:177-183). A single number input per force rather than legacy's redundant
-          paired range+number controls for the same value — the same value, simplified UI,
-          matching this feature's "modern approach, easy to maintain" framing. */}
+          main.js:177-183). Radix sliders make broad tuning direct, while the paired compact
+          number fields retain scientific precision and keyboard entry. */}
       <fieldset className="recipe-canvas-toolbar-forces">
         <legend>Forces Options</legend>
-        <label>
-          ParentForce
-          <input type="number" min="0" max="2" step="0.01" value={parentForce} onChange={(e) => setForce('parentForce', parseFloat(e.target.value) || 0)} />
-        </label>
-        <label>
-          SurfaceForce
-          <input type="number" min="0" max="2" step="0.01" value={surfaceForce} onChange={(e) => setForce('surfaceForce', parseFloat(e.target.value) || 0)} />
-        </label>
-        <label>
-          LinkForce
-          <input type="number" min="0" max="2" step="0.01" value={linkForce} onChange={(e) => setForce('linkForce', parseFloat(e.target.value) || 0)} />
-        </label>
-        <label>
-          ClusterByForce
-          <input type="number" min="0" max="2" step="0.01" value={clusterByForce} onChange={(e) => setForce('clusterByForce', parseFloat(e.target.value) || 0)} />
-        </label>
-        <label>
-          CollisionForce
-          <input type="number" min="0" max="2" step="0.01" value={collisionForce} onChange={(e) => setForce('collisionForce', parseFloat(e.target.value) || 0)} />
-        </label>
+        <ForceControl label="Parent" value={parentForce} onChange={(value) => setForce('parentForce', value)} />
+        <ForceControl label="Surface" value={surfaceForce} onChange={(value) => setForce('surfaceForce', value)} />
+        <ForceControl label="Link" value={linkForce} onChange={(value) => setForce('linkForce', value)} />
+        <ForceControl label="Cluster" value={clusterByForce} onChange={(value) => setForce('clusterByForce', value)} />
+        <ForceControl label="Collision" value={collisionForce} onChange={(value) => setForce('collisionForce', value)} />
       </fieldset>
+    </div>
+  )
+}
+
+function ForceControl({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+  return (
+    <div className="recipe-canvas-toolbar-slider-row">
+      <span>{label}</span>
+      <Slider aria-label={`${label} force`} min={0} max={2} step={0.01} value={value} onValueChange={onChange} />
+      <input
+        aria-label={`${label} force value`}
+        type="number"
+        min="0"
+        max="2"
+        step="0.01"
+        value={value}
+        onChange={(event) => onChange(parseFloat(event.target.value) || 0)}
+      />
     </div>
   )
 }

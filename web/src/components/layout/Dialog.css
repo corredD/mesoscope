@@ -29,12 +29,9 @@
 }
 
 .dialog-close {
-  background: none;
-  border: none;
-  color: inherit;
+  flex: 0 0 auto;
+  margin: -4px;
   font-size: 1.1rem;
-  cursor: pointer;
-  line-height: 1;
 }
 
 .dialog-body {

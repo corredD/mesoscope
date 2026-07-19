@@ -11,7 +11,8 @@
   text-align: left;
 }
 
-.recipe-table input {
+.recipe-table input,
+.recipe-table select {
   width: 100%;
   box-sizing: border-box;
   font-size: 0.8rem;

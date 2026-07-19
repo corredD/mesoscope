@@ -13,3 +13,8 @@ body {
 #root {
   min-height: 100vh;
 }
+
+.mesoscope-theme {
+  min-height: 100vh;
+  font-family: inherit;
+}

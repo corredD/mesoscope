@@ -29,12 +29,13 @@ npm run dev:legacy   # legacy app only, runs `python3 ../localCGIServer.py` (:80
 npm run dev:all      # both at once (concurrently), for side-by-side testing
 ```
 
-The Vite dev server proxies `/recipe_json`, `/recipe_proxy`, and `/data/*`
-to `http://localhost:8080` (see `vite.config.ts`), so the modern app can load
-the same example recipes and use the same recipe-bridge/proxy endpoints as
-the legacy app without a second backend. This means `npm run dev:legacy`
-must be running for those proxied routes to work in the modern app; `npm run
-dev:all` handles that automatically.
+The Vite dev server still proxies legacy integration routes (`/recipe_json`,
+`/recipe_proxy`, `/data/*`, and `/SKILLS.md`) to `http://localhost:8080` (see
+`vite.config.ts`). The modern menu's example recipes no longer depend on that
+proxy: they load directly from the repository's CORS-enabled raw GitHub URLs,
+so `npm run dev` alone is enough to use every wired "From Examples" and
+"Append From > Examples" item. Use `npm run dev:all` only when exercising a
+feature that genuinely calls the legacy server.
 
 ```bash
 npm run build        # typecheck + production build to web/dist/
@@ -69,6 +70,8 @@ web/
                          "Phase 4" below; NglViewer.tsx and the `ngl` npm dependency removed);
                          ProtVista/PDB Component Library panels not started
       skills/           [done] SkillMenu.tsx (Skills > Copy LLM Recipe Skill / Open SKILLS.md)
+      ui/               [done] local Radix-backed Button/Switch/Slider boundary; feature components
+                         depend on this small Mesoscope API, not Radix directly
     state/              [done] layoutStore.ts, recipeStore.ts (Zustand) — graph/format/error/loading +
                          loadEmpty/loadFromJson/loadFromUrl/applyColorPalette/applyMolarityCount/
                          updateIngredient/deleteIngredient/mergeGraph/selectedNode/selectNode/
@@ -233,9 +236,13 @@ thumbnail formatter, column picker, pager, inline filter panel) is a real
 reimplementation cost, not a free wrap.
 
 Done: `RecipeTable.tsx` — one row per ingredient node
-(`graph.nodes.filter(isIngredientNode)`), editable name/count/molarity
-(commit on blur, matching SlickGrid's commit-on-edit-complete rather than
-per-keystroke), delete button. Backed by two new `recipeStore` actions,
+(`graph.nodes.filter(isIngredientNode)`), editable name/count/molarity/PDB
+(text edits commit on blur, matching SlickGrid's commit-on-edit-complete
+rather than per-keystroke), constrained ingredient type
+(`protein`/`fiber`/`ligand`), and a delete button. PDB edits preserve the
+rest of `source` and immediately reload both selected-ingredient Mol-star
+viewers; changing the selected row's type immediately enters/leaves Fiber
+Orientation mode without requiring reselection. Backed by two `recipeStore` actions,
 `updateIngredient`/`deleteIngredient`, which mutate `node.data` / splice
 `graph.nodes`+`graph.links`+`parent.children` and publish a new graph
 reference — the same in-place-mutate-then-new-reference pattern as
@@ -1214,13 +1221,12 @@ real type instead of trusting the guess, and confirmed fixed by checking the
 rendered class list on the actual themed element (`.dv-shell`), not just the
 outer wrapper.
 
-**Disclosed, not silently skipped:** Mol-star's own UI skin
-(`mol-plugin-ui/skin/light.scss`, imported directly by both viewer
-components) does not follow this toggle. Its skin bakes colors into
-component-level rules rather than exposing custom properties, so switching
-it live is a separate, heavier follow-up, not something this toggle can
-half-do safely — documented directly in `themeStore.ts`'s docstring so it's
-a known, intentional boundary rather than a surprise regression report.
+**Mol-star boundary:** both WebGL renderer backgrounds now follow the theme via
+`PluginCommands.Canvas3D.SetSettings` (`domain/pdb/molstarCanvasTheme.ts`), with matching CSS
+shell colors while each plugin initializes. Mol-star's surrounding UI skin (`light.scss`) still
+does not follow the toggle: it bakes colors into component-level rules rather than exposing
+tokens, so re-skinning all of its internal chrome remains a separate, heavier follow-up. This
+requested canvas-only boundary is documented in `themeStore.ts` rather than left implicit.
 
 **Tests:** `smoke.test.tsx` renders `AppShell` in jsdom, which lacks
 `ResizeObserver` and real layout measurement that dockview needs at
@@ -1242,8 +1248,8 @@ resizes it; dragging the "Mol-*" tab into a different dockview group
 completes with zero console errors and the loaded structure intact (no
 reload/flash); Layout Options "Hide/Show Sequence Feature" correctly
 adds/removes exactly its four panels while leaving the "Mol-*" anchor
-untouched; the theme toggle flips the app's own CSS tokens and dockview's
-chrome together in the same click; the theme choice survives a page reload
+untouched; the theme toggle flips the app's own CSS tokens, dockview chrome,
+both Mol-star renderer backgrounds, and the D3 recipe surface together in the same click; the theme choice survives a page reload
 (`localStorage`). Screenshot-confirmed both themes render as a coherent,
 readable UI (light: white/light-gray panels with a blue accent; dark: dark
 charcoal panels with a lighter blue accent), with the previously-flat,
@@ -1285,6 +1291,16 @@ rule already learned the hard way for the default layout), and sets
 `layoutStore`'s 4 booleans to the preset's chosen defaults — which the
 *existing*, unmodified `TOGGLE_GROUPS` effect then reacts to on its own, so
 there's no duplicated logic for those 4 groups.
+
+**Default proportions revised from a supplied visual reference:** the default preset now has
+four top-level columns rather than five. Ingredient View and Mol-* are tabs in one large shared
+right-hand group (both remain mounted through `renderer: 'always'`), with Ingredient View active
+by default. Initial sizes are responsive fractions of the Dockview surface: approximately 10%
+Recipe Options, 34% Recipe View, 13% Ingredient Options, and the remaining 43% for the shared
+viewer group; the table row occupies about 30% of the height and its options rail about 10% of
+the width. Small minimums keep the option rails reachable at narrow sizes, after which every
+split remains freely user-resizable. Browser regression coverage measures the rendered Dockview
+groups—not just the preset constants—and verifies these ranges plus the shared viewer tab group.
 
 **Two real bugs found only by cycling through presets live with a real
 structure loaded — not by reading either dockview's docs or this file's own
@@ -2215,6 +2231,53 @@ suite also covers responsive aspect-ratio matching, direct compartment manipulat
 Influenza surface geometry; all 222 Vitest tests and all 4 Playwright tests pass, with
 typecheck/lint/build clean.
 
+### UI foundation follow-up: Radix-backed control system
+
+The maintained UI boundary is `components/ui/`, not direct library imports scattered through
+features. `Button.tsx` exposes Mesoscope's deliberately small semantic hierarchy (`primary`,
+`secondary`, `ghost`, `danger`, `chrome`, or `menu`) and density (`sm`, `md`, or icon target), while
+Radix Themes supplies its native button states, stable loading treatment, focus behavior, and
+visual foundation. `Switch.tsx` is the labelled primitive for independent boolean application
+settings; set-membership choices such as selected chains and merge fields deliberately remain
+checkboxes. `Slider.tsx` wraps the Radix slider primitive's array API as a single scientific value
+and requires a descriptive accessible label.
+
+`app/App.tsx` scopes one Radix `Theme` around the modern app: blue/slate, medium radius, solid
+panels, compact 90% scaling, and appearance driven by the existing persisted light/dark store.
+Radix's CSS loads before Mesoscope's own CSS, so local tokens and the few chrome/menu exceptions
+remain authoritative. The dependency is replaceable behind the three wrappers rather than being
+part of feature-component APIs.
+
+All first-party buttons now use the wrapper. Recipe Options uses Radix switches for Edit Mode,
+color mapping, node images, and the legend; scale, stroke, and all five D3 force controls use
+responsive sliders paired with number fields for precise entry. Ingredient Options uses switches
+for membrane/fiber/automatic-build/LOD visibility and sliders for every orientation axis/offset.
+Both membrane and fiber offset sliders now cover -200 to +200 Å. Fiber ingredients additionally
+offer an opt-in assembly preview: 1-50 copies, rise (`fiberAxis[3]`), twist in degrees per copy,
+and the existing axis/offset feed Mol-star's built-in `StructureInstances` state transform. The
+Fiber Length (rise) range adapts after the structure loads: its maximum is 100 Å plus the largest
+X/Y/Z span of the ingredient's bounding box, with the previous 200 Å value retained as a floor.
+The paired slider and numeric input always share that computed maximum. The
+instance matrices rotate around the axis through `fiberOffset` and translate along `fiberAxis`;
+copy zero remains effectively unchanged (a 0.000002 Å non-identity nudge avoids a Mol-star 5.10
+unit-id collision when identity and transformed instances are mixed). The first dynamic copy is
+placed first in Mol-star's internal transform list while the anchor remains present: Mol-star 5.10
+only compares the first unit operator when deciding whether to refresh its GPU instance buffer, so
+leaving the stationary anchor first silently stranded later rise/twist changes in state-tree data.
+Copies and twist are preview-only, while
+axis/rise/offset continue to persist in the existing recipe fields. Every Fiber Orientation
+slider updates the single instanced structure branch immediately during a drag; faster-than-GPU
+events are coalesced onto the latest requested matrices instead of queued individually. Updates
+do not reset the Mol-star camera during slider input (so rise changes remain visually apparent)
+and never contaminate source-molecule clustering or chain calculations. A real Mol-star state-tree
+regression test verifies that changing rise and twist updates the `StructureInstances` parameters,
+the downstream unit operator, and the representation's actual GPU `aTransform` buffer, rather than
+stopping at mocked React wiring or state data.
+Merge's create-new-ingredient policy is also a switch. Automated browser coverage includes light
+to dark switching, focus and target sizing, keyboard slider operation, switch state, and a
+390px-wide no-overflow geometry check. The later canvas/layout follow-up brings current verification
+to 242 Vitest tests and all 7 Playwright tests, with typecheck/lint/build clean.
+
 ### Known gaps in the Phase 2 data layer (carry into Phase 4, don't assume covered)
 
 - `helper_getFiberIngredientDescription` (legacy fiber-description lookup enrichment,
@@ -2236,9 +2299,9 @@ typecheck/lint/build clean.
   entire migration. The modern app deploys to a subpath or staging URL until
   an explicit cutover decision — that decision is out of scope for any single
   phase and needs its own sign-off.
-- **Data examples are not duplicated.** `data/examples.ts` (Phase 4) will
-  reference the existing top-level `../../data/*.json` files directly, not
-  copies.
+- **Data examples are not duplicated.** `menuConfig.ts` references the
+  existing `corredD/mesoscope` `master/data/*.json` files through direct raw
+  GitHub URLs; the modern bundle carries no second copy.
 - **Wrap before you rewrite.** NGL, Mol*, SlickGrid, Golden Layout, and
   ProtVista integrations are wrapped in thin React components that call the
   existing legacy global functions — see the risk map in the migration plan

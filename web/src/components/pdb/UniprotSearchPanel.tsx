@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useRecipeStore } from '../../state/recipeStore'
 import { searchUniprot, type UniprotSearchResult } from '../../domain/pdb/pdbSearch'
+import { Button } from '../ui/Button'
 import './SearchPanel.css'
 
 /**
@@ -40,9 +41,9 @@ export function UniprotSearchPanel() {
           onKeyDown={(e) => e.key === 'Enter' && runSearch()}
           placeholder="protein name…"
         />
-        <button type="button" onClick={runSearch} disabled={searching}>
+        <Button variant="primary" onClick={runSearch} loading={searching}>
           Search
-        </button>
+        </Button>
       </div>
       {error && <p className="search-panel-error">{error}</p>}
       {!error && results.length === 0 && !searching && <p className="panel-note">No results yet.</p>}
@@ -65,13 +66,13 @@ export function UniprotSearchPanel() {
                 <td>{r.proteinName}</td>
                 <td>{r.organism}</td>
                 <td>
-                  <button
-                    type="button"
+                  <Button
+                    size="sm"
                     disabled={!selectedNode}
                     onClick={() => applyPdbPick({ uniprot: r.accession, label: r.proteinName })}
                   >
                     Apply
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}

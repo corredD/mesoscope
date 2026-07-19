@@ -16,6 +16,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@radix-ui/react-slider": "^1.4.3",
+    "@radix-ui/themes": "^3.3.0",
     "d3": "^7.9.0",
     "dockview-react": "^7.0.2",
     "molstar": "^5.10.1",

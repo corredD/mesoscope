@@ -1,4 +1,5 @@
 import { useRecipeStore } from '../../state/recipeStore'
+import { Button } from '../ui/Button'
 import { isIngredientNode, nodeKey, type RecipeLink } from '../../domain/recipe/types'
 import '../recipe/RecipeTable.css'
 
@@ -104,9 +105,9 @@ export function InteractionTable() {
                 />
               </td>
               <td>
-                <button type="button" onClick={() => deleteLink(link)}>
+                <Button variant="danger" size="sm" onClick={() => deleteLink(link)}>
                   Delete
-                </button>
+                </Button>
               </td>
             </tr>
           )

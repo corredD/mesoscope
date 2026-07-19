@@ -1,0 +1,71 @@
+.app-button {
+  max-width: 100%;
+  margin: 0;
+  font-family: inherit;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.005em;
+  text-align: center;
+  white-space: normal;
+  cursor: pointer;
+}
+
+/* Radix's 90% density is intentionally compact; retain practical pointer targets. */
+.app-button--md {
+  min-height: var(--control-height-md);
+  padding-inline: 12px;
+  font-size: 0.86rem;
+}
+
+.app-button--sm {
+  min-height: var(--control-height-sm);
+  padding-inline: 9px;
+  font-size: 0.8rem;
+}
+
+.app-button--icon {
+  width: var(--control-height-md);
+  min-width: var(--control-height-md);
+  height: var(--control-height-md);
+  min-height: var(--control-height-md);
+  padding: 0;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.app-button--menu {
+  width: 100%;
+  justify-content: flex-start;
+  margin: 0;
+  text-align: left;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.app-button--chrome {
+  margin: 0;
+  color: var(--color-text-inverse);
+  white-space: nowrap;
+}
+
+.app-button--chrome:where(:hover, :focus-visible) {
+  background: var(--color-surface-strong-hover);
+  color: var(--color-text-inverse);
+}
+
+.app-button--chrome:focus-visible {
+  outline-color: var(--color-focus-ring-inverse);
+  outline-offset: -3px;
+}
+
+.app-button > span:not(.rt-Spinner) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+@media (forced-colors: active) {
+  .app-button {
+    border: 1px solid ButtonText;
+  }
+}

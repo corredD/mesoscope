@@ -6,7 +6,8 @@
  * `domain/recipe/clustering.ts` (pure k-means, no Mol-star dependency).
  */
 import { MolScriptBuilder as MS } from 'molstar/lib/mol-script/language/builder.js'
-import { TransformStructureConformation } from 'molstar/lib/mol-plugin-state/transforms/model.js'
+import { PluginCommands } from 'molstar/lib/mol-plugin/commands.js'
+import { StructureInstances, TransformStructureConformation } from 'molstar/lib/mol-plugin-state/transforms/model.js'
 import { Mat4, Quat, Vec3 } from 'molstar/lib/mol-math/linear-algebra.js'
 import type { PluginContext } from 'molstar/lib/mol-plugin/context.js'
 import type { StateObjectSelector } from 'molstar/lib/mol-state/index.js'
@@ -48,7 +49,109 @@ export interface MembraneTransformInput {
   offset: [number, number, number]
 }
 
+export interface FiberPreviewInput {
+  /** Number of monomers shown, including the unchanged source structure at step zero. */
+  copies: number
+  /** Helical translation direction. */
+  axis: [number, number, number]
+  /** Translation in Angstroms per copy. */
+  rise: number
+  /** Rotation in degrees per copy. */
+  twist: number
+  /** Point through which the helical axis passes. */
+  offset: [number, number, number]
+}
+
+export const MAX_FIBER_PREVIEW_COPIES = 50
+/** Just above Mol-star's 1e-6 matrix-identity epsilon; visually negligible in Angstrom units. */
+const INSTANCE_IDENTITY_NUDGE = 2e-6
+
 const modelRefs = new WeakMap<PluginContext, string>()
+const fiberInstanceRefs = new WeakMap<PluginContext, string>()
+const fiberPreviewInputs = new WeakMap<PluginContext, FiberPreviewInput | null>()
+const fiberPreviewVersions = new WeakMap<PluginContext, number>()
+const fiberPreviewUpdatePromises = new WeakMap<PluginContext, Promise<void>>()
+const FIBER_INSTANCE_TAG = 'mesoscope-fiber-preview-instances'
+
+/** Recover the decorator after dev hot reload, which recreates module WeakMaps. */
+function fiberInstanceRef(plugin: PluginContext): string | undefined {
+  const cached = fiberInstanceRefs.get(plugin)
+  if (cached && plugin.state.data.cells.has(cached)) return cached
+
+  const candidates = [...plugin.state.data.cells.values()].filter(
+    (cell) => cell.transform.transformer === StructureInstances,
+  )
+  // The lean Ingredient Viewer owns exactly one StructureInstances branch.
+  const tagged = candidates.find((cell) => cell.transform.tags?.includes(FIBER_INSTANCE_TAG))
+  const recovered = tagged?.transform.ref ?? (candidates.length === 1 ? candidates[0].transform.ref : undefined)
+  if (recovered) fiberInstanceRefs.set(plugin, recovered)
+  return recovered
+}
+
+/**
+ * Matrices for a simple helical fiber preview. Copy `i` is rotated `i * twist`
+ * around the fiber axis through `offset`, then translated `i * rise` along that
+ * axis. Copy zero receives only a 0.000002Å nudge: Mol-star 5.10's
+ * `Structure.instances` preserves source unit ids for an exact identity matrix,
+ * then reuses those ids for the transformed copies. Making the first matrix
+ * numerically non-identity avoids those collisions while remaining many orders
+ * of magnitude below molecular-coordinate precision. This keeps the first copy
+ * effectively unchanged and matches cellPACK's forward-growth convention.
+ */
+export function fiberInstanceMatrices(input: FiberPreviewInput): Mat4[] {
+  const copies = Math.max(
+    1,
+    Math.min(MAX_FIBER_PREVIEW_COPIES, Math.round(Number.isFinite(input.copies) ? input.copies : 1)),
+  )
+  const rawAxis = Vec3.create(...input.axis)
+  const axis = Vec3.magnitude(rawAxis) > 0 ? Vec3.normalize(Vec3.zero(), rawAxis) : Vec3.create(0, 0, 1)
+  const rise = Number.isFinite(input.rise) ? input.rise : 0
+  const twist = Number.isFinite(input.twist) ? input.twist : 0
+  const offset = Vec3.create(
+    Number.isFinite(input.offset[0]) ? input.offset[0] : 0,
+    Number.isFinite(input.offset[1]) ? input.offset[1] : 0,
+    Number.isFinite(input.offset[2]) ? input.offset[2] : 0,
+  )
+  const inverseOffset = Vec3.negate(Vec3.zero(), offset)
+
+  return Array.from({ length: copies }, (_, index) => {
+    if (index === 0) {
+      return Mat4.fromTranslation(Mat4(), Vec3.scale(Vec3.zero(), axis, INSTANCE_IDENTITY_NUDGE))
+    }
+    const rotation = Mat4.fromRotation(Mat4(), (twist * index * Math.PI) / 180, axis)
+    const rotateAroundOffset = Mat4.mul3(
+      Mat4(),
+      Mat4.fromTranslation(Mat4(), offset),
+      rotation,
+      Mat4.fromTranslation(Mat4(), inverseOffset),
+    )
+    const translation = Vec3.scale(Vec3.zero(), axis, rise * index)
+    const matrix = Mat4.mul(Mat4(), Mat4.fromTranslation(Mat4(), translation), rotateAroundOffset)
+    // A zero-rise copy at a full-turn multiple can also be exact identity.
+    // Keep every transform non-identity so Structure.instances never reuses a
+    // source unit id alongside generated instance ids.
+    return Mat4.isIdentity(matrix)
+      ? Mat4.fromTranslation(Mat4(), Vec3.scale(Vec3.zero(), axis, INSTANCE_IDENTITY_NUDGE * (index + 1)))
+      : matrix
+  })
+}
+
+function fiberInstanceParams(input: FiberPreviewInput | null) {
+  const matrices = input ? fiberInstanceMatrices(input) : [Mat4.identity()]
+  // Mol-star 5.10's UnitsVisual only compares the *first* unit operator when
+  // deciding whether to refresh the GPU instance matrix buffer. Logical copy
+  // zero is intentionally stationary, so placing it first makes later-copy
+  // rise/twist changes invisible even though StructureInstances itself updates.
+  // Put copy one first (the order is visually irrelevant), keeping the anchored
+  // copy in the same assembly while ensuring every helical change invalidates
+  // the downstream representation.
+  const renderRefreshOrder = matrices.length > 1 ? [matrices[1], matrices[0], ...matrices.slice(2)] : matrices
+  return {
+    transforms: renderRefreshOrder.map((data) => ({
+      transform: { name: 'matrix' as const, params: { data, transpose: false } },
+    })),
+  }
+}
 
 /**
  * Rigid transform that moves the loaded structure into the fixed membrane
@@ -150,6 +253,7 @@ async function buildIngredientRepresentationNow(
     await plugin.build().delete(prevModelRef).commit()
   }
   modelRefs.delete(plugin)
+  fiberInstanceRefs.delete(plugin)
 
   const preset = await plugin.builders.structure.hierarchy.applyPreset(trajectoryRef, 'default', { representationPreset: 'empty' })
   let structureRef = preset?.structure ?? null
@@ -165,24 +269,85 @@ async function buildIngredientRepresentationNow(
       .commit()
   }
 
-  const structure = structureRef.data ?? null
+  // Keep the source structure/ref for clustering, chain-derived orientation, and
+  // sequence highlighting. The visible representation is built under Mol-star's
+  // StructureInstances decorator, so preview copies never leak into those source-
+  // molecule calculations.
+  const sourceStructureRef = structureRef
+  const structure = sourceStructureRef.data ?? null
   if (!structure) return { chains: [], structure: null, structureRef: null }
   const chains = listChains(structure)
+
+  const instancedStructureRef = await plugin
+    .build()
+    .to(sourceStructureRef)
+    .apply(StructureInstances, fiberInstanceParams(fiberPreviewInputs.get(plugin) ?? null), {
+      tags: [FIBER_INSTANCE_TAG],
+    })
+    .commit()
+  fiberInstanceRefs.set(plugin, instancedStructureRef.ref)
+
   const componentRef =
     chainIds && chainIds.length > 0 && chainIds.length < chains.length
       ? await plugin.builders.structure.tryCreateComponentFromExpression(
-          structureRef,
+          instancedStructureRef,
           MS.struct.generator.atomGroups({
             'chain-test': MS.core.set.has([MS.set(...chainIds), MS.ammp('label_asym_id')]),
           }),
           'ingredient-chain-filter',
         )
-      : await plugin.builders.structure.tryCreateComponentStatic(structureRef, 'all')
+      : await plugin.builders.structure.tryCreateComponentStatic(instancedStructureRef, 'all')
 
   if (componentRef) {
     await plugin.builders.structure.representation.addRepresentation(componentRef, { type, color })
   }
-  return { chains, structure, structureRef }
+  if (fiberPreviewInputs.get(plugin)) await PluginCommands.Camera.Reset(plugin, { durationMs: 150 })
+  return { chains, structure, structureRef: sourceStructureRef }
+}
+
+/**
+ * Updates the existing StructureInstances decorator in place. Every call stores
+ * the newest slider state immediately. Calls arriving while a state-tree update
+ * is queued or committing share one runner; that runner applies only the newest
+ * available version, then loops once more if input changed during the commit.
+ * This keeps live slider motion responsive without accumulating one expensive
+ * Mol-star commit per pointer event. The builder above also reads the latest
+ * retained input when a full structure rebuild is concurrently in flight.
+ *
+ * Do not reset the camera here. Besides making rise changes look stationary by
+ * continuously zooming the enlarged assembly back to the same viewport size,
+ * the animated reset created an async gap after the final version check. A
+ * rise/twist event arriving in that gap saw an active promise, returned it, and
+ * was never drained. Camera fitting remains a one-time operation when a full
+ * preview-bearing representation is first built.
+ */
+export function setFiberPreview(plugin: PluginContext, input: FiberPreviewInput | null): Promise<void> {
+  fiberPreviewInputs.set(plugin, input)
+  fiberPreviewVersions.set(plugin, (fiberPreviewVersions.get(plugin) ?? 0) + 1)
+
+  const current = fiberPreviewUpdatePromises.get(plugin)
+  if (current) return current
+
+  let appliedVersion = -1
+  const update = enqueueBuild(plugin, async () => {
+    while (appliedVersion !== (fiberPreviewVersions.get(plugin) ?? 0)) {
+      appliedVersion = fiberPreviewVersions.get(plugin) ?? 0
+      const ref = fiberInstanceRef(plugin)
+      // A structure build already reads `fiberPreviewInputs`; if its instance
+      // decorator does not exist yet, there is nothing incremental to update.
+      if (!ref || !plugin.state.data.cells.has(ref)) return
+      await plugin
+        .build()
+        .to(ref)
+        .update(fiberInstanceParams(fiberPreviewInputs.get(plugin) ?? null))
+        .commit()
+    }
+  })
+  const tracked = update.finally(() => {
+    if (fiberPreviewUpdatePromises.get(plugin) === tracked) fiberPreviewUpdatePromises.delete(plugin)
+  })
+  fiberPreviewUpdatePromises.set(plugin, tracked)
+  return tracked
 }
 
 export function clearIngredientStructure(plugin: PluginContext): Promise<void> {
@@ -192,6 +357,10 @@ export function clearIngredientStructure(plugin: PluginContext): Promise<void> {
       await plugin.build().delete(prevModelRef).commit()
     }
     modelRefs.delete(plugin)
+    fiberInstanceRefs.delete(plugin)
+    fiberPreviewInputs.delete(plugin)
+    fiberPreviewVersions.delete(plugin)
+    fiberPreviewUpdatePromises.delete(plugin)
   })
 }
 

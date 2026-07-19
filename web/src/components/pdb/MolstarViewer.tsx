@@ -5,7 +5,9 @@ import { DefaultPluginUISpec } from 'molstar/lib/mol-plugin-ui/spec.js'
 import type { PluginUIContext } from 'molstar/lib/mol-plugin-ui/context.js'
 import { Ccp4Provider } from 'molstar/lib/mol-plugin-state/formats/volume.js'
 import { useRecipeStore } from '../../state/recipeStore'
+import { useThemeStore } from '../../state/themeStore'
 import { resolveStructureSource } from '../../domain/pdb/structureSource'
+import { setMolstarCanvasTheme } from '../../domain/pdb/molstarCanvasTheme'
 import type { IngredientData } from '../../domain/recipe/types'
 import 'molstar/lib/mol-plugin-ui/skin/light.scss'
 import './Viewer.css'
@@ -33,7 +35,8 @@ export function MolstarViewer() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [plugin, setPlugin] = useState<PluginUIContext | null>(null)
   const [status, setStatus] = useState<string | null>(null)
-  const selectedNode = useRecipeStore((s) => s.selectedNode)
+  const selectedPdb = useRecipeStore((s) => (s.selectedNode?.data as IngredientData | undefined)?.source?.pdb)
+  const theme = useThemeStore((s) => s.theme)
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -55,7 +58,12 @@ export function MolstarViewer() {
   }, [])
 
   useEffect(() => {
-    const pdb = (selectedNode?.data as IngredientData | undefined)?.source?.pdb
+    if (!plugin) return
+    void setMolstarCanvasTheme(plugin, theme)
+  }, [plugin, theme])
+
+  useEffect(() => {
+    const pdb = selectedPdb
     if (!plugin) return
     plugin.clear()
     setStatus(null)
@@ -85,10 +93,10 @@ export function MolstarViewer() {
       .then((data) => plugin.builders.structure.parseTrajectory(data, format))
       .then((trajectory) => plugin.builders.structure.hierarchy.applyPreset(trajectory, 'default'))
       .catch(fail)
-  }, [plugin, selectedNode])
+  }, [plugin, selectedPdb])
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 200 }}>
+    <div className="molstar-viewer-shell" data-molstar-viewer="model" data-canvas-theme={theme}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
       {status && <p className="panel-note viewer-status">{status}</p>}
     </div>

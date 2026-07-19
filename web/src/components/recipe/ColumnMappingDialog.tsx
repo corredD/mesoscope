@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Dialog } from '../layout/Dialog'
+import { Button } from '../ui/Button'
 import { FIELD_LABELS, MAPPABLE_FIELDS, type ColumnMapping, type MappableField } from '../../domain/files/columnMapping'
 import './ColumnMappingDialog.css'
 
@@ -45,12 +46,12 @@ export function ColumnMappingDialog({ headers, initialMapping, onConfirm, onCanc
         ))}
       </div>
       <div className="column-mapping-actions">
-        <button type="button" onClick={onCancel}>
+        <Button onClick={onCancel}>
           Cancel
-        </button>
-        <button type="button" onClick={() => onConfirm(mapping)}>
+        </Button>
+        <Button variant="primary" onClick={() => onConfirm(mapping)}>
           Load
-        </button>
+        </Button>
       </div>
     </Dialog>
   )

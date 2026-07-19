@@ -20,6 +20,9 @@
   --color-bg-canvas: #ffffff;
   --color-bg-subtle: #f4f5f7;
   --color-bg-muted: #e8eaed;
+  --color-recipe-canvas-bg: #e1e1e1;
+  --color-recipe-label-halo: rgba(255, 255, 255, 0.82);
+  --color-molstar-canvas-bg: #ffffff;
   --color-border: #d8dade;
   --color-border-strong: #b9bcc4;
 
@@ -36,6 +39,18 @@
   --color-accent-text: #ffffff;
 
   --color-danger: #b3261e;
+  --color-danger-soft: #fbe9e7;
+  --color-danger-text: #ffffff;
+
+  --color-control-bg: #ffffff;
+  --color-control-hover: #f0f4fc;
+  --color-focus-ring: #2f6fed;
+  --color-focus-ring-inverse: #a9c4ff;
+
+  --control-height-sm: 28px;
+  --control-height-md: 34px;
+  --radius-control: 7px;
+  --shadow-control: 0 1px 2px rgba(15, 18, 22, 0.08);
 
   --color-shadow: rgba(15, 18, 22, 0.16);
   --color-overlay: rgba(15, 18, 22, 0.4);
@@ -48,6 +63,9 @@
   --color-bg-canvas: #20242a;
   --color-bg-subtle: #262a31;
   --color-bg-muted: #323740;
+  --color-recipe-canvas-bg: #171a1f;
+  --color-recipe-label-halo: rgba(23, 26, 31, 0.88);
+  --color-molstar-canvas-bg: #1c1f24;
   --color-border: #3c414b;
   --color-border-strong: #4d525d;
 
@@ -63,7 +81,19 @@
   --color-accent-soft: rgba(91, 141, 251, 0.18);
   --color-accent-text: #0e1116;
 
-  --color-danger: #ff6b6b;
+  --color-danger: #ff7b72;
+  --color-danger-soft: rgba(255, 123, 114, 0.14);
+  --color-danger-text: #1c1f24;
+
+  --color-control-bg: #2a2f37;
+  --color-control-hover: #343b46;
+  --color-focus-ring: #7ba2fc;
+  --color-focus-ring-inverse: #b7ccff;
+
+  --control-height-sm: 28px;
+  --control-height-md: 34px;
+  --radius-control: 7px;
+  --shadow-control: 0 1px 2px rgba(0, 0, 0, 0.22);
 
   --color-shadow: rgba(0, 0, 0, 0.5);
   --color-overlay: rgba(0, 0, 0, 0.55);

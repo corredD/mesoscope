@@ -6,6 +6,7 @@ import { useRecipeStore } from '../../state/recipeStore'
 import { RecipeLoader, type RecipeLoaderHandle } from '../recipe/RecipeLoader'
 import { useRecipeSaver } from '../recipe/RecipeSaver'
 import { SkillMenu, type SkillMenuHandle } from '../skills/SkillMenu'
+import { Button } from '../ui/Button'
 import { Dialog } from './Dialog'
 import { MENU, type MenuLeaf, type MenuNode } from './menuConfig'
 import './MenuBar.css'
@@ -22,9 +23,9 @@ function MenuNodeList({ items, onLeafClick }: { items: MenuNode[]; onLeafClick: 
       {items.map((node, i) => (
         <li key={i}>
           {node.kind === 'leaf' ? (
-            <button type="button" className="menu-item" onClick={() => onLeafClick(node)}>
+            <Button variant="menu" size="sm" className="menu-item" onClick={() => onLeafClick(node)}>
               {resolveLabel(node.label, layout, preset)}
-            </button>
+            </Button>
           ) : (
             <details className="menu-branch">
               <summary>{node.label}</summary>
@@ -130,14 +131,15 @@ export function MenuBar() {
     <div className="menu-bar" ref={barRef}>
       {MENU.map((group) => (
         <div className="menu-group" key={group.label}>
-          <button
-            type="button"
+          <Button
+            variant="chrome"
+            size="sm"
             className="menu-group-button"
             aria-expanded={openGroup === group.label}
             onClick={() => setOpenGroup(openGroup === group.label ? null : group.label)}
           >
             {group.label}
-          </button>
+          </Button>
           {openGroup === group.label && (
             <div className="menu-dropdown">
               <MenuNodeList items={group.items} onLeafClick={handleLeafClick} />
@@ -146,15 +148,16 @@ export function MenuBar() {
         </div>
       ))}
       <div className="menu-bar-spacer" />
-      <button
-        type="button"
+      <Button
+        variant="chrome"
+        size="icon"
         className="menu-bar-theme-toggle"
         onClick={toggleTheme}
         title={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
         aria-label={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
       >
         {theme === 'light' ? '☾' : '☀'}
-      </button>
+      </Button>
       <RecipeLoader ref={loaderRef} />
       <SkillMenu ref={skillMenuRef} />
       {placeholderLabel && (

@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { StrictMode } from 'react'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { RecipeCanvas } from '../src/components/recipe/RecipeCanvas'
 import { isIngredientNode } from '../src/domain/recipe/types'
 import { useRecipeStore } from '../src/state/recipeStore'
+import { useThemeStore } from '../src/state/themeStore'
 import { useUiModeStore } from '../src/state/uiModeStore'
 
 function loadFixture(name: string): unknown {
@@ -15,6 +16,7 @@ function loadFixture(name: string): unknown {
 beforeEach(() => {
   useRecipeStore.setState({ graph: null, format: null, error: null, loading: false, selectedNode: null })
   useUiModeStore.setState({ editMode: false })
+  useThemeStore.setState({ theme: 'light' })
 })
 
 describe('RecipeCanvas', () => {
@@ -93,6 +95,21 @@ describe('RecipeCanvas', () => {
     } finally {
       globalThis.ResizeObserver = OriginalResizeObserver
     }
+  })
+
+  it('uses the dark application surface instead of a saved light recipe background', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    render(<RecipeCanvas />)
+    const background = document.querySelector('svg.recipe-canvas > .recipe-canvas-background')!
+    const lightFill = background.getAttribute('fill')
+    expect(lightFill).not.toBe('var(--color-recipe-canvas-bg)')
+
+    act(() => useThemeStore.setState({ theme: 'dark' }))
+    expect(background).toHaveAttribute('data-canvas-theme', 'dark')
+    expect(background).toHaveAttribute('fill', 'var(--color-recipe-canvas-bg)')
+
+    act(() => useThemeStore.setState({ theme: 'light' }))
+    expect(background).toHaveAttribute('fill', lightFill)
   })
 
   it('drags a non-root compartment with Edit Mode off', () => {

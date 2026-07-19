@@ -109,9 +109,9 @@ import './Workspace.css'
  * dockview's own theme (`dockview-theme-light`/`dockview-theme-dark`) is
  * driven by the same `themeStore` as the rest of the app's CSS custom
  * properties, so the docking chrome (tab strips, group borders, drag
- * overlays) matches whichever theme is active. Mol-star's own UI skin does
- * NOT follow this — see `themeStore.ts`'s docstring for why that's a
- * disclosed, separate follow-up rather than a silent gap.
+ * overlays) matches whichever theme is active. Both Mol-star renderers now
+ * follow the same theme for their canvas background; Mol-star's bundled UI
+ * chrome remains on its light skin (see `themeStore.ts`).
  *
  * **Workspace presets** (`WORKSPACE_PRESETS`/`applyPreset`, `presetStore.ts`,
  * a "Workspace" menu group in `menuConfig.ts`) are a whole-arrangement
@@ -150,7 +150,7 @@ type PanelId =
 
 function RecipeOptionsPanel() {
   return (
-    <div className="panel-body">
+    <div className="panel-body" data-panel-content="recipe-options">
       <RecipeCanvasToolbar />
     </div>
   )
@@ -160,7 +160,7 @@ function RecipeViewPanel() {
   const summary = useRecipeSummary()
   const loading = useRecipeStore((s) => s.loading)
   return (
-    <div className="panel-body recipe-view-panel">
+    <div className="panel-body recipe-view-panel" data-panel-content="recipe-view">
       {loading && <p>Loading…</p>}
       {!loading && summary && (
         <dl className="recipe-summary">
@@ -181,7 +181,7 @@ function RecipeViewPanel() {
 
 function IngredientOptionsPanel() {
   return (
-    <div className="panel-body">
+    <div className="panel-body" data-panel-content="ingredient-options">
       <IngredientOptions />
     </div>
   )
@@ -193,7 +193,7 @@ function ObjectPropertiesPanel() {
 
 function IngredientViewPanel() {
   return (
-    <div className="panel-body">
+    <div className="panel-body" data-panel-content="ingredient-view">
       <IngredientViewer />
     </div>
   )
@@ -201,7 +201,7 @@ function IngredientViewPanel() {
 
 function MolstarPanel() {
   return (
-    <div className="panel-body">
+    <div className="panel-body" data-panel-content="molstar">
       <MolstarViewer />
     </div>
   )
@@ -216,12 +216,16 @@ function UniprotMappingPanel() {
 }
 
 function TableOptionsPanel() {
-  return <div className="panel-body">Phase 4: wraps the options for the selected grid.</div>
+  return (
+    <div className="panel-body" data-panel-content="table-options">
+      Phase 4: wraps the options for the selected grid.
+    </div>
+  )
 }
 
 function RecipeTablePanel() {
   return (
-    <div className="panel-body">
+    <div className="panel-body" data-panel-content="recipe-table">
       <RecipeTable />
     </div>
   )
@@ -357,6 +361,11 @@ interface CorePanelPlacement {
   position?: { referencePanel?: CorePanelId; direction: PlacementDirection }
   initialWidth?: number
   initialHeight?: number
+  /** Responsive initial size as a fraction of the complete Dockview surface. */
+  initialWidthRatio?: number
+  initialHeightRatio?: number
+  minInitialWidth?: number
+  minInitialHeight?: number
 }
 
 interface WorkspacePreset {
@@ -402,20 +411,20 @@ const WORKSPACE_PRESETS: Record<PresetId, WorkspacePreset> = {
     label: 'Default',
     panels: [
       { id: 'ingredientView', title: 'Ingredient View' },
-      { id: 'ingredientOptions', title: 'Ingredient Options', position: { referencePanel: 'ingredientView', direction: 'left' } },
-      { id: 'recipeView', title: 'Recipe View', position: { referencePanel: 'ingredientOptions', direction: 'left' } },
-      // `protvista-uniprot` (the "Sequence features" tab, sharing this column/group — see
-      // `TOGGLE_GROUPS`) needs real width to show its accordion sidebar + tracks side by
-      // side rather than one clipping the other — confirmed live down to ~420px. 480 gives
-      // it a legible default without starving `ingredientOptions`/`ingredientView` into
-      // dockview's tab-overflow dropdown on a typical ~1440px window (700 did exactly that,
-      // found live). Still user-resizable afterwards, like every other dockview split.
-      { id: 'molstar', title: 'Mol-*', initialWidth: 480, position: { referencePanel: 'ingredientView', direction: 'right' } },
-      { id: 'recipeOptions', title: 'Recipe Options', initialWidth: 160, position: { referencePanel: 'recipeView', direction: 'left' } },
-      { id: 'recipeTable', title: 'Recipe table', initialHeight: 260, position: { direction: 'below' } },
-      { id: 'tableOptions', title: 'Table Options', initialWidth: 160, position: { referencePanel: 'recipeTable', direction: 'left' } },
+      // The two molecular viewers are tabs in one broad right-hand group in the requested
+      // default layout. `renderer: 'always'` below still keeps both WebGL contexts mounted.
+      { id: 'molstar', title: 'Mol-*', position: { referencePanel: 'ingredientView', direction: 'within' } },
+      { id: 'recipeView', title: 'Recipe View', initialWidthRatio: 0.34, position: { referencePanel: 'ingredientView', direction: 'left' } },
+      { id: 'recipeOptions', title: 'Recipe Options', initialWidthRatio: 0.1, minInitialWidth: 100, position: { referencePanel: 'recipeView', direction: 'left' } },
+      // Split this compact rail off last so the shared Ingredient View/Mol-* group receives
+      // the remainder. Ratios reproduce the supplied 10/34/13/43 desktop arrangement while
+      // remaining proportional on other window sizes.
+      { id: 'ingredientOptions', title: 'Ingredient Options', initialWidthRatio: 0.13, minInitialWidth: 130, position: { referencePanel: 'ingredientView', direction: 'left' } },
+      { id: 'recipeTable', title: 'Recipe table', initialHeightRatio: 0.3, minInitialHeight: 160, position: { direction: 'below' } },
+      { id: 'tableOptions', title: 'Table Options', initialWidthRatio: 0.1, minInitialWidth: 100, position: { referencePanel: 'recipeTable', direction: 'left' } },
     ],
     layoutToggles: { sequenceFeatures: false, objectProperties: false, interactionTable: false, searchTable: false },
+    activatePanel: 'ingredientView',
   },
   // Recipe creation: building compartments/ingredients and finding structures for them.
   // Emphasizes Recipe Options/View/Table + PDB/UniProt search; de-emphasizes the
@@ -495,6 +504,14 @@ function applyPreset(api: DockviewApi, preset: WorkspacePreset) {
     if (existing) api.removePanel(existing)
   }
   for (const placement of preset.panels) {
+    const initialWidth =
+      placement.initialWidthRatio == null
+        ? placement.initialWidth
+        : Math.max(placement.minInitialWidth ?? 0, Math.round(api.width * placement.initialWidthRatio))
+    const initialHeight =
+      placement.initialHeightRatio == null
+        ? placement.initialHeight
+        : Math.max(placement.minInitialHeight ?? 0, Math.round(api.height * placement.initialHeightRatio))
     const existing = api.getPanel(placement.id)
     if (existing) {
       // Already present (only possible for `molstar`/`ingredientView` surviving a preset
@@ -502,16 +519,16 @@ function applyPreset(api: DockviewApi, preset: WorkspacePreset) {
       // its new position (see `movePanel`'s docstring for why resizing alone isn't enough),
       // then resize.
       movePanel(api, existing, placement.position)
-      if (placement.initialWidth != null) existing.api.setSize({ width: placement.initialWidth })
-      if (placement.initialHeight != null) existing.api.setSize({ height: placement.initialHeight })
+      if (initialWidth != null) existing.api.setSize({ width: initialWidth })
+      if (initialHeight != null) existing.api.setSize({ height: initialHeight })
       continue
     }
     api.addPanel({
       id: placement.id,
       component: placement.id,
       title: placement.title,
-      initialWidth: placement.initialWidth,
-      initialHeight: placement.initialHeight,
+      initialWidth,
+      initialHeight,
       position: placement.position,
       // `molstar`/`ingredientView` must survive being an *inactive* tab too, not just avoid
       // `removePanel` — found live: `recipeCuration`'s `activatePanel` makes a sequence-feature
@@ -560,7 +577,7 @@ export function Workspace() {
       syncGroupPanels(api, layout[group.flag], group.anchor, group.panels)
     }
     const activate = WORKSPACE_PRESETS[presetId].activatePanel
-    if (activate) api.getPanel(activate)?.api.setActive()
+    if (activate) api.getPanel(activate)?.api?.setActive()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api, layout.objectProperties, layout.sequenceFeatures, layout.interactionTable, layout.searchTable, presetId])
 

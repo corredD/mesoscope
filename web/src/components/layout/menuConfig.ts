@@ -16,6 +16,18 @@
 import type { LayoutToggle, LayoutVisibility } from '../../state/layoutStore'
 import type { PresetId } from '../../state/presetStore'
 
+/**
+ * Fetch examples directly from GitHub so the modern app works without the
+ * legacy Python server's `/data` proxy. raw.githubusercontent.com explicitly
+ * allows cross-origin browser fetches, and these files mirror this repo's
+ * checked-in `data/` directory.
+ */
+export const EXAMPLE_RECIPE_ROOT = 'https://raw.githubusercontent.com/corredD/mesoscope/master/data/'
+
+function exampleRecipeUrl(filename: string): string {
+  return `${EXAMPLE_RECIPE_ROOT}${filename}`
+}
+
 export type MenuAction =
   | { kind: 'placeholder' }
   | { kind: 'toggle'; flag: LayoutToggle }
@@ -87,13 +99,13 @@ export const MENU: MenuGroup[] = [
         leaf('Empty Recipe', { kind: 'load-empty' }),
         leaf('From File (.json, _serialized.json, .xlsx, .csv, .zip)', { kind: 'pick-recipe-file' }),
         branch('From Examples', [
-          leaf('HIV mature', { kind: 'load-example', url: 'data/HIV_serialized.json' }),
-          leaf('HIV immature', { kind: 'load-example', url: 'data/HIV_immature.json' }),
-          leaf('HIV mature and Blood plasma', { kind: 'load-example', url: 'data/BloodPlasmaHIV_serialized.json' }),
-          leaf('HIV immature and Blood plasma', { kind: 'load-example', url: 'data/HIV_immature_blood.json' }),
-          leaf('Influenza envelope', { kind: 'load-example', url: 'data/InfluenzaA.json' }),
-          leaf('Influenza complete', { kind: 'load-example', url: 'data/InfluenzaFull.json' }),
-          leaf('Exosome', { kind: 'load-example', url: 'data/exosome_catalase.json' }),
+          leaf('HIV mature', { kind: 'load-example', url: exampleRecipeUrl('HIV_serialized.json') }),
+          leaf('HIV immature', { kind: 'load-example', url: exampleRecipeUrl('HIV_immature.json') }),
+          leaf('HIV mature and Blood plasma', { kind: 'load-example', url: exampleRecipeUrl('BloodPlasmaHIV_serialized.json') }),
+          leaf('HIV immature and Blood plasma', { kind: 'load-example', url: exampleRecipeUrl('HIV_immature_blood.json') }),
+          leaf('Influenza envelope', { kind: 'load-example', url: exampleRecipeUrl('InfluenzaA.json') }),
+          leaf('Influenza complete', { kind: 'load-example', url: exampleRecipeUrl('InfluenzaFull.json') }),
+          leaf('Exosome', { kind: 'load-example', url: exampleRecipeUrl('exosome_catalase.json') }),
           leaf('Mycoplasma Genitalium auto'), // data/MG_auto_149.zip — not in this repo; zip import also unbuilt
           leaf('Mycoplasma Genitalium curated'), // data/MG_curated_149.zip — same
         ]),
@@ -106,13 +118,13 @@ export const MENU: MenuGroup[] = [
       ]),
       branch('Append From', [
         branch('Examples', [
-          leaf('HIV and Blood Plasma', { kind: 'merge-example', url: 'data/BloodPlasmaHIV_serialized.json' }),
-          leaf('Blood Plasma', { kind: 'merge-example', url: 'data/BloodPlasma_serialized.json' }),
-          leaf('Mycoplasma Pneumonia', { kind: 'merge-example', url: 'data/Mpn_1.0_2.json' }),
+          leaf('HIV and Blood Plasma', { kind: 'merge-example', url: exampleRecipeUrl('BloodPlasmaHIV_serialized.json') }),
+          leaf('Blood Plasma', { kind: 'merge-example', url: exampleRecipeUrl('BloodPlasma_serialized.json') }),
+          leaf('Mycoplasma Pneumonia', { kind: 'merge-example', url: exampleRecipeUrl('Mpn_1.0_2.json') }),
           // Legacy quirk, replicated as-is (see web/README-modernization.md): this menu item calls
           // the plain, non-merge Exosome loader (LoadExampleExosome), not a merge — clicking it
           // under "Append From" discards the current recipe instead of merging into it.
-          leaf('Exosome', { kind: 'load-example', url: 'data/exosome_catalase.json' }),
+          leaf('Exosome', { kind: 'load-example', url: exampleRecipeUrl('exosome_catalase.json') }),
         ]),
         leaf('File (.json, _serialized.json)', { kind: 'pick-merge-file' }),
       ]),

@@ -1,19 +1,17 @@
 /**
- * Light/dark UI theme, applied as a `data-theme` attribute on `<html>` (see
- * `AppShell.tsx`) that `src/styles/theme.css`'s custom properties key off of.
+ * Light/dark UI theme, passed to Radix Themes' root provider (`app/App.tsx`)
+ * and applied as a `data-theme` attribute on `<html>` (see `AppShell.tsx`)
+ * that `src/styles/theme.css`'s Mesoscope-specific properties key off of.
  * Persisted to `localStorage` (plain read/write, matching this codebase's
  * existing no-middleware zustand style rather than pulling in
  * `zustand/middleware`'s `persist`) so a choice survives a reload.
  *
- * Also drives dockview's own built-in theme class (`dockview-theme-light`/
- * `dockview-theme-dark`, applied in `Workspace.tsx`) so the panel-docking
- * chrome matches the rest of the app. Mol-star's own UI skin (imported
- * separately in `MolstarViewer.tsx`/`IngredientViewer.tsx` as `light.scss`)
- * does NOT follow this toggle — its skin CSS bakes colors into its own
- * component rules rather than exposing custom properties, and both viewers
- * already run a further-restricted UI (chain selection/orientation controls
- * live in `IngredientOptions.tsx` instead), so re-skinning it is its own,
- * separate follow-up rather than something this toggle silently half-does.
+ * Also drives dockview's built-in theme and both Mol-star Canvas3D renderer
+ * backgrounds (`domain/pdb/molstarCanvasTheme.ts`). Mol-star's surrounding
+ * plugin UI skin is still the bundled `light.scss`: that stylesheet bakes
+ * colors into its controls instead of exposing tokens, so only the requested
+ * WebGL canvas follows dark mode here; re-skinning the full plugin chrome is
+ * a separate follow-up.
  */
 import { create } from 'zustand'
 

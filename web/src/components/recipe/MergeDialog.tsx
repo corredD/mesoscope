@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Dialog } from '../layout/Dialog'
+import { Button } from '../ui/Button'
+import { Switch } from '../ui/Switch'
 import { FIELD_LABELS } from '../../domain/files/columnMapping'
 import { MERGEABLE_FIELDS, type MergeFieldFlags, type MergeOptions } from '../../domain/recipe/mergeRecipe'
 import './ColumnMappingDialog.css'
@@ -54,17 +56,16 @@ export function MergeDialog({ incomingName, initialFlags, onConfirm, onCancel }:
           </label>
         ))}
       </div>
-      <label className="column-mapping-row">
-        <span>Create new ingredient upon merge / Only update</span>
-        <input type="checkbox" checked={createWhenMerge} onChange={(e) => setCreateWhenMerge(e.target.checked)} />
-      </label>
+      <Switch className="column-mapping-create-switch" checked={createWhenMerge} onCheckedChange={setCreateWhenMerge}>
+        Create new ingredient upon merge
+      </Switch>
       <div className="column-mapping-actions">
-        <button type="button" onClick={onCancel}>
+        <Button onClick={onCancel}>
           Cancel
-        </button>
-        <button type="button" onClick={() => onConfirm({ fieldFlags: flags, createWhenMerge })}>
+        </Button>
+        <Button variant="primary" onClick={() => onConfirm({ fieldFlags: flags, createWhenMerge })}>
           Merge
-        </button>
+        </Button>
       </div>
     </Dialog>
   )

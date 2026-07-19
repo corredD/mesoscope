@@ -5,7 +5,7 @@
   min-width: 0;
   min-height: 200px;
   overflow: hidden;
-  background: var(--color-bg-subtle);
+  background: var(--color-recipe-canvas-bg);
 }
 
 .recipe-canvas {
@@ -58,7 +58,10 @@
 }
 
 .recipe-canvas-compartment-label {
-  fill: rgba(17, 24, 39, 0.82);
+  fill: var(--color-text);
+  stroke: var(--color-recipe-label-halo);
+  stroke-width: 1.5px;
+  paint-order: stroke;
   font-family: inherit;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -67,17 +70,20 @@
 }
 
 .recipe-canvas-ingredient-label {
-  fill: rgba(0, 0, 0, 0.85);
+  fill: var(--color-text);
+  stroke: var(--color-recipe-label-halo);
+  stroke-width: 1.5px;
+  paint-order: stroke;
   font-size: 9px;
   user-select: none;
 }
 
 .recipe-canvas-legend text {
-  fill: rgba(0, 0, 0, 0.85);
+  fill: var(--color-text);
 }
 
 .recipe-canvas-legend rect {
-  stroke: rgba(0, 0, 0, 0.4);
+  stroke: var(--color-border-strong);
   stroke-width: 0.5;
 }
 
@@ -108,8 +114,9 @@
   margin-bottom: 2px;
 }
 
-.recipe-canvas-context-menu button {
-  text-align: left;
+.recipe-canvas-context-menu .app-button {
+  width: 100%;
+  justify-content: flex-start;
 }
 
 .recipe-canvas-context-menu label {

@@ -1,5 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRecipeStore } from '../../state/recipeStore'
+import { Button } from '../ui/Button'
+import { Slider } from '../ui/Slider'
+import { Switch } from '../ui/Switch'
 import { useIngredientViewerStore } from '../../state/ingredientViewerStore'
 import { getAtomPositions } from '../../domain/pdb/molstarStructureUtil'
 import { kmeans, boundingSphere, autoBeadCount, overrideRadii, type ClusterResult } from '../../domain/recipe/clustering'
@@ -9,6 +12,8 @@ import {
   clearMembraneGeometry,
   setFiberGizmo,
   clearFiberGizmo,
+  setFiberPreview,
+  MAX_FIBER_PREVIEW_COPIES,
   renderLodLevel,
   clearLodLevel,
   captureSprite,
@@ -71,6 +76,7 @@ import './IngredientOptions.css'
 const REPRESENTATIONS: IngredientRepresentationType[] = ['cartoon', 'ball-and-stick', 'gaussian-surface']
 const COLOR_THEMES: IngredientColorType[] = ['chain-id', 'uniform', 'element-symbol', 'secondary-structure']
 const LOD_LEVELS = [0, 1, 2]
+const DEFAULT_FIBER_LENGTH_MAX = 200
 
 function vec3(value: number[] | undefined, fallback: [number, number, number]): [number, number, number] {
   if (!value || value.length < 3) return fallback
@@ -82,8 +88,23 @@ function normalize(v: [number, number, number]): [number, number, number] {
   return len > 0 ? [v[0] / len, v[1] / len, v[2] / len] : [0, 0, 1]
 }
 
+/** Largest coordinate-independent side of the loaded molecule's bounding box. */
+function maximumIngredientSpan(points: [number, number, number][]): number {
+  if (points.length === 0) return 0
+  const min: [number, number, number] = [...points[0]]
+  const max: [number, number, number] = [...points[0]]
+  for (let i = 1; i < points.length; i++) {
+    for (let axis = 0; axis < 3; axis++) {
+      min[axis] = Math.min(min[axis], points[i][axis])
+      max[axis] = Math.max(max[axis], points[i][axis])
+    }
+  }
+  return Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2])
+}
+
 export function IngredientOptions() {
   const selectedNode = useRecipeStore((s) => s.selectedNode)
+  const selectedIngredientType = useRecipeStore((s) => (s.selectedNode?.data as IngredientData | undefined)?.ingtype)
   const patchIngredient = useRecipeStore((s) => s.patchSelectedIngredient)
   const plugin = useIngredientViewerStore((s) => s.plugin)
   const trajectoryRef = useIngredientViewerStore((s) => s.trajectoryRef)
@@ -106,6 +127,20 @@ export function IngredientOptions() {
   const [fiberLength, setFiberLength] = useState(20)
   const [fiberOffset, setFiberOffset] = useState<[number, number, number]>([0, 0, 0])
   const [fiberOn, setFiberOn] = useState(false)
+  const [fiberPreviewOn, setFiberPreviewOn] = useState(false)
+  const [fiberPreviewCopies, setFiberPreviewCopies] = useState(6)
+  const [fiberTwist, setFiberTwist] = useState(0)
+
+  // The rise must be able to clear even a large loaded ingredient. Use its
+  // largest bounding-box span + 100Å, while retaining the previous 200Å floor
+  // before loading and for smaller structures. Memoized because atom traversal
+  // would otherwise repeat on every live slider render.
+  const loadedFiberLengthMax = useMemo(() => {
+    const structureSpan = structure ? maximumIngredientSpan(getAtomPositions(structure)) : 0
+    return Math.max(DEFAULT_FIBER_LENGTH_MAX, Math.ceil(100 + structureSpan))
+  }, [structure])
+  // Preserve an already-stored longer rise without clamping recipe data.
+  const fiberLengthMax = Math.max(loadedFiberLengthMax, Math.ceil(fiberLength))
 
   // Scales both orientation gizmos to the loaded structure's actual size (set once the
   // structure loads, see the effect below) — a fixed size looked wildly wrong across
@@ -153,12 +188,24 @@ export function IngredientOptions() {
     setFiberLength(data?.fiberAxis?.[3] ?? 20)
     setFiberOffset(vec3(data?.fiberOffset, [0, 0, 0]))
     setFiberOn(data?.ingtype === 'fiber')
+    setFiberPreviewOn(false)
+    setFiberPreviewCopies(6)
+    setFiberTwist(0)
     setLevelVisible([false, false, false])
     setSpriteScale(data?.sprite?.scale2d ?? 1)
     setSpriteOffsetY(data?.sprite?.offsety ?? 0)
     setSpriteLength(data?.sprite?.lengthy ?? 0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedNode])
+
+  // `RecipeTable` mutates the selected node's data in place, so subscribe to
+  // this primitive separately from the stable selected-node reference. A live
+  // type edit can then enter/leave fiber mode immediately without requiring the
+  // user to select a different row and come back.
+  useEffect(() => {
+    setFiberOn(selectedIngredientType === 'fiber')
+    if (selectedIngredientType !== 'fiber') setFiberPreviewOn(false)
+  }, [selectedIngredientType])
 
   // Chain list arrives asynchronously (`IngredientViewer` populates it only after the
   // structure finishes loading), so "default to all chains selected" has to react to
@@ -232,6 +279,30 @@ export function IngredientOptions() {
     }
     void setFiberGizmo(plugin, fiberAxis, fiberOffset, fiberLength, gizmoScale.radius)
   }, [plugin, fiberOn, fiberAxis, fiberOffset, fiberLength, gizmoScale])
+
+  // Preview-only helical assembly. Every Fiber Orientation slider participates
+  // in this dependency set, so instances follow axis/rise/offset/copies/twist
+  // throughout a drag. `setFiberPreview` coalesces any faster-than-GPU updates
+  // around Mol-star's single StructureInstances decorator; rise/axis/offset
+  // still persist through the normal recipe fields, while copies and twist
+  // remain disposable preview settings.
+  useEffect(() => {
+    if (!plugin) return
+    const preview =
+      fiberOn && fiberPreviewOn && selectedIngredientType === 'fiber'
+        ? { copies: fiberPreviewCopies, axis: fiberAxis, rise: fiberLength, twist: fiberTwist, offset: fiberOffset }
+        : null
+    void setFiberPreview(plugin, preview).catch((err) => console.error('IngredientOptions: setFiberPreview failed', err))
+  }, [plugin, selectedIngredientType, fiberOn, fiberPreviewOn, fiberPreviewCopies, fiberAxis, fiberLength, fiberTwist, fiberOffset])
+
+  // A removable workspace panel can unmount while Ingredient View stays alive;
+  // never leave its temporary preview active after the controls disappear.
+  useEffect(
+    () => () => {
+      if (plugin) void setFiberPreview(plugin, null)
+    },
+    [plugin],
+  )
 
   // Rebuild the currently-selected LOD level automatically whenever a bead-building option
   // changes — legacy (`NGL_updateCurrentBeadsLevel`, js/ngl.js:1528) has no "Build" button at
@@ -428,41 +499,78 @@ export function IngredientOptions() {
 
       <section>
         <h4>
-          <label>
-            <input type="checkbox" checked={membraneOn} onChange={(e) => setMembraneOn(e.target.checked)} /> Membrane orientation
-          </label>
+          <Switch checked={membraneOn} onCheckedChange={setMembraneOn}>
+            Membrane orientation
+          </Switch>
         </h4>
         {membraneOn && (
           <>
             <Vec3Sliders label="Axis" value={membraneAxis} min={-1} max={1} step={0.01} onChange={applyMembraneAxis} />
-            <Vec3Sliders label="Offset" value={membraneOffset} min={-100} max={100} step={1} onChange={applyMembraneOffset} />
-            <button type="button" onClick={resetMembrane}>
+            <Vec3Sliders label="Offset" value={membraneOffset} min={-200} max={200} step={1} onChange={applyMembraneOffset} />
+            <Button size="sm" onClick={resetMembrane}>
               Reset
-            </button>
+            </Button>
           </>
         )}
       </section>
 
       <section>
         <h4>
-          <label>
-            <input type="checkbox" checked={fiberOn} onChange={(e) => setFiberOn(e.target.checked)} /> Fiber orientation
-          </label>
+          <Switch checked={fiberOn} onCheckedChange={setFiberOn}>
+            Fiber orientation
+          </Switch>
         </h4>
         {fiberOn && (
           <>
             <Vec3Sliders label="Axis" value={fiberAxis} min={-1} max={1} step={0.01} onChange={applyFiberAxis} />
-            <label>
-              Length <input type="number" value={fiberLength} onChange={(e) => applyFiberLength(Number(e.target.value))} />
-            </label>
-            <Vec3Sliders label="Offset" value={fiberOffset} min={-100} max={100} step={1} onChange={applyFiberOffset} />
+            <ScalarSlider
+              label="Fiber length (rise)"
+              value={fiberLength}
+              min={0}
+              max={fiberLengthMax}
+              step={1}
+              unit="Å"
+              onChange={applyFiberLength}
+            />
+            <Vec3Sliders label="Offset" value={fiberOffset} min={-200} max={200} step={1} onChange={applyFiberOffset} />
+            {selectedIngredientType === 'fiber' && (
+              <div className="ingredient-options-fiber-preview">
+                <Switch checked={fiberPreviewOn} onCheckedChange={setFiberPreviewOn}>
+                  Preview fiber assembly
+                </Switch>
+                {fiberPreviewOn && (
+                  <>
+                    <ScalarSlider
+                      label="Preview copies"
+                      value={fiberPreviewCopies}
+                      min={1}
+                      max={MAX_FIBER_PREVIEW_COPIES}
+                      step={1}
+                      onChange={setFiberPreviewCopies}
+                    />
+                    <ScalarSlider
+                      label="Fiber twist"
+                      value={fiberTwist}
+                      min={-180}
+                      max={180}
+                      step={1}
+                      unit="°"
+                      onChange={setFiberTwist}
+                    />
+                    <p className="panel-note ingredient-options-preview-note">
+                      Rise and twist are applied per copy around the axis through Offset.
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
             <div className="ingredient-options-row">
-              <button type="button" onClick={buildFiberFromChains} disabled={chains.length < 2}>
+              <Button variant="primary" size="sm" onClick={buildFiberFromChains} disabled={chains.length < 2}>
                 Build from chains
-              </button>
-              <button type="button" onClick={resetFiber}>
+              </Button>
+              <Button size="sm" onClick={resetFiber}>
                 Reset
-              </button>
+              </Button>
             </div>
           </>
         )}
@@ -491,12 +599,12 @@ export function IngredientOptions() {
             onChange={(e) => setBeadCount(Number(e.target.value))}
           />
         </label>
-        <label>
-          <input type="checkbox" checked={autoBeadCountOn} onChange={(e) => setAutoBeadCountOn(e.target.checked)} /> Auto number of beads
-        </label>
-        <label>
-          <input type="checkbox" checked={overwriteRadiusOn} onChange={(e) => setOverwriteRadiusOn(e.target.checked)} /> Overwrite cluster radius
-        </label>
+        <Switch checked={autoBeadCountOn} onCheckedChange={setAutoBeadCountOn}>
+          Auto number of beads
+        </Switch>
+        <Switch checked={overwriteRadiusOn} onCheckedChange={setOverwriteRadiusOn}>
+          Overwrite cluster radius
+        </Switch>
         {overwriteRadiusOn && (
           <label>
             Radius <input type="number" min={0.1} step={0.5} value={overwriteRadius} onChange={(e) => setOverwriteRadius(Number(e.target.value))} />
@@ -513,10 +621,15 @@ export function IngredientOptions() {
         </label>
         <div className="ingredient-options-chains">
           {LOD_LEVELS.map((level) => (
-            <label key={level} className="ingredient-options-lod-level">
-              <input type="checkbox" checked={levelVisible[level]} disabled={!data.pos?.[level]} onChange={() => toggleLevelVisible(level)} />
+            <Switch
+              key={level}
+              className="ingredient-options-lod-level"
+              checked={levelVisible[level]}
+              disabled={!data.pos?.[level]}
+              onCheckedChange={() => toggleLevelVisible(level)}
+            >
               Level {level} {data.pos?.[level] ? `(${data.pos[level]!.coords.length / 3} beads)` : '(not built)'}
-            </label>
+            </Switch>
           ))}
         </div>
       </section>
@@ -524,9 +637,9 @@ export function IngredientOptions() {
       <section>
         <h4>Sprite (2D)</h4>
         <div className="ingredient-options-row">
-          <button type="button" onClick={onCaptureSprite} disabled={capturing || !plugin}>
+          <Button variant="primary" onClick={onCaptureSprite} loading={capturing} disabled={!plugin}>
             {capturing ? 'Capturing…' : 'Capture sprite from view'}
-          </button>
+          </Button>
         </div>
         {/* `sprite.image` defaults to a bare "<name>.png" filename convention when a recipe
             doesn't carry a captured image (parseLegacyRecipe.ts) — only a real captured
@@ -595,21 +708,22 @@ function Vec3Sliders({
     <div className="ingredient-options-vec3">
       <span>{label}</span>
       {(['X', 'Y', 'Z'] as const).map((axisLabel, i) => (
-        <label key={axisLabel}>
-          {axisLabel}
-          <input
-            type="range"
+        <div key={axisLabel} className="ingredient-options-vec3-control">
+          <span>{axisLabel}</span>
+          <Slider
+            aria-label={`${label} ${axisLabel}`}
             min={min}
             max={max}
             step={step}
             value={value[i]}
-            onChange={(e) => {
+            onValueChange={(nextValue) => {
               const next: [number, number, number] = [...value]
-              next[i] = Number(e.target.value)
+              next[i] = nextValue
               onChange(next)
             }}
           />
           <input
+            aria-label={`${label} ${axisLabel} value`}
             type="number"
             step={step}
             value={value[i]}
@@ -619,8 +733,46 @@ function Vec3Sliders({
               onChange(next)
             }}
           />
-        </label>
+        </div>
       ))}
+    </div>
+  )
+}
+
+function ScalarSlider({
+  label,
+  value,
+  min,
+  max,
+  step,
+  unit,
+  onChange,
+}: {
+  label: string
+  value: number
+  min: number
+  max: number
+  step: number
+  unit?: string
+  onChange: (value: number) => void
+}) {
+  return (
+    <div className="ingredient-options-scalar-control">
+      <span>{label}</span>
+      <Slider aria-label={label} min={min} max={max} step={step} value={value} onValueChange={onChange} />
+      <label className="ingredient-options-number-field">
+        <span className="ingredient-options-visually-hidden">{label} value</span>
+        <input
+          aria-label={`${label} value`}
+          type="number"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(event) => onChange(Number(event.target.value))}
+        />
+        {unit && <span aria-hidden="true">{unit}</span>}
+      </label>
     </div>
   )
 }

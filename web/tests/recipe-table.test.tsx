@@ -41,6 +41,33 @@ describe('RecipeTable', () => {
     expect(graph.nodes.some((n) => n.data.name === 'Hemagglutinin')).toBe(false)
   })
 
+  it('edits the PDB while preserving the rest of the ingredient source', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    render(<RecipeTable />)
+
+    const input = screen.getByRole('textbox', { name: 'Hemagglutinin PDB' })
+    const before = useRecipeStore.getState().graph!.nodes.find((node) => node.data.name === 'Hemagglutinin')!.data
+    const sourceBefore = { ...('source' in before ? before.source : {}) }
+    fireEvent.change(input, { target: { value: ' 4abc ' } })
+    fireEvent.blur(input)
+
+    const ingredient = useRecipeStore.getState().graph!.nodes.find((node) => node.data.name === 'Hemagglutinin')!.data
+    expect('source' in ingredient && ingredient.source.pdb).toBe('4abc')
+    expect('source' in ingredient && ingredient.source).toEqual({ ...sourceBefore, pdb: '4abc' })
+  })
+
+  it('restricts ingredient type editing to protein, fiber, or ligand', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+    render(<RecipeTable />)
+
+    const type = screen.getByRole('combobox', { name: 'Hemagglutinin ingredient type' })
+    expect([...type.querySelectorAll('option')].map((option) => option.value)).toEqual(['protein', 'fiber', 'ligand'])
+    fireEvent.change(type, { target: { value: 'fiber' } })
+
+    const ingredient = useRecipeStore.getState().graph!.nodes.find((node) => node.data.name === 'Hemagglutinin')!.data
+    expect('ingtype' in ingredient && ingredient.ingtype).toBe('fiber')
+  })
+
   it('clicking Delete on a row removes that ingredient from the store', () => {
     useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
     render(<RecipeTable />)

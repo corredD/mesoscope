@@ -20,13 +20,33 @@
   padding: 6px 8px;
 }
 
-.recipe-canvas-toolbar-forces label {
-  display: flex;
+.recipe-canvas-toolbar-slider-row {
+  display: grid;
+  grid-template-columns: minmax(72px, auto) minmax(72px, 1fr) 64px;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
 }
 
-.recipe-canvas-toolbar-forces input {
-  width: 70px;
+.recipe-canvas-toolbar-slider-row > span:first-child {
+  min-width: 72px;
+}
+
+.recipe-canvas-toolbar-slider-row input[type='number'] {
+  width: 64px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 420px) {
+  .recipe-canvas-toolbar-slider-row {
+    grid-template-columns: minmax(64px, auto) minmax(64px, 1fr) 58px;
+    gap: 6px;
+  }
+
+  .recipe-canvas-toolbar-slider-row > span:first-child {
+    min-width: 64px;
+  }
+
+  .recipe-canvas-toolbar-slider-row input[type='number'] {
+    width: 58px;
+  }
 }

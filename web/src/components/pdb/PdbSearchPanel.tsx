@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useRecipeStore } from '../../state/recipeStore'
 import { searchPdbByText, searchPdbBySequence, type PdbSearchResult } from '../../domain/pdb/pdbSearch'
+import { Button } from '../ui/Button'
 import './SearchPanel.css'
 
 type Mode = 'text' | 'sequence'
@@ -48,9 +49,9 @@ export function PdbSearchPanel() {
           onKeyDown={(e) => e.key === 'Enter' && runSearch()}
           placeholder={mode === 'text' ? 'protein name…' : 'amino acid sequence…'}
         />
-        <button type="button" onClick={runSearch} disabled={searching}>
+        <Button variant="primary" onClick={runSearch} loading={searching}>
           Search
-        </button>
+        </Button>
       </div>
       {error && <p className="search-panel-error">{error}</p>}
       {!error && results.length === 0 && !searching && <p className="panel-note">No results yet.</p>}
@@ -69,9 +70,9 @@ export function PdbSearchPanel() {
                 <td>{r.id}</td>
                 <td>{r.score.toFixed(2)}</td>
                 <td>
-                  <button type="button" disabled={!selectedNode} onClick={() => applyPdbPick({ pdb: r.id })}>
+                  <Button size="sm" disabled={!selectedNode} onClick={() => applyPdbPick({ pdb: r.id })}>
                     Apply
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}
