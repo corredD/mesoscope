@@ -324,7 +324,7 @@ Reparent on drag end:
 |---|---|---|---|---|---|
 | Node image | `sprites` | checked | — | Sprites are read on every frame | lm:280, m:3740 |
 | Node label | `canvas_label` | `name` | `name, None, pdb, uniprot, label` + custom columns | Read on every frame; `ChangeCanvasLabel` is a no-op | lm:281, m:21, m:3105 |
-| Node color | `canvas_color` | `default` | `canvas_color_options` (16) + custom | `ChangeCanvasColor` | lm:283, m:28-30 |
+| Node color | `canvas_color` | `default` in the markup; **`pdb` after a load** (the oracle: `update_graph` rebuilds the select, which lands on its first option) | `canvas_color_options` (16) + custom | `ChangeCanvasColor` | lm:283, m:28-30 |
 | Use color linear mapping | `colormap` | checked | — | `use_color_mapping`; no recompute | lm:285, m:3184-3187 |
 | Min / max colour | `min_color` / `max_color` | `#ff0000` / `#00ffbf` | — | Sets `property_mapping[mode].cmin/cmax`, recomputes | lm:286-287, m:3336-3354 |
 | Apply current to ingredient color | `applycolor` | — | — | `applyColorModeToIngredient` (§6.4) | lm:289, m:3356-3371 |
@@ -420,7 +420,7 @@ Context menu (ix:671-676; m:6044-6105):
 
 1. Compartment `r` = enclose(direct leaves) + 25 ignores sub-compartments (m:3624), so a parent can be smaller than its child compartments. The +25 is not scaled by `radius_scale`.
 2. The compartment path connects the r+5 and r−5 arcs with a straight segment, and arcs of 10 rad overdraw (m:5476-5481). Is the visible "spoke" intended?
-3. Ingredients with no recipe colour render **black** in `default` mode (m:2246, 3474).
+3. Ingredients with no recipe colour render **black** in `default` mode (m:2246, 3474). Only when the `color` key is missing: the oracle shows HIV's ingredients (key present, null) in depth colours.
 4. `rotationText` has 29 entries. Compartment 30 and later get `undefined`, which becomes a NaN start angle, and their label is not drawn (m:5497, 3814).
 5. The ingredient label inherits `textAlign='center'` and `fillStyle` from earlier draws (m:5506, 3843).
 6. The link gradient is fixed in world space `(0,0)→(170,0)`, not along the link (m:3781). Link `lineWidth = d.r` is undefined (m:3771-3795).
@@ -443,107 +443,107 @@ Context menu (ix:671-676; m:6044-6105):
 
 ## §9 Divergence table (legacy code vs modern code)
 
-Modern files: `components/recipe/RecipeCanvas.tsx` (RC), `components/recipe/RecipeCanvasToolbar.tsx` (TB), `domain/recipe/useRecipeSimulation.ts` (US), `domain/recipe/recipeForces.ts` (RF), `domain/recipe/computeRecipeLayout.ts` (CL), `domain/recipe/colorModes.ts` (CM), `state/recipeStore.ts` (RS), `state/uiModeStore.ts` (UM). Modern d3 is 7.9.0 (d3-force 3.0.0, d3-hierarchy 3.1.2, d3-zoom 3.0.0).
+Modern files (lane `recipe-view-port`, cited by function): `components/recipe/RecipeCanvas.tsx` (RC), `components/recipe/recipeDraggable.tsx` (RD), `components/recipe/RecipeCanvasToolbar.tsx` (TB), `domain/recipe/view/layout.ts` (LY), `view/drag.ts` (DR), `view/hitTest.ts` (HT), `view/colors.ts` (CO), `view/labels.ts` (LB), `state/recipeStore.ts` (RS), `state/uiModeStore.ts` (UM). Modern d3 is 7.9.0; `dragology` 0.1.7 (npm). "oracle" = checked against `tests/fixtures/recipe-view-oracle/` by `tests/recipe-view-oracle.test.ts`.
 
 | # | Behaviour | Legacy (file:line) | Modern (file:line) | Status |
 |---|---|---|---|---|
-| 1 | Renderer | Single canvas 2D, redrawn on every sim tick (m:3892) | SVG elements; the tick writes transforms imperatively (RC:399-677, US:378-389) | Differs |
-| 2 | HiDPI | None: bitmap = CSS px (lm:1052-1053) | SVG is vector | Modern-only |
-| 3 | Resize | Bitmap resized; positions, pack and transform kept (lm:1045-1056) | ResizeObserver → `canvasSize` → CREATE: full repack + new sim (RC:230-249, US:402) | Differs |
-| 4 | Pack params | size = panel at mount, padding 30, `.sum(size)` includes internal `size`, no sort (m:2896-2898, 5576-5578) | size = (panel−8)·radiusScale, padding 3, weight = r² of leaves only, empty compartment 100 (CL:86-100) | Differs |
-| 5 | Leaf radius | Absolute `size·radius_scale`; not fitted to the panel (m:3611-3617) | Fitted by the pack; only relative areas are kept (CL:58-89, 100) | Differs |
-| 6 | Compartment radius | enclose(direct leaves) + 25 (m:3621-3640) | Pack enclosure of the whole subtree (CL:101) | Differs |
-| 7 | radius_scale semantics | Multiplies leaf radii, then re-encloses (m:3611-3617) | Multiplies the pack container (CL:100) | Differs |
-| 8 | Size-by formulas | m:3609-3619 | Same radius formulas, squared into weights (CL:58-75) | Differs |
-| 9 | Repack on add/delete/reparent | Never; nodes are placed at the canvas centre, others keep positions (m:4509, 4699, 4848-4850, 5306-5313) | Structural signature change → CREATE → full repack (US:143-146, 402) | Differs |
-| 10 | Sim membership | All nodes: root, compartments, leaves (m:5616) | Leaves only; compartments static (US:348, 372) | Differs |
-| 11 | Same-depth collisions d0–d4 | Compartments and leaves collide per depth, strength 1 (m:2869-2873) | Absent; replaced by hard projections (RF:101-132; US:207-231) | Differs |
-| 12 | Leaf collision | `forceCollide(r·1.15)`, strength `collisionForce`, all leaves (m:2874) | `forceCollide(r)`, strength `collisionForce`, all leaves (US:373) | Differs |
-| 13 | Link force | `forceLink` strength .1, distance 30, all links (m:2867-2868) | Same strength and distance; only leaf–leaf links (US:164-175, 377) | Differs |
-| 14 | Custom-force scaling | Velocity nudges, **not** scaled by alpha, run after integration (m:5417-5472) | d3 forces scaled by `alpha` (RF:150-151, 213-214, 237-238) | Differs |
-| 15 | Surface rule | Soft spring to `parent.r`, can be displaced (m:5440-5452) | Spring + **hard projection** to exactly `parent.r` every tick (RF:64-89; US:382-386) | Differs |
-| 16 | Surface proteins straddle the membrane | Centre on the centreline (m:5447) | Centre on the centreline (RF:80) | Same |
-| 17 | Parent containment | Pull to parent centre when `dist+1.2r > R−5`, compartments included, skipped under root (m:5465-5472) | Leaves only, threshold `R−thickness/2`, **plus hard clamp**, including under root (RF:227-241, 64-89) | Differs |
-| 18 | Root force | Root pulled toward world (0,0) (m:5455-5459) | Root not simulated | Differs |
-| 19 | Sim never cools | `alphaTarget(.3)` on mouse-enter and drag; reset only if HQ (false) (m:5068, 5116, 5229) | `alphaTarget(0)` on release; cools to stop; nothing on mouse-enter (US:510) | Differs |
-| 20 | Reheat on recipe load | `stop/restart/alpha(1)` on the same sim (m:5615-5623) | New sim per CREATE (US:371-393) | Differs |
-| 21 | Forces-slider update | `updateForce()` rebuilds the forces; no alpha change (ngl:850-855, m:2865) | Live strengths + `alpha(max(α,.3))` (US:426-432) | Differs |
-| 22 | Slider ranges | range 0–1, number 0–2 (lm:271-272) | Slider and number 0–2 (TB:276-284) | Differs |
-| 23 | Hidden root circle | Not drawn; colour used as background (m:5461-5463, 3901-3910) | Not drawn; background rect (RC:465, 411-419) | Same |
-| 24 | Background in dark theme | Root colour always (m:3901) | Theme variable in dark mode (RC:380-381) | Modern-only |
-| 25 | Compartment fill | **Filled disk** r+5, `color(depth)` (m:5476-5481, 3718) | `fill="none"` ring (RC:545-553) | Differs |
-| 26 | Membrane two-edge band | Outlines at r±5 (fixed 10 px), stroke `color(depth+1)` (m:5476-5481) | Band of width `data.thickness` (default 7.5) + edges at r±t/2 (RC:542-575) | Differs |
-| 27 | Ingredient stroke | Always `color(depth+1)` at stroke width (m:3720-3722) | 0 unless hovered or selected (RC:530) | Differs |
-| 28 | Depth palette | HCL ramp white → `hsl(228,30%,40%)` over [−1,6] (m:156-159) | Tableau10 ordinal (CM:234) | Differs |
-| 29 | Draw order | Compartments by depth → links → ingredients → pair lines → labels → popup → legend (m:3931-4028) | Links → nodes in descendants order (each node's group includes its label) → legend → popup (RC:421-676) | Differs |
-| 30 | Hover style | Fill `colorNode`, black stroke (m:3682-3687) | Stroke `#111827`, width ≥1.5 (RC:487-488) | Differs |
-| 31 | Selected style | Yellow fill, orange stroke (m:3689-3694) | Orange stroke only, fill unchanged (RC:487) | Differs |
-| 32 | Multi-select style | Yellow/orange, plus yellow pair lines (m:3674-3679, 3944-3952) | Blue stroke; no pair lines (RC:487) | Differs |
-| 33 | Edit-drop feedback | Grey fill target, yellow stroke for a surface drop, white temp link, translucent blue dragged node (m:3696-3716, 3953-3958) | Dashed green target stroke; dragged opacity .64 (RC:487, 520, 531) | Differs |
-| 34 | Compartment label | Curved, outer r+5, Oswald, `round(r/10)` (≤4 → 10), always drawn, `rotationText` start angle (m:3809-3816) | textPath on the inner upper semicircle, `min(round(r/10),16)`, only if r > 40, centred at top (RC:640-649) | Differs |
-| 35 | Root label + `*` dirty mark | Bottom-left, screen-fixed (m:3818-3825) | None | Missing |
-| 36 | Ingredient label gate | `highlight` or (k > 1.5 and option ≠ None) (m:3828) | Selected, multi, hovered, or zoom > 1.5; ignores None (RC:481) | Differs |
-| 37 | Ingredient label style | Georgia `round(r/2)`, at (x−r, y+r+fs), centre-aligned (m:3829-3843) | CSS class, at (0, r+10), middle-anchored (RC:651-655) | Differs |
-| 38 | Label options | name/None/pdb/uniprot/label + custom columns (m:2174, 2199) | 5 fixed options; `label` falls back to name (RC:131-136, TB:12) | Differs |
-| 39 | In-circle sprite | Once per ingredient, letterboxed in 2r (m:3740-3751) | Once; fibers ×3 (RC:604-622) | Differs |
-| 40 | Membrane marker lines | Only in the popup, Å-scaled via `offsety`/`scale2d` (m:3989-4016) | In every surface ingredient's circle at fixed fractions (RC:629-635) | Modern-only |
-| 41 | Popup thumbnail | 150 px wide, bottom, x=W/2−160, rect + name + membrane/fiber; selection beats hover (m:3970-4027) | 100×100 bottom-right, image only; hover beats selection (RC:393-395, 674-676) | Differs |
-| 42 | Sprite source chain | local folder → repo (checked) → PDBe (`pdb.split("_")[0]`) → warning icon (m:4308-4383) | repo (unchecked) → PDBe (whole pdb) (structureSource.ts:58-62) | Differs |
-| 43 | Legend | World space; categorical when mapping off; w/h/f sliders; `color`-mode "latest" legend (m:3848-3889) | Screen-fixed 16 px swatches; any categorical mode when toggled (RC:383-388, 661-672) | Differs |
-| 44 | Link geometry | Edge-to-edge (m:5353-5366) | Centre-to-centre (US:305-323) | Differs |
-| 45 | Link gradient | Fixed world axis (0,0)→(170,0) (m:3781) | Along the link, userSpaceOnUse (RC:438, US:316-321) | Differs |
-| 46 | Link hover + Mol* highlight of ends | m:4965-4990, 5049-5059 | None (RC:97-99) | Missing |
-| 47 | Link click selection | Selects link and ends, table tab 1, NGL pair (m:5266-5278) | Canvas links have no handlers; only InteractionTable selects (InteractionTable.tsx:69) | Missing |
-| 48 | Hit-test | Deepest containing disk; compartment interior hittable (m:4918-4960) | DOM: leaf disk; compartment **ring stroke only** (RC:576-593) | Differs |
-| 49 | Click on empty compartment interior | Selects the compartment (m:5134-5139) | Background click → deselect (RC:403-406) | Differs |
-| 50 | Click on empty canvas | Root subject: clears selection; `SetObjectsOptionsDiv(root)` (m:5150-5157, 5232) | `selectNode(null)` (RC:403-406) | Differs |
-| 51 | Pan gesture | Middle-drag only; left-drag on empty space does nothing (m:2951-2960, 4939) | Left-drag on background (RC:280-300) | Differs |
-| 52 | Zoom extent | [0.2, 20] (m:2957) | [0.2, 8] (RC:282) | Differs |
-| 53 | Wheel over nodes | Zooms (m:2957) | Blocked by filter → no zoom over nodes (RC:293) | Differs |
-| 54 | Double-click | Zoom ×2 anywhere (d3 v4 default) | d3 v7 default on background only (RC:293) | Differs |
-| 55 | Wheel delta | v4: `−dy·(mode?120:1)/500` | v7 adds ×10 when Ctrl (pinch) | Differs |
-| 56 | Dragging outside Edit Mode | Allowed (m:5190-5197) | Allowed (RC:318-336) | Same |
-| 57 | Drag start offset | Grab point preserved (d3-drag subject dx) (m:5196) | Grab offset preserved (RC:335) | Same |
-| 58 | Compartment drag | Pins only the ring; children follow softly via ParentForce (m:5196, 5470) | Rigid subtree translate + clamp to parent + push-out (US:466-491, 177-247) | Differs |
-| 59 | Ingredient drag constraint | Free (fx/fy anywhere) (m:5196) | Projected into parent, out of other compartments (US:449-457) | Differs |
-| 60 | Hover → Mol* highlight | `MS_HighlightNode` on every move (m:5018, 5035-5045) | None | Missing |
-| 61 | Hover → popup and label | m:3828, 3971 | RC:393, 481 | Same |
-| 62 | Selection side effects | Table row select + scroll, NGL load, PDB component, UniProt/ProtVista, Object Properties, `visited` (m:5232-5262) | `selectNode` → table highlight + viewers via store; `markVisited` (RC:490-496; RecipeTable.tsx:61; IngredientViewer.tsx:45) | Differs |
-| 63 | Selection timing | Mousedown selects; mouseup triggers effects (m:5106-5135, 5225) | On click (RC:532, 586) | Differs |
-| 64 | Compartment selection in Edit Mode | Deselects (m:5141-5148) | Selects (RC:490-496) | Differs |
-| 65 | Ctrl multi-select | Both modes (m:5122) | Edit Mode only; Ctrl does nothing in view mode (RC:319-322) | Differs |
-| 66 | Edit drop target test | Overlap `d < r_t + r_s`, root fallback, ingredients included as candidates (m:4863-4916) | Containment of the drop point; compartments only; excludes the whole subtree (RC:145-156) | Differs |
-| 67 | Reparent: target grows by r/2 | m:5313 | No (repack instead) (RS:357-369) | Missing |
-| 68 | Reparent recomputes `surface` from drop distance | m:5330-5337 | Never (RS:357-369) | Missing |
-| 69 | Reparent updates table compartment path | m:5314-5327 | Tree changes; the table derives from the store | Same |
-| 70 | Context menu items | colour / rename / delete / resize (ix:671-676) | Rename / Delete / Color (RC:678-692) | Differs |
-| 71 | Context-menu resize | m:4798-4810 | None | Missing |
-| 72 | Context-menu recolour in categorical mode | Recolours the category (m:4772-4775) | Always `data.color` (RS:323-332) | Differs |
-| 73 | Context-menu recolour → 3D | `GP_updateMeshColorGeometry`, NGL, `MS_ChangeColor` (m:4779-4794) | Store only | Differs |
-| 74 | Context menu on links / root | Links: throws; root via empty space (m:6051-6052) | Nodes only; Delete disabled for root (RC:684) | Differs |
-| 75 | Delete compartment | Throws, orphans children (m:4844-4858) | Deletes the subtree and its links (RS:308-321) | Differs |
-| 76 | Rename | `prompt` → name; compartment path rewrite (m:4812-4825) | `prompt` → name (RC:358-363, RS:300-306) | Same |
-| 77 | Add ingredient defaults | size 40 (r 30), `protein_nameN`, at canvas centre (m:4630-4718) | size 10, `newIngredientN`, repack (RS:120-145, 403-411) | Differs |
-| 78 | Add compartment | size/r 150 at centre (m:4499-4519) | thickness 7.5, weight 100, repack (RS:152-154, 413-424; CL:86) | Differs |
-| 79 | Add interaction | Pairs `nodes_selections` 2 at a time, clears selection (m:4545-4616) | Same pairing (TB:71-78) | Same |
-| 80 | Edit-Mode button visibility | Visible at start; toggled by `switchMode` (m:278-290) | Rendered only in Edit Mode (TB:115-133) | Differs |
-| 81 | Colour modes list | 16, including `size` (m:28-30) | 15; `size` missing from the list (switch handles it) (CM:59-75) | Differs |
-| 82 | Validation modes (pdb/geom/pcpalAxis/offset/Beads/count_molarity) | m:3386-3420 | CM:176-187 | Same |
-| 83 | Gradient modes (confidence/count/size/molarity/MW) | d3 scale, hsl endpoints, sqrt for count/molarity (m:3256-3298) | Manual RGB lerp of hex pickers, sqrt on t (CM:136-153) | Differs |
-| 84 | `default` / `interaction` | `_color` else `color`; black when absent (m:3468-3491, 2246) | `_color ?? color`, else depth colour (CM:190-192, 250) | Differs |
-| 85 | `viewed` | Yellow/red from `data.visited` (m:3432-3435) | From `uiModeStore.visitedNodes` (CM:193-194) | Same |
-| 86 | `automatic`, mapping off | iwanthue per compartment + ±30° range; compartments coloured (m:3213-3240, 3455-3465) | HSL hue wheel per parent; compartments use depth colour (CM:211-215, 246-247) | Differs |
-| 87 | Custom string column, mapping on | Gradient by unique index (m:3497) | Categorical palette always (CM:225) | Differs |
-| 88 | Apply to ingredient colour | All nodes incl. compartments; saves `_color` (m:3356-3371) | Ingredients only; saves `_color` (TB:80-108, RS:426-439) | Differs |
-| 89 | Group-by eligibility | Custom columns only; built-ins disable it (m:3522-3561) | Any groupable property (TB:134-144, RF:177-192) | Differs |
-| 90 | Cluster geometry | Global halton → packSiblings clusters, pull only outside the radius (m:3517-3595, 5424-5439) | Per-parent ring at 0.5R, pull always, alpha-scaled (RF:163-217) | Differs |
-| 91 | Stroke-width control | `stroke_line_width` for every node and link (m:3678-3722) | Link width and highlight minimums only (RC:456, 488) | Differs |
-| 92 | Scale Radius control | Number input 0.01–10 (lm:293) | Slider + number 0.01–10 (TB:197-216) | Same |
-| 93 | Table row → canvas selection | Sets `node_selected`, clears multi, highlights (gt:1688-1695) | `selectNode` from RecipeTable (RecipeTable.tsx:61) | Same |
-| 94 | d3 numerics | v4.13 `packEnclose`/jiggle use `Math.random` | v7 seeded LCG (d3-hierarchy enclose.js:2-5) | Differs |
-| 95 | Previous/Next ingredient | Buttons walk table rows and select (m:5784-5826) | Not in the canvas or toolbar | Missing |
+| 1 | Renderer | Single canvas 2D, redrawn on every sim tick (m:3892) | SVG drawn by Dragology from the view state (RD `makeRecipeDraggable`) | Departure §10.1 |
+| 2 | HiDPI | None: bitmap = CSS px (lm:1052-1053) | SVG is vector | Departure §10.7 |
+| 3 | Resize | Bitmap resized; positions, pack and transform kept (lm:1045-1056) | Panel size from a ResizeObserver; no repack, zoom kept (RC) | Same |
+| 4 | Pack params | size = panel at mount, padding 30, `.sum(size)` includes internal `size`, no sort (m:2896-2898, 5576-5578) | No d3.pack: each compartment's interior packed with `packSiblings` at legacy radii (LY `layoutRecipe`) | Departure §10.2 |
+| 5 | Leaf radius | Absolute `size·radius_scale`; not fitted to the panel (m:3611-3617) | Absolute, §1.7 formulas (LY `leafRadius`; oracle) | Same |
+| 6 | Compartment radius | enclose(direct leaves) + 25 (m:3621-3640) | enclose(direct leaves)+25 (LY `computeRadii`; oracle). No leaf children: enclose the sub-compartments +25, an empty one 150 (legacy keeps its pack r) | Same |
+| 7 | radius_scale semantics | Multiplies leaf radii, then re-encloses (m:3611-3617) | Multiplies leaf radii (LY `leafRadius`) | Same |
+| 8 | Size-by formulas | m:3609-3619 | §1.7 formulas incl. the r≤0 and NaN fallbacks (LY `leafRadius`; oracle) | Same |
+| 9 | Repack on add/delete/reparent | Never; nodes are placed at the canvas centre, others keep positions (m:4509, 4699, 4848-4850, 5306-5313) | Never: known nodes keep their world position, new ones at the canvas centre (LY `reconcileView`, RC) | Same |
+| 10 | Sim membership | All nodes: root, compartments, leaves (m:5616) | No simulation | Departure §10.2 |
+| 11 | Same-depth collisions d0–d4 | Compartments and leaves collide per depth, strength 1 (m:2869-2873) | No collisions; a drag pushes its siblings aside (DR `pushNeighbours`) | Departure §10.2 |
+| 12 | Leaf collision | `forceCollide(r·1.15)`, strength `collisionForce`, all leaves (m:2874) | 1.15r is the layout gap and the push distance for leaves (LY, DR) | Departure §10.2 |
+| 13 | Link force | `forceLink` strength .1, distance 30, all links (m:2867-2868) | Links drawn, partners not pulled | Departure §10.2 |
+| 14 | Custom-force scaling | Velocity nudges, **not** scaled by alpha, run after integration (m:5417-5472) | No forces | Departure §10.2 |
+| 15 | Surface rule | Soft spring to `parent.r`, can be displaced (m:5440-5452) | Hard: on the centreline, dragged by angle (DR `onMembrane`, RD `dragSpecFor`) | Departure §10.4 |
+| 16 | Surface proteins straddle the membrane | Centre on the centreline (m:5447) | Centre on the centreline (LY, DR) | Same |
+| 17 | Parent containment | Pull to parent centre when `dist+1.2r > R−5`, compartments included, skipped under root (m:5465-5472) | Hard: inside the inner membrane edge, compartments by their r+5 disk, none under the root (DR `containmentLimit`) | Departure §10.4 |
+| 18 | Root force | Root pulled toward world (0,0) (m:5455-5459) | No root force (§8.8 no longer applies) | Departure §10.2 |
+| 19 | Sim never cools | `alphaTarget(.3)` on mouse-enter and drag; reset only if HQ (false) (m:5068, 5116, 5229) | No simulation (§8.9 no longer applies) | Departure §10.2 |
+| 20 | Reheat on recipe load | `stop/restart/alpha(1)` on the same sim (m:5615-5623) | Layout on load (LY `layoutRecipe`) | Departure §10.2 |
+| 21 | Forces-slider update | `updateForce()` rebuilds the forces; no alpha change (ngl:850-855, m:2865) | Forces Options removed (TB) | Departure §10.2 |
+| 22 | Slider ranges | range 0–1, number 0–2 (lm:271-272) | Forces Options removed (TB) | Departure §10.2 |
+| 23 | Hidden root circle | Not drawn; colour used as background (m:5461-5463, 3901-3910) | Not drawn; background rect (RD) | Same |
+| 24 | Background in dark theme | Root colour always (m:3901) | Theme variable in dark mode, root colour in light (RC) | Departure §10.3 |
+| 25 | Compartment fill | **Filled disk** r+5, `color(depth)` (m:5476-5481, 3718) | Filled disk r+5, `colorNode` (RD `compartmentLayer`) | Same |
+| 26 | Membrane two-edge band | Outlines at r±5 (fixed 10 px), stroke `color(depth+1)` (m:5476-5481) | Outlines at r±5, `color(depth+1)` (RD `compartmentLayer`) | Same |
+| 27 | Ingredient stroke | Always `color(depth+1)` at stroke width (m:3720-3722) | `color(depth+1)` at stroke width (CO `nodeStyle`) | Same |
+| 28 | Depth palette | HCL ramp white → `hsl(228,30%,40%)` over [−1,6] (m:156-159) | HCL ramp; d3 v4's hue for white reproduced (CO `depthColor`; oracle ±2 per channel) | Same |
+| 29 | Draw order | Compartments by depth → links → ingredients → pair lines → labels → popup → legend (m:3931-4028) | Layers: compartments by depth, links, ingredients by depth, pair lines, temp link, labels, legend (RD `Z`; oracle); popup and root label in a screen overlay on top | Same |
+| 30 | Hover style | Fill `colorNode`, black stroke (m:3682-3687) | Fill `colorNode`, black stroke (CO `nodeStyle`) | Same |
+| 31 | Selected style | Yellow fill, orange stroke (m:3689-3694) | Yellow fill, orange stroke (CO `nodeStyle`) | Same |
+| 32 | Multi-select style | Yellow/orange, plus yellow pair lines (m:3674-3679, 3944-3952) | Yellow/orange plus yellow pair lines (CO `nodeStyle`, RD) | Same |
+| 33 | Edit-drop feedback | Grey fill target, yellow stroke for a surface drop, white temp link, translucent blue dragged node (m:3696-3716, 3953-3958) | Grey target, yellow stroke for a surface drop, white temp link, translucent blue dragged node (CO, RD) | Same |
+| 34 | Compartment label | Curved, outer r+5, Oswald, `round(r/10)` (≤4 → 10), always drawn, `rotationText` start angle (m:3809-3816) | Letters on r+5, Oswald, round(r/10) (≤4 → 10), `rotationText` start, none past 29 (LB `compartmentTitle`; oracle) | Same |
+| 35 | Root label + `*` dirty mark | Bottom-left, screen-fixed (m:3818-3825) | Screen overlay bottom-left; `*` after any store edit (legacy: after a grid edit) (RC `ScreenOverlay`) | Differs |
+| 36 | Ingredient label gate | `highlight` or (k > 1.5 and option ≠ None) (m:3828) | Hover, or k > 1.5 and option ≠ None (LB `ingredientLabelVisible`) | Same |
+| 37 | Ingredient label style | Georgia `round(r/2)`, at (x−r, y+r+fs), centre-aligned (m:3829-3843) | Georgia round(r/2), at (x−r, y+r+fs), centred (LB; oracle) | Same |
+| 38 | Label options | name/None/pdb/uniprot/label + custom columns (m:2174, 2199) | name/None/pdb/uniprot/label + custom columns (TB, LB `ingredientLabelText`) | Same |
+| 39 | In-circle sprite | Once per ingredient, letterboxed in 2r (m:3740-3751) | Once, letterboxed in 2r, only once loaded (RD, `spriteCache.ts`) | Same |
+| 40 | Membrane marker lines | Only in the popup, Å-scaled via `offsety`/`scale2d` (m:3989-4016) | In every surface ingredient's circle and in the popup (RD, RC) | Departure §10.5 |
+| 41 | Popup thumbnail | 150 px wide, bottom, x=W/2−160, rect + name + membrane/fiber; selection beats hover (m:3970-4027) | 150 px, x=W/2−160, bottom; rect, name, image; membrane lines; fiber twice; selection beats hover (RC `ScreenOverlay`) | Same |
+| 42 | Sprite source chain | local folder → repo (checked) → PDBe (`pdb.split("_")[0]`) → warning icon (m:4308-4383) | repo images (unchecked; a failed image is not drawn) → PDBe `pdb.split("_")[0]` (structureSource.ts); no local folder (Setup Data Directory is a placeholder) | Differs |
+| 43 | Legend | World space; categorical when mapping off; w/h/f sliders; `color`-mode "latest" legend (m:3848-3889) | World space at the origin; categorical when mapping off; w/h/f sliders (RD, TB). The `color`-mode "latest" legend is not ported | Differs |
+| 44 | Link geometry | Edge-to-edge (m:5353-5366) | Edge to edge (HT `linkEnds`) | Same |
+| 45 | Link gradient | Fixed world axis (0,0)→(170,0) (m:3781) | Fixed world axis (0,0)→(170,0) (RD) | Same |
+| 46 | Link hover + Mol* highlight of ends | m:4965-4990, 5049-5059 | Link and ends highlighted on hover (HT `hitLink`, RD); the Mol* highlight is not wired | Open (viewer lanes) |
+| 47 | Link click selection | Selects link and ends, table tab 1, NGL pair (m:5266-5278) | Selects the link and its ends (RC → `selectLink`, `setSelection`); the NGL pair view is not wired | Open (viewer lanes) |
+| 48 | Hit-test | Deepest containing disk; compartment interior hittable (m:4918-4960) | Deepest containing disk by r (HT `hitNode`) | Same |
+| 49 | Click on empty compartment interior | Selects the compartment (m:5134-5139) | Selects the compartment (RC) | Same |
+| 50 | Click on empty canvas | Root subject: clears selection; `SetObjectsOptionsDiv(root)` (m:5150-5157, 5232) | Clears the selection (RC); Object Properties is a placeholder | Same |
+| 51 | Pan gesture | Middle-drag only; left-drag on empty space does nothing (m:2951-2960, 4939) | Middle-drag only (RC zoom filter) | Same |
+| 52 | Zoom extent | [0.2, 20] (m:2957) | [0.2, 20] (RC) | Same |
+| 53 | Wheel over nodes | Zooms (m:2957) | Zooms (RC) | Same |
+| 54 | Double-click | Zoom ×2 anywhere (d3 v4 default) | ×2 anywhere (RC) | Same |
+| 55 | Wheel delta | v4: `−dy·(mode?120:1)/500` | v4 formula (RC `wheelDelta`) | Same |
+| 56 | Dragging outside Edit Mode | Allowed (m:5190-5197) | Allowed (RD `dragSpecFor`) | Same |
+| 57 | Drag start offset | Grab point preserved (d3-drag subject dx) (m:5196) | Grab point kept (Dragology anchor) | Same |
+| 58 | Compartment drag | Pins only the ring; children follow softly via ParentForce (m:5196, 5470) | Rigid subtree (relative positions), inside its parent, pushes siblings (RD, DR) | Departure §10.4 |
+| 59 | Ingredient drag constraint | Free (fx/fy anywhere) (m:5196) | Inside its parent or on its membrane, pushes siblings (RD, DR) | Departure §10.4 |
+| 60 | Hover → Mol* highlight | `MS_HighlightNode` on every move (m:5018, 5035-5045) | Not wired | Open (viewer lanes) |
+| 61 | Hover → popup and label | m:3828, 3971 | Hover forces the label and the popup (LB, RC) | Same |
+| 62 | Selection side effects | Table row select + scroll, NGL load, PDB component, UniProt/ProtVista, Object Properties, `visited` (m:5232-5262) | `selectNode` → table and viewers through the store; `markVisited` (RC) | Differs |
+| 63 | Selection timing | Mousedown selects; mouseup triggers effects (m:5106-5135, 5225) | On release of a click (2 px threshold) or on drop of a drag (RC) | Differs |
+| 64 | Compartment selection in Edit Mode | Deselects (m:5141-5148) | Deselects in Edit Mode (RC) | Same |
+| 65 | Ctrl multi-select | Both modes (m:5122) | Both modes (RC) | Same |
+| 66 | Edit drop target test | Overlap `d < r_t + r_s`, root fallback, ingredients included as candidates (m:4863-4916) | Overlap, deepest, root fallback, an ingredient blocks; the dragged subtree is excluded (a cycle otherwise, §10.6) (DR `reparentTarget`) | Same |
+| 67 | Reparent: target grows by r/2 | m:5313 | Target grows by r/2 (DR `dropReparent`) | Same |
+| 68 | Reparent recomputes `surface` from drop distance | m:5330-5337 | `surface` recomputed and written to the store; the node put on the grown target's centreline (DR, RC) | Same |
+| 69 | Reparent updates table compartment path | m:5314-5327 | The table derives the path from the store | Same |
+| 70 | Context menu items | colour / rename / delete / resize (ix:671-676) | Colour / Rename / Delete / Resize (RC `ContextMenu`) | Same |
+| 71 | Context-menu resize | m:4798-4810 | Prompt; sets r, and the ingredient's size (RC) | Same |
+| 72 | Context-menu recolour in categorical mode | Recolours the category (m:4772-4775) | Recolours the category (`uiModeStore.categoryColors`) | Same |
+| 73 | Context-menu recolour → 3D | `GP_updateMeshColorGeometry`, NGL, `MS_ChangeColor` (m:4779-4794) | Store only | Open (viewer lanes) |
+| 74 | Context menu on links / root | Links: throws; root via empty space (m:6051-6052) | No menu on a link or the empty canvas (RC) | Departure §10.6 |
+| 75 | Delete compartment | Throws, orphans children (m:4844-4858) | Deletes the subtree and its links (RS) | Departure §10.6 |
+| 76 | Rename | `prompt` → name; compartment path rewrite (m:4812-4825) | Prompt → name (RS) | Same |
+| 77 | Add ingredient defaults | size 40 (r 30), `protein_nameN`, at canvas centre (m:4630-4718) | `protein_nameN`, size 40, r 30, at the canvas centre (RS, RC) | Same |
+| 78 | Add compartment | size/r 150 at centre (m:4499-4519) | `newCompartmentK` from 0, r 150, at the canvas centre (RS, RC) | Same |
+| 79 | Add interaction | Pairs `nodes_selections` 2 at a time, clears selection (m:4545-4616) | Pairs (i, i+1), clears (TB) | Same |
+| 80 | Edit-Mode button visibility | Visible at start; toggled by `switchMode` (m:278-290) | Visible until Edit Mode is first toggled, then in Edit Mode only (TB, §8.19) | Same |
+| 81 | Colour modes list | 16, including `size` (m:28-30) | 16 in legacy order; `pdb` after load, as the oracle shows (CO, UM) | Same |
+| 82 | Validation modes (pdb/geom/pcpalAxis/offset/Beads/count_molarity) | m:3386-3420 | pdb/pcpalAxis/offset as legacy; geom/Beads/count_molarity follow our parser's defaults, not legacy's (oracle differs on HIV and Influenza) | Differs |
+| 83 | Gradient modes (confidence/count/size/molarity/MW) | d3 scale, hsl endpoints, sqrt for count/molarity (m:3256-3298) | d3 scales, sqrt for count/molarity, a one-value domain gives the min colour (CO; oracle) | Same |
+| 84 | `default` / `interaction` | `_color` else `color`; black when absent (m:3468-3491, 2246) | `_color` else `color` else depth colour; our parser always sets `color`, so a recipe without colours shows depth colours, as the oracle does on HIV (CO) | Same |
+| 85 | `viewed` | Yellow/red from `data.visited` (m:3432-3435) | From `uiModeStore.visitedNodes` (CO) | Same |
+| 86 | `automatic`, mapping off | iwanthue per compartment + ±30° range; compartments coloured (m:3213-3240, 3455-3465) | Evenly spaced hues per compartment and a ±30° range per child (legacy: random iwanthue, §8.20) (CO) | Differs |
+| 87 | Custom string column, mapping on | Gradient by unique index (m:3497) | Gradient by unique index (CO) | Same |
+| 88 | Apply to ingredient colour | All nodes incl. compartments; saves `_color` (m:3356-3371) | Every node, compartments included; `_color` kept (TB, RS) | Same |
+| 89 | Group-by eligibility | Custom columns only; built-ins disable it (m:3522-3561) | Keys outside `default_options` group (LY `groupKey`) | Same |
+| 90 | Cluster geometry | Global halton → packSiblings clusters, pull only outside the radius (m:3517-3595, 5424-5439) | A group level in each compartment's layout, animated (LY) | Departure §10.2 |
+| 91 | Stroke-width control | `stroke_line_width` for every node and link (m:3678-3722) | Every node and link (RD) | Same |
+| 92 | Scale Radius control | Number input 0.01–10 (lm:293) | Slider + number 0.01–10 (TB) | Same |
+| 93 | Table row → canvas selection | Sets `node_selected`, clears multi, highlights (gt:1688-1695) | `selectNode` from RecipeTable | Same |
+| 94 | d3 numerics | v4.13 `packEnclose`/jiggle use `Math.random` | Layout deterministic (d3 v7 seeded) | Differs |
+| 95 | Previous/Next ingredient | Buttons walk table rows and select (m:5784-5826) | Previous/Next Ingredient buttons in the options (TB) | Same |
 
-**Row counts** (from the Status column): Same 12, Differs 72, Missing 8, Modern-only 3. Total 95.
+**Row counts** (from the Status column, lane `recipe-view-port`): Same 61, Departure 22, Differs 8, Open 4. Total 95. Departures cite the §10 item that decides them.
 
 ---
 

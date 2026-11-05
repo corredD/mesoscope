@@ -26,10 +26,17 @@ means built and tested, not yet proven against a legacy oracle unless the row sa
 
 ## 2. Recipe view (D3)
 
-See [recipe-view.md](recipe-view.md) for the feature-by-feature divergence table. Summary: the modern view is an SVG
-rewrite (`components/recipe/RecipeCanvas.tsx`) of a legacy 2D-canvas view (`js/main.js:2839-3110, 5565`); it has the
-toolbar's controls but **differs** in 83 of 95 rows. It is being rebuilt on Dragology from the legacy spec
-(`recipe-view.md §10`). Priority 1 in the queue.
+See [recipe-view.md](recipe-view.md) §9 for the row-by-row table. The view is rebuilt on Dragology from the legacy
+spec (`components/recipe/RecipeCanvas.tsx`, `recipeDraggable.tsx`, `domain/recipe/view/`), with radii, colours,
+labels and draw order checked against a legacy oracle on HIV and Influenza (`tests/fixtures/recipe-view-oracle/`):
+Same 61, Departure 22 (each decided in §10), Differs 8, Open 4 of 95.
+
+| Legacy                                              | Modern                                                       | State                      |
+| --------------------------------------------------- | ------------------------------------------------------------ | -------------------------- |
+| Layout, radii, membranes, labels, colours           | `view/layout.ts`, `view/colors.ts`, `view/labels.ts`         | done (legacy oracle)       |
+| Drags, Edit-Mode reparent, zoom/pan, click, menu    | `recipeDraggable.tsx`, `view/drag.ts`, `RecipeCanvas.tsx`    | done; no live physics (§10.2) |
+| Hover/link → Mol* highlight, link → NGL pair view   | —                                                            | missing (viewer lanes)     |
+| `color`-mode "latest legend"                        | —                                                            | missing                    |
 
 ## 3. Tables
 
