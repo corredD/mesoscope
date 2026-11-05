@@ -1,12 +1,13 @@
 // Capture the legacy Recipe View oracle (D3 v4 canvas in js/main.js) for the lane recipe-view-port.
 //
-// Run from web/ with the legacy server up (python3 web/tests/oracle/legacy_server.py 8091):
+// Run from web/ with the legacy server up (python3 web/tests/oracle/legacy_server.py 8092):
 //   node tests/oracle/capture-recipe-view.mjs
 //
 // For each recipe it writes tests/fixtures/recipe-view-oracle/<name>.json and legacy-<name>.png:
 //   nodes       per-node hierarchy data, radii per size mode, fill per colour mode, stroke colours
 //   frame       draw-order recording of one ticked() call (identity transform, sprites off)
 //   frameZoomed the same at zoom scale 2 (ingredient labels are drawn)
+//   forces      the d3 force simulation as legacy configures it (alpha params, link, collide per depth/leaf), read after load
 //   gestures    real-mouse click / ctrl-click / click inside compartment / click on empty space
 // See web/_spec/recipe-view.md for the behaviour being captured. Env LEGACY_URL overrides the server.
 import { chromium } from '@playwright/test';
@@ -18,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '../../..');
 const outDir = resolve(here, '../fixtures/recipe-view-oracle');
-const BASE = process.env.LEGACY_URL ?? 'http://localhost:8091';
+const BASE = process.env.LEGACY_URL ?? 'http://localhost:8092';
 const VIEWPORT = { width: 1200, height: 800 };
 const RECIPES = [
   { name: 'hiv', recipe: 'data/HIV_serialized.json' },
@@ -57,6 +58,50 @@ async function openRecipe(browser, recipe) {
   await page.waitForFunction(() => simulation.alpha() < simulation.alphaMin(), null, { timeout: 120000 });
   await page.evaluate(() => { simulation.stop(); ticked(null); });
   return { page, errors };
+}
+
+// ---- force simulation parameters (spec 3.1-3.2), read once the load-time simulation has stopped ----
+// The page is read as legacy left it after update_graph (no updateForce() call is made here), before
+// captureNodes changes any radius. Membership filters are recomputed as in legacy: dN is depth === N, leaf is !children.
+async function captureForces(page) {
+  return page.evaluate(() => {
+    const r6 = (x) => (typeof x === 'number' ? Math.round(x * 1e6) / 1e6 : x);
+    const names = ['link', 'd0', 'd1', 'd2', 'd3', 'd4', 'leaf', 'charge', 'center', 'x', 'y'];
+    const forceNames = names.filter((n) => simulation.force(n));
+    const out = {
+      simulation: {
+        alpha: r6(simulation.alpha()), alphaMin: r6(simulation.alphaMin()), alphaDecay: r6(simulation.alphaDecay()),
+        alphaTarget: r6(simulation.alphaTarget()), velocityDecay: r6(simulation.velocityDecay()),
+      },
+      forceNames,
+      AllForces: JSON.parse(JSON.stringify(AllForces)),
+    };
+    const lf = simulation.force('link');
+    const links = graph.links;
+    out.link = {
+      count: links.length, iterations: lf.iterations(),
+      strength: links.map((l, i) => r6(lf.strength()(l, i, links))),
+      distance: links.map((l, i) => r6(lf.distance()(l, i, links))),
+    };
+    const members = {
+      d0: (d) => d.depth === 0, d1: (d) => d.depth === 1, d2: (d) => d.depth === 2, d3: (d) => d.depth === 3,
+      d4: (d) => d.depth === 4, leaf: (d) => !d.children,
+    };
+    out.collide = {};
+    for (const [k, filter] of Object.entries(members)) {
+      const f = simulation.force(k);
+      if (!f) { out.collide[k] = null; continue; }
+      const str = f.strength();
+      out.collide[k] = {
+        strength: typeof str === 'function' ? 'function' : r6(str), iterations: f.iterations(),
+        member: graph.nodes.map((d) => (filter(d) ? 1 : 0)),
+        radius: graph.nodes.map((d) => (filter(d) ? r6(f.radius()(d)) : null)),
+        strengthPerNode: graph.nodes.map((d) => (filter(d) ? r6(typeof str === 'function' ? str(d) : str) : null)),
+      };
+    }
+    out.nodeCount = graph.nodes.length;
+    return out;
+  });
 }
 
 // ---- static data: hierarchy, radii per size mode, colour per colour mode ----
@@ -288,6 +333,7 @@ async function main() {
     const frameZoomed = await captureFrame(page, 2);
     const frameNotes = await frameState(page);
     const rotationText = await page.evaluate(() => rotationText.slice());
+    const forces = await captureForces(page);
     const stat = await captureNodes(page);
     await page.close();
     // later sessions: gestures
@@ -297,7 +343,9 @@ async function main() {
       rotationText,
       colorModes: stat.modes,
       nondeterministic: ['automatic'],
+      forcesNotes: 'Read after the load-time simulation ran down (alpha < alphaMin) and after the simulation.stop() in openRecipe; no updateForce() call, so this is the setupD3 configuration kept by update_graph. member/radius/strengthPerNode are indexed like nodes; radius is force.radius()(node) at capture time.',
       nodes: stat.nodes,
+      forces,
       frameNotes,
       frame,
       frameZoomed,

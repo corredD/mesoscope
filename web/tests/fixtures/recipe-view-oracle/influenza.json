@@ -1,7 +1,7 @@
 {
  "source": {
   "recipe": "data/InfluenzaA.json",
-  "legacyRef": "8f38b69a9877a6ba2f9d47be66733c6df3739153",
+  "legacyRef": "a8acbb0619092f94a83a44e0feb03db12d8408a5",
   "d3": "4.13.0",
   "canvas": {
    "width": 234,
@@ -64,6 +64,7 @@
  "nondeterministic": [
   "automatic"
  ],
+ "forcesNotes": "Read after the load-time simulation ran down (alpha < alphaMin) and after the simulation.stop() in openRecipe; no updateForce() call, so this is the setupD3 configuration kept by update_graph. member/radius/strengthPerNode are indexed like nodes; radius is force.radius()(node) at capture time.",
  "nodes": [
   {
    "index": 0,
@@ -271,6 +272,190 @@
    }
   }
  ],
+ "forces": {
+  "simulation": {
+   "alpha": 0.001,
+   "alphaMin": 0.001,
+   "alphaDecay": 0.023,
+   "alphaTarget": 0,
+   "velocityDecay": 0.4
+  },
+  "forceNames": [
+   "link",
+   "d0",
+   "d1",
+   "d2",
+   "d3",
+   "d4",
+   "leaf"
+  ],
+  "AllForces": {
+   "ParentForce": 0.01,
+   "SurfaceForce": 0.5,
+   "LinkForce": 0.1,
+   "clusterByForce": 0.01,
+   "collisionForce": 1
+  },
+  "link": {
+   "count": 0,
+   "iterations": 1,
+   "strength": [],
+   "distance": []
+  },
+  "collide": {
+   "d0": {
+    "strength": 1,
+    "iterations": 1,
+    "member": [
+     1,
+     0,
+     0,
+     0,
+     0
+    ],
+    "radius": [
+     117,
+     null,
+     null,
+     null,
+     null
+    ],
+    "strengthPerNode": [
+     1,
+     null,
+     null,
+     null,
+     null
+    ]
+   },
+   "d1": {
+    "strength": 1,
+    "iterations": 1,
+    "member": [
+     0,
+     1,
+     0,
+     0,
+     0
+    ],
+    "radius": [
+     null,
+     111.188,
+     null,
+     null,
+     null
+    ],
+    "strengthPerNode": [
+     null,
+     1,
+     null,
+     null,
+     null
+    ]
+   },
+   "d2": {
+    "strength": 1,
+    "iterations": 1,
+    "member": [
+     0,
+     0,
+     1,
+     1,
+     1
+    ],
+    "radius": [
+     null,
+     null,
+     40,
+     40,
+     40
+    ],
+    "strengthPerNode": [
+     null,
+     null,
+     1,
+     1,
+     1
+    ]
+   },
+   "d3": {
+    "strength": 1,
+    "iterations": 1,
+    "member": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "radius": [
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "strengthPerNode": [
+     null,
+     null,
+     null,
+     null,
+     null
+    ]
+   },
+   "d4": {
+    "strength": 1,
+    "iterations": 1,
+    "member": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "radius": [
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "strengthPerNode": [
+     null,
+     null,
+     null,
+     null,
+     null
+    ]
+   },
+   "leaf": {
+    "strength": 1,
+    "iterations": 1,
+    "member": [
+     0,
+     0,
+     1,
+     1,
+     1
+    ],
+    "radius": [
+     null,
+     null,
+     46,
+     46,
+     46
+    ],
+    "strengthPerNode": [
+     null,
+     null,
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  "nodeCount": 5
+ },
  "frameNotes": "mousein=false; node_over=null; node_selected=null; canvas_color=pdb; canvas_label=name; canvas_map_r=size; radius_scale=1; simulation stopped before the call and the pointer was never over the canvas; rotate/transform/quadraticCurveTo/bezierCurveTo/ellipse are recorded in addition to the requested ops",
  "frame": [
   {

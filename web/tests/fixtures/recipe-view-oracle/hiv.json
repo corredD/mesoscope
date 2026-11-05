@@ -1,7 +1,7 @@
 {
  "source": {
   "recipe": "data/HIV_serialized.json",
-  "legacyRef": "8f38b69a9877a6ba2f9d47be66733c6df3739153",
+  "legacyRef": "a8acbb0619092f94a83a44e0feb03db12d8408a5",
   "d3": "4.13.0",
   "canvas": {
    "width": 234,
@@ -64,6 +64,7 @@
  "nondeterministic": [
   "automatic"
  ],
+ "forcesNotes": "Read after the load-time simulation ran down (alpha < alphaMin) and after the simulation.stop() in openRecipe; no updateForce() call, so this is the setupD3 configuration kept by update_graph. member/radius/strengthPerNode are indexed like nodes; radius is force.radius()(node) at capture time.",
  "nodes": [
   {
    "index": 0,
@@ -1296,6 +1297,640 @@
    }
   }
  ],
+ "forces": {
+  "simulation": {
+   "alpha": 0.001,
+   "alphaMin": 0.001,
+   "alphaDecay": 0.023,
+   "alphaTarget": 0,
+   "velocityDecay": 0.4
+  },
+  "forceNames": [
+   "link",
+   "d0",
+   "d1",
+   "d2",
+   "d3",
+   "d4",
+   "leaf"
+  ],
+  "AllForces": {
+   "ParentForce": 0.01,
+   "SurfaceForce": 0.5,
+   "LinkForce": 0.1,
+   "clusterByForce": 0.01,
+   "collisionForce": 1
+  },
+  "link": {
+   "count": 0,
+   "iterations": 1,
+   "strength": [],
+   "distance": []
+  },
+  "collide": {
+   "d0": {
+    "strength": 1,
+    "iterations": 1,
+    "member": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "radius": [
+     117,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "strengthPerNode": [
+     1,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ]
+   },
+   "d1": {
+    "strength": 1,
+    "iterations": 1,
+    "member": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "radius": [
+     null,
+     272.846,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "strengthPerNode": [
+     null,
+     1,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ]
+   },
+   "d2": {
+    "strength": 1,
+    "iterations": 1,
+    "member": [
+     0,
+     0,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "radius": [
+     null,
+     null,
+     40,
+     40,
+     40,
+     40,
+     40,
+     65,
+     40,
+     40,
+     40,
+     40,
+     40,
+     40,
+     40,
+     40,
+     40,
+     40,
+     40,
+     40,
+     40,
+     40,
+     40,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "strengthPerNode": [
+     null,
+     null,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ]
+   },
+   "d3": {
+    "strength": 1,
+    "iterations": 1,
+    "member": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "radius": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     40,
+     145,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "strengthPerNode": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     1,
+     1,
+     null,
+     null,
+     null,
+     null,
+     null
+    ]
+   },
+   "d4": {
+    "strength": 1,
+    "iterations": 1,
+    "member": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "radius": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     40,
+     40,
+     40,
+     40,
+     40
+    ],
+    "strengthPerNode": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     1,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "leaf": {
+    "strength": 1,
+    "iterations": 1,
+    "member": [
+     0,
+     0,
+     1,
+     1,
+     1,
+     1,
+     1,
+     0,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     0,
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "radius": [
+     null,
+     null,
+     46,
+     46,
+     46,
+     46,
+     46,
+     null,
+     46,
+     46,
+     46,
+     46,
+     46,
+     46,
+     46,
+     46,
+     46,
+     46,
+     46,
+     46,
+     46,
+     46,
+     46,
+     46,
+     null,
+     46,
+     46,
+     46,
+     46,
+     46
+    ],
+    "strengthPerNode": [
+     null,
+     null,
+     1,
+     1,
+     1,
+     1,
+     1,
+     null,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     null,
+     1,
+     1,
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  "nodeCount": 30
+ },
  "frameNotes": "mousein=false; node_over=null; node_selected=null; canvas_color=pdb; canvas_label=name; canvas_map_r=size; radius_scale=1; simulation stopped before the call and the pointer was never over the canvas; rotate/transform/quadraticCurveTo/bezierCurveTo/ellipse are recorded in addition to the requested ops",
  "frame": [
   {
@@ -1770,8 +2405,8 @@
   {
    "op": "moveTo",
    "args": [
-    -143.334,
-    261.451
+    -143.335,
+    261.45
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -1791,8 +2426,8 @@
   {
    "op": "arc",
    "args": [
-    -143.334,
-    261.451,
+    -143.335,
+    261.45,
     40,
     0,
     10
@@ -1878,8 +2513,8 @@
   {
    "op": "moveTo",
    "args": [
-    -145.325,
-    96.647
+    -145.326,
+    96.648
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -1899,8 +2534,8 @@
   {
    "op": "arc",
    "args": [
-    -145.325,
-    96.647,
+    -145.326,
+    96.648,
     40,
     0,
     10
@@ -1932,8 +2567,8 @@
   {
    "op": "moveTo",
    "args": [
-    207.294,
-    275.424
+    207.295,
+    275.425
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -1953,8 +2588,8 @@
   {
    "op": "arc",
    "args": [
-    207.294,
-    275.424,
+    207.295,
+    275.425,
     40,
     0,
     10
@@ -1987,7 +2622,7 @@
    "op": "moveTo",
    "args": [
     120.482,
-    304.088
+    304.085
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -2008,7 +2643,7 @@
    "op": "arc",
    "args": [
     120.482,
-    304.088,
+    304.085,
     40,
     0,
     10
@@ -2040,8 +2675,8 @@
   {
    "op": "moveTo",
    "args": [
-    -20.349,
-    217.576
+    -20.348,
+    217.577
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -2061,8 +2696,8 @@
   {
    "op": "arc",
    "args": [
-    -20.349,
-    217.576,
+    -20.348,
+    217.577,
     40,
     0,
     10
@@ -2148,7 +2783,7 @@
   {
    "op": "moveTo",
    "args": [
-    -103.588,
+    -103.587,
     178.584
    ],
    "fillStyle": "#95b9bf",
@@ -2169,7 +2804,7 @@
   {
    "op": "arc",
    "args": [
-    -103.588,
+    -103.587,
     178.584,
     40,
     0,
@@ -2257,7 +2892,7 @@
    "op": "moveTo",
    "args": [
     141.46,
-    393.587
+    393.584
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -2278,7 +2913,7 @@
    "op": "arc",
    "args": [
     141.46,
-    393.587,
+    393.584,
     40,
     0,
     10
@@ -2418,8 +3053,8 @@
   {
    "op": "moveTo",
    "args": [
-    49.949,
-    384.727
+    49.948,
+    384.729
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -2439,8 +3074,8 @@
   {
    "op": "arc",
    "args": [
-    49.949,
-    384.727,
+    49.948,
+    384.729,
     40,
     0,
     10
@@ -2472,8 +3107,8 @@
   {
    "op": "moveTo",
    "args": [
-    -38.801,
-    113.294
+    -38.8,
+    113.293
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -2493,8 +3128,8 @@
   {
    "op": "arc",
    "args": [
-    -38.801,
-    113.294,
+    -38.8,
+    113.293,
     40,
     0,
     10
@@ -2580,8 +3215,8 @@
   {
    "op": "moveTo",
    "args": [
-    228.69,
-    364.445
+    228.691,
+    364.446
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -2601,8 +3236,8 @@
   {
    "op": "arc",
    "args": [
-    228.69,
-    364.445,
+    228.691,
+    364.446,
     40,
     0,
     10
@@ -2635,7 +3270,7 @@
    "op": "moveTo",
    "args": [
     29.7,
-    295.082
+    295.084
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -2656,7 +3291,7 @@
    "op": "arc",
    "args": [
     29.7,
-    295.082,
+    295.084,
     40,
     0,
     10
@@ -2796,8 +3431,8 @@
   {
    "op": "moveTo",
    "args": [
-    147.334,
-    204.75
+    147.335,
+    204.751
    ],
    "fillStyle": "#75a1b2",
    "strokeStyle": "#5b88a6",
@@ -2817,8 +3452,8 @@
   {
    "op": "arc",
    "args": [
-    147.334,
-    204.75,
+    147.335,
+    204.751,
     40,
     0,
     10
@@ -2905,7 +3540,7 @@
    "op": "moveTo",
    "args": [
     238.14,
-    190.248
+    190.249
    ],
    "fillStyle": "#5b88a6",
    "strokeStyle": "#4c6e97",
@@ -2926,7 +3561,7 @@
    "op": "arc",
    "args": [
     238.14,
-    190.248,
+    190.249,
     40,
     0,
     10
@@ -6902,8 +7537,8 @@
   {
    "op": "moveTo",
    "args": [
-    -143.334,
-    261.451
+    -143.335,
+    261.45
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -6923,8 +7558,8 @@
   {
    "op": "arc",
    "args": [
-    -143.334,
-    261.451,
+    -143.335,
+    261.45,
     40,
     0,
     10
@@ -7010,8 +7645,8 @@
   {
    "op": "moveTo",
    "args": [
-    -145.325,
-    96.647
+    -145.326,
+    96.648
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -7031,8 +7666,8 @@
   {
    "op": "arc",
    "args": [
-    -145.325,
-    96.647,
+    -145.326,
+    96.648,
     40,
     0,
     10
@@ -7064,8 +7699,8 @@
   {
    "op": "moveTo",
    "args": [
-    207.294,
-    275.424
+    207.295,
+    275.425
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -7085,8 +7720,8 @@
   {
    "op": "arc",
    "args": [
-    207.294,
-    275.424,
+    207.295,
+    275.425,
     40,
     0,
     10
@@ -7119,7 +7754,7 @@
    "op": "moveTo",
    "args": [
     120.482,
-    304.088
+    304.085
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -7140,7 +7775,7 @@
    "op": "arc",
    "args": [
     120.482,
-    304.088,
+    304.085,
     40,
     0,
     10
@@ -7172,8 +7807,8 @@
   {
    "op": "moveTo",
    "args": [
-    -20.349,
-    217.576
+    -20.348,
+    217.577
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -7193,8 +7828,8 @@
   {
    "op": "arc",
    "args": [
-    -20.349,
-    217.576,
+    -20.348,
+    217.577,
     40,
     0,
     10
@@ -7280,7 +7915,7 @@
   {
    "op": "moveTo",
    "args": [
-    -103.588,
+    -103.587,
     178.584
    ],
    "fillStyle": "#95b9bf",
@@ -7301,7 +7936,7 @@
   {
    "op": "arc",
    "args": [
-    -103.588,
+    -103.587,
     178.584,
     40,
     0,
@@ -7389,7 +8024,7 @@
    "op": "moveTo",
    "args": [
     141.46,
-    393.587
+    393.584
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -7410,7 +8045,7 @@
    "op": "arc",
    "args": [
     141.46,
-    393.587,
+    393.584,
     40,
     0,
     10
@@ -7550,8 +8185,8 @@
   {
    "op": "moveTo",
    "args": [
-    49.949,
-    384.727
+    49.948,
+    384.729
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -7571,8 +8206,8 @@
   {
    "op": "arc",
    "args": [
-    49.949,
-    384.727,
+    49.948,
+    384.729,
     40,
     0,
     10
@@ -7604,8 +8239,8 @@
   {
    "op": "moveTo",
    "args": [
-    -38.801,
-    113.294
+    -38.8,
+    113.293
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -7625,8 +8260,8 @@
   {
    "op": "arc",
    "args": [
-    -38.801,
-    113.294,
+    -38.8,
+    113.293,
     40,
     0,
     10
@@ -7712,8 +8347,8 @@
   {
    "op": "moveTo",
    "args": [
-    228.69,
-    364.445
+    228.691,
+    364.446
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -7733,8 +8368,8 @@
   {
    "op": "arc",
    "args": [
-    228.69,
-    364.445,
+    228.691,
+    364.446,
     40,
     0,
     10
@@ -7767,7 +8402,7 @@
    "op": "moveTo",
    "args": [
     29.7,
-    295.082
+    295.084
    ],
    "fillStyle": "#95b9bf",
    "strokeStyle": "#75a1b2",
@@ -7788,7 +8423,7 @@
    "op": "arc",
    "args": [
     29.7,
-    295.082,
+    295.084,
     40,
     0,
     10
@@ -7928,8 +8563,8 @@
   {
    "op": "moveTo",
    "args": [
-    147.334,
-    204.75
+    147.335,
+    204.751
    ],
    "fillStyle": "#75a1b2",
    "strokeStyle": "#5b88a6",
@@ -7949,8 +8584,8 @@
   {
    "op": "arc",
    "args": [
-    147.334,
-    204.75,
+    147.335,
+    204.751,
     40,
     0,
     10
@@ -8037,7 +8672,7 @@
    "op": "moveTo",
    "args": [
     238.14,
-    190.248
+    190.249
    ],
    "fillStyle": "#5b88a6",
    "strokeStyle": "#4c6e97",
@@ -8058,7 +8693,7 @@
    "op": "arc",
    "args": [
     238.14,
-    190.248,
+    190.249,
     40,
     0,
     10
@@ -9259,8 +9894,8 @@
    "op": "fillText",
    "args": [
     "HIV1_NEF_Hyb_0_2_0",
-    -183.334,
-    321.451
+    -183.335,
+    321.45
    ],
    "fillStyle": "#000000",
    "strokeStyle": "#4c6e97",
@@ -9285,8 +9920,8 @@
    "op": "fillText",
    "args": [
     "HIV1_VPU_Hyb_0_1_0",
-    -185.325,
-    156.647
+    -185.326,
+    156.648
    ],
    "fillStyle": "#000000",
    "strokeStyle": "#4c6e97",
@@ -10459,8 +11094,8 @@
    "op": "fillText",
    "args": [
     "HIV1_PR_7hvp_0_1_0",
-    167.294,
-    335.424
+    167.295,
+    335.425
    ],
    "fillStyle": "#000000",
    "strokeStyle": "#4c6e97",
@@ -10473,7 +11108,7 @@
    "args": [
     "HIV1_SP1_hack_0_1_0",
     80.482,
-    364.088
+    364.085
    ],
    "fillStyle": "#000000",
    "strokeStyle": "#4c6e97",
@@ -10485,8 +11120,8 @@
    "op": "fillText",
    "args": [
     "HIV1_VIF_Modbase_0_1_0",
-    -60.349,
-    277.576
+    -60.348,
+    277.577
    ],
    "fillStyle": "#000000",
    "strokeStyle": "#4c6e97",
@@ -10511,7 +11146,7 @@
    "op": "fillText",
    "args": [
     "HIV1_P6_SwissMod_0_1_0",
-    -143.588,
+    -143.587,
     238.584
    ],
    "fillStyle": "#000000",
@@ -10538,7 +11173,7 @@
    "args": [
     "HIV1_NC_1f6u_0_1_0",
     101.46,
-    453.587
+    453.584
    ],
    "fillStyle": "#000000",
    "strokeStyle": "#4c6e97",
@@ -10576,8 +11211,8 @@
    "op": "fillText",
    "args": [
     "HIV1_RT_3hvt_0_1_0",
-    9.949,
-    444.727
+    9.948,
+    444.729
    ],
    "fillStyle": "#000000",
    "strokeStyle": "#4c6e97",
@@ -10589,8 +11224,8 @@
    "op": "fillText",
    "args": [
     "HIV1_NEFsol_Hyb_0_2_0",
-    -78.801,
-    173.294
+    -78.8,
+    173.293
    ],
    "fillStyle": "#000000",
    "strokeStyle": "#4c6e97",
@@ -10615,8 +11250,8 @@
    "op": "fillText",
    "args": [
     "HIV1_NC_1a1t_0_1_0",
-    188.69,
-    424.445
+    188.691,
+    424.446
    ],
    "fillStyle": "#000000",
    "strokeStyle": "#4c6e97",
@@ -10629,7 +11264,7 @@
    "args": [
     "HIV1_CyclophilinA_1ak4_0_1_0",
     -10.3,
-    355.082
+    355.084
    ],
    "fillStyle": "#000000",
    "strokeStyle": "#4c6e97",
@@ -11828,8 +12463,8 @@
    "op": "fillText",
    "args": [
     "HIV1_RT_3hvt_0_1_0",
-    107.334,
-    264.75
+    107.335,
+    264.751
    ],
    "fillStyle": "#000000",
    "strokeStyle": "#4c6e97",
@@ -11855,7 +12490,7 @@
    "args": [
     "HIV1_NC_1f6u_0_1_0",
     198.14,
-    250.248
+    250.249
    ],
    "fillStyle": "#000000",
    "strokeStyle": "#4c6e97",
