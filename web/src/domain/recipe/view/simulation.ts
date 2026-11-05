@@ -187,15 +187,17 @@ export class RecipeSimulation {
    * §10.5, after each tick, parents before children (the nodes are breadth-first): a dragged compartment is clamped
    * inside its parent; a compartment carries its kids by its own move; ingredients under a compartment are put back on
    * its centreline (surface) or inside its inner edge (interior), their outward velocity removed so the next tick
-   * does not push them out again. Nothing under the root, which has no membrane, and not the floating subject.
+   * does not push them out again. Nothing under the root, which has no membrane, and not the floating subject. A drag
+   * subject that does not fit inside its parent (no room inside the inner edge) is not clamped: it follows the pointer.
    */
   private constrain(): void {
     const drag = this.drag
     for (const n of this.nodes) {
       const p = n.parent
       if (p?.parent && !(drag?.floating && drag.subject === n)) {
-        if (n.leaf) project(n, p)
-        else if (drag?.subject === n) clampInside(n, p)
+        if (n.leaf) {
+          if (n.surface || drag?.subject !== n || p.r - MEMBRANE - n.r > 0) project(n, p)
+        } else if (drag?.subject === n) clampInside(n, p)
       }
       if (!n.leaf && p) {
         const dx = n.x - n.px
@@ -278,12 +280,16 @@ export function project(n: SimNode, p: SimNode): void {
   }
 }
 
-/** A dragged compartment's drawn disk (r+5) inside its parent's inner edge (r−5), §10.5; its pin follows. */
+/**
+ * A dragged compartment's drawn disk (r+5) inside its parent's inner edge (r−5), §10.5; its pin follows. A disk that
+ * does not fit (no room) is not clamped: snapping it to the parent's centre would pin it there.
+ */
 export function clampInside(n: SimNode, p: SimNode): void {
+  const limit = p.r - 2 * MEMBRANE - n.r
+  if (limit <= 0) return
   const dx = n.x - p.x
   const dy = n.y - p.y
   const dist = Math.sqrt(dx * dx + dy * dy)
-  const limit = Math.max(0, p.r - 2 * MEMBRANE - n.r)
   if (dist <= limit) return
   const s = dist > 0 ? limit / dist : 0
   n.x = p.x + dx * s

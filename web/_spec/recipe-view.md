@@ -505,8 +505,8 @@ Modern files (lane `recipe-view-canvas`, cited by function): `components/recipe/
 | 55 | Wheel delta | v4: `−dy·(mode?120:1)/500` | Legacy's `wheelDelta` (RV `bindGestures`) | Same |
 | 56 | Dragging outside Edit Mode | Allowed (m:5190-5197) | Allowed (RV) | Same |
 | 57 | Drag start offset | Grab point preserved (d3-drag subject dx) (m:5196) | Grab point preserved in world space (RV drag) | Same |
-| 58 | Compartment drag | Pins only the ring; children follow softly via ParentForce (m:5196, 5470) | Pinned; its subtree carried rigidly every tick; clamped inside the parent's inner edge (SI `constrain`, `clampInside`) | §10.5 |
-| 59 | Ingredient drag constraint | Free (fx/fy anywhere) (m:5196) | Pinned to the pointer, projected inside the parent (view mode); free while floated in Edit Mode (SI `constrain`) | §10.5 |
+| 58 | Compartment drag | Pins only the ring; children follow softly via ParentForce (m:5196, 5470) | Pinned; its subtree carried rigidly every tick; clamped inside the parent's inner edge, not clamped when it does not fit there (SI `constrain`, `clampInside`) | §10.5 |
+| 59 | Ingredient drag constraint | Free (fx/fy anywhere) (m:5196) | Pinned to the pointer, projected inside the parent (view mode), not projected when it does not fit there; free while floated in Edit Mode (SI `constrain`) | §10.5 |
 | 60 | Hover → Mol* highlight | `MS_HighlightNode` on every move (m:5018, 5035-5045) | None | Missing (open: viewer lanes) |
 | 61 | Hover → popup and label | m:3828, 3971 | Label and popup (DW) | Same |
 | 62 | Selection side effects | Table row select + scroll, NGL load, PDB component, UniProt/ProtVista, Object Properties, `visited` (m:5232-5262) | `selectNode` → table + viewers via the store; `markVisited` (RV drag) | Differs (store-driven; the viewers are other lanes') |
@@ -569,7 +569,10 @@ that implements it cites this section.
    `recipe-view-canvas`, Opus).
 5. **Hard membrane constraints** (rows 15, 17, 58, 59): after each tick, surface ingredients are projected onto their
    parent's membrane centreline and interior ingredients into the membrane's inner edge; a compartment drag moves its
-   subtree rigidly, clamped inside its parent. Everything else in the simulation follows §3. Why: Ludovic's earlier
+   subtree rigidly, clamped inside its parent. A drag subject that does not fit inside its parent's inner edge (a
+   compartment with `r > R−10`, an interior ingredient with `r > R−5`; HIV's PackInner r 145 in PackOuter r 65) is not
+   clamped and follows the pointer: clamping it to no room would snap it to the parent's centre and pin it there
+   (Ludovic found the jump, 2026-11-05). Everything else in the simulation follows §3. Why: Ludovic's earlier
    review found legacy's soft springs let proteins drift off the membrane. How it sits on legacy's physics (lane
    `recipe-view-canvas`, Opus; measured on Mpn, whose compartment is about 80 % full at the 1.15·r collision radius:
    the projection and the collisions settle together, with jitter while warm close to legacy's own): the projection
