@@ -1,9 +1,9 @@
 /**
  * Numeric-range stats per ingredient property — the modern equivalent of legacy's
  * `property_mapping` scan (js/main.js:2200-2294), built once from the loaded graph rather than
- * accumulated as a global while parsing. Used today by `computeRecipeLayout.ts` to normalize
+ * accumulated as a global while parsing. Used by the Recipe view (`view/layout.ts`, `view/colors.ts`) to normalize
  * the "group by" cluster-attraction force; kept as a standalone pure function (not folded into
- * `computeRecipeLayout.ts`) because it's reusable later for color-by-property/size-by-property,
+ * `view/layout.ts`) because it's reusable later for color-by-property/size-by-property,
  * both still-deferred legacy features (`ChangeCanvasColor`/`mapRadiusToProperty`) that would
  * need the same stats.
  *

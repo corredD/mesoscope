@@ -58,18 +58,20 @@ export interface DropTarget {
  * the subject or its direct children, and stopping at the subject's own parent (main.js:4908-4910). We also skip the
  * whole subtree, which legacy did not (a grandchild target would make a cycle, §10.7).
  */
-export function dropTarget(nodes: readonly SimNode[], subject: SimNode): DropTarget {
+export function dropTarget(nodes: readonly SimNode[], subject: SimNode, out: DropTarget = { node: nodes[0], distance: 0 }): DropTarget {
   const root = nodes[0]
-  let best: DropTarget = { node: root, distance: Math.hypot(subject.x - root.x, subject.y - root.y) }
+  out.node = root
+  out.distance = Math.hypot(subject.x - root.x, subject.y - root.y)
   for (const n of nodes) {
-    if (n === subject || !n.parent || n.depth <= best.node.depth || inSubtree(n, subject)) continue
+    if (n === subject || !n.parent || n.depth <= out.node.depth || inSubtree(n, subject)) continue
     const distance = Math.hypot(subject.x - n.x, subject.y - n.y)
     if (distance < n.r + subject.r) {
-      best = { node: n, distance }
+      out.node = n
+      out.distance = distance
       if (n === subject.parent) break
     }
   }
-  return best
+  return out
 }
 
 function inSubtree(n: SimNode, top: SimNode): boolean {
