@@ -10,5 +10,8 @@ queue (`../TODO.md`).
   ports 5182/8092): Recipe view re-ported to a 2D canvas with legacy physics, reusing the oracle and modules of
   `lane/recipe-view-port` (PR #47, closed). Brief: [2026-11-05-recipe-view-canvas.md](2026-11-05-recipe-view-canvas.md)
   (on the lane's branch).
+- `ui-design` (`~/Developments/mesoscope-lanes/ui-design`, branch `lane/ui-design`, no ports): research, principles,
+  information architecture and static mockups of the whole interface (Prism, MolViewStories, state of the art); docs
+  and mockups only. Brief: [2026-11-05-ui-design.md](2026-11-05-ui-design.md) (on the lane's branch).
 
 ## Waiting on Ludovic
