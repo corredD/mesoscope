@@ -52,6 +52,13 @@
   }
   const byName = (name) => R && R.d.nodes.find((n) => n.name === name)
   const parentOf = (n) => (n && n.parent ? R.byId.get(n.parent) : null)
+  /** A name is shown alone unless another ingredient has it too: then the compartment follows (README §5.3). */
+  const shown = (n) => {
+    if (!R || n.kind !== 'ingredient') return n.name
+    if (!R.dups) { const c = new Map(); for (const i of R.ings) c.set(i.name, (c.get(i.name) || 0) + 1); R.dups = c }
+    const p = parentOf(n)
+    return R.dups.get(n.name) > 1 && p ? `${n.name} · ${p.name}` : n.name
+  }
   const isPdbId = (s) => /^[0-9][a-z0-9]{3}$/i.test(s)
 
   /** What is missing or doubtful on an ingredient: the same list everywhere (tree flag, table, inspector). */
@@ -215,7 +222,7 @@
     const input = h('input', { 'aria-label': 'Search commands and ingredients', placeholder: 'Run a command, or go to an ingredient…', value: query, role: 'combobox', 'aria-expanded': 'true' })
     const list = h('div', { class: 'list', role: 'listbox' })
     const f = focused()
-    const focusChip = f.length ? h('span', { class: 'pill' }, f.length === 1 ? f[0].name : `${f.length} items`) : null
+    const focusChip = f.length ? h('span', { class: 'pill' }, f.length === 1 ? shown(f[0]) : `${f.length} items`) : null
     const box = h('div', { class: 'palette', role: 'dialog', 'aria-label': 'Commands' },
       h('div', { class: 'input-row' }, h('span', { class: 'muted' }, '⌘K'), input, focusChip),
       list,
@@ -301,7 +308,7 @@
     const f = focused()
     statusEl.replaceChildren(...[
       h('span', { class: 'focus-label' }, 'Focus'),
-      f.length ? f.map((n) => h('span', { class: 'pill' }, n.name, h('button', { 'aria-label': `Remove ${n.name} from the Focus`, onclick: () => setFocus([n.id], true) }, '×'))) : h('span', { class: 'subtle' }, 'nothing: click anything in any view; ⇧-click adds'),
+      f.length ? f.map((n) => h('span', { class: 'pill' }, shown(n), h('button', { 'aria-label': `Remove ${shown(n)} from the Focus`, onclick: () => setFocus([n.id], true) }, '×'))) : h('span', { class: 'subtle' }, 'nothing: click anything in any view; ⇧-click adds'),
       f.length ? h('button', { class: 'button link', onclick: () => setFocus([]) }, 'Clear') : null,
       h('span', { class: 'msg' }, R ? `Loaded ${R.file} · ${R.ings.filter(flagged).length} ingredients need attention` : 'Ready'),
       h('kbd', {}, '⌘K')].flat().filter(Boolean))

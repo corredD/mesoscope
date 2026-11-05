@@ -256,6 +256,10 @@ whole shell.
 - A short ordered list of recipe objects (and, in the Ingredient view, Mol\*'s residue selection). Held once; every
   view reads it. Not saved with the recipe; kept with the URL so a link opens on the same object (open item).
 - Click points at one; ⇧, ⌘ or Ctrl toggles one in or out; each pill's × removes it; Esc (outside a field) clears.
+- Names are not unique (HIV has four ingredient names twice, one in each of two compartments). A pill, a status
+  message and a Go-to row show the name alone when it is unique in the recipe and "name · compartment" when another
+  ingredient has it; the Go-to row also says "side of compartment" in every case. A link or recipe file that names
+  an ingredient by name alone opens the first match and says so.
 - Hover is not the Focus: hovering a row lights the circle (and back) without changing the inspector.
 - The inspector shows the Focus: one object, its sections; several, what they share ("Together") and the actions for
   several (Add interaction with two ingredients, Delete). Nothing: the recipe.
