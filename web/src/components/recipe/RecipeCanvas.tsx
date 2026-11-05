@@ -90,7 +90,8 @@ export function RecipeCanvas() {
   const [hoveredLink, setHoveredLink] = useState<string | null>(null)
   const [menu, setMenu] = useState<{ x: number; y: number; id: string } | null>(null)
   const ctrlAtPress = useRef(false)
-  const press = useRef<{ x: number; y: number } | null>(null)
+  /** A left press on the canvas; `moved` once it went past the 2 px click threshold (then it is a drag). */
+  const press = useRef<{ x: number; y: number; moved: boolean } | null>(null)
 
   // View state in step with the store: a new recipe or a new size/scale/grouping lays out again; any other edit
   // keeps every position (§1.9). New nodes appear at the canvas centre with legacy's radius (§7.1-§7.2, §8.18).
@@ -220,17 +221,19 @@ export function RecipeCanvas() {
   const onPointerDown = (e: ReactPointerEvent) => {
     // A press in the context menu is the menu's, not a click on the canvas under it.
     const inMenu = !!(e.target as Element).closest?.('.recipe-canvas-context-menu')
-    press.current = e.button === 0 && !inMenu ? { x: e.clientX, y: e.clientY } : null
+    press.current = e.button === 0 && !inMenu ? { x: e.clientX, y: e.clientY, moved: false } : null
     if (!inMenu) setMenu(null)
   }
   const onPointerUp = (e: ReactPointerEvent) => {
     const start = press.current
     press.current = null
-    if (!start || Math.hypot(e.clientX - start.x, e.clientY - start.y) > 2) return
+    if (!start || start.moved || Math.hypot(e.clientX - start.x, e.clientY - start.y) > 2) return
     const hit = pick(toWorld(e))
     if (hit) choose(hit.node, e.ctrlKey || e.metaKey, hit.link)
   }
   const onPointerMove = (e: ReactPointerEvent) => {
+    const start = press.current
+    if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 2) start.moved = true
     if (e.buttons || !state) return
     const hit = pick(toWorld(e))
     const node = hit && state.nodes[hit.node].parent ? hit.node : null
@@ -256,10 +259,11 @@ export function RecipeCanvas() {
       const node = index.get(id)!
       if (drop.surface !== null && drop.surface !== !!(node.data as IngredientData).surface) store.updateIngredient(node, { surface: drop.surface })
       if (drop.newParent) store.reparentNode(node, index.get(drop.newParent)!)
-      choose(id, false, null)
+      choose(id, ctrlAtPress.current, null)
     } else {
       setSync((s) => ({ ...s, view: applyPush(dropped) }))
-      if (dropped.push) choose(dropped.push.id, false, null)
+      // A drag selects as a click does, Ctrl included (legacy selects at drag start, main.js:5118-5130).
+      if (dropped.push) choose(dropped.push.id, ctrlAtPress.current, null)
     }
   }
 

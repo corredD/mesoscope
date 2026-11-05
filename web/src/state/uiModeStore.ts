@@ -63,7 +63,8 @@ export const useUiModeStore = create<UiModeStore>((set) => ({
   toggleEditMode: () => set((state) => ({ editMode: !state.editMode, editModeToggled: true })),
   selectedNodes: [],
   setSelection: (nodes) => set({ selectedNodes: nodes }),
-  addToSelection: (node) => set((state) => ({ selectedNodes: [...state.selectedNodes, node] })),
+  // Only once: legacy adds a node not already selected (main.js:5124).
+  addToSelection: (node) => set((state) => (state.selectedNodes.includes(node) ? state : { selectedNodes: [...state.selectedNodes, node] })),
   clearSelection: () => set({ selectedNodes: [] }),
   groupBy: null,
   setGroupBy: (key) => set({ groupBy: key }),
