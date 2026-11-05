@@ -83,13 +83,14 @@ export function seedPositions(graph: RecipeGraph, width: number, height: number)
 type ClusterNode = { leaf: boolean; x: number; y: number; r: number; node: RecipeNode; cluster: { x: number; y: number; r: number } | null }
 
 /**
- * `ClusterNodeBy` (main.js:3517-3595, §6.5): for a key outside `default_options`, one cluster per value ("" for a
- * missing one), each the enclosure of its leaves' packed disks, all clusters packed together around the origin; each
- * leaf gets its cluster (the force adds the parent's position, §3.3). A built-in key turns clustering off and leaves
- * the clusters as they were, as legacy. Returns legacy `clusterBy`.
+ * `ClusterNodeBy` (main.js:3517-3595, §6.5): one cluster per value of the field ("" for a missing one), each the
+ * enclosure of its leaves' packed disks, all clusters packed together around the origin; each leaf gets its cluster
+ * (the force adds the parent's position, §3.3). Any field groups, built-in ones too (Ludovic, 2026-11-05: legacy
+ * refused every `default_options` key, so on a recipe without custom columns it did nothing); `none` turns it off.
+ * Returns legacy `clusterBy`.
  */
 export function assignClusters(nodes: readonly ClusterNode[], key: string | null): boolean {
-  if (!key || DEFAULT_OPTIONS.has(key)) return false
+  if (!key || key === 'none') return false
   const value = (n: ClusterNode) => {
     const v = (n.node.data as Record<string, unknown>)[key]
     return v === undefined || v === null ? '' : v

@@ -3,6 +3,7 @@ import { useUiModeStore } from '../../state/uiModeStore'
 import { customIngredientFields, isIngredientNode, type IngredientData, type RecipeNode } from '../../domain/recipe/types'
 import { COLOR_MODES, PROPERTY_MAPPING_KEYS, colorNode, colorNodeInfos, prepareColors } from '../../domain/recipe/view/colors'
 import { DEFAULT_FORCES, type Forces } from '../../domain/recipe/view/simulation'
+import { listGroupableProperties } from '../../domain/recipe/propertyMapping'
 import { Button } from '../ui/Button'
 import { Slider } from '../ui/Slider'
 import { Switch } from '../ui/Switch'
@@ -27,6 +28,8 @@ export function RecipeCanvasToolbar() {
   if (!graph) return <p className="panel-note">Load a recipe to use the canvas view options.</p>
 
   const custom = customColumns(graph.nodes)
+  // Real fields with two or more values, plus the custom columns (Ludovic, 2026-11-05, §6.5).
+  const groupOptions = ['none', ...new Set([...listGroupableProperties(graph.nodes), ...custom])]
   // Only nodes still in the recipe: a deleted one must not get a link.
   const live = new Set(graph.nodes)
   const selection = ui.selectedNodes.filter((node) => live.has(node))
@@ -112,7 +115,7 @@ export function RecipeCanvasToolbar() {
         <label>
           Node group by
           <select value={ui.groupBy ?? 'none'} onChange={(e) => ui.setGroupBy(e.target.value === 'none' ? null : e.target.value)}>
-            {['none', ...PROPERTY_MAPPING_KEYS, ...custom].map((key) => (
+            {groupOptions.map((key) => (
               <option key={key} value={key}>
                 {key}
               </option>

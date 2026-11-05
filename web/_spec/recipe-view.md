@@ -386,7 +386,7 @@ Modes not in `property_mapping` (`pdb`, `geom`, …) return early, before the mi
 
 6.4 **Apply to ingredient colour** (m:3356-3371). For **every** node, compartments included, it saves `data._color` once and sets `data.color = colorNode(d)/255`. Because `default` mode prefers `_color`, the original colours still show in `default` after an apply.
 
-6.5 **Group by** (`ClusterNodeBy`, m:3517-3595). It applies only to keys **not** in `default_options`, which means custom columns.
+6.5 **Group by** (`ClusterNodeBy`, m:3517-3595). Legacy applies it only to keys **not** in `default_options`, which means custom columns, so on a recipe without any it does nothing. **Departure (Ludovic, 2026-11-05):** the dropdown lists the ingredient fields with two or more distinct values (`listGroupableProperties`) plus the custom columns, and every listed option clusters, built-in fields and numeric ones included; `none` turns it off. Reason: legacy's group-by was a no-op on HIV and Influenza. Of the shipped examples only HIV has such a field (`surface`); Influenza has none, so its list is `none` alone.
 - Values are made unique, plus `""`.
 - Each value gets a centre seeded from `Util_halton(counter,2|3)·parent.r·2`. Its member leaves' (x, y, r) are run through `packSiblings` + `packEnclose` to get the centre and radius. All clusters are then run through `packSiblings` together.
 - Clusters are **global**, not per compartment. The force (3.3) offsets the centre by each node's own parent position.
@@ -536,7 +536,7 @@ Modern files (lane `recipe-view-canvas`, cited by function): `components/recipe/
 | 86 | `automatic`, mapping off | iwanthue per compartment + ±30° range; compartments coloured (m:3213-3240, 3455-3465) | Even hues per compartment ±30° (CO); iwanthue is random (§8.20) | Differs (palette) |
 | 87 | Custom string column, mapping on | Gradient by unique index (m:3497) | Gradient by unique index (CO `colorNode`) | Same |
 | 88 | Apply to ingredient colour | All nodes incl. compartments; saves `_color` (m:3356-3371) | Every node, saves `_color` (RS `applyColorModeToIngredient`) | Same |
-| 89 | Group-by eligibility | Custom columns only; built-ins disable it (m:3522-3561) | Custom columns only (LY `assignClusters`) | Same |
+| 89 | Group-by eligibility | Custom columns only; built-ins disable it (m:3522-3561) | Ingredient fields with 2+ values and custom columns; any listed one clusters (`listGroupableProperties`, LY `assignClusters`) | §6.5 (Ludovic, 2026-11-05) |
 | 90 | Cluster geometry | Global halton → packSiblings clusters, pull only outside the radius (m:3517-3595, 5424-5439) | Global packSiblings clusters, pull only outside r, unscaled (LY `assignClusters`, SI `nudges`) | Same |
 | 91 | Stroke-width control | `stroke_line_width` for every node and link (m:3678-3722) | `stroke_line_width` on every node (DW `highlight`) | Same |
 | 92 | Scale Radius control | Number input 0.01–10 (lm:293) | Slider + number 0.01–10 (TB) | Same |

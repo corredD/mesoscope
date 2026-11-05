@@ -290,24 +290,19 @@ describe('group by (§6.5, rows 89-90)', () => {
     expect(assignClusters(grouped(), null)).toBe(false)
   })
 
-  it('on HIV, grouping by ingtype gives each leaf its type cluster; after the heat the clusters show', () => {
+  it('on HIV, grouping by surface (its only field with two values) gives each leaf its cluster, and the nudge brings the strays in', () => {
     const { sim, nodes } = simulate(load('HIV_serialized.json'))
     settle(sim)
     const leaves = nodes.filter((n) => n.leaf)
-    const mean = () => {
-      let sum = 0
-      for (const n of leaves) sum += Math.hypot(n.x - (n.cluster!.x + n.parent!.x), n.y - (n.cluster!.y + n.parent!.y))
-      return sum / leaves.length
-    }
-    sim.clusterBy = assignClusters(nodes, 'ingtype')
+    const outside = () => leaves.filter((n) => Math.hypot(n.x - (n.cluster!.x + n.parent!.x), n.y - (n.cluster!.y + n.parent!.y)) > n.r + n.cluster!.r).length
+    sim.clusterBy = assignClusters(nodes, 'surface')
     expect(sim.clusterBy).toBe(true)
-    const types = new Set(leaves.map((n) => (n.node.data as { ingtype?: string }).ingtype ?? ''))
-    expect(new Set(leaves.map((n) => n.cluster)).size).toBe(types.size)
-    const before = mean()
+    expect(new Set(leaves.map((n) => n.cluster)).size).toBe(2)
+    const before = outside()
+    expect(before).toBeGreaterThan(0)
     sim.heat()
     settle(sim)
-    const after = mean()
-    expect(after).toBeLessThan(before)
+    expect(outside()).toBeLessThan(before) // 7 -> 3 leaves outside their cluster after the 248 ticks to rest
   })
 
   it('the cluster nudge pulls a leaf outside its cluster towards it, unscaled by alpha, only when clusterBy is on', () => {

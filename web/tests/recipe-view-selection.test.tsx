@@ -101,13 +101,15 @@ describe('the multi-selection and the recipe (with the canvas mounted)', () => {
 
 describe('Node group by (recipe-view.md §6.5, Ludovic 2026-11-05)', () => {
   it('lists the ingredient fields with two or more values, and choosing one sets the grouping', () => {
+    // HIV's only ingredient field with two values is `surface`; Influenza has none.
+    useRecipeStore.getState().loadFromJson(JSON.parse(readFileSync(resolve(__dirname, '../../data/HIV_serialized.json'), 'utf-8')))
     render(<RecipeCanvasToolbar />)
     const select = screen.getByLabelText('Node group by') as HTMLSelectElement
     const options = [...select.options].map((o) => o.value)
     expect(options[0]).toBe('none')
-    expect(options).toContain('ingtype')
+    expect(options).toContain('surface')
     expect(options).not.toContain('name')
-    fireEvent.change(select, { target: { value: 'ingtype' } })
-    expect(useUiModeStore.getState().groupBy).toBe('ingtype')
+    fireEvent.change(select, { target: { value: 'surface' } })
+    expect(useUiModeStore.getState().groupBy).toBe('surface')
   })
 })
