@@ -176,7 +176,7 @@ async function observe(page, target, index) { // node names are not unique (HIV 
   return page.evaluate(([t, idx]) => {
     const g = typeof gridArray !== 'undefined' && gridArray[0];
     let rows = null;
-    try { rows = g.getSelectedRows().map((r) => g.getData().getItem(r)?.id ?? null); } catch (e) { rows = null; }
+    try { rows = g.getSelectedRows().map((r) => g.getData().getItem(r)?.id ?? null); } catch { rows = null; }
     return {
       target: t,
       nodeSelected: node_selected ? node_selected.data.name : null,
