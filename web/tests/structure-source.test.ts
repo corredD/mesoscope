@@ -76,6 +76,10 @@ describe('resolveSpriteImageUrl', () => {
     expect(resolveSpriteImageUrl(null, '1e7i')).toBe('https://www.ebi.ac.uk/pdbe/static/entry/1e7i_deposited_chain_front_image-200x200.png')
   })
 
+  it('keys the PDBe thumbnail by the part before "_", as legacy (pdb.split("_")[0], main.js:4308-4383, row 42)', () => {
+    expect(resolveSpriteImageUrl(null, '1ABC_2')).toBe('https://www.ebi.ac.uk/pdbe/static/entry/1abc_deposited_chain_front_image-200x200.png')
+  })
+
   it('does not treat a repo-file pdb (has an extension) as a PDBe accession', () => {
     expect(resolveSpriteImageUrl(null, 'MA_matrix_G1.pdb')).toBeNull()
   })
