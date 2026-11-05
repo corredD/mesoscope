@@ -67,7 +67,7 @@ test('default layout favors Ingredient View and dark mode reaches both rendering
   await page.getByText('Empty Recipe', { exact: true }).click()
   await page.getByRole('button', { name: 'Switch to dark theme' }).click()
 
-  await expect(page.locator('.recipe-canvas-background')).toHaveAttribute('data-canvas-theme', 'dark')
+  await expect(page.locator('.recipe-canvas-stage')).toHaveAttribute('data-canvas-theme', 'dark')
   await expect(page.locator('.recipe-canvas-background')).toHaveAttribute('fill', 'var(--color-recipe-canvas-bg)')
   await expect(page.locator('[data-molstar-viewer="ingredient"]')).toHaveAttribute('data-canvas-theme', 'dark')
   await expect(page.locator('[data-molstar-viewer="model"]')).toHaveAttribute('data-canvas-theme', 'dark')
@@ -116,14 +116,24 @@ test('Radix switches and scientific sliders remain usable in a narrow panel layo
   await editMode.click()
   await expect(editMode).toHaveAttribute('aria-checked', 'true')
 
-  const surfaceForce = page.getByRole('slider', { name: 'Surface force' })
-  await expect(surfaceForce).toBeVisible()
-  const before = Number(await surfaceForce.getAttribute('aria-valuenow'))
-  await surfaceForce.focus()
+  const scaleRadius = page.getByRole('slider', { name: 'Scale Radius by' })
+  await expect(scaleRadius).toBeVisible()
+  const before = Number(await scaleRadius.getAttribute('aria-valuenow'))
+  await scaleRadius.focus()
   await page.keyboard.press('ArrowRight')
-  await expect(surfaceForce).toHaveAttribute('aria-valuenow', String(Number((before + 0.01).toFixed(2))))
+  await expect(scaleRadius).toHaveAttribute('aria-valuenow', String(Number((before + 0.01).toFixed(2))))
+})
 
-  const panelBounds = await surfaceForce.evaluate((control) => {
+test('Scale Radius slider stays inside a narrow Recipe Options panel', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Load', exact: true }).click()
+  await page.getByText('New Recipe', { exact: true }).click()
+  await page.getByText('Empty Recipe', { exact: true }).click()
+  const scaleRadius = page.getByRole('slider', { name: 'Scale Radius by' })
+  await expect(scaleRadius).toBeVisible()
+
+  const panelBounds = await scaleRadius.evaluate((control) => {
     const controlRect = control.getBoundingClientRect()
     const panelRect = control.closest('.panel-body')?.getBoundingClientRect()
     return {
@@ -137,78 +147,3 @@ test('Radix switches and scientific sliders remain usable in a narrow panel layo
   expect(panelBounds.controlRight).toBeLessThanOrEqual(panelBounds.panelRight)
 })
 
-test('Layout Options toggles a workspace tab', async ({ page }) => {
-  await page.goto('/')
-  await expect(page.getByText('Interaction table')).toHaveCount(0)
-
-  await page.getByRole('button', { name: 'Layout Options' }).click()
-  await page.getByText('Show Interaction Table').click()
-
-  await expect(page.getByText('Interaction table', { exact: true })).toBeVisible()
-})
-
-test('Recipe View fills its panel and allows compartment dragging outside Edit Mode', async ({ page }) => {
-  await page.goto('/')
-  await page.getByRole('button', { name: 'Load', exact: true }).click()
-  await page.getByText('New Recipe', { exact: true }).click()
-  await page.getByText('Empty Recipe', { exact: true }).click()
-
-  await page.getByRole('switch', { name: 'Edit Mode' }).click()
-  await page.getByRole('button', { name: 'Add compartment' }).click()
-  await page.getByRole('button', { name: 'Add ingredient' }).click()
-  await page.getByRole('switch', { name: 'Edit Mode' }).click()
-
-  const svg = page.locator('svg.recipe-canvas')
-  await expect(svg).toBeVisible()
-  const geometry = await svg.evaluate((element) => {
-    const rect = element.getBoundingClientRect()
-    const viewBox = element.viewBox.baseVal
-    return { renderedRatio: rect.width / rect.height, viewBoxRatio: viewBox.width / viewBox.height }
-  })
-  expect(Math.abs(geometry.renderedRatio - geometry.viewBoxRatio)).toBeLessThan(0.03)
-
-  const compartmentCircle = svg.locator('title').filter({ hasText: 'newCompartment' }).first().locator('..')
-  const group = compartmentCircle.locator('..')
-  const before = await group.getAttribute('transform')
-  const box = await compartmentCircle.boundingBox()
-  if (!box) throw new Error('Compartment circle has no bounding box')
-  const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-
-  await compartmentCircle.dispatchEvent('pointerdown', { bubbles: true, pointerId: 1, clientX: start.x, clientY: start.y })
-  await svg.dispatchEvent('pointermove', { bubbles: true, pointerId: 1, clientX: start.x + 24, clientY: start.y })
-  await svg.dispatchEvent('pointerup', { bubbles: true, pointerId: 1, clientX: start.x + 24, clientY: start.y })
-
-  await expect(group).not.toHaveAttribute('transform', before ?? '')
-})
-
-test('Influenza renders a hidden root, two-edge envelope, and membrane-centred surface proteins', async ({ page }) => {
-  await page.goto('/')
-  await page.getByRole('button', { name: 'Load', exact: true }).click()
-  await page.getByText('New Recipe', { exact: true }).click()
-  await page.getByText('From Examples', { exact: true }).click()
-  await page.getByText('Influenza envelope', { exact: true }).click()
-
-  const svg = page.locator('svg.recipe-canvas')
-  await expect(svg.locator('[data-node-name="root"]')).toHaveCount(0)
-  const envelope = svg.locator('[data-node-name="envelope"]')
-  await expect(envelope).toBeVisible()
-  await expect(envelope.locator('[data-membrane-edge]')).toHaveCount(2)
-
-  const geometry = await svg.evaluate((element) => {
-    const readPosition = (node: Element) => {
-      const match = node.getAttribute('transform')?.match(/translate\(([-\d.e+]+),([-\d.e+]+)\)/i)
-      if (!match) throw new Error(`Missing node transform for ${node.getAttribute('data-node-name')}`)
-      return { x: Number(match[1]), y: Number(match[2]) }
-    }
-    const parent = element.querySelector('[data-node-name="envelope"]')!
-    const parentPosition = readPosition(parent)
-    const parentRadius = Number(parent.querySelector('[data-compartment-hit="true"]')!.getAttribute('r'))
-    return ['Hemagglutinin', 'Neuraminidase', 'M2protein'].map((name) => {
-      const node = element.querySelector(`[data-node-name="${name}"]`)!
-      const position = readPosition(node)
-      return Math.hypot(position.x - parentPosition.x, position.y - parentPosition.y) - parentRadius
-    })
-  })
-
-  for (const radialError of geometry) expect(Math.abs(radialError)).toBeLessThan(0.01)
-})

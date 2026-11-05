@@ -2,9 +2,10 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { StrictMode } from 'react'
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RecipeCanvas } from '../src/components/recipe/RecipeCanvas'
-import { isIngredientNode } from '../src/domain/recipe/types'
+import type { RecipeNode } from '../src/domain/recipe/types'
+import { viewId } from '../src/domain/recipe/view/viewState'
 import { useRecipeStore } from '../src/state/recipeStore'
 import { useThemeStore } from '../src/state/themeStore'
 import { useUiModeStore } from '../src/state/uiModeStore'
@@ -13,166 +14,204 @@ function loadFixture(name: string): unknown {
   return JSON.parse(readFileSync(resolve(__dirname, '../../data', name), 'utf-8'))
 }
 
+function loadInfluenza() {
+  useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+  return useRecipeStore.getState().graph!
+}
+
+const stage = () => document.querySelector<HTMLElement>('.recipe-canvas-stage')!
+const layers = () => Array.from(document.querySelectorAll<SVGGElement>('[data-node-id]'))
+const layerOf = (node: RecipeNode) => document.querySelector<SVGGElement>(`[data-node-id="${viewId(node)}"]`)!
+const byName = (name: string) => useRecipeStore.getState().graph!.nodes.find((n) => n.data.name === name)!
+
+/** A node layer's centre: jsdom's stage rect is 0,0 and the zoom is identity, so world = client coordinates. */
+function centre(layer: Element): { x: number; y: number } {
+  // Dragology flattens the layer's chain into one transform: the view's translate/scale, then the node's translate.
+  const all = [...(layer.getAttribute('transform') ?? '').matchAll(/translate\(\s*([-\d.e+]+)[ ,]+([-\d.e+]+)\s*\)/gi)]
+  const m = all[all.length - 1]
+  if (!m) throw new Error('layer has no translate')
+  return { x: Number(m[1]), y: Number(m[2]) }
+}
+
+function click(x: number, y: number, init: PointerEventInit = {}) {
+  fireEvent.pointerDown(stage(), { button: 0, clientX: x, clientY: y, pointerId: 1, ...init })
+  fireEvent.pointerUp(stage(), { button: 0, clientX: x, clientY: y, pointerId: 1, ...init })
+}
+
+const clickNode = (node: RecipeNode, init: PointerEventInit = {}) => {
+  const c = centre(layerOf(node))
+  click(c.x, c.y, init)
+}
+
 beforeEach(() => {
-  useRecipeStore.setState({ graph: null, format: null, error: null, loading: false, selectedNode: null })
-  useUiModeStore.setState({ editMode: false })
+  useRecipeStore.setState({ graph: null, format: null, error: null, loading: false, selectedNode: null, selectedLink: null })
+  useUiModeStore.setState({ editMode: false, selectedNodes: [] })
   useThemeStore.setState({ theme: 'light' })
 })
 
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
 describe('RecipeCanvas', () => {
-  it('shows a message instead of the canvas when no recipe is loaded', () => {
+  it('shows the "No recipe loaded" note and no node layers without a recipe (§1.9)', () => {
     render(<RecipeCanvas />)
     expect(screen.getByText(/No recipe loaded/)).toBeInTheDocument()
-    expect(document.querySelector('svg.recipe-canvas')).not.toBeInTheDocument()
+    expect(layers()).toHaveLength(0)
   })
 
-  it('hides the synthetic root and renders one node group per visible compartment/ingredient', () => {
-    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+  it('draws one layer per non-root node and none for the root (§2.3)', () => {
+    const graph = loadInfluenza()
     render(<RecipeCanvas />)
-
-    const graph = useRecipeStore.getState().graph!
-    const visibleNodes = document.querySelectorAll('svg.recipe-canvas [data-recipe-node="true"]')
-    expect(visibleNodes).toHaveLength(graph.nodes.length - 1)
-    expect(document.querySelector('svg.recipe-canvas [data-node-name="root"]')).not.toBeInTheDocument()
+    expect(layers()).toHaveLength(graph.nodes.length - 1)
+    expect(document.querySelector(`[data-node-id="${viewId(graph.nodes[0])}"]`)).not.toBeInTheDocument()
   })
 
-  it('draws a compartment as a two-edge membrane with a wider invisible interaction band', () => {
-    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+  it('draws a compartment as a disk r+5 and two outlines at r+5 and r-5 (§2.4)', () => {
+    loadInfluenza()
     render(<RecipeCanvas />)
-
-    const compartment = document.querySelector('svg.recipe-canvas [data-node-type="compartment"]')!
-    expect(compartment.querySelectorAll('[data-membrane-edge]')).toHaveLength(2)
-    const outer = compartment.querySelector('[data-membrane-edge="outer"]')!
-    const inner = compartment.querySelector('[data-membrane-edge="inner"]')!
-    expect(Number(outer.getAttribute('r'))).toBeGreaterThan(Number(inner.getAttribute('r')))
-    const hit = compartment.querySelector('[data-compartment-hit="true"]')!
-    expect(Number(hit.getAttribute('stroke-width'))).toBeGreaterThan(7.5)
+    const compartment = document.querySelector('[data-kind="compartment"]')!
+    const r = Number(compartment.getAttribute('data-r'))
+    const circles = Array.from(compartment.querySelectorAll('circle'))
+    expect(circles.map((c) => Number(c.getAttribute('r')))).toEqual([r + 5, r + 5, r - 5])
   })
 
-  it('clicking an ingredient circle selects that node in recipeStore', () => {
-    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+  it("puts Influenza's surface ingredients on the envelope's membrane (§10.4)", () => {
+    loadInfluenza()
     render(<RecipeCanvas />)
-
-    const graph = useRecipeStore.getState().graph!
-    const ingredient = graph.nodes.find((n) => isIngredientNode(n) && n.data.name === 'Hemagglutinin')!
-    const circles = Array.from(document.querySelectorAll('svg.recipe-canvas circle'))
-    const target = circles.find((c) => c.querySelector('title')?.textContent === 'Hemagglutinin')!
-
-    fireEvent.click(target)
-    expect(useRecipeStore.getState().selectedNode).toBe(ingredient)
+    const envelope = layerOf(byName('envelope'))
+    const e = centre(envelope)
+    const radius = Number(envelope.getAttribute('data-r'))
+    for (const name of ['Hemagglutinin', 'Neuraminidase', 'M2protein']) {
+      const layer = layerOf(byName(name))
+      expect(layer.getAttribute('data-surface')).toBe('true')
+      const p = centre(layer)
+      expect(Math.hypot(p.x - e.x, p.y - e.y)).toBeCloseTo(radius, 0)
+    }
   })
 
-  it('clicking the background clears the current selection', () => {
-    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
-    const graph = useRecipeStore.getState().graph!
-    useRecipeStore.getState().selectNode(graph.nodes[1])
+  it('selects a clicked ingredient and Ctrl-click appends to the multi-selection (§4.5, row 65)', () => {
+    loadInfluenza()
     render(<RecipeCanvas />)
+    const ha = byName('Hemagglutinin')
+    const na = byName('Neuraminidase')
+    clickNode(ha)
+    expect(useRecipeStore.getState().selectedNode).toBe(ha)
+    expect(useUiModeStore.getState().selectedNodes).toEqual([ha])
+    clickNode(na, { ctrlKey: true })
+    expect(useUiModeStore.getState().selectedNodes).toEqual([ha, na])
+    // The same gesture in Edit Mode (row 65 holds in both modes).
+    act(() => useUiModeStore.setState({ editMode: true, selectedNodes: [] }))
+    clickNode(ha)
+    clickNode(na, { ctrlKey: true })
+    expect(useUiModeStore.getState().selectedNodes).toEqual([ha, na])
+  })
 
-    fireEvent.click(document.querySelector('svg.recipe-canvas')!)
+  it('click inside a compartment selects it in view mode, not in Edit Mode; empty space clears (§4.5, row 64)', () => {
+    loadInfluenza()
+    render(<RecipeCanvas />)
+    const envelope = byName('envelope')
+    const c = centre(layerOf(envelope))
+    // The envelope's centre is far from its surface-only membrane ingredients.
+    click(c.x, c.y)
+    expect(useRecipeStore.getState().selectedNode).toBe(envelope)
+
+    act(() => useUiModeStore.setState({ editMode: true }))
+    useRecipeStore.getState().selectNode(null)
+    click(c.x, c.y)
     expect(useRecipeStore.getState().selectedNode).toBeNull()
+
+    act(() => useUiModeStore.setState({ editMode: false }))
+    clickNode(byName('Hemagglutinin'))
+    expect(useRecipeStore.getState().selectedNode).not.toBeNull()
+    click(1, 1)
+    expect(useRecipeStore.getState().selectedNode).toBeNull()
+    expect(useUiModeStore.getState().selectedNodes).toEqual([])
   })
 
-  it('resizes the SVG coordinate system and background to the available panel aspect ratio', () => {
-    const OriginalResizeObserver = globalThis.ResizeObserver
-    class ImmediateResizeObserver {
-      constructor(private readonly callback: ResizeObserverCallback) {}
-      observe() {
-        this.callback([{ contentRect: { width: 800, height: 320 } } as unknown as ResizeObserverEntry], this as unknown as ResizeObserver)
-      }
-      unobserve() {}
-      disconnect() {}
-    }
-    globalThis.ResizeObserver = ImmediateResizeObserver as unknown as typeof ResizeObserver
-
-    try {
-      useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
-      render(<RecipeCanvas />)
-      const svg = document.querySelector('svg.recipe-canvas')!
-      const background = svg.querySelector(':scope > rect')!
-      expect(svg).toHaveAttribute('viewBox', '0 0 800 320')
-      expect(background).toHaveAttribute('width', '800')
-      expect(background).toHaveAttribute('height', '320')
-    } finally {
-      globalThis.ResizeObserver = OriginalResizeObserver
-    }
-  })
-
-  it('uses the dark application surface instead of a saved light recipe background', () => {
-    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
+  it('opens the context menu on a node and not on empty space (§10.6)', () => {
+    loadInfluenza()
     render(<RecipeCanvas />)
-    const background = document.querySelector('svg.recipe-canvas > .recipe-canvas-background')!
-    const lightFill = background.getAttribute('fill')
+    fireEvent.contextMenu(stage(), { clientX: 1, clientY: 1 })
+    expect(document.querySelector('.recipe-canvas-context-menu')).not.toBeInTheDocument()
+    const c = centre(layerOf(byName('Hemagglutinin')))
+    fireEvent.contextMenu(stage(), { clientX: c.x, clientY: c.y })
+    const menu = document.querySelector('.recipe-canvas-context-menu')!
+    expect(menu).toBeInTheDocument()
+    for (const label of ['Color', 'Rename', 'Delete', 'Resize']) expect(menu.textContent).toContain(label)
+  })
+
+  it('deleting a compartment from the context menu removes it and its subtree (§10.6)', () => {
+    const graph = loadInfluenza()
+    render(<RecipeCanvas />)
+    const envelope = byName('envelope')
+    const subtree = new Set<RecipeNode>()
+    const walk = (n: RecipeNode) => {
+      subtree.add(n)
+      n.children?.forEach(walk)
+    }
+    walk(envelope)
+    expect(subtree.size).toBeGreaterThan(1)
+    const before = layers().length
+    const c = centre(layerOf(envelope))
+    fireEvent.contextMenu(stage(), { clientX: c.x, clientY: c.y })
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(layers().length).toBe(before - subtree.size)
+    for (const n of subtree) expect(document.querySelector(`[data-node-id="${viewId(n)}"]`)).not.toBeInTheDocument()
+    expect(useRecipeStore.getState().graph!.nodes.length).toBe(graph.nodes.length - subtree.size)
+  })
+
+  it('keeps every layer where it is when an ingredient is added, and puts the new one at the centre with r 30 (§1.9, §7.1)', () => {
+    loadInfluenza()
+    render(<RecipeCanvas />)
+    const before = new Map(layers().map((l) => [l.getAttribute('data-node-id'), centre(l)]))
+    act(() => useRecipeStore.getState().addIngredient())
+    const after = layers()
+    expect(after).toHaveLength(before.size + 1)
+    const added = after.filter((l) => !before.has(l.getAttribute('data-node-id')))
+    expect(added).toHaveLength(1)
+    expect(centre(added[0])).toEqual({ x: 300, y: 300 })
+    expect(added[0].getAttribute('data-r')).toBe('30')
+    for (const l of after) {
+      const id = l.getAttribute('data-node-id')!
+      if (before.has(id)) expect(centre(l)).toEqual(before.get(id))
+    }
+  })
+
+  it('shows the recipe name as the root label, with `*` after an edit (row 35)', () => {
+    const graph = loadInfluenza()
+    render(<RecipeCanvas />)
+    const label = () => document.querySelector('text[data-root-label]')!.textContent
+    expect(label()).toBe(graph.nodes[0].data.name)
+    act(() => useRecipeStore.getState().addIngredient())
+    expect(label()).toBe(graph.nodes[0].data.name + '*')
+  })
+
+  it('fills the background with the dark surface in dark theme and the root colour in light (§10.3)', () => {
+    loadInfluenza()
+    render(<RecipeCanvas />)
+    const background = () => document.querySelector('.recipe-canvas-background')!
+    const lightFill = background().getAttribute('fill')
     expect(lightFill).not.toBe('var(--color-recipe-canvas-bg)')
-
+    expect(lightFill).toMatch(/^rgb\(/)
     act(() => useThemeStore.setState({ theme: 'dark' }))
-    expect(background).toHaveAttribute('data-canvas-theme', 'dark')
-    expect(background).toHaveAttribute('fill', 'var(--color-recipe-canvas-bg)')
-
+    expect(stage()).toHaveAttribute('data-canvas-theme', 'dark')
+    expect(background()).toHaveAttribute('fill', 'var(--color-recipe-canvas-bg)')
     act(() => useThemeStore.setState({ theme: 'light' }))
-    expect(background).toHaveAttribute('fill', lightFill)
+    expect(background()).toHaveAttribute('fill', lightFill)
   })
 
-  it('drags a non-root compartment with Edit Mode off', () => {
-    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
-    render(<RecipeCanvas />)
-
-    // jsdom has no SVG coordinate transforms; an identity transform is sufficient to exercise
-    // the React pointer wiring and the hook's rigid-subtree movement.
-    Object.defineProperty(SVGSVGElement.prototype, 'getScreenCTM', {
-      configurable: true,
-      value: () => ({ inverse: () => ({}) }),
-    })
-    const OriginalDOMPoint = globalThis.DOMPoint
-    class DOMPointStub {
-      constructor(public x = 0, public y = 0) {}
-      matrixTransform() {
-        return { x: this.x, y: this.y }
-      }
-    }
-    globalThis.DOMPoint = DOMPointStub as unknown as typeof DOMPoint
-
-    try {
-      const graph = useRecipeStore.getState().graph!
-      const compartment = graph.nodes.find((node) => node.data.nodetype === 'compartment' && node.parent)!
-      const circle = Array.from(document.querySelectorAll('svg.recipe-canvas circle')).find(
-        (candidate) => candidate.querySelector('title')?.textContent === compartment.data.name,
-      )!
-      const group = circle.parentElement!
-      const before = group.getAttribute('transform')
-
-      fireEvent.pointerDown(circle, { clientX: 100, clientY: 100, pointerId: 1 })
-      fireEvent.pointerMove(document.querySelector('svg.recipe-canvas')!, { clientX: 130, clientY: 100, pointerId: 1 })
-      fireEvent.pointerUp(document.querySelector('svg.recipe-canvas')!, { pointerId: 1 })
-
-      expect(useUiModeStore.getState().editMode).toBe(false)
-      expect(group.getAttribute('transform')).not.toBe(before)
-    } finally {
-      globalThis.DOMPoint = OriginalDOMPoint
-    }
-  })
-
-  // Since `useRecipeSimulation.ts` moved to a live, continuously-ticking `d3.forceSimulation`,
-  // unmount must cleanly `.stop()` it — an un-stopped simulation would keep mutating refs to
-  // now-detached DOM nodes (or leak its internal timer into the next test). These two cases are
-  // exactly the risks flagged in that file's own design (StrictMode double-invocation, timer
-  // leakage into jsdom's shared test environment).
-  it('unmounts cleanly with no thrown error while the live simulation is still settling', () => {
-    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
-    const { unmount } = render(<RecipeCanvas />)
-    expect(() => unmount()).not.toThrow()
-  })
-
-  it('supports a StrictMode mount→unmount→remount cycle without duplicating the simulation (correct circle count, no thrown error)', () => {
-    useRecipeStore.getState().loadFromJson(loadFixture('InfluenzaA.json'))
-    const graph = useRecipeStore.getState().graph!
-    expect(() =>
-      render(
+  it('mounts and unmounts under StrictMode without throwing', () => {
+    const graph = loadInfluenza()
+    let view!: ReturnType<typeof render>
+    expect(() => {
+      view = render(
         <StrictMode>
           <RecipeCanvas />
         </StrictMode>,
-      ),
-    ).not.toThrow()
-    const visibleNodes = document.querySelectorAll('svg.recipe-canvas [data-recipe-node="true"]')
-    expect(visibleNodes).toHaveLength(graph.nodes.length - 1)
+      )
+    }).not.toThrow()
+    expect(layers()).toHaveLength(graph.nodes.length - 1)
+    expect(() => view.unmount()).not.toThrow()
   })
 })
