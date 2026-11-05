@@ -386,7 +386,11 @@ the only writers (`me:_spec/README.md:31-32`); the recipe is the document Mesosc
    (`gp:915-919`); a compartment without geometry.
 4. **The brush paints the Focus.** Clicking a palette row points at the ingredient (P1); there is no second "current
    ingredient". Surface ingredients go on their compartment's membrane, interior ones in its volume, fibers along a
-   curve (§5.7.4).
+   curve (§5.7.4). With several ingredients in the Focus (proposal) the brush paints one, the last pointed at, and
+   says so: its label names it and "+1 more in the Focus, not painted" (the inspector's In the scene too). In paint
+   mode a plain click on the stage paints; ⌥-click on an instance points at its ingredient (a replacing pick),
+   ⇧/⌘-click adds it to the Focus, and Esc leaves paint mode for plain picking. *Why:* one brush, one ingredient per
+   stroke, as the placed count it sends back is per ingredient; a click in paint mode cannot also be a pick.
 5. **Targets are the recipe's**, in legacy's order (`GP_GetCount`, `gp:782-804`): molarity × the compartment's volume
    when the molarity is not 0 (`gp:784-787`, `js/util.js:566`), else the count (`gp:800`). None is shown as "—",
    never a random number (legacy's -1 rule, `gp:802`, is not kept: a departure, proposed). Beads are the collision
@@ -765,7 +769,7 @@ For prism-me:
 | 9 Commands | `09-palette.html` | ⌘K with "export" typed |
 | 10 Paint | `10-paint.html` | prism-me (mocked): HIV's palette from the recipe, placed / target, the brush on Env; the capsid ingredients greyed (no geometry). Click the stage to paint |
 | 11 Place | `11-place.html` | prism-me (mocked): Env one at a time on the envelope membrane, upright (axis 0,0,0); Along a curve greyed (no fiber in HIV) |
-| 12 Sync | `12-sync.html` | prism-me over the Table: a click paints, the Table's In the scene follows; the Focus mirrored; what came back from prism-me |
+| 12 Sync | `12-sync.html` | prism-me over the Table: MA and Env in the Focus, the brush paints Env (the last pointed at); a click paints, the Table's In the scene follows; the Focus mirrored; what came back from prism-me |
 
 On screens 10-12 the placed counts are mocked and two targets (Env 72, MA 100) are typed for the session: HIV's file
 has count and molarity 0 for all 26. Also live on screens 1-3: the column's Interactions tab (empty for HIV, which has none: the empty state names the way

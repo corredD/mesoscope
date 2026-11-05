@@ -585,9 +585,12 @@
     return true
   }
   const ingColor = (n) => css('--data-cat-' + ((R.ings.indexOf(n) % 8) + 1))
+  /** The brush's ingredient (§5.7.3 item 4): the one last pointed at in the Focus; the others are not painted. */
+  const brushOf = () => focused().filter((x) => x.kind === 'ingredient').pop()
+  const notPainted = () => focused().filter((x) => x.kind === 'ingredient').length - 1
   /** One stroke: the brush adds instances of the Focus (prism-me's operation); the count comes back to the recipe. */
   function stroke(e) {
-    const n = focused().find((x) => x.kind === 'ingredient')
+    const n = brushOf()
     if (!state.scene || !n || paintable(n) !== true) return
     const mode = state.scene.mode
     const d = mode === 'erase' ? -Math.min(3, placedOf(n)) : mode === 'place' ? 1 : 3
@@ -671,18 +674,21 @@
         let x, y
         if (n.side === 'surface') { const a = r() * Math.PI * 2, rr = R0 + (r() - 0.5) * 8; x = cx + rr * Math.cos(a); y = cy + rr * Math.sin(a) }
         else { const a = r() * Math.PI * 2, rr = 160 + r() * (R0 - 185); x = cx + rr * Math.cos(a); y = cy + rr * Math.sin(a) }
-        box.append(svg('circle', { cx: x, cy: y, r: n.side === 'surface' ? (n.name.includes('ENV') ? 8 : 5.5) : 4, fill: ingColor(n), stroke: sel ? css('--color-select') : css('--color-text'), 'stroke-width': sel ? 2 : 0.6, onclick: (e) => { if (!s.mode || e.shiftKey || e.metaKey) pick(n)(e) } }))
+        box.append(svg('circle', { cx: x, cy: y, r: n.side === 'surface' ? (n.name.includes('ENV') ? 8 : 5.5) : 4, fill: ingColor(n), stroke: sel ? css('--color-select') : css('--color-text'), 'stroke-width': sel ? 2 : 0.6, onclick: (e) => { if (!s.mode || e.altKey || e.shiftKey || e.metaKey || e.ctrlKey) pick(n)(e) } }))
       }
     }
     // The brush, on the membrane: its ring and the instances it is about to add (ghosts).
-    const n = focused().find((x) => x.kind === 'ingredient')
+    // A plain click paints; ⌥-click on an instance points at its ingredient (replaces the Focus), ⇧/⌘-click adds.
+    const n = brushOf(), more = notPainted()
     if (n && paintable(n) === true && s.mode !== 'place') {
       // Surface: on the membrane; interior: inside the volume, off the capsid (R21).
       const surf = n.side === 'surface', rb = surf ? R0 : 195, a = surf ? -1.2 : -2.0, bx = cx + rb * Math.cos(a), by = cy + rb * Math.sin(a)
       box.append(svg('circle', { cx: bx, cy: by, r: 46, fill: 'none', stroke: css('--color-text'), 'stroke-width': 1.5, 'stroke-dasharray': s.mode === 'erase' ? '2 4' : '6 4', 'pointer-events': 'none' }))
       if (s.mode !== 'erase') for (let i = -1; i <= 1; i++) box.append(svg('circle', { cx: cx + rb * Math.cos(a + i * 0.1), cy: cy + rb * Math.sin(a + i * 0.1), r: surf ? 8 : 5, fill: ingColor(n), opacity: 0.45, stroke: css('--color-text'), 'stroke-width': 0.6, 'stroke-dasharray': '2 2', 'pointer-events': 'none' }))
-      box.append(svg('text', { x: bx + 54, y: by - 8, fill: css('--color-text'), 'font-size': 12, 'pointer-events': 'none' }, s.mode === 'erase' ? `erase ${shown(n)}` : `paint ${shown(n)}`),
-        svg('text', { x: bx + 54, y: by + 8, fill: css('--color-text-muted'), 'font-size': 11, 'pointer-events': 'none' }, n.side === 'surface' ? 'on its membrane, from the recipe' : 'inside its compartment'))
+      box.append(...[svg('text', { x: bx + 54, y: by - 8, fill: css('--color-text'), 'font-size': 12, 'pointer-events': 'none' }, s.mode === 'erase' ? `erase ${shown(n)}` : `paint ${shown(n)}`),
+        svg('text', { x: bx + 54, y: by + 8, fill: css('--color-text-muted'), 'font-size': 11, 'pointer-events': 'none' }, n.side === 'surface' ? 'on its membrane, from the recipe' : 'inside its compartment'),
+        more ? svg('text', { x: bx + 54, y: by + 24, fill: css('--color-text-muted'), 'font-size': 11, 'pointer-events': 'none' }, `+${more} more in the Focus, not painted`) : null,
+        svg('text', { x: bx + 54, y: by + (more ? 40 : 24), fill: css('--color-text-muted'), 'font-size': 11, 'pointer-events': 'none' }, '⌥-click an instance to paint its ingredient')].filter(Boolean))
     }
     const tools = [['scene.paint', 'Paint', 'paint'], ['scene.erase', 'Erase', 'erase']].map(([id, t, m]) => h('button', { class: 'tool', 'aria-pressed': s.mode === m ? 'true' : 'false', title: C.find((c) => c.id === id).title, onclick: () => run(C.find((c) => c.id === id)) }, t, h('span', { class: 'k' }, C.find((c) => c.id === id).key)))
     const off = (id, t) => { const c = C.find((x) => x.id === id); return h('button', { class: 'tool', 'aria-disabled': 'true', title: enabled(c) }, t, h('span', { class: 'k' }, ' not built')) }
@@ -697,7 +703,7 @@
   }
   function placeView() {
     const W = 900, H = 640, my = 420, half = 20
-    const n = focused().find((x) => x.kind === 'ingredient')
+    const n = brushOf()
     const placeTool = h('button', { class: 'tool', 'aria-pressed': 'true', title: 'Place one at a time (P)' }, 'Place', h('span', { class: 'k' }, 'P'))
     const paintTool = h('button', { class: 'tool', title: 'Paint (B)', onclick: () => run(C.find((c) => c.id === 'scene.paint')) }, 'Paint', h('span', { class: 'k' }, 'B'))
     // An empty Focus places nothing (§5.6 Empty): the view says what would fill it, no stand-in ingredient.
@@ -850,7 +856,9 @@
     return [
       h('div', { class: 'insp-head' }, h('div', { class: 'insp-kind' }, 'Focus'), h('div', { class: 'insp-name' }, `${ns.length} items`), h('div', { class: 'insp-crumbs' }, ns.map((n) => n.name).join(', '))),
       h('div', { class: 'insp-body' }, section('Together', true, '', h('span', { class: 'muted' }, 'Edits here apply to every item in the Focus.'), field('Count', input('mixed')), field('Colour', input('mixed')),
-        h('div', { class: 'actions' }, btn('Add interaction', 'edit.addInteraction', true), btn('Delete', 'edit.delete'))))]
+        h('div', { class: 'actions' }, btn('Add interaction', 'edit.addInteraction', true), btn('Delete', 'edit.delete'))),
+        state.scene && brushOf() ? section('In the scene', true, '', field('Brush', h('span', {}, h('span', { class: 'mono' }, shown(brushOf())), ', the last pointed at')),
+          notPainted() ? h('span', { class: 'muted' }, `+${notPainted()} more in the Focus, not painted. ⌥-click an instance, or a row, to paint another.`) : null) : null)]
   }
   function renderInspector() {
     if (!inspEl) return
