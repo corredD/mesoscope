@@ -26,10 +26,14 @@ means built and tested, not yet proven against a legacy oracle unless the row sa
 
 ## 2. Recipe view (D3)
 
-See [recipe-view.md](recipe-view.md) for the feature-by-feature divergence table. Summary: the modern view is an SVG
-rewrite (`components/recipe/RecipeCanvas.tsx`) of a legacy 2D-canvas view (`js/main.js:2839-3110, 5565`); it has the
-toolbar's controls but **differs** in 83 of 95 rows. It is being re-ported to a 2D canvas with legacy's physics
-(`recipe-view.md §10`). Priority 1 in the queue.
+See [recipe-view.md](recipe-view.md) for the feature-by-feature divergence table. Summary: the modern view is a
+re-port of legacy's 2D-canvas view (`js/main.js:2839-3110, 5565`) onto a canvas with legacy's d3 force simulation
+(`components/recipe/RecipeCanvas.tsx`, `recipeView.ts`, `domain/recipe/view/`; lane `recipe-view-canvas`). Of the 95
+rows of `recipe-view.md §9`: 76 **same** (radii, colours, the force configuration and one frame checked against the
+legacy oracle), 11 **kept departures** (`§10`: HiDPI, dark background, cooling to rest, membrane projection and
+rigid compartment drags, marker lines, crash fixes), 7 **differ** and 1 is **missing**: the Mol* and NGL side effects
+of hover, link and recolour (rows 46, 47, 60, 62, 73, for the viewer lanes), the sprite's local-folder source (42),
+the random iwanthue palettes (86) and d3 v7's seeded randomness (94).
 
 ## 3. Tables
 
