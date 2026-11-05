@@ -674,9 +674,10 @@
     // The brush, on the membrane: its ring and the instances it is about to add (ghosts).
     const n = focused().find((x) => x.kind === 'ingredient')
     if (n && paintable(n) === true && s.mode !== 'place') {
-      const a = -1.2, bx = cx + R0 * Math.cos(a), by = cy + R0 * Math.sin(a)
+      // Surface: on the membrane; interior: inside the volume, off the capsid (R21).
+      const surf = n.side === 'surface', rb = surf ? R0 : 195, a = surf ? -1.2 : -2.0, bx = cx + rb * Math.cos(a), by = cy + rb * Math.sin(a)
       box.append(svg('circle', { cx: bx, cy: by, r: 46, fill: 'none', stroke: css('--color-text'), 'stroke-width': 1.5, 'stroke-dasharray': s.mode === 'erase' ? '2 4' : '6 4', 'pointer-events': 'none' }))
-      if (s.mode !== 'erase') for (let i = -1; i <= 1; i++) box.append(svg('circle', { cx: cx + R0 * Math.cos(a + i * 0.1), cy: cy + R0 * Math.sin(a + i * 0.1), r: 8, fill: ingColor(n), opacity: 0.45, stroke: css('--color-text'), 'stroke-width': 0.6, 'stroke-dasharray': '2 2', 'pointer-events': 'none' }))
+      if (s.mode !== 'erase') for (let i = -1; i <= 1; i++) box.append(svg('circle', { cx: cx + rb * Math.cos(a + i * 0.1), cy: cy + rb * Math.sin(a + i * 0.1), r: surf ? 8 : 5, fill: ingColor(n), opacity: 0.45, stroke: css('--color-text'), 'stroke-width': 0.6, 'stroke-dasharray': '2 2', 'pointer-events': 'none' }))
       box.append(svg('text', { x: bx + 54, y: by - 8, fill: css('--color-text'), 'font-size': 12, 'pointer-events': 'none' }, s.mode === 'erase' ? `erase ${shown(n)}` : `paint ${shown(n)}`),
         svg('text', { x: bx + 54, y: by + 8, fill: css('--color-text-muted'), 'font-size': 11, 'pointer-events': 'none' }, n.side === 'surface' ? 'on its membrane, from the recipe' : 'inside its compartment'))
     }
@@ -693,55 +694,70 @@
   }
   function placeView() {
     const W = 900, H = 640, my = 420, half = 20
-    const s = state.scene
-    const n = focused().find((x) => x.kind === 'ingredient') || R.ings[0]
-    const box = svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': `prism-me stage, mocked: a patch of ${parentOf(n).name}'s membrane, the ${shown(n)} placed so far and one more under the pointer. Click to place it.`, onclick: stroke, style: 'cursor:copy' })
-    box.append(svg('rect', { x: 0, y: my - half, width: W, height: 2 * half, fill: css('--color-text'), opacity: 0.08 }),
+    const n = focused().find((x) => x.kind === 'ingredient')
+    const placeTool = h('button', { class: 'tool', 'aria-pressed': 'true', title: 'Place one at a time (P)' }, 'Place', h('span', { class: 'k' }, 'P'))
+    const paintTool = h('button', { class: 'tool', title: 'Paint (B)', onclick: () => run(C.find((c) => c.id === 'scene.paint')) }, 'Paint', h('span', { class: 'k' }, 'B'))
+    // An empty Focus places nothing (§5.6 Empty): the view says what would fill it, no stand-in ingredient.
+    if (!n) return h('section', { class: 'view scene', 'aria-label': 'prism-me stage (mocked): place' },
+      svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'prism-me stage, mocked: nothing to place, the Focus is empty' }), sceneHead('placing one at a time'),
+      h('div', { class: 'scene-panel', style: 'width:340px', 'aria-label': 'Place' },
+        h('h3', {}, 'Place'),
+        h('div', { class: 'note' }, 'Point at an ingredient to place it: in the outline, the Table or the palette (B).')),
+      syncChip(), h('div', { class: 'glass toolbar', role: 'toolbar', 'aria-label': 'Place tools (prism-me)' }, paintTool, placeTool))
+    const surface = n.side === 'surface'
+    const comp = parentOf(n)
+    // Surface: a patch of the membrane, its two faces. Interior: a patch of the volume under its membrane.
+    const box = svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': `prism-me stage, mocked: ${surface ? `a patch of ${comp.name}'s membrane` : `inside ${comp.name}`}, the ${shown(n)} placed so far and one more under the pointer. Click to place it.`, onclick: stroke, style: 'cursor:copy' })
+    const top = 150 // interior: the membrane at the top, the volume below it
+    if (surface) box.append(svg('rect', { x: 0, y: my - half, width: W, height: 2 * half, fill: css('--color-text'), opacity: 0.08 }),
       svg('line', { x1: 0, x2: W, y1: my - half, y2: my - half, stroke: css('--color-danger'), 'stroke-width': 2 }),
       svg('line', { x1: 0, x2: W, y1: my + half, y2: my + half, stroke: css('--color-info'), 'stroke-width': 2 }),
       svg('text', { x: W - 12, y: my - half - 8, 'text-anchor': 'end', fill: css('--color-text-muted'), 'font-size': 11 }, 'outer face'),
       svg('text', { x: W - 12, y: my + half + 16, 'text-anchor': 'end', fill: css('--color-text-muted'), 'font-size': 11 }, 'inner face'))
+    else box.append(svg('rect', { x: 0, y: top, width: W, height: H - top, fill: css('--color-text'), opacity: 0.04 }),
+      svg('line', { x1: 0, x2: W, y1: top, y2: top, stroke: css('--color-info'), 'stroke-width': 2 }),
+      svg('text', { x: W - 12, y: top - 8, 'text-anchor': 'end', fill: css('--color-text-muted'), 'font-size': 11 }, 'its membrane, inner face'))
     const beads = []
     if (n.beadsXYZ && n.beadsR) for (let i = 0; i < n.beadsR.length; i++) beads.push({ x: n.beadsXYZ[i * 3], y: n.beadsXYZ[i * 3 + 1], z: n.beadsXYZ[i * 3 + 2], r: n.beadsR[i] })
     const ys = beads.map((b) => b.y), xs = beads.map((b) => b.x)
     const bx0 = beads.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0, by0 = beads.length ? Math.min(...ys) : 0
-    const k = beads.length ? 95 / (Math.max(...ys) - Math.min(...ys) || 1) : 1
-    const draw = (x0, ghost) => beads.sort((a, b) => a.z - b.z).map((b) => svg('circle', { cx: x0 + (b.x - bx0) * k, cy: my - half - (b.y - by0) * k + 10, r: Math.max(1.5, b.r * k), fill: ingColor(n), opacity: ghost ? 0.45 : 1, stroke: state.focus.includes(n.id) && !ghost ? css('--color-select') : css('--color-text'), 'stroke-width': ghost ? 0.8 : 0.5, 'stroke-dasharray': ghost ? '2 2' : null, 'data-ghost': ghost ? '' : null, 'pointer-events': 'none' }))
+    const k = !beads.length ? 1 : surface ? 95 / (Math.max(...ys) - Math.min(...ys) || 1) : 50 / (Math.max(Math.max(...ys) - Math.min(...ys), Math.max(...xs) - Math.min(...xs)) || 1)
+    const base = surface ? my - half + 10 : 430
+    const draw = (x0, ghost) => beads.sort((a, b) => a.z - b.z).map((b) => svg('circle', { cx: x0 + (b.x - bx0) * k, cy: base - (b.y - by0) * k, r: Math.max(1.5, b.r * k), fill: ingColor(n), opacity: ghost ? 0.45 : 1, stroke: state.focus.includes(n.id) && !ghost ? css('--color-select') : css('--color-text'), 'stroke-width': ghost ? 0.8 : 0.5, 'stroke-dasharray': ghost ? '2 2' : null, 'data-ghost': ghost ? '' : null, 'pointer-events': 'none' }))
     // Right of the panel (it covers the stage's left 380 units): two placed ones, then the one under the pointer.
     // Not paintable (§5.7.3 item 3): no ghost and no placement, the reason in the panel, as the palette and inspector.
     const ok = paintable(n)
     const shownHere = Math.min(2, placedOf(n))
     for (let i = 0; i < shownHere; i++) box.append(...draw(450 + i * 135, false))
     const gx = 450 + shownHere * 135 + 30
-    if (ok === true) box.append(...draw(gx, true))
-    // Upright: the membrane normal, because the principal axis is 0,0,0 (undefined).
-    if (ok === true) box.append(svg('line', { x1: gx, y1: my + half + 30, x2: gx, y2: my - half - 140, stroke: css('--color-text'), 'stroke-width': 1.5, 'stroke-dasharray': '5 4', 'pointer-events': 'none' }),
+    if (ok === true) box.append(...draw(gx, true),
+      svg('text', { x: gx, y: base + 70, 'text-anchor': 'middle', fill: css('--color-text-muted'), 'font-size': 11 }, 'the next one, under the pointer'))
+    const axisUnset = surface && n.pcpalAxis.every((v) => !v)
+    // Upright: the membrane normal, because the principal axis is 0,0,0 (undefined); surface ingredients only.
+    if (ok === true && axisUnset) box.append(svg('line', { x1: gx, y1: my + half + 30, x2: gx, y2: my - half - 140, stroke: css('--color-text'), 'stroke-width': 1.5, 'stroke-dasharray': '5 4', 'pointer-events': 'none' }),
       svg('path', { d: `M ${gx - 6} ${my - half - 130} L ${gx} ${my - half - 144} L ${gx + 6} ${my - half - 130} Z`, fill: css('--color-text') }),
       svg('text', { x: gx - 12, y: my - half - 168, 'text-anchor': 'end', fill: css('--color-text'), 'font-size': 12 }, 'upright: the membrane normal'),
-      svg('text', { x: gx - 12, y: my - half - 152, 'text-anchor': 'end', fill: css('--color-text-muted'), 'font-size': 11 }, `principal axis ${JSON.stringify(n.pcpalAxis)} is undefined`),
-      svg('text', { x: gx, y: my + half + 50, 'text-anchor': 'middle', fill: css('--color-text-muted'), 'font-size': 11 }, 'the next one, under the pointer'))
-    box.append(svg('text', { x: 400, y: my + half + 16, fill: css('--color-text-muted'), 'font-size': 11 }, `${parentOf(n).name} · its membrane`))
-    const axisUnset = n.side === 'surface' && n.pcpalAxis.every((v) => !v)
+      svg('text', { x: gx - 12, y: my - half - 152, 'text-anchor': 'end', fill: css('--color-text-muted'), 'font-size': 11 }, `principal axis ${JSON.stringify(n.pcpalAxis)} is undefined`))
+    box.append(svg('text', { x: 400, y: surface ? my + half + 16 : top + 18, fill: css('--color-text-muted'), 'font-size': 11 }, `${comp.name} · ${surface ? 'its membrane' : 'inside'}`))
     const fib = C.find((c) => c.id === 'scene.fiber'), fibOk = enabled(fib)
     const p = placedOf(n), t = targetOf(n)
     return h('section', { class: 'view scene', 'aria-label': 'prism-me stage (mocked): place' }, box, sceneHead('placing one at a time'),
       h('div', { class: 'scene-panel', style: 'width:340px', 'aria-label': 'Place' },
         h('h3', {}, 'Place · ', h('span', { class: 'mono' }, shown(n))),
-        h('div', { class: 'note' }, `${n.side === 'surface' ? 'On the membrane of' : 'Inside'} ${parentOf(n).name} (${parentOf(n).geom_type}). Placed ${p} · target ${t || '—'}${state.scene.targets.has(n.id) ? ' (typed this session)' : ''}.`),
+        h('div', { class: 'note' }, `${surface ? 'On the membrane of' : 'Inside'} ${comp.name} (${comp.geom_type}). Placed ${p} · target ${t || '—'}${state.scene.targets.has(n.id) ? ' (typed this session)' : ''}.`),
         ok === true ? null : h('div', { style: 'padding:0 var(--space-4) var(--space-3);display:flex;flex-direction:column;gap:var(--space-2)' },
           h('span', { class: 'reason' }, `Cannot place: ${ok}.`),
-          n.pdb ? h('button', { class: 'button link', style: 'align-self:flex-start', onclick: () => setFocus([parentOf(n).id]) }, `Point at ${parentOf(n).name} to give it a shape`)
+          n.pdb ? h('button', { class: 'button link', style: 'align-self:flex-start', onclick: () => setFocus([comp.id]) }, `Point at ${comp.name} to give it a shape`)
             : h('button', { class: 'button link', style: 'align-self:flex-start', onclick: () => run(C.find((c) => c.id === 'structure.find')) }, 'Find a structure…')),
         ok !== true ? null : h('div', { style: 'padding:0 var(--space-4) var(--space-3);display:flex;flex-direction:column;gap:var(--space-2)' },
-          h('div', { class: 'segmented', role: 'group', 'aria-label': 'Where to place' }, h('button', { 'aria-pressed': 'true' }, 'On the membrane'), h('button', { 'aria-pressed': 'false', 'aria-disabled': fibOk === true ? null : 'true', title: fibOk === true ? 'Along a curve' : fibOk }, 'Along a curve')),
+          // Where it goes is the recipe's side (§5.7.3 item 4); a fiber goes along a curve.
+          h('div', { class: 'segmented', role: 'group', 'aria-label': 'Where to place' }, h('button', { 'aria-pressed': 'true', title: 'The recipe’s side for this ingredient' }, surface ? 'On the membrane' : 'Inside'), h('button', { 'aria-pressed': 'false', 'aria-disabled': fibOk === true ? null : 'true', title: fibOk === true ? 'Along a curve' : fibOk }, 'Along a curve')),
           fibOk === true ? null : h('span', { class: 'reason' }, `Along a curve: ${fibOk}. A fiber is drawn as a curve of points; the recipe keeps the curve.`),
           axisUnset ? h('div', { class: 'problem' }, h('b', {}, '●'), h('span', {}, 'No principal axis: placed upright (the membrane normal) until it is set. ', h('button', { class: 'button link', onclick: () => run(C.find((c) => c.id === 'structure.orient')) }, 'Orient from OPM…'))) : null,
-          h('span', { class: 'muted' }, 'Click places one; drag turns it about the normal; Esc stops. Each placement is one undo step in prism-me.'))),
+          h('span', { class: 'muted' }, surface ? 'Click places one; drag turns it about the normal; Esc stops. Each placement is one undo step in prism-me.' : 'Click places one inside, kept off the membrane; drag turns it; Esc stops. Each placement is one undo step in prism-me.'))),
       syncChip(),
-      h('div', { class: 'glass toolbar', role: 'toolbar', 'aria-label': 'Place tools (prism-me)' },
-        h('button', { class: 'tool', title: 'Paint (B)', onclick: () => run(C.find((c) => c.id === 'scene.paint')) }, 'Paint', h('span', { class: 'k' }, 'B')),
-        h('button', { class: 'tool', 'aria-pressed': 'true', title: 'Place one at a time (P)' }, 'Place', h('span', { class: 'k' }, 'P')),
-        sep(), h('button', { class: 'tool', 'aria-pressed': 'true', title: 'Snap to the membrane' }, 'Snap to membrane'), h('button', { class: 'tool', title: 'Frame (F)' }, '⤢')))
+      h('div', { class: 'glass toolbar', role: 'toolbar', 'aria-label': 'Place tools (prism-me)' }, paintTool, placeTool,
+        sep(), h('button', { class: 'tool', 'aria-pressed': 'true', title: surface ? 'Snap to the membrane' : 'Keep inside the compartment' }, surface ? 'Snap to membrane' : 'Keep inside'), h('button', { class: 'tool', title: 'Frame (F)' }, '⤢')))
   }
   const VIEW_RENDER = { recipe: recipeView, table: tableView, ingredient: ingredientView, scene: sceneView, paint: paintView, place: placeView }
 
