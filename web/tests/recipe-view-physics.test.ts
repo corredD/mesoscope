@@ -89,6 +89,24 @@ describe('membrane constraints (§10.5, rows 15, 17, 58, 59)', () => {
     for (const n of nodes) if (n.leaf && !n.surface && n.parent?.parent) expect(dist(n, n.parent) + n.r).toBeLessThanOrEqual(n.parent.r - MEMBRANE + 1e-6)
   })
 
+  it('a nested compartment as big as its parent is not snapped to the parent centre: it follows the pointer (HIV PackInner r 145 in PackOuter r 65)', () => {
+    const { sim, byName } = simulate(load('HIV_serialized.json'))
+    settle(sim)
+    const inner = byName('HIV1_capsid_3j3q_PackInner_0_1_0')
+    const p = inner.parent!
+    expect(inner.r).toBeGreaterThan(p.r - 2 * MEMBRANE) // no room inside the parent: the clamp's limit is 0
+    const start = { x: inner.x, y: inner.y }
+    sim.dragStart(inner, false, false)
+    sim.dragTo(start.x + 30, start.y)
+    sim.step()
+    expect(Math.hypot(inner.x - start.x, inner.y - start.y)).toBeLessThan(40) // no jump at press
+    for (let i = 0; i < 10; i++) sim.step()
+    sim.dragTo(start.x + 60, start.y + 20)
+    for (let i = 0; i < 10; i++) sim.step()
+    expect(inner.x).toBeCloseTo(start.x + 60, 0)
+    expect(inner.y).toBeCloseTo(start.y + 20, 0)
+  })
+
   it('a dragged surface protein slides on the membrane towards the pointer', () => {
     const { sim, nodes } = simulate(load('InfluenzaA.json'))
     settle(sim)
