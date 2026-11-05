@@ -16,6 +16,7 @@ not built is the queue: `../TODO.md`.
 | scene-view.md                      | the full-scene viewer: whole packed models (Mol\* v6 target)                   | to write   |
 | shell.md                           | menus, panels, layout presets, theme, Skills, pages                            | to write   |
 | server.md                          | the CGI endpoints the app calls and what replaces them                         | to write   |
+| [design/README.md](design/README.md) | the interface design: research, principles, regions, the Focus, tokens, coverage | proposed   |
 
 ## Pinned references
 
