@@ -11,11 +11,9 @@ queue (`../TODO.md`).
   `lane/recipe-view-port` (PR #47, closed). Brief: [2026-11-05-recipe-view-canvas.md](2026-11-05-recipe-view-canvas.md)
   (on the lane's branch). **Resumed 2026-11-05** at `9a24392` on Sonnet (background agent): rerun the gate
   (lane-reviewer, lane-skeptic), fixes test-first, PR. `web/tests/_scratch/` is untracked scratch: not for commit.
-- `ui-design` (`~/Developments/mesoscope-lanes/ui-design`, branch `lane/ui-design`, no ports): research, principles,
-  information architecture and static mockups of the whole interface (Prism, MolViewStories, state of the art); docs
-  and mockups only. Brief: [2026-11-05-ui-design.md](2026-11-05-ui-design.md) (on the lane's branch). "untold story" =
-  Ludovic's Stories Untold (`~/Dev/stories-untold`), a primary reference with Prism. **Resumed 2026-11-05** at
-  `6bd0ed8` on Sonnet (background agent): finish the remaining confirmed gate fixes from S8 (gate table in the
-  progress file), PR.
-
 ## Waiting on Ludovic
+
+- `ui-design`: PR [#48](https://github.com/corredD/mesoscope/pull/48) (branch `lane/ui-design`, docs and mockups
+  only). Gate: 3 must-fix, 10 should-fix, 17 nits; none refuted; must/should fixed, open nits listed in the lane's
+  progress file. Check: open `web/design/mockups/index.html` (`?theme=dark`), walk the nine screens, confirm or
+  change the ten proposals in `web/_spec/design/README.md §8`.
