@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { parseLegacyRecipe } from '../src/domain/recipe/parseLegacyRecipe'
 import type { RecipeGraph, RecipeNode } from '../src/domain/recipe/types'
 import { DrawCache, drawFrame, type Ctx, type Scene } from '../src/domain/recipe/view/draw'
-import { computeRadii, seedPositions } from '../src/domain/recipe/view/layout'
+import { assignClusters, computeRadii, seedPositions } from '../src/domain/recipe/view/layout'
 import { DRAG_HEAT, FLOAT_DEPTH, MEMBRANE, RecipeSimulation, buildSimNodes, type SimNode } from '../src/domain/recipe/view/simulation'
 
 const load = (file: string): RecipeGraph => parseLegacyRecipe(JSON.parse(readFileSync(resolve(__dirname, '../../data', file), 'utf-8')))
@@ -228,4 +228,47 @@ describe('perf guard: one simulation step plus one frame (How we work)', () => {
     expect(control).toBeGreaterThan(8)
     expect(ratio).toBeLessThan(control / 2)
   }, 60_000)
+})
+
+describe('group by (§6.5, rows 89-90)', () => {
+  function grouped() {
+    const root: RecipeNode = { data: { name: 'root', nodetype: 'compartment' } as RecipeNode['data'], parent: null, children: [] }
+    const c: RecipeNode = { data: { name: 'C', nodetype: 'compartment' } as RecipeNode['data'], parent: root, children: [] }
+    root.children!.push(c)
+    for (let i = 0; i < 12; i++) c.children!.push({ data: { name: `n${i}`, nodetype: 'ingredient', family: i % 3 === 0 ? 'a' : i % 3 === 1 ? 'b' : undefined } as unknown as RecipeNode['data'], parent: c })
+    const nodes = buildSimNodes(root, new Map(), (n) => ({ x: n === root || n === c ? 0 : (c.children!.indexOf(n) - 6) * 30, y: 0, r: n === root || n === c ? 400 : 10 }))
+    return nodes
+  }
+
+  it('a custom column groups every leaf by value, a missing value in the "" cluster; clusters do not overlap', () => {
+    const nodes = grouped()
+    expect(assignClusters(nodes, 'family')).toBe(true)
+    const leaves = nodes.filter((n) => n.leaf)
+    const byValue = (v: string | undefined) => new Set(leaves.filter((n) => (n.node.data as unknown as { family?: string }).family === v).map((n) => n.cluster))
+    for (const v of ['a', 'b', undefined]) expect(byValue(v).size).toBe(1)
+    const clusters = [...new Set(leaves.map((n) => n.cluster!))]
+    expect(clusters).toHaveLength(3)
+    for (const a of clusters) for (const b of clusters) if (a !== b) expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThanOrEqual(a.r + b.r - 1e-6)
+  })
+
+  it('a built-in key does not group (legacy `default_options`)', () => {
+    expect(assignClusters(grouped(), 'size')).toBe(false)
+    expect(assignClusters(grouped(), null)).toBe(false)
+  })
+
+  it('the cluster nudge pulls a leaf outside its cluster towards it, unscaled by alpha, only when clusterBy is on', () => {
+    const nodes = grouped()
+    const sim = new RecipeSimulation()
+    sim.load(nodes, [])
+    sim.clusterBy = assignClusters(nodes, 'family')
+    const leaf = nodes.find((n) => n.leaf)!
+    const c = leaf.cluster!
+    const far = () => Math.hypot(leaf.x - (c.x + leaf.parent!.x), leaf.y - (c.y + leaf.parent!.y))
+    leaf.x = c.x + 300
+    leaf.y = c.y
+    const before = far()
+    sim.sim.alpha(0.002)
+    for (let i = 0; i < 30; i++) sim.step()
+    expect(far()).toBeLessThan(before)
+  })
 })
