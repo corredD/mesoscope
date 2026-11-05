@@ -115,7 +115,10 @@ test('Radix switches and scientific sliders remain usable in a narrow panel layo
   await editMode.click()
   await expect(editMode).toHaveAttribute('aria-checked', 'true')
 
-  const surfaceForce = page.getByRole('slider', { name: 'Surface force' })
+  const surfaceForce = page.getByRole('slider', {
+    name: 'SurfaceForce force',
+    exact: true,
+  })
   await expect(surfaceForce).toBeVisible()
   const before = Number(await surfaceForce.getAttribute('aria-valuenow'))
   await surfaceForce.focus()
@@ -146,16 +149,45 @@ test('Layout Options toggles a workspace tab', async ({ page }) => {
   await expect(page.getByText('Interaction table', { exact: true })).toBeVisible()
 })
 
-type ProbeNode = { name: string; depth: number; r: number; x: number; y: number; leaf: boolean; surface: boolean; parent: string | null }
-type Probe = { nodes: ProbeNode[]; t: { x: number; y: number; k: number }; hot: boolean; box: { left: number; top: number; width: number; height: number }; stage: { width: number; height: number } }
+type ProbeNode = {
+  name: string
+  depth: number
+  r: number
+  x: number
+  y: number
+  leaf: boolean
+  surface: boolean
+  parent: string | null
+}
+type Probe = {
+  nodes: ProbeNode[]
+  t: { x: number; y: number; k: number }
+  hot: boolean
+  box: { left: number; top: number; width: number; height: number }
+  stage: { width: number; height: number }
+}
 
 /** The Recipe View is one canvas; its stage exposes a read-only probe of the simulation's nodes and the view transform. */
 const probe = (page: Page): Promise<Probe> =>
   page.locator('.recipe-canvas-stage').evaluate((el) => {
-    const p = (el as unknown as { __recipeView: { nodes: () => ProbeNode[]; transform: () => Probe['t']; hot: () => boolean } }).__recipeView
+    const p = (
+      el as unknown as {
+        __recipeView: {
+          nodes: () => ProbeNode[]
+          transform: () => Probe['t']
+          hot: () => boolean
+        }
+      }
+    ).__recipeView
     const c = el.querySelector('canvas.recipe-canvas')!.getBoundingClientRect()
     const st = el.getBoundingClientRect()
-    return { nodes: p.nodes(), t: p.transform(), hot: p.hot(), box: { left: c.left, top: c.top, width: c.width, height: c.height }, stage: { width: st.width, height: st.height } }
+    return {
+      nodes: p.nodes(),
+      t: p.transform(),
+      hot: p.hot(),
+      box: { left: c.left, top: c.top, width: c.width, height: c.height },
+      stage: { width: st.width, height: st.height },
+    }
   })
 
 test('Recipe View fills its panel and allows compartment dragging outside Edit Mode', async ({ page }) => {
@@ -171,17 +203,20 @@ test('Recipe View fills its panel and allows compartment dragging outside Edit M
 
   const canvas = page.locator('canvas.recipe-canvas')
   await expect(canvas).toBeVisible()
-  await expect.poll(async () => (await probe(page)).nodes.some((n) => n.name === 'newCompartment')).toBe(true)
+  await expect.poll(async () => (await probe(page)).nodes.some((n) => n.name.startsWith('newCompartment'))).toBe(true)
   await expect.poll(async () => (await probe(page)).hot, { timeout: 30_000 }).toBe(false)
   // The canvas fills its stage (the panel).
   const geometry = await probe(page)
   expect(Math.abs(geometry.box.width - geometry.stage.width)).toBeLessThan(2)
   expect(Math.abs(geometry.box.height - geometry.stage.height)).toBeLessThan(2)
 
-  const before = geometry.nodes.find((n) => n.name === 'newCompartment')!
+  const before = geometry.nodes.find((n) => n.name.startsWith('newCompartment'))!
   const { t, box } = geometry
   // Press on the compartment's disk, away from its ingredient (the deepest disk wins), and drag 24 px.
-  const press = { x: box.left + (before.x - before.r * 0.8) * t.k + t.x, y: box.top + before.y * t.k + t.y }
+  const press = {
+    x: box.left + (before.x - before.r * 0.8) * t.k + t.x,
+    y: box.top + before.y * t.k + t.y,
+  }
   await page.mouse.move(press.x, press.y)
   await page.mouse.down()
   await page.mouse.move(press.x + 24, press.y, { steps: 6 })
@@ -189,7 +224,7 @@ test('Recipe View fills its panel and allows compartment dragging outside Edit M
 
   await expect
     .poll(async () => {
-      const n = (await probe(page)).nodes.find((m) => m.name === 'newCompartment')!
+      const n = (await probe(page)).nodes.find((m) => m.name === before.name)!
       return Math.hypot(n.x - before.x, n.y - before.y) * t.k
     })
     .toBeGreaterThan(10)
@@ -203,7 +238,12 @@ test('Influenza renders one envelope compartment and membrane-centred surface pr
   await page.getByText('Influenza envelope', { exact: true }).click()
 
   await expect.poll(async () => (await probe(page)).nodes.length, { timeout: 30_000 }).toBeGreaterThan(1)
-  await expect.poll(async () => (await probe(page)).hot, { timeout: 60_000, intervals: [200] }).toBe(false)
+  await expect
+    .poll(async () => (await probe(page)).hot, {
+      timeout: 60_000,
+      intervals: [200],
+    })
+    .toBe(false)
   const { nodes } = await probe(page)
   const compartments = nodes.filter((n) => !n.leaf && n.depth >= 1)
   expect(compartments.map((n) => n.name)).toEqual(['envelope'])
