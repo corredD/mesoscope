@@ -717,10 +717,17 @@
       syncChip(), h('div', { class: 'glass toolbar', role: 'toolbar', 'aria-label': 'Place tools (prism-me)' }, paintTool, placeTool))
     const surface = n.side === 'surface'
     const comp = parentOf(n)
+    // Not paintable (§5.7.3 item 3): no ghost and no placement, the reason in the panel, as the palette and inspector.
+    const ok = paintable(n)
+    const noMesh = comp && comp.geom_type === 'None'
     // Surface: a patch of the membrane, its two faces. Interior: a patch of the volume under its membrane.
-    const box = svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': `prism-me stage, mocked: ${surface ? `a patch of ${comp.name}'s membrane` : `inside ${comp.name}`}, the ${shown(n)} placed so far and one more under the pointer. Click to place it.`, onclick: stroke, style: 'cursor:copy' })
+    const box = svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': ok === true ? `prism-me stage, mocked: ${surface ? `a patch of ${comp.name}'s membrane` : `inside ${comp.name}`}, the ${shown(n)} placed so far and one more under the pointer. Click to place it.` : `prism-me stage, mocked: nothing to place: ${ok}`, onclick: stroke, style: ok === true ? 'cursor:copy' : null })
     const top = 150 // interior: the membrane at the top, the volume below it
-    if (surface) box.append(svg('rect', { x: 0, y: my - half, width: W, height: 2 * half, fill: css('--color-text'), opacity: 0.08 }),
+    // A compartment without geometry has no mesh: an outline only, as on the paint stage.
+    if (noMesh) box.append(svg('rect', { x: 420, y: 200, width: 420, height: 260, rx: 40, fill: 'none', stroke: css('--color-text-muted'), 'stroke-width': 1.5, 'stroke-dasharray': '6 5' }),
+      svg('text', { x: 444, y: 330, fill: css('--color-text'), 'font-size': 12 }, `${comp.name}: geometry None,`),
+      svg('text', { x: 444, y: 346, fill: css('--color-text'), 'font-size': 12 }, 'no mesh to place on or in'))
+    else if (surface) box.append(svg('rect', { x: 0, y: my - half, width: W, height: 2 * half, fill: css('--color-text'), opacity: 0.08 }),
       svg('line', { x1: 0, x2: W, y1: my - half, y2: my - half, stroke: css('--color-danger'), 'stroke-width': 2 }),
       svg('line', { x1: 0, x2: W, y1: my + half, y2: my + half, stroke: css('--color-info'), 'stroke-width': 2 }),
       svg('text', { x: W - 12, y: my - half - 8, 'text-anchor': 'end', fill: css('--color-text-muted'), 'font-size': 11 }, 'outer face'),
@@ -736,8 +743,6 @@
     const base = surface ? my - half + 10 : 430
     const draw = (x0, ghost) => beads.sort((a, b) => a.z - b.z).map((b) => svg('circle', { cx: x0 + (b.x - bx0) * k, cy: base - (b.y - by0) * k, r: Math.max(1.5, b.r * k), fill: ingColor(n), opacity: ghost ? 0.45 : 1, stroke: state.focus.includes(n.id) && !ghost ? css('--color-select') : css('--color-text'), 'stroke-width': ghost ? 0.8 : 0.5, 'stroke-dasharray': ghost ? '2 2' : null, 'data-ghost': ghost ? '' : null, 'pointer-events': 'none' }))
     // Right of the panel (it covers the stage's left 380 units): two placed ones, then the one under the pointer.
-    // Not paintable (§5.7.3 item 3): no ghost and no placement, the reason in the panel, as the palette and inspector.
-    const ok = paintable(n)
     const shownHere = Math.min(2, placedOf(n))
     for (let i = 0; i < shownHere; i++) box.append(...draw(450 + i * 135, false))
     const gx = 450 + shownHere * 135 + 30
@@ -749,7 +754,7 @@
       svg('path', { d: `M ${gx - 6} ${my - half - 130} L ${gx} ${my - half - 144} L ${gx + 6} ${my - half - 130} Z`, fill: css('--color-text') }),
       svg('text', { x: gx - 12, y: my - half - 168, 'text-anchor': 'end', fill: css('--color-text'), 'font-size': 12 }, 'upright: the membrane normal'),
       svg('text', { x: gx - 12, y: my - half - 152, 'text-anchor': 'end', fill: css('--color-text-muted'), 'font-size': 11 }, `principal axis ${JSON.stringify(n.pcpalAxis)} is undefined`))
-    box.append(svg('text', { x: 400, y: surface ? my + half + 16 : top + 18, fill: css('--color-text-muted'), 'font-size': 11 }, `${comp.name} · ${surface ? 'its membrane' : 'inside'}`))
+    if (!noMesh) box.append(svg('text', { x: 400, y: surface ? my + half + 16 : top + 18, fill: css('--color-text-muted'), 'font-size': 11 }, `${comp.name} · ${surface ? 'its membrane' : 'inside'}`))
     const fib = C.find((c) => c.id === 'scene.fiber'), fibOk = enabled(fib)
     const p = placedOf(n), t = targetOf(n)
     return h('section', { class: 'view scene', 'aria-label': 'prism-me stage (mocked): place' }, box, sceneHead('placing one at a time'),
@@ -758,7 +763,7 @@
         h('div', { class: 'note' }, `${surface ? 'On the membrane of' : 'Inside'} ${comp.name} (${comp.geom_type}). Placed ${p} · target ${t || '—'}${state.scene.targets.has(n.id) ? ' (typed this session)' : ''}.`),
         ok === true ? null : h('div', { style: 'padding:0 var(--space-4) var(--space-3);display:flex;flex-direction:column;gap:var(--space-2)' },
           h('span', { class: 'reason' }, `Cannot place: ${ok}.`),
-          n.pdb ? h('button', { class: 'button link', style: 'align-self:flex-start', onclick: () => setFocus([comp.id]) }, `Point at ${comp.name} to give it a shape`)
+          n.pdb ? h('button', { class: 'button link', style: 'align-self:flex-start;text-align:left;white-space:normal;overflow-wrap:anywhere', onclick: () => setFocus([comp.id]) }, `Point at ${comp.name} to give it a shape`)
             : h('button', { class: 'button link', style: 'align-self:flex-start', onclick: () => run(C.find((c) => c.id === 'structure.find')) }, 'Find a structure…')),
         ok !== true ? null : h('div', { style: 'padding:0 var(--space-4) var(--space-3);display:flex;flex-direction:column;gap:var(--space-2)' },
           // Where it goes is the recipe's side (§5.7.3 item 4); a fiber goes along a curve.

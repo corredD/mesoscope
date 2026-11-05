@@ -64,7 +64,7 @@ if (!listOnly) {
   }
   const place = (focus) => ({ recipe: 'hiv', views: ['place'], focus, scene: { mode: 'place' } })
   const panel = `(document.querySelector('.scene-panel')?.textContent ?? 'no panel')`
-  await probe('11-place.html', place(['HIV1_CA_mono_0_1_0']), `/no geometry/.test(${panel}) && !document.querySelector('[data-ghost]') || ${panel}`, 'place, a capsid ingredient: the reason, no ghost')
+  await probe('11-place.html', place(['HIV1_CA_mono_0_1_0']), `/no geometry/.test(${panel}) && !document.querySelector('[data-ghost]') && !/Click to place/.test(document.querySelector('svg[aria-label^="prism-me stage"]').getAttribute('aria-label')) || ${panel}`, 'place, a capsid ingredient: the reason, no ghost')
   await probe('11-place.html', place([]), `/Point at an ingredient to place it/.test(${panel}) || ${panel}`, 'place, an empty Focus: the empty state')
   await probe('11-place.html', place(['HIV1_PR_7hvp_0_1_0']), `((b) => b?.textContent === 'Inside' || (b?.textContent ?? 'none pressed'))(document.querySelector('[aria-label="Where to place"] [aria-pressed="true"]'))`, 'place, an interior ingredient: Inside is pressed')
   await probe('10-paint.html', null, `(() => { [...document.querySelectorAll('[aria-label="Stage views"] [role=tab]')].find((b) => b.textContent === 'Scene').click(); return !!document.querySelector('[aria-label^="prism-me stage"]') || 'the Scene tab left the prism-me stage' })()`, 'paint, the Scene tab keeps the prism-me stage')
