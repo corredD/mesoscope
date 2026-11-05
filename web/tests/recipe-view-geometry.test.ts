@@ -28,7 +28,7 @@ function small(): ViewState {
     d: n('d', 'D', [], 3, true, 0, 0, 5),
     L: n('L', 'root', [], 1, true, 250, 0, 20),
   }
-  return { nodes, order: ['root', 'C', 'L', 'a', 'b', 's', 'D', 'd'], drag: null, pushFor: null }
+  return { nodes, order: ['root', 'C', 'L', 'a', 'b', 's', 'D', 'd'], drag: null, push: null }
 }
 
 describe('layout (§10.2)', () => {
@@ -120,7 +120,7 @@ describe('drag rules (§10.4)', () => {
   it('pushes siblings out of the dragged node, keeps them constrained, and leaves the dragged node where it is', () => {
     const s = small()
     s.nodes.a = { ...s.nodes.a, x: 25 } // over b
-    const pushed = pushNeighbours({ ...s, pushFor: 'a' }, 'a')
+    const pushed = pushNeighbours(s, 'a')
     expect(pushed.nodes.a).toEqual(s.nodes.a)
     const { a, b } = pushed.nodes
     expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThanOrEqual(1.15 * 10 + 1.15 * 10 - 1e-6)
@@ -211,7 +211,7 @@ describe('perf guard: one drag frame (How we work)', () => {
     }
     nodes.C = { id: 'C', parent: 'root', children, depth: 1, leaf: false, surface: false, x: 0, y: 0, r: 1e6 }
     nodes.n0 = { ...nodes.n0, x: 8 } // overlaps n1: a push cascade starts
-    return { nodes, order: ['root', 'C', ...children], drag: null, pushFor: null }
+    return { nodes, order: ['root', 'C', ...children], drag: null, push: null }
   }
   // The fastest of several runs: robust to a busy machine (the suite runs files in parallel).
   const time = (f: () => void) => {

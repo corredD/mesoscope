@@ -147,7 +147,7 @@ export function layoutRecipe(graph: RecipeGraph, options: LayoutOptions): ViewSt
   }
   nodes[viewId(root)].x = options.center.x
   nodes[viewId(root)].y = options.center.y
-  return { nodes, order: bfs.map(viewId), drag: null, pushFor: null }
+  return { nodes, order: bfs.map(viewId), drag: null, push: null }
 }
 
 /**
@@ -180,5 +180,5 @@ export function reconcileView(prev: ViewState, graph: RecipeGraph, newAt: Point,
     }
   }
   const rootId = viewId(graph.nodes[0])
-  return { nodes, order: breadthFirst(nodes, rootId), drag: null, pushFor: null }
+  return { nodes, order: breadthFirst(nodes, rootId), drag: null, push: null }
 }

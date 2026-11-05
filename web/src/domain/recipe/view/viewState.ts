@@ -24,8 +24,11 @@ export interface ViewState {
   order: string[]
   /** An Edit-Mode drag in progress: the node floats at this world point (§4.7). */
   drag: { id: string; x: number; y: number } | null
-  /** A drag pushing its siblings aside: derived when rendered, applied on drop (§10.2). */
-  pushFor: string | null
+  /**
+   * A drag in progress that pushes its siblings aside (§10.2): the node's new relative position, kept apart so an
+   * optimizer step costs O(1); the move and the push are applied when drawn and on drop (`applyPush`).
+   */
+  push: { id: string; x: number; y: number } | null
 }
 
 export interface Point {
@@ -60,10 +63,10 @@ export function absolutePositions(state: ViewState): Map<string, Point> {
   for (const id of state.order) {
     const node = state.nodes[id]
     if (state.drag?.id === id) abs.set(id, { x: state.drag.x, y: state.drag.y })
-    else if (!node.parent) abs.set(id, { x: node.x, y: node.y })
     else {
-      const p = abs.get(node.parent)!
-      abs.set(id, { x: p.x + node.x, y: p.y + node.y })
+      const own = state.push?.id === id ? state.push : node
+      const p = node.parent ? abs.get(node.parent)! : { x: 0, y: 0 }
+      abs.set(id, { x: p.x + own.x, y: p.y + own.y })
     }
   }
   return abs
@@ -75,8 +78,9 @@ export function absoluteOf(state: ViewState, id: string): Point {
   let y = 0
   for (let k: string | null = id; k; k = state.nodes[k].parent) {
     if (state.drag?.id === k) return { x: x + state.drag.x, y: y + state.drag.y }
-    x += state.nodes[k].x
-    y += state.nodes[k].y
+    const own = state.push?.id === k ? state.push : state.nodes[k]
+    x += own.x
+    y += own.y
   }
   return { x, y }
 }

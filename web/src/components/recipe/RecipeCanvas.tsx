@@ -19,7 +19,7 @@ import { dropReparent } from '../../domain/recipe/view/drag'
 import { hitLink, hitNode } from '../../domain/recipe/view/hitTest'
 import { DEFAULT_OPTIONS, layoutRecipe, reconcileView } from '../../domain/recipe/view/layout'
 import { absolutePositions, indexGraph, viewId, type Point, type ViewState } from '../../domain/recipe/view/viewState'
-import { makeRecipeDraggable, settle, type DrawLink } from './recipeDraggable'
+import { applyPush, makeRecipeDraggable, type DrawLink } from './recipeDraggable'
 import { useSpriteVersion } from './spriteCache'
 import { Button } from '../ui/Button'
 import './RecipeCanvas.css'
@@ -140,7 +140,7 @@ export function RecipeCanvas() {
     })
     observer.observe(stage)
     return () => observer.disconnect()
-  }, [])
+  }, [setSize])
 
   // Wheel and double-click zoom anywhere, middle-drag pans; left presses belong to the nodes (§4.2, rows 51-55).
   useEffect(() => {
@@ -248,14 +248,14 @@ export function RecipeCanvas() {
       if (drop.newParent) store.reparentNode(node, index.get(drop.newParent)!)
       choose(id, false, null)
     } else {
-      setSync((s) => ({ ...s, view: settle(dropped) }))
-      if (dropped.pushFor) choose(dropped.pushFor, false, null)
+      setSync((s) => ({ ...s, view: applyPush(dropped) }))
+      if (dropped.push) choose(dropped.push.id, false, null)
     }
   }
 
   const selectedId = selectedNode ? viewId(selectedNode) : null
   const draggable = useMemo(() => {
-    if (!graph || !prepared || !graph.nodes.length) return null
+    if (!graph || !prepared || !graph.nodes.length || spriteVersion < 0) return null
     const root = graph.nodes[0]
     const prep = prepared.prep
     const legendShown = ui.showLegend && !ui.useColorMapping && !DEFAULT_OPTIONS.has(ui.colorMode) && prep.uniqueValues
@@ -280,7 +280,6 @@ export function RecipeCanvas() {
       strokeWidth: ui.strokeWidth,
       legend: legendShown ? { entries: prep.uniqueValues!.map((label, i) => ({ label, color: prep.categoryColors![i] })), ...ui.legend, ypad: 5 } : null,
     })
-    // spriteVersion: a sprite finished loading.
   }, [spriteVersion, graph, prepared, index, links, view, size, theme, hovered, hoveredLink, selectedId, selectedLink, ui.selectedNodes, ui.editMode, ui.labelBy, ui.showSprites, ui.strokeWidth, ui.showLegend, ui.useColorMapping, ui.colorMode, ui.legend])
 
   const root = graph?.nodes[0]

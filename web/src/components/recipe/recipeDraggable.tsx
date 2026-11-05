@@ -59,24 +59,25 @@ export function dragSpecFor(d: DragSpecBuilder<ViewState>, state: ViewState, id:
   if (ctx.editMode && !ctx.ctrlAtPress.current) {
     // Edit Mode: the node floats; the drop target is derived when drawn and applied on drop (rows 66-68).
     const p = absoluteOf(state, id)
-    return d.varyFunc([p.x, p.y], ([x, y]) => ({ ...state, drag: { id, x, y }, pushFor: null }))
+    return d.varyFunc([p.x, p.y], ([x, y]) => ({ ...state, drag: { id, x, y }, push: null }))
   }
   if (node.leaf && node.surface && parent.parent) {
     return d.varyFunc([Math.atan2(node.y, node.x)], ([a]) => {
       const p = onMembrane(a, parent.r)
-      return { ...withPosition(state, id, p.x, p.y), pushFor: id }
+      return { ...state, push: { id, ...p } }
     })
   }
   const limit = containmentLimit(node, parent)
   return d.varyFunc([node.x, node.y], ([u, v]) => {
-    const p = clampToDisk(u, v, limit)
-    return { ...withPosition(state, id, p.x, p.y), pushFor: id }
+    return { ...state, push: { id, ...clampToDisk(u, v, limit) } }
   })
 }
 
-/** What a dropped state becomes: pushes applied (the drag's preview showed them). */
-export function settle(state: ViewState): ViewState {
-  return state.pushFor ? { ...pushNeighbours(state, state.pushFor), pushFor: null } : state
+/** A drag's move and its pushes applied: what is drawn mid-drag, and what a drop becomes. */
+export function applyPush(state: ViewState): ViewState {
+  if (!state.push) return state
+  const { id, x, y } = state.push
+  return { ...pushNeighbours(withPosition(state, id, x, y), id), push: null }
 }
 
 function compartmentLayer(id: string, at: Point, r: number, depth: number, fill: string, stroke: string, strokeWidth: number, z: number | string, onDrag: () => DragSpec<ViewState>) {
@@ -103,7 +104,7 @@ export function makeRecipeDraggable(ctx: RecipeDrawContext): Draggable<ViewState
         </g>
       )
     }
-    const shown = state.pushFor ? pushNeighbours(state, state.pushFor) : state
+    const shown = applyPush(state)
     const abs = absolutePositions(shown)
     const drop = shown.drag ? reparentTarget(shown, shown.drag.id, shown.drag, abs) : null
     const layers: React.ReactElement[] = []

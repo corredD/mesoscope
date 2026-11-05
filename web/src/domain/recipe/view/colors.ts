@@ -21,7 +21,13 @@ export const PROPERTY_MAPPING_KEYS = ['default', 'size', 'molecularweight', 'rad
  * colours within 1 per channel.
  */
 const depthRamp = interpolateHcl(hcl(148, 2, 100), 'hsl(228,30%,40%)')
-export const depthColor = (depth: number): string => depthRamp((depth + 1) / 7)
+const depthCache = new Map<number, string>()
+/** Cached per depth: it is read for every node on every drawn frame. */
+export const depthColor = (depth: number): string => {
+  let c = depthCache.get(depth)
+  if (c === undefined) depthCache.set(depth, (c = depthRamp((depth + 1) / 7)))
+  return c
+}
 
 export interface ColorNodeInfo {
   node: RecipeNode

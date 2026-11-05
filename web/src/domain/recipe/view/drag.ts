@@ -49,56 +49,72 @@ export function pushNeighbours(state: ViewState, id: string, maxVisits = 4): Vie
   const dragged = state.nodes[id]
   if (!dragged?.parent) return state
   const parent = state.nodes[dragged.parent]
-  const siblings = parent.children
-  const reach = (n: ViewNode) => (n.leaf ? n.r * 1.15 : n.r + MEMBRANE)
-  let cell = 1
-  for (const k of siblings) cell = Math.max(cell, 2 * reach(state.nodes[k]))
-  const xs = new Map<string, Point>()
-  const grid = new Map<number, string[]>()
-  const key = (gx: number, gy: number) => gx * 1_000_003 + gy
-  for (const k of siblings) {
-    const n = state.nodes[k]
-    xs.set(k, { x: n.x, y: n.y })
-    const g = key(Math.floor(n.x / cell), Math.floor(n.y / cell))
-    const list = grid.get(g)
-    if (list) list.push(k)
-    else grid.set(g, [k])
+  const ids = parent.children
+  const n = ids.length
+  // Flat arrays by sibling index: this runs on every pointer move.
+  const px = new Float64Array(n)
+  const py = new Float64Array(n)
+  const reach = new Float64Array(n)
+  const visits = new Uint32Array(n)
+  let self = -1
+  let maxReach = 0
+  let sumReach = 0
+  for (let i = 0; i < n; i++) {
+    const node = state.nodes[ids[i]]
+    px[i] = node.x
+    py[i] = node.y
+    reach[i] = node.leaf ? node.r * 1.15 : node.r + MEMBRANE
+    maxReach = Math.max(maxReach, reach[i])
+    sumReach += reach[i]
+    if (ids[i] === id) self = i
   }
-  const queue = [id]
-  const visits = new Map<string, number>()
+  // Cells about a typical diameter; a node searches as many cells as its reach plus the largest needs.
+  const cell = Math.max((2 * sumReach) / n, 1)
+  const grid = new Map<number, number[]>()
+  const key = (gx: number, gy: number) => gx * 1_000_003 + gy
+  for (let i = 0; i < n; i++) {
+    const g = key(Math.floor(px[i] / cell), Math.floor(py[i] / cell))
+    const list = grid.get(g)
+    if (list) list.push(i)
+    else grid.set(g, [i])
+  }
+  const queue = [self]
   for (let qi = 0; qi < queue.length; qi++) {
     const a = queue[qi]
-    const pa = xs.get(a)!
-    const ra = reach(state.nodes[a])
-    const gx = Math.floor(pa.x / cell)
-    const gy = Math.floor(pa.y / cell)
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dy = -1; dy <= 1; dy++) {
-        for (const b of grid.get(key(gx + dx, gy + dy)) ?? []) {
-          if (b === a || b === id) continue
-          const nb = state.nodes[b]
-          const pb = xs.get(b)!
-          const vx = pb.x - pa.x
-          const vy = pb.y - pa.y
-          const dist = Math.hypot(vx, vy)
-          const overlap = ra + reach(nb) - dist
-          if (overlap <= 1e-6) continue
+    // +1 cell: pushed nodes are found by the cell they started in.
+    const span = Math.ceil((reach[a] + maxReach) / cell) + 1
+    const gx = Math.floor(px[a] / cell)
+    const gy = Math.floor(py[a] / cell)
+    for (let dx = -span; dx <= span; dx++) {
+      for (let dy = -span; dy <= span; dy++) {
+        const list = grid.get(key(gx + dx, gy + dy))
+        if (!list) continue
+        for (const b of list) {
+          if (b === a || b === self) continue
+          const vx = px[b] - px[a]
+          const vy = py[b] - py[a]
+          const min = reach[a] + reach[b]
+          const d2 = vx * vx + vy * vy
+          if (d2 >= min * min - 1e-9) continue
+          const dist = Math.sqrt(d2)
+          const overlap = min - dist
           const ux = dist > 1e-9 ? vx / dist : 1
           const uy = dist > 1e-9 ? vy / dist : 0
-          const next = constrain(nb, parent, pb.x + ux * overlap, pb.y + uy * overlap)
-          pb.x = next.x
-          pb.y = next.y
-          const v = (visits.get(b) ?? 0) + 1
-          visits.set(b, v)
-          if (v < maxVisits) queue.push(b)
+          const next = constrain(state.nodes[ids[b]], parent, px[b] + ux * overlap, py[b] + uy * overlap)
+          px[b] = next.x
+          py[b] = next.y
+          if (++visits[b] < maxVisits) queue.push(b)
         }
       }
     }
   }
-  if (!visits.size) return state
-  const nodes = { ...state.nodes }
-  for (const b of visits.keys()) nodes[b] = { ...nodes[b], ...xs.get(b)! }
-  return { ...state, nodes }
+  let nodes: Record<string, ViewNode> | null = null
+  for (let i = 0; i < n; i++) {
+    if (!visits[i]) continue
+    nodes ??= { ...state.nodes }
+    nodes[ids[i]] = { ...nodes[ids[i]], x: px[i], y: py[i] }
+  }
+  return nodes ? { ...state, nodes } : state
 }
 
 export interface ReparentTarget {
@@ -167,5 +183,5 @@ export function dropReparent(state: ViewState, id: string): ReparentDrop {
     const n = nodes[k]
     if (n.parent && n.depth !== nodes[n.parent].depth + 1) nodes[k] = { ...n, depth: nodes[n.parent].depth + 1 }
   }
-  return { state: { nodes, order, drag: null, pushFor: null }, newParent: changed ? parentId : null, surface: node.leaf ? isSurface : null }
+  return { state: { nodes, order, drag: null, push: null }, newParent: changed ? parentId : null, surface: node.leaf ? isSurface : null }
 }
