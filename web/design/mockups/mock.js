@@ -93,6 +93,7 @@
     ['Influenza complete', '5 ingredients', 'InfluenzaFull.json'],
     ['Exosome', '47 ingredients · 2 fibers', 'exosome_catalase.json'],
     ['Mycoplasma pneumoniae', '180 ingredients · 1 compartment · 3 fibers', 'Mpn_1.0_2.json'],
+    ['Blood plasma', '21 ingredients · 1 fiber', 'BloodPlasma_serialized.json'],
   ]
   const C = []
   const cmd = (id, title, cat, more = {}) => C.push({ id, title, cat, ...more })
