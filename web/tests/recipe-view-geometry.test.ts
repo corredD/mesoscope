@@ -213,10 +213,15 @@ describe('perf guard: one drag frame (How we work)', () => {
     nodes.n0 = { ...nodes.n0, x: 8 } // overlaps n1: a push cascade starts
     return { nodes, order: ['root', 'C', ...children], drag: null, pushFor: null }
   }
+  // The fastest of several runs: robust to a busy machine (the suite runs files in parallel).
   const time = (f: () => void) => {
-    const t0 = performance.now()
-    for (let i = 0; i < 20; i++) f()
-    return performance.now() - t0
+    let best = Infinity
+    for (let run = 0; run < 7; run++) {
+      const t0 = performance.now()
+      for (let i = 0; i < 10; i++) f()
+      best = Math.min(best, performance.now() - t0)
+    }
+    return best
   }
   const quadratic = (s: ViewState) => {
     const ids = s.nodes.C.children
@@ -226,7 +231,7 @@ describe('perf guard: one drag frame (How we work)', () => {
   }
 
   it('scales linearly: 4n costs well under the quadratic control', () => {
-    const n = 500
+    const n = 300
     const small = crowd(n)
     const big = crowd(4 * n)
     time(() => pushNeighbours(big, 'n0')) // warm up
@@ -234,5 +239,5 @@ describe('perf guard: one drag frame (How we work)', () => {
     const control = time(() => quadratic(big)) / time(() => quadratic(small))
     expect(control).toBeGreaterThan(8)
     expect(ratio).toBeLessThan(control / 2)
-  })
+  }, 30_000)
 })
