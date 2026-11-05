@@ -52,3 +52,26 @@ contrast). No `web/src` change, so the app checks are not required; run `npm run
 Mechanical steps (screenshots, checks) on Sonnet. The gate's reviewer and skeptic are Opus.
 
 ## Progress
+
+**Built.** `web/_spec/design/README.md` §5.7 "Build and paint" (sync contract in 5.7.1-5.7.9, legacy builder behaviour,
+who owns what, recipe -> scene, scene -> recipe, the Focus both ways, undo, conflicts, live vs on save), decisions D11-D15
+in §8, open questions in §9, §7.3 rows, §10 rows. Mockups 10-paint, 11-place, 12-sync (prism-me stage mocked) with nine
+`scene.*` commands and a Scene menu in the `mock.js` registry; Table gets Target / In the scene columns. `parity.md` §5
+builder row points at §5.7. No `web/src` change.
+
+**Decided.** D11 by Ludovic (2026-11-05: paint/place in prism-me, physics rebuilt there, not ported). D12-D15 are
+proposals by the lane (sync key is the ingredient path; a placed count never overwrites the recipe count on its own; no
+paint on compartments with geometry None; no silent change to painted work). Sections 5.7.5 and 5.7.7 are marked as
+proposals. Screen 12 puts the stage above the Table, not beside it (Table unreadable at ~350 px).
+
+**Learned.** HIV has no counts (all 0), so placed counts and two targets are mocked, said on screen. Legacy's metaball
+gizmo was live behind a GUI toggle and wrote back into the recipe nodes (the first draft said never). Legacy target
+order is molarity then count. Legacy `results` has two shapes. prism-me's plan path is `apps/prism-me/plans/...`.
+
+**Size.** No production lines. Spec ~200 lines added (brief: 150-250); mock.js ~+250, 3 pages.
+
+**Gate** (reviewer R1-R21, skeptic verdicts, N1-N3 new). Fixed: R1 f88d272, N1 38b5cb9, R3 7d5dcc8, R4 55c6911, R5 feec565,
+R6/R21 569f70a, R7 27ca053, R8 3a7e880 + f6f0c5e, R9 4a2776c, R18 72753f7, R10-R12/R15 ae62b09, R14/N3 1647b0b (open
+question). R5-R7 guarded by check.mjs probes (e6a0e5d). Refuted: R13, R17, key half of R7. Open: R16 (listbox ARIA),
+R19 (inert controls, as in earlier mockups), R20 (indexOf per row, 26 items), N2 (palette colour vs outline swatch).
+R2 (this file) done here.
