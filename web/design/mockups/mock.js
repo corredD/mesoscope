@@ -757,6 +757,16 @@
     for (let p = parentOf(n); p; p = parentOf(p)) path.unshift(p)
     return h('div', { class: 'insp-crumbs' }, path.map((p, i) => [i ? ' › ' : '', h('a', { href: '#', onclick: (e) => { e.preventDefault(); setFocus([p.id]) } }, p.name)]))
   }
+  /** The inspector's Use the placed count (§5.7.4): this ingredient only; Scene › Write the placed counts does them all. */
+  function useFocusCount(n) {
+    const k = placedOf(n)
+    const ok = k ? true : 'None of it placed yet'
+    const b = h('button', { class: 'button', title: ok === true ? `Write ${k}, the placed count, as the recipe’s count of ${shown(n)} (one step)` : ok, 'aria-disabled': ok === true ? null : 'true', onclick: () => {
+      if (ok !== true) return
+      n.count = k; state.scene.targets.delete(n.id); listeners.forEach((f) => f())
+    } }, 'Use the placed count')
+    return ok === true ? b : h('span', { class: 'with-reason' }, b, h('span', { class: 'reason' }, ok))
+  }
   function ingredientInspector(n) {
     const p = problems(n)
     const sectionsOpen = state.inspectorOpen || ['Amount', 'Structure']
@@ -769,7 +779,7 @@
           field('Placed', h('span', { class: 'mono' }, `${placedOf(n)} in prism-me`)),
           field('Target', h('span', { class: 'mono' }, targetOf(n) ? `${targetOf(n)}${state.scene.targets.has(n.id) ? ' (typed this session)' : ''}` : '— (count and molarity 0)')),
           field('Goes', paintable(n) === true ? h('span', {}, `${n.side === 'surface' ? 'on the membrane of' : 'inside'} ${parentOf(n).name}`) : h('span', { class: 'reason' }, paintable(n))),
-          h('div', { class: 'actions' }, btn('Paint (B)', 'scene.paint'), btn('Place (P)', 'scene.place'), btn('Use the placed count', 'scene.useCounts')),
+          h('div', { class: 'actions' }, btn('Paint (B)', 'scene.paint'), btn('Place (P)', 'scene.place'), useFocusCount(n)),
           h('span', { class: 'muted' }, 'The count is the recipe’s; the placed number is the scene’s. Neither overwrites the other unless you say so.')) : null,
         section('Amount', o('Amount'), n.count ? `${n.count} copies` : 'not set',
           field('Count', h('div', { class: 'row' }, input(n.count), h('span', { class: 'muted' }, 'copies'))),

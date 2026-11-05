@@ -399,7 +399,8 @@ the only writers (`me:_spec/README.md:31-32`); the recipe is the document Mesosc
 
 1. **Placed counts come back, not instances.** Per ingredient path, the number placed in prism-me. It is shown beside
    the target (palette, Table "In the scene", inspector "In the scene"), never written into `count` unless asked:
-   Scene › Write the placed counts as the recipe's counts (one step in Mesoscope). *Why:* a target and a result are
+   Scene › Write the placed counts as the recipe's counts, for every ingredient, or the inspector's Use the placed
+   count, for the ingredient in the Focus only (each one step in Mesoscope). *Why:* a target and a result are
    different facts; legacy kept them apart too (`count` vs `results`, `gp:963`).
 2. **Over target is shown, not corrected**: the number and its meter in the warning colour; nothing is removed.
 3. **New instances live in prism-me**, in a drawn layer apart from a loaded model: the physics plan's L1 "a separate
@@ -431,7 +432,8 @@ New design (proposal), from P1 and §5.3; prism-me's side as its spec has it.
   release, `:88-90`). The placed count Mesoscope shows follows it and is not a Mesoscope step.
 - A recipe edit is one step in Mesoscope (when it has undo, §9); its effect on the scene (palette, target, colour) is
   applied in prism-me without a step there.
-- Write the placed counts as counts is a Mesoscope step; undoing it leaves the scene as it is.
+- Write the placed counts (all) or Use the placed count (the Focus) is a Mesoscope step; undoing it leaves the scene
+  as it is.
 - *Why:* one history per app, each with its own writer (§5.7.2); a shared history across two apps is not proposed.
 
 #### 5.7.7 Conflicts: an ingredient edited after it was painted
@@ -658,7 +660,7 @@ first cell is checked by `check.mjs` against the code; "command" is the registry
 | Node "resize" (`index.html:671-676`) | inspector Appearance (open) |
 | GPU builder: Preview (`js/layout_mg.js:505`), compartment meshes, distribute by count, fibers (`extras/gpuphysics/main_physics.js`, parity §5) | Scene › Paint, Place, Draw a fiber along a curve, Erase (`scene.paint`, `scene.place`, `scene.fiber`, `scene.erase`), in prism-me (§5.7, screens 10-11) |
 | GPU builder physics (gp.js) | Scene › Fill to the targets, Settle (`scene.fill`, `scene.settle`), greyed: prism-me's bead solver, not built (§5.7.9) |
-| Builder "Load Model" (`js/layout_mg.js:506`); a recipe's `results` (`js/main.js:1482-1489`) | prism-me opens the model; placed counts in the Table and inspector "In the scene" (§5.7.4, screen 12); Scene › Write the placed counts as the recipe's counts (`scene.useCounts`) |
+| Builder "Load Model" (`js/layout_mg.js:506`); a recipe's `results` (`js/main.js:1482-1489`) | prism-me opens the model; placed counts in the Table and inspector "In the scene" (§5.7.4, screen 12); Scene › Write the placed counts as the recipe's counts (`scene.useCounts`, every ingredient); inspector › In the scene › Use the placed count (the Focus only) |
 | Spreadsheet XL export (commented out) | not proposed |
 
 ## 8. Decisions for Ludovic
@@ -690,7 +692,7 @@ Each is a proposal; confirm or reject.
 - **D12. The sync key is the ingredient's path** (compartment path, side, name), with renames sent as old → new; not
   the serialized `ingredient_id` (an index) nor the bare name (HIV repeats four) (§5.7.3).
 - **D13. A placed count never overwrites the recipe's count** on its own: shown beside it, written only by Scene ›
-  Write the placed counts as the recipe's counts (§5.7.4).
+  Write the placed counts as the recipe's counts (all) or the inspector's Use the placed count (the Focus) (§5.7.4).
 - **D14. A compartment without geometry (None) is not painted on or in** until it has a shape, instead of legacy's
   500 Å ball; HIV's capsid shows it (§5.7.3, screen 10).
 - **D15. No silent change to painted work**: a recipe edit flags placed instances (P5) and asks before deleting them
@@ -718,7 +720,7 @@ Each is a proposal; confirm or reject.
 
 For Ludovic:
 - **Who owns the counts?** Default: the recipe's count (or molarity) is the target and Mesoscope's; the placed count
-  is the scene's, shown beside it; the recipe changes only on Write the placed counts (D13).
+  is the scene's, shown beside it; the recipe changes only on Write the placed counts or Use the placed count (D13).
 - **Live sync or on save?** Default: live while both are open, for the Focus, the palette and the placed counts (small
   messages; the screens show this); instances never cross live. On save as the fallback: the recipe exported with
   `results` and `curves` (§5.7.4) and opened by the other app.
