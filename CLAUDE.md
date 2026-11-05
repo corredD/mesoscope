@@ -154,7 +154,8 @@ context compaction; written state and small PRs do not. Modelled on Mol\* v6 (`~
   `gh pr create -R corredD/mesoscope --base web-modernization`. Ludovic merges. Nothing goes to `master` (production)
   from a lane: cutover is its own decision.
 - **A lane is a worktree beside the repo**, never inside it: `git worktree add ~/Developments/mesoscope-lanes/<slug> -b
-  lane/<slug> origin/web-modernization`, then `cd web && npm ci`. Each lane gets its own ports, written in its brief:
+  lane/<slug> origin/web-modernization`, then `cd web && npm ci --legacy-peer-deps` (molstar 5 and jsdom want different
+  `canvas` peers). Each lane gets its own ports, written in its brief:
   the Vite dev server on `5180+n`, e2e through `E2E_PORT=5180+n npm run test:e2e`, the legacy server (when a lane
   needs it for an oracle) on `8090+n`.
 - **The queue** is `web/TODO.md` `## Next`: Ludovic's items, in order, in Ludovic's words (what to see, how to
