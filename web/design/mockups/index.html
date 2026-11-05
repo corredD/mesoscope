@@ -23,17 +23,23 @@ const SHOTS = [
   ['07-open.html', 'Open and import', 'Every way in: examples, file, link, an LLM; append; palettes and counts.'],
   ['08-first-run.html', 'First run', 'No recipe yet: the ways in, not an empty dock.'],
   ['09-palette.html', 'Commands', '⌘K: every menu item, with why when it cannot run.'],
+  ['10-paint.html', 'Paint (prism-me)', 'HIV in prism-me: the recipe as a palette, the brush paints the Focus, placed against target.'],
+  ['11-place.html', 'Place (prism-me)', 'Env one at a time on the envelope membrane; upright until its axis is set.'],
+  ['12-sync.html', 'Sync', 'prism-me beside the Table: strokes update the counts, the Focus is mirrored.'],
 ]
 Mock.render({
   caption: 'Static mockups: no build, no network. Real names and counts from data/HIV_serialized.json and data/Mpn_1.0_2.json.',
   recipe: null,
   body: () => h('div', { class: 'body index' }, h('main', { class: 'stage', style: 'background:var(--color-bg);overflow:auto' }, h('div', { class: 'page-inner' },
     h('h1', {}, 'Mesoscope: the interface, proposed'),
-    h('p', {}, 'Nine screens of one design. Open any of them and click: the outline, the Recipe view, the Table and the 3D views share one Focus, the inspector edits it, ⌘K runs anything. The review strip at the top (dark) is not part of the design: it links the screens and switches light and dark.'),
+    h('p', {}, 'Twelve screens of one design. Open any of them and click: the outline, the Recipe view, the Table and the 3D views share one Focus, the inspector edits it, ⌘K runs anything. Screens 10-12 are the build and paint mode: the stage there is prism-me (mocked), synced with the recipe. The review strip at the top (dark) is not part of the design: it links the screens and switches light and dark.'),
     h('p', { class: 'muted' }, 'The design and why: web/_spec/design/README.md. Screenshots, light and dark at 1440×900: screenshots/.'),
     h('div', { style: 'display:flex;gap:8px;margin:16px 0' }, h('a', { class: 'button', href: 'index.html' }, 'Light'), h('a', { class: 'button', href: 'index.html?theme=dark' }, 'Dark')),
-    h('div', { class: 'cards' }, SHOTS.map(([f, t, m]) => h('a', { class: 'card', href: f + location.search, style: 'text-decoration:none;color:inherit' },
-      h('img', { src: `screenshots/${f.replace('.html', '')}-${document.documentElement.dataset.theme}.png`, alt: '', style: 'width:100%;border-radius:4px;border:1px solid var(--color-border)' }),
+    // A screen marked 'no shot yet' has no screenshot in screenshots/ (a missing image is a console error under file://):
+    // drop the mark once `node design/mockups/check.mjs` (with shots) has taken it.
+    h('div', { class: 'cards' }, SHOTS.map(([f, t, m, noShot]) => h('a', { class: 'card', href: f + location.search, style: 'text-decoration:none;color:inherit' },
+      noShot ? h('div', { class: 'muted', style: 'aspect-ratio:1440/900;display:grid;place-items:center;border-radius:4px;border:1px dashed var(--color-border-strong);font-size:12px' }, 'No screenshot yet: open the screen')
+        : h('img', { src: `screenshots/${f.replace('.html', '')}-${document.documentElement.dataset.theme}.png`, alt: '', style: 'width:100%;border-radius:4px;border:1px solid var(--color-border)' }),
       h('span', { class: 't' }, t), h('span', { class: 'm' }, m))))))),
 })
 </script>
