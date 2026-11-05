@@ -403,7 +403,7 @@
       h('div', { class: 'glass toolbar', role: 'toolbar', 'aria-label': 'Recipe view options' },
         tool('Colour', 'by depth'), tool('Size', 'by radius'), tool('Label', 'name'), tool('Group', 'none'), sep(),
         h('button', { class: 'tool', 'aria-pressed': state.editMode ? 'true' : 'false', onclick: () => run(C.find((c) => c.id === 'edit.layout')), title: 'Edit layout (E)' }, '✥ Edit'),
-        h('button', { class: 'tool', title: n === 2 ? 'Add an interaction between the two ingredients' : 'Point at two ingredients (⇧-click the second)', 'aria-disabled': n === 2 ? null : 'true' }, '⟷ Interaction'),
+        h('button', { class: 'tool', title: n === 2 ? 'Add an interaction between the two ingredients' : 'Point at two ingredients (⇧-click the second)', 'aria-disabled': n === 2 ? null : 'true' }, '⟷ Interaction', n === 2 ? null : h('span', { class: 'k' }, ' needs two')),
         sep(), h('button', { class: 'tool', title: 'Forces, stroke width, sprites, legend' }, '⋯ More'), h('button', { class: 'tool', title: 'Frame the Focus (F)' }, '⤢')),
       h('div', { class: 'glass legend', 'aria-label': 'Legend' }, h('strong', {}, 'Colour by depth'), [1, 2, 3, 4].map((d) => h('span', { style: 'display:flex;gap:6px;align-items:center' }, h('span', { class: 'swatch square', style: `background:${css('--color-depth-' + d)}` }), `depth ${d}`))))
   }
@@ -512,7 +512,9 @@
   const btn = (title, id, primary) => {
     const c = C.find((c) => c.id === id)
     const ok = c ? enabled(c) : true
-    return h('button', { class: 'button' + (primary ? ' primary' : ''), title: ok === true ? (c && c.key ? `${c.title} (${c.key})` : null) : ok, 'aria-disabled': ok === true ? null : 'true', onclick: () => c && run(c) }, title)
+    const b = h('button', { class: 'button' + (primary && ok === true ? ' primary' : ''), title: ok === true ? (c && c.key ? `${c.title} (${c.key})` : null) : ok, 'aria-disabled': ok === true ? null : 'true', onclick: () => c && run(c) }, title)
+    // P7: the reason is visible text beside the control, not only a tooltip (touch and keyboard never see those).
+    return ok === true ? b : h('span', { class: 'with-reason' }, b, h('span', { class: 'reason' }, ok))
   }
   function crumbs(n) {
     const path = []

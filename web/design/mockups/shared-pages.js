@@ -45,8 +45,8 @@
       h('h2', {}, 'Examples'), examples(mode), ...ways(),
       h('h2', {}, 'Into this recipe'),
       h('div', { class: 'actions' }, h('button', { class: 'button' }, 'Import a colour palette…'), h('button', { class: 'button' }, 'Import counts and molarities…'),
-        h('button', { class: 'button', 'aria-disabled': 'true', title: 'Not built yet: colouring by property' }, 'Import a colour mapping…'),
-        h('button', { class: 'button', 'aria-disabled': 'true', title: 'Not built yet: a local data server' }, 'Set the data directory…'))))
+        h('span', { class: 'with-reason' }, h('button', { class: 'button', 'aria-disabled': 'true' }, 'Import a colour mapping…'), h('span', { class: 'reason' }, 'Not built yet: colouring by property')),
+        h('span', { class: 'with-reason' }, h('button', { class: 'button', 'aria-disabled': 'true' }, 'Set the data directory…'), h('span', { class: 'reason' }, 'Not built yet: a local data server')))))
   }
   Mock.firstRun = function () {
     return h('div', { class: 'body' }, h('main', { class: 'stage', style: 'background:var(--color-bg);overflow:auto' }, h('div', { class: 'page-inner', style: 'max-width:900px' },

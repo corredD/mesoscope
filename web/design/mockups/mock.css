@@ -228,6 +228,8 @@ table.grid { border-collapse: separate; border-spacing: 0; width: 100%; font-siz
 .button.primary { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-accent-text); }
 .button.primary:hover { background: var(--color-accent-hover); }
 .button.link { border: 0; background: none; padding: 0; height: auto; color: var(--color-text); text-decoration: underline; text-decoration-color: var(--color-border-strong); text-underline-offset: 3px; }
+.with-reason { display: inline-flex; align-items: center; gap: var(--space-2); }
+.reason { color: var(--color-text-subtle); font-size: var(--font-size-xs); }
 .button[aria-disabled='true'] { color: var(--color-text-subtle); cursor: not-allowed; }
 .segmented { display: inline-flex; border: 1px solid var(--color-field-edge); border-radius: var(--radius-md); overflow: hidden; }
 .segmented button { border: 0; background: var(--color-raised); padding: 0 var(--space-3); height: var(--control-height-sm); cursor: pointer; color: var(--color-text-muted); }
