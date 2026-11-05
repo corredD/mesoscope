@@ -565,7 +565,15 @@
   // A mocked stage: an SVG drawing standing in for prism-me's canvas. The recipe's side (the palette, the targets,
   // the Focus) is Mesoscope's; the placed counts come back from the scene.
   const placedOf = (n) => (state.scene && state.scene.placed.get(n.id)) || 0
-  const targetOf = (n) => (state.scene && state.scene.targets.get(n.id)) || n.count || 0
+  // The target (§5.7.3 item 5), legacy's order (GP_GetCount): molarity × the compartment's volume first, else the count.
+  // 0.0006022 ingredients per Å³ at 1 M (js/util.js Util_getCountFromMolarity). The sample compartments carry no
+  // volume (prism-me measures it from the mesh), so a molarity without one gives no target here.
+  const targetOf = (n) => {
+    const typed = state.scene && state.scene.targets.get(n.id)
+    if (typed) return typed
+    if (n.molarity) { const v = parentOf(n) && parentOf(n).volume; return v ? Math.round(n.molarity * 0.0006022 * v) : 0 }
+    return n.count > 0 ? n.count : 0
+  }
   /** Where the brush can put an ingredient (§5.7.3): a structure, and a compartment with a geometry. */
   function paintable(n) {
     if (!n.pdb) return 'No structure: find one first'

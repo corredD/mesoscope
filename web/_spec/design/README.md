@@ -357,7 +357,7 @@ builder did, not how: its physics is not ported (D11).
 | Thing | Owner | The other app holds |
 | --- | --- | --- |
 | The recipe: compartments, ingredients, structures, beads, colours, counts, molarity | Mesoscope | a read-only copy (the palette, the meshes) |
-| A target per ingredient (count, or molarity × volume) | Mesoscope | it, shown against the placed count |
+| A target per ingredient (molarity × volume, else count) | Mesoscope | it, shown against the placed count |
 | Compartment meshes in the scene | prism-me, built from the recipe's geometry | the geometry (`geom_type`, metaballs) |
 | Placed instances (position, rotation), drawn curves | prism-me | the placed count per ingredient; the instances only on export (§5.7.4) |
 | The camera, clips, labels, representations | prism-me | nothing |
@@ -387,8 +387,9 @@ the only writers (`me:_spec/README.md:31-32`); the recipe is the document Mesosc
 4. **The brush paints the Focus.** Clicking a palette row points at the ingredient (P1); there is no second "current
    ingredient". Surface ingredients go on their compartment's membrane, interior ones in its volume, fibers along a
    curve (§5.7.4).
-5. **Targets are the recipe's.** The target is the count, else molarity × the compartment's volume (as `gp:784-787`);
-   none is shown as "—", never a random number (legacy's -1 rule, `gp:802`, is not kept). Beads are the collision
+5. **Targets are the recipe's**, in legacy's order (`GP_GetCount`, `gp:782-804`): molarity × the compartment's volume
+   when the molarity is not 0 (`gp:784-787`, `js/util.js:566`), else the count (`gp:800`). None is shown as "—",
+   never a random number (legacy's -1 rule, `gp:802`, is not kept: a departure, proposed). Beads are the collision
    templates (the physics plan's "2–10 spheres from the target's coarse model", `me:plans/2026-11-05-physics-eval.md:93`).
 6. **Orientation is the recipe's.** A surface ingredient is placed along its principal axis and offset; with none
    (0,0,0, all six of HIV's) it goes upright, the membrane normal, and its problem stays shown (P5) with Orient from
