@@ -81,6 +81,55 @@
 
 ## Learned
 
+### Step 0: the spike (GO)
+
+Measured by `web/tests/spike/measure.mjs` (Playwright Chromium 149, 1200×800, headless, Apple-silicon Mac) on
+`web/spike.html` (commit 64e1237). Per pointer move = Dragology's behaviour on one frame (timed inside the spec with
+`changeFrame`/`changeResult`) + the React commit of the `DraggableRenderer` subtree (Profiler `actualDuration`); one
+of each per rAF during a drag. Browser style/layout/paint are not in it; the rAF interval stayed at p50 8.3 ms
+(headless runs at 120 Hz). HIV = 30 nodes, Mpn = 182 nodes (180 leaves, 35 on the membrane, one compartment).
+
+Production build (React profiling build, the numbers that count), ms per move:
+
+| Drag | HIV p50 / p95 / max | Mpn p50 / p95 / max |
+| ---- | ------------------- | ------------------- |
+| Interior ingredient (containment + push neighbours) | 1.0 / 1.5 / 2.8 | 2.6 / 3.0 / 5.8 |
+| Surface ingredient (angle on the membrane + push) | 0.9 / 1.1 / 1.5 | 2.1 / 2.3 / 5.0 |
+| Compartment (rigid subtree, containment + push) | 1.0 / 1.2 / 2.1 | 2.3 / 2.6 / 5.7 |
+| Edit-Mode reparent (deepest-overlap target preview) | 1.0 / 1.2 / 1.9 | 2.1 / 2.4 / 5.1 |
+| Interior ingredient at k=0.5 panned / k=3 panned | — | 1.9 / 2.2 / 5.3 and 1.9 / 2.1 / 4.8 |
+
+Dev server (React development build), same drags on Mpn: p50 5.7-6.5, p95 10.9-12.4, max 16.3-26.1 (the max is one
+frame per drag, the first or a GC). Every Mpn drag is under 16 ms per move in production at its worst frame, and at
+p95 in development. Events beside `dragologyOnDrag`, all checked on Mpn: click selects the deepest node under the
+pointer, Ctrl-click adds (2 selected), hover sets, wheel zooms (k 0.32 → 0.42), right-click opens the menu and does
+not drag, middle-drag pans (view +60 px) and moves no node. The grab point stays under the pointer at k=0.5 and k=3
+after a pan (max error 1.44 px, the circle's bounding-box rounding). A group-by switch animates through the
+controlled `state` prop (26 commits, max 7.1 ms in production).
+
+What made it fit, each measured:
+- **`isTracking` fast path, required.** `d.vary` renders the whole draggable on every optimizer evaluation (about 22
+  per frame). Returning only the view `<g>` and the dragged node when `isTracking` is true takes Mpn from p50 46-51
+  ms per move (dev) to 6 ms. The tracking path also reads only the dragged node's parent chain, not every node.
+- **No `.during` for derived previews.** In 0.1.7 `during` renders the state a second time per frame. The push of
+  neighbours and the reparent target are instead derived inside the full render from a marker on the state
+  (`pushFor`, `drag`) and applied in `.onDrop`: Mpn behaviour p50 6.6 → 4.0 ms (dev).
+- **Containment as a clamped parametrization** (`varyFunc` whose state clamps the point into the disk) costs the same
+  as a COBYLA `lessThan` constraint (dev p50 6.4 vs 6.6 ms on Mpn) and cannot start infeasible (HIV's capsid pair,
+  §8.1). Surface ingredients vary one angle: always exactly on the membrane, no `equal` constraint.
+
+### Dragology on npm is not the reference checkout
+
+`dragology@0.1.7` on npm (published 2026-05-01) is not `b145bdd` (2026-11-03, same version string). npm 0.1.7 has no
+`Operator`/`Modifier`/`modifier`/`renderStateReadOnly` exports, no component elements, and its `DragResult.preview`
+is eager. Its `AGENTS.md` stops at Gotchas. It does have `varyFunc`, `during`, `onDrop`, `changeFrame`,
+`changeResult`, `custom`, `isTracking` and `dragThreshold`. Our "operators" (push neighbours, Edit-Mode reparent) are
+therefore written as derivations of the state in render plus `onDrop`, which 0.1.7 supports; nothing the spec needs is
+missing. Also: Dragology hoists every `id`'d element to a flat layer, so a DOM `onClick` on an ancestor `<g>` never
+sees clicks on nodes; the click, hover and context menu are handled on the wrapper with legacy's hit-test, and a no-op
+`onClick` on the root `<g>` only turns on the 2 px click-versus-drag threshold. Dragology's injected `onPointerDown`
+ignores the button, so a capture-phase listener on the wrapper stops non-left presses.
+
 ## Size
 
 <measured> against ~300 + ~1,300; what took the room.
