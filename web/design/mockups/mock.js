@@ -169,7 +169,7 @@
   cmd('scene.erase', 'Erase instances of the Focus', 'Scene', { key: '⇧B', mode: 'erase', when: needIngredient })
   cmd('scene.fill', 'Fill to the targets (distribute by count)', 'Scene', { when: NOT_BUILT('prism-me’s bead solver (physics is rebuilt there)') })
   cmd('scene.settle', 'Settle: push overlapping instances apart', 'Scene', { when: NOT_BUILT('prism-me’s bead solver (physics is rebuilt there)') })
-  cmd('scene.sync', 'Show the Table beside the scene', 'Scene', { go: '12-sync.html', hint: 'counts update as you paint' })
+  cmd('scene.sync', 'Show the Table with the scene', 'Scene', { go: '12-sync.html', hint: 'counts update as you paint' })
   cmd('scene.useCounts', 'Write the placed counts as the recipe’s counts', 'Scene', { when: () => (state.scene && [...state.scene.placed.values()].some(Boolean) ? true : 'Nothing placed in the scene yet') })
   cmd('scene.open', 'Open the scene in prism-me (its own window)', 'Scene', { hint: 'the whole app: tree, clips, labels' })
   cmd('help.shortcuts', 'Keyboard shortcuts', 'Help', { key: '?' })
@@ -190,6 +190,11 @@
     if (c.id === 'view.theme') { toggleTheme(); return }
     if (c.id === 'focus.clear') { setFocus([]); return }
     if (c.id === 'edit.layout') { state.editMode = !state.editMode; renderStage(); return }
+    if (c.id === 'scene.useCounts' && state.scene) {
+      // D13: the placed counts become the recipe's counts only on this command (one step in Mesoscope).
+      for (const [id, v] of state.scene.placed) { R.byId.get(id).count = v; state.scene.targets.delete(id) }
+      listeners.forEach((f) => f()); return
+    }
     if (c.go) location.href = c.go + location.search
   }
   function toggleTheme() {
@@ -636,7 +641,7 @@
     box.append(svg('circle', { cx, cy, r: R0 + 10, fill: 'url(#pshade)', opacity: 0.6 }), svg('circle', { cx, cy, r: R0, fill: 'none', stroke: css('--color-depth-4'), 'stroke-width': 16, opacity: 0.55 }))
     // The capsid compartments have no geometry (None): an outline only, nothing to paint on.
     box.append(svg('path', { d: `M ${cx - 130} ${cy - 36} L ${cx + 120} ${cy - 92} Q ${cx + 152} ${cy} ${cx + 120} ${cy + 92} L ${cx - 130} ${cy + 36} Q ${cx - 148} ${cy} ${cx - 130} ${cy - 36} Z`, fill: 'none', stroke: css('--color-text-muted'), 'stroke-width': 1.5, 'stroke-dasharray': '6 5' }),
-      svg('text', { x: cx - 112, y: cy - 4, fill: css('--color-text-muted'), 'font-size': 12 }, 'capsid: geometry None,'), svg('text', { x: cx - 112, y: cy + 12, fill: css('--color-text-muted'), 'font-size': 12 }, 'no mesh to paint on'))
+      svg('text', { x: cx - 112, y: cy - 4, fill: css('--color-text'), 'font-size': 12 }, 'capsid: geometry None,'), svg('text', { x: cx - 112, y: cy + 12, fill: css('--color-text'), 'font-size': 12 }, 'no mesh to paint on'))
     box.append(svg('text', { x: cx, y: cy + R0 + 34, 'text-anchor': 'middle', fill: css('--color-text-muted'), 'font-size': 12 }, 'HIV1_envelope_Pack_145_0_2_0 · its mesh (mb)'))
     const f = new Set(state.focus)
     for (const n of R.ings) {
@@ -861,6 +866,8 @@
       // The scene's side (README §5.7): mocked placed counts and session targets, keyed by name (unique ones) or id.
       const ids = (o) => new Map(Object.entries(o || {}).map(([k, v]) => [(R.byId.get(k) || byName(k) || {}).id, v]).filter(([k]) => k))
       state.scene = cfg.scene ? { mode: cfg.scene.mode || null, placed: ids(cfg.scene.placed), targets: ids(cfg.scene.targets), log: cfg.scene.log || [], strokes: (cfg.scene.log || []).length, last: null, palette: cfg.scene.palette !== false } : null
+      // A session target is the recipe's count (§5.7.3): write it there, so the problems, Amount and the Table agree.
+      if (state.scene) for (const [id, v] of state.scene.targets) R.byId.get(id).count = v
       renderAll()
       if (cfg.palette) openPalette(cfg.palette)
     },

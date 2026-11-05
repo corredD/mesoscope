@@ -231,7 +231,7 @@ depth colours: a warm accent stands out where a blue one would not, as legacy's 
 
 | Region | Job | Contents |
 | --- | --- | --- |
-| Top bar | where you are, everything reachable | brand; menus Recipe, Edit, View, Structure, Help (from the commands); the recipe's name, unsaved dot, size and file; ⌘K search; theme; help |
+| Top bar | where you are, everything reachable | brand; menus Recipe, Edit, View, Structure, Scene, Help (from the commands); the recipe's name, unsaved dot, size and file; ⌘K search; theme; help |
 | Column (left, 260 px) | the recipe as a document | tabs Recipe and Interactions; a filter field; chips All, Needs attention *n*, Surface, Interior, Fibers; the outline: compartments (reading face, depth swatch), their surface and interior groups, ingredients (swatch, name, count, problem dot) |
 | Stage (centre) | one or two views of the recipe | tabs Recipe view, Table, Ingredient, Scene; ⇧-click a second tab to split, one over the other or side by side; each view's options float over it (glass, Prism) |
 | Inspector (right, 340 px) | the Focus, edited | header (kind, name, breadcrumb to its compartments), problems with fixes, folding sections; for a card (Find a structure), the card in its place |
@@ -325,11 +325,14 @@ builder did, not how: its physics is not ported (D11).
 
 #### 5.7.1 What legacy's builder did
 
-- **Hand-off: one push, on a button.** The Preview button calls `GP_initFromNodes(graph.nodes,128,10,false)`
-  (`js/layout_mg.js:505`): the builder reads the recipe's live node objects, with no copy, and rebuilds on each press
-  (`gp:3246-3278`). Nothing came back to the recipe.
-- **Compartments as meshes.** Every compartment with children gets a mesh (`gp:819-826`), marching cubes over its
-  metaballs (`GP_createOneCompartmentMesh`, `gp:652-731`); one with no positions gets one 500 Å ball (`gp:663-666`).
+- **Hand-off: one push, on a button, into shared objects.** The Preview button calls
+  `GP_initFromNodes(graph.nodes,128,10,false)` (`js/layout_mg.js:505`): the builder takes the recipe's live node
+  objects, with no copy, and rebuilds on each press (`gp:3246-3278`). Nothing was sent back on purpose, yet the builder
+  wrote into those nodes: a compartment's default ball into its `pos`/`radii` (`gp:663-666`), a fiber's `curves` reset
+  and rewritten (`gp:942-948`). Hence one writer per fact (§5.7.2).
+- **Compartments as meshes.** Every compartment with children gets a mesh (`gp:825-828`), marching cubes over its
+  metaballs (`GP_createOneCompartmentMesh`, `gp:652-731`); one with no metaball positions got one 500 Å ball
+  (`gp:663-666`).
 - **Distribute by count.** The count is molarity × the compartment's volume (`gp:784-787`, `js/util.js:566`), else the
   count (`gp:800`), and only a count of -1 draws a random 1..`copy_number` (`gp:802`). Only `raw` and `sphere`
   geometries and no map (EMD, `.map`) are distributed (`gp:915-920`).
@@ -370,9 +373,10 @@ the only writers (`me:_spec/README.md:31-32`); the recipe is the document Mesosc
    `ingredient_id` is an index (0-25 in HIV), so it shifts on insert. Rename and move are sent as old path → new path.
 2. **Compartments become meshes**, from their geometry: `mb` from the metaballs, `sphere`, `file`, `raw` as given. A
    compartment with `geom_type` None has no mesh, and nothing is painted on or in it until it has a shape: shown greyed
-   with that reason (P7), with a fix that opens its Geometry. *Why:* legacy drew a 500 Å ball for it (`gp:663-666`),
-   a shape the recipe never said; HIV's two capsid compartments are None, so CA_mono and the five ingredients inside
-   them wait (screen 10).
+   with that reason (P7), with a fix that opens its Geometry. *Why:* legacy drew a 500 Å ball for a compartment
+   with no metaballs (`gp:663-666`), a shape the recipe never said; HIV's two capsid compartments are None with no
+   metaballs (its envelope is `mb`, one ball of radius 725), so CA_mono and the five ingredients inside them wait
+   (screen 10).
 3. **Ingredients become the palette**, by compartment and side, each with its colour (the recipe's, else the Scene
    view's category colour, §6.2), its placed and target count. Not paintable, greyed with why: no structure; a map
    (`gp:915-919`); a compartment without geometry.
@@ -405,6 +409,8 @@ the only writers (`me:_spec/README.md:31-32`); the recipe is the document Mesosc
 
 #### 5.7.5 The Focus, both ways
 
+New design (proposal), from P1 and §5.3; prism-me's side as its spec has it.
+
 - Mesoscope's Focus (paths) is sent to prism-me as its pick of those entities; a pick in prism-me (a particle picks its
   entity's row, `me:_spec/ui.md:101-104`) comes back as the Focus of that ingredient, not of the instance. Additive
   picks (⇧, ⌘, Ctrl) add, as everywhere (§5.3).
@@ -422,6 +428,9 @@ the only writers (`me:_spec/README.md:31-32`); the recipe is the document Mesosc
 - *Why:* one history per app, each with its own writer (§5.7.2); a shared history across two apps is not proposed.
 
 #### 5.7.7 Conflicts: an ingredient edited after it was painted
+
+New design (proposal), from P5 (problems sit on the object) and P7; each prism-me change it offers is one step there
+(`me:_spec/architecture.md:102-104`).
 
 | Edit in Mesoscope | Its placed instances |
 | --- | --- |
