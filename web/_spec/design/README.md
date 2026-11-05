@@ -410,8 +410,8 @@ the only writers (`me:_spec/README.md:31-32`); the recipe is the document Mesosc
 2. **Over target is shown, not corrected**: the number and its meter in the warning colour; nothing is removed.
 3. **New instances live in prism-me**, in a drawn layer apart from a loaded model: the physics plan's L1 "a separate
    small list for 'drawn' instances, kept apart from the big static list" (`me:plans/2026-11-05-physics-eval.md:92`).
-   Exported with the recipe as `results` per ingredient (positions, rotations), legacy's field
-   (`js/cp_serialized.js:949, 1410-1422`), when the recipe is exported for cellPACK (open, §9).
+   Exported with the recipe as `results` per ingredient, legacy's field (`js/cp_serialized.js:949, 1410-1422`), when
+   the recipe is exported for cellPACK; its shape is open (§9: legacy has two).
 4. **Fibers are curves.** A drawn fiber is a curve of points; it comes back as the fiber ingredient's `curves` (points,
    `tlength` = their number, `ulength` = their spacing), as legacy read them (`js/cp_serialized.js:1395-1407`); the
    fiber's count is its number of curves (`gp:927`).
@@ -749,6 +749,11 @@ For prism-me:
   hide.
 - **The channel.** Default: messages keyed by path (Focus, palette, counts, rename), in one browser; to decide in a
   spike with prism-me.
+- **The export shape of placed instances** (for Ludovic and prism-me). Legacy's `results` has two shapes: the array
+  read as is from a recipe file (`js/cp_serialized.js:949`), and `{positions, rotations}` built by the model loader,
+  with random rotations (`js/cp_serialized.js:1410-1422`). Legacy's readers gate on `results.length` (`gp:963`,
+  `js/main.js:1485`), so the second shape is skipped by them. Undecided: which shape the export writes (and with what
+  rotations); no default proposed until prism-me's instance format is known.
 - **Draw mode** is the physics plan's L1 (a separate dynamic `ParticleList`, `me:plans/2026-11-05-physics-eval.md:92`);
   painting needs L1 only, Settle and Fill to targets need L2.
 
