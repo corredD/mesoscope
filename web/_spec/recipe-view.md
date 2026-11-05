@@ -562,6 +562,11 @@ The modern Recipe view is rebuilt from this spec, not patched from the SVG view.
    Dragology's per-pointer-move work (one render of the recipe per candidate state and per optimizer step) is, so it
    is measured first (the lane's spike) on Mpn. WebGPU is not used: it does not speed that work up, and text and
    curved labels (rows 34-38) are costly there.
+   *Lane `recipe-view-port` (Opus), for Ludovic to confirm:* npm `dragology@0.1.7` (2026-05-01) is not `b145bdd`
+   (2026-11-03, same version string): it has no `Operator`/`Modifier` exports, so our own operators are state
+   derivations in render plus `onDrop`. Edit-Mode reparenting uses legacy's deepest-overlap rule (§4.7) with one free
+   `varyFunc`, not `d.closest(...).withFloating()`: `closest` compares gaps, and every compartment under the pointer
+   has gap 0, so it cannot pick the deepest.
 2. **No live physics; the layout is a pure function of the tree** (Ludovic, 2026-11-04: "I probably won't need the
    physics"; the two-kinds-of-tree approach for grouping). Legacy's always-running force simulation (§3, rows 10-21) is
    replaced by:
