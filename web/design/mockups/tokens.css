@@ -1,0 +1,202 @@
+/*
+ * Mesoscope design tokens: the proposal (web/_spec/design/README.md §6).
+ *
+ * The next version of web/src/styles/theme.css: its names are kept where the role is the same (--color-bg,
+ * --color-text, --color-accent …) and new roles are added; the README's token table maps old to new.
+ * Values: the paper-and-ink palette of Stories Untold (lib/stories/stories-ui/src/theme.css at 5f4cf8dc), with
+ * its one warm accent; structure after Mol* v6 Prism (packages/prism/ui/src/styles/theme.css at c1b8ecb):
+ * few base colours per theme, states derived, ink over a canvas chosen by the canvas, not the theme.
+ * Switch with data-theme="light" | "dark" on <html>. No web fonts: system stacks only (mockups make no request).
+ */
+
+/* contrast-pairs (checked by check.mjs in both themes: foreground, background, minimum ratio; WCAG 2.2
+ * 1.4.3 text 4.5:1, 1.4.11 non-text 3:1)
+ * [
+ *   ["--color-text", "--color-bg", 4.5], ["--color-text", "--color-raised", 4.5],
+ *   ["--color-text", "--color-bg-subtle", 4.5], ["--color-text", "--color-accent-soft", 4.5],
+ *   ["--color-text-muted", "--color-bg", 4.5], ["--color-text-muted", "--color-raised", 4.5],
+ *   ["--color-text-muted", "--color-bg-subtle", 4.5], ["--color-text-subtle", "--color-bg", 4.5],
+ *   ["--color-text-subtle", "--color-raised", 4.5], ["--color-text-muted", "--color-bg-canvas", 4.5],
+ *   ["--color-accent", "--color-bg", 4.5], ["--color-accent", "--color-raised", 4.5],
+ *   ["--color-accent", "--color-accent-soft", 4.5], ["--color-accent-text", "--color-accent", 4.5],
+ *   ["--color-danger", "--color-bg", 4.5], ["--color-warning", "--color-bg", 4.5],
+ *   ["--color-success", "--color-bg", 4.5], ["--color-info", "--color-bg", 4.5],
+ *   ["--color-danger", "--color-raised", 4.5], ["--color-warning", "--color-raised", 4.5],
+ *   ["--color-border-strong", "--color-bg", 3], ["--color-border-strong", "--color-raised", 3],
+ *   ["--color-focus-ring", "--color-bg", 3], ["--color-focus-ring", "--color-raised", 3],
+ *   ["--color-focus-ring", "--color-bg-canvas", 3], ["--color-select", "--color-recipe-canvas-bg", 3],
+ *   ["--color-select", "--color-select-soft", 3], ["--color-select", "--color-bg", 3],
+ *   ["--color-text", "--color-select-soft", 4.5], ["--color-recipe-ink", "--color-recipe-canvas-bg", 4.5],
+ *   ["--color-recipe-ink", "--color-depth-1", 4.5], ["--color-recipe-ink", "--color-depth-2", 4.5]
+ * ]
+ */
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  /* Surfaces: paper for columns and panels, a darker stage for the views, white for what is raised. */
+  --color-bg: #f8f6f1;
+  --color-bg-canvas: #ebe8e1;
+  --color-bg-subtle: #f0ede6;
+  --color-bg-muted: #e6e2d9;
+  --color-raised: #ffffff;
+  --color-border: #dcd8cf;
+  --color-border-strong: #8a867e;
+
+  /* Ink. */
+  --color-text: #1c1b19;
+  --color-text-muted: #5f5c56;
+  --color-text-subtle: #6a665f;
+
+  /* One accent: the Focus (what is selected, in every view), the focus ring, the primary action. */
+  --color-accent: #b93e19;
+  --color-accent-hover: #9f3514;
+  --color-accent-soft: #f9ebe4;
+  --color-accent-text: #ffffff;
+  --color-select: var(--color-accent);
+  --color-select-soft: var(--color-accent-soft);
+  /* A selected circle in the Recipe view is filled with --color-select-soft and ringed with --color-select, as
+     legacy fills yellow and strokes orange (recipe-view.md §2.6): the ring meets its own fill at 3:1 or more on
+     any depth colour (WCAG 1.4.11), which the accent alone over the depth ramp does not (light depth 3+). */
+  --color-focus-ring: var(--color-accent);
+
+  /* Status: text colours too (4.5:1 on paper). */
+  --color-danger: #b3261e;
+  --color-danger-soft: #fbeae8;
+  --color-warning: #87590a;
+  --color-warning-soft: #f8efd9;
+  --color-success: #2f7d4f;
+  --color-info: #3c6fb0;
+
+  /* The Recipe view (recipe-view.md §2, §10.3): legacy's root colour and its HCL depth ramp, white to
+     hsl(228,30%,40%) (js/main.js:156-159), depth -1..6. Labels in legacy's black. */
+  --color-recipe-canvas-bg: #e1e1e1;
+  --color-recipe-ink: #1c1b19;
+  --color-depth-0: #f3fdff;
+  --color-depth-1: #d9e3ff;
+  --color-depth-2: #bfc9ff;
+  --color-depth-3: #a6b0e8;
+  --color-depth-4: #8e98ce;
+  --color-depth-5: #7680b5;
+  --color-depth-6: #5e6a9d;
+  --color-depth-7: #475485;
+
+  /* Overlays. */
+  --color-scrim: rgb(28 27 25 / 0.42);
+  --color-glass: rgb(248 246 241 / 0.82);
+  --shadow-float: 0 1px 0 var(--color-border), 0 10px 34px rgb(40 30 10 / 0.1);
+  --shadow-overlay: 0 1px 0 var(--color-border), 0 14px 40px rgb(40 30 10 / 0.14);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-bg: #1a1917;
+  --color-bg-canvas: #22211e;
+  --color-bg-subtle: #2a2925;
+  --color-bg-muted: #33312c;
+  --color-raised: #26241f;
+  --color-border: #36342f;
+  --color-border-strong: #7a766e;
+
+  --color-text: #efece6;
+  --color-text-muted: #b3aea4;
+  --color-text-subtle: #9a958b;
+
+  --color-accent: #f0703f;
+  --color-accent-hover: #f58a5f;
+  --color-accent-soft: #3a2219;
+  --color-accent-text: #1a1917;
+
+  --color-danger: #f28b82;
+  --color-danger-soft: #2c1614;
+  --color-warning: #e0b35a;
+  --color-warning-soft: #2e2615;
+  --color-success: #6fbf8e;
+  --color-info: #82aee6;
+
+  /* Dark: the theme's background (recipe-view.md §10.3) and the depth ramp run from it toward a light slate. */
+  --color-recipe-canvas-bg: #1f1e1b;
+  --color-recipe-ink: #efece6;
+  --color-depth-0: #1b1e24;
+  --color-depth-1: #262c36;
+  --color-depth-2: #323a49;
+  --color-depth-3: #3f485c;
+  --color-depth-4: #4c5871;
+  --color-depth-5: #596786;
+  --color-depth-6: #67779c;
+  --color-depth-7: #7688b2;
+
+  --color-scrim: rgb(0 0 0 / 0.62);
+  --color-glass: rgb(38 36 31 / 0.84);
+  --shadow-float: 0 1px 0 var(--color-border), 0 10px 34px rgb(0 0 0 / 0.4);
+  --shadow-overlay: 0 0 0 1px var(--color-border), 0 14px 40px rgb(0 0 0 / 0.5);
+}
+
+:root {
+  /* Derived states (Prism's way: a step from the surface, never a new hue). */
+  --color-hover: var(--color-bg-subtle);
+  --color-pressed: var(--color-bg-muted);
+  --color-control-bg: var(--color-raised);
+
+  /* Categorical data (group by, colour by a category): Okabe & Ito's colour-blind-safe set, in order. Past 8
+     categories, colour by compartment and vary lightness (README §6.2). */
+  --data-cat-1: #e69f00;
+  --data-cat-2: #56b4e9;
+  --data-cat-3: #009e73;
+  --data-cat-4: #f0e442;
+  --data-cat-5: #0072b2;
+  --data-cat-6: #d55e00;
+  --data-cat-7: #cc79a7;
+  --data-cat-8: #999999;
+
+  /* Type: serif for names one reads (recipe, compartments, headings), sans for the interface, mono for ids
+     (PDB, UniProt, gene ids like mpn665) and numbers in tables. */
+  --font-serif: 'Iowan Old Style', 'Charter', Georgia, serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-recipe-label: 'Oswald', 'Avenir Next Condensed', 'Arial Narrow', sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 13px;
+  --font-size-lg: 16px;
+  --font-size-xl: 22px;
+  --line-height: 1.45;
+
+  /* Space (Prism's scale): 2 4 8 12 16 24. */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 8px;
+  --space-4: 12px;
+  --space-5: 16px;
+  --space-6: 24px;
+
+  /* Size and density: one row height for tree, table and inspector rows; compact for long tables. */
+  --control-height-sm: 24px;
+  --control-height-md: 28px;
+  --row-height: 28px;
+  --row-height-compact: 24px;
+  --target-min: 24px;
+  --column-width: 260px;
+  --inspector-width: 340px;
+  --topbar-height: 44px;
+  --statusbar-height: 36px;
+
+  /* Shape: little rounding, hairlines; shadows only for what floats. */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-control: var(--radius-md);
+
+  /* Motion: instant hover, short reveals, none under reduced motion. */
+  --motion-fast: 100ms;
+  --motion-base: 200ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+  }
+}

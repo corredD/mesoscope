@@ -110,7 +110,8 @@ else {
   const block = css.match(/\/\* contrast-pairs([\s\S]*?)\*\//)
   if (!block) console.log('  no "/* contrast-pairs" block in tokens.css, skipped')
   else {
-    const pairs = JSON.parse(block[1])
+    const body = block[1].replace(/^\s*\*/gm, '')
+    const pairs = JSON.parse(body.slice(body.indexOf('[')))
     const b = await chromium.launch()
     for (const theme of ['light', 'dark']) {
       const p = await b.newPage()
