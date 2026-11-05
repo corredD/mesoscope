@@ -187,7 +187,9 @@ Mesoscale Explorer's canvas-or-tree selection (§2). *Shows:* the pills in the s
 the row and the tree node at once (screens 1-6).
 
 **P2. The inspector edits the Focus.** Every property of the Focus is edited in one place, the inspector on the right,
-whatever view it was picked in. Views show and pick; they do not each carry an editor. *Why:* today the same ingredient
+whatever view it was picked in. Views show and pick; they do not each carry an editor, with one exception: the Table
+edits one property across many rows (bulk curation of counts, PDB ids), the job a spreadsheet does; one object's
+properties are still the inspector's. *Why:* today the same ingredient
 is edited in table cells, in Ingredient Options and (planned) in Object Properties; one home means one place to look.
 Figma's properties panel, Prism's "one home for persistent UI" (§2). *Shows:* Ingredient Options' orientation and beads
 become inspector sections (screen 4); Object Properties is the inspector; multi-Focus edits all (screen 2).
