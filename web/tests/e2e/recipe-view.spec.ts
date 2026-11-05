@@ -327,12 +327,6 @@ for (const recipe of perfCases) {
     test.setTimeout(240_000)
     // Against the production build: the development build's per-frame React cost is not the user's.
     await serveExamples(page, recipe.serve)
-    // A press selects the ingredient, and the Ingredient View then downloads and renders its structure in software GL, which
-    // stalls the shared GPU process for seconds (measured: 3.3 s on HIV). That is not the canvas's cost: keep it out of the frame budget.
-    await page.route(
-      (url) => !url.hostname.includes('localhost') && !/\/data\/[^/]+\.json$/.test(url.pathname),
-      (route) => route.abort(),
-    )
     await loadExample(page, 'HIV mature', `http://localhost:${Number(process.env.E2E_PORT ?? 5173) + 10}/`)
     await rest(page, 120_000)
 
