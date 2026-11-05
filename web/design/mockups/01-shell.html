@@ -36,11 +36,11 @@ function anatomy() {
 }
 window.showAnatomy = true
 Mock.render({
-  caption: 'The shell (Overview arrangement, was Workspace › Default): the same eight regions on every screen. Press A to hide the anatomy. Click an ingredient in the outline, the Recipe view or 3D: all follow.',
+  caption: 'The shell (Overview arrangement, was Workspace › Default): the same five regions on every screen (eight parts labelled). Press H to hide the labels. Click an ingredient in the outline, the Recipe view or 3D: all follow.',
   recipe: 'hiv', views: ['recipe', 'ingredient'], split: 'cols', focus: ['HIV1_ENV_4nco_0_1_1'],
   after: () => requestAnimationFrame(anatomy),
 })
-document.addEventListener('keydown', (e) => { if (e.key === 'a' && !e.target.closest('input')) { window.showAnatomy = !window.showAnatomy; anatomy() } })
+document.addEventListener('keydown', (e) => { if (e.key === 'h' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest('input, textarea, select, [contenteditable]')) { window.showAnatomy = !window.showAnatomy; anatomy() } })
 </script>
 </body>
 </html>

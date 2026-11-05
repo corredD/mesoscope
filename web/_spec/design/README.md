@@ -282,6 +282,10 @@ whole shell.
 - **Keys** (proposed): 1-4 stage views, ⌘K palette, ⌘O open, ⌘S / ⇧⌘S export, ⌘F find a structure, E edit layout, F
   frame the Focus, ⌥↑ parent compartment, ⌘' next problem, F2 rename, ⌫ delete, Esc innermost first (palette, menu,
   card, then the Focus), ? shortcuts.
+- **Single-key shortcuts** (1-4, A, E, F, ?) follow WCAG 2.1.4 (Level A, "Character Key Shortcuts"): they fire only
+  with no modifier and not while a field, select or text area has the keyboard, and Settings › Keyboard turns them
+  off or remaps each one. Modified keys (⌘K, ⌘S, F2, ⌥↑) are not affected. Mockups only draw the keys; the one live
+  key, H on screen 1, follows the same rule.
 - **Arrangements** replace the presets: Overview (Recipe view beside the Ingredient view; was Default), Build (Recipe view
   over the Table; was Recipe creation), Curate (Table beside the Ingredient view; was Recipe curation). An arrangement
   sets the stage only; the column and inspector are always there (P3).
@@ -552,7 +556,7 @@ Each is a proposal; confirm or reject.
 | Screen | File | Shows |
 | --- | --- | --- |
 | Index | `index.html` | all screens, light and dark |
-| 1 Shell | `01-shell.html` | the regions, annotated (A hides them); Overview arrangement, HIV |
+| 1 Shell | `01-shell.html` | the regions, annotated (H hides the labels); Overview arrangement, HIV |
 | 2 Build | `02-build.html` | HIV, Recipe view over the Table, two ingredients in the Focus, Edit layout on |
 | 3 Curate | `03-curate.html` | Mpn, 180 ingredients, the Table beside the Ingredient view, "Needs attention" |
 | 4 Ingredient | `04-ingredient.html` | HIV Env on its membrane, Placement and Beads open |
