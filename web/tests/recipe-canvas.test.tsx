@@ -208,6 +208,28 @@ describe('RecipeCanvas: the panel', () => {
     expect(lastBackground()).toBe('rgb(255,0,0)')
   })
 
+  it('the dark background follows the theme attribute set after the effect ran (§10.3; review M3)', async () => {
+    // AppShell sets data-theme in its own passive effect, after this component's: the token is read through it.
+    const real = window.getComputedStyle.bind(window)
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((el: Element, pseudo?: string | null) => {
+      const style = real(el, pseudo)
+      const dark = document.documentElement.dataset.theme === 'dark'
+      return new Proxy(style, {
+        get: (t, k) => (k === 'getPropertyValue' ? (n: string) => (n === '--color-recipe-canvas-bg' ? (dark ? '#171a1f' : '#e1e1e1') : t.getPropertyValue(n)) : Reflect.get(t, k)),
+      })
+    })
+    document.documentElement.dataset.theme = 'light'
+    loadRecipe('InfluenzaA.json')
+    render(<RecipeCanvas />)
+    act(() => useThemeStore.setState({ theme: 'dark' }))
+    await act(async () => {
+      document.documentElement.dataset.theme = 'dark'
+    })
+    frames(1)
+    expect(lastBackground()).toBe('#171a1f')
+    delete document.documentElement.dataset.theme
+  })
+
   it('a recipe without a root colour has legacy\'s grey background (§2.2, row 24)', () => {
     loadRecipe('InfluenzaA.json')
     render(<RecipeCanvas />)
@@ -342,6 +364,32 @@ describe('RecipeCanvas: the context menu (§10.7, §8.12, rows 70-76)', () => {
     for (const name of ['Rename', 'Delete', 'Resize']) expect(screen.getByRole('button', { name })).toBeInTheDocument()
     rightClick(freePointIn('envelope'))
     expect(menu()).toHaveTextContent('envelope')
+  })
+
+  it('the menu opens at the pointer, in viewport coordinates (position: fixed; review M2)', () => {
+    vi.spyOn(HTMLDivElement.prototype, 'getBoundingClientRect').mockReturnValue({ left: 100, top: 50, x: 100, y: 50, right: 900, bottom: 450, width: 800, height: 400, toJSON() {} })
+    const at = centreOf('Hemagglutinin')
+    rightClick(at)
+    expect(menu()!.style.left).toBe(`${at.x}px`)
+    expect(menu()!.style.top).toBe(`${at.y}px`)
+  })
+
+  it('a colour pick commits on change, not on every input event (review S3)', () => {
+    rightClick(centreOf('Hemagglutinin'))
+    const input = screen.getByLabelText('Node color')
+    const before = store().graph
+    fireEvent.input(input, { target: { value: '#123456' } })
+    expect(store().graph).toBe(before)
+    fireEvent.change(input, { target: { value: '#123456' } })
+    expect(store().graph).not.toBe(before)
+  })
+
+  it('a resize below what draws is ignored: the frame loop never throws (review N1)', () => {
+    vi.spyOn(window, 'prompt').mockReturnValue('3')
+    rightClick(freePointIn('envelope'))
+    fireEvent.click(screen.getByRole('button', { name: 'Resize' }))
+    expect(() => frames(2)).not.toThrow()
+    expect(named('envelope').r).toBeGreaterThanOrEqual(5)
   })
 
   it('a right-click on empty canvas opens none (nothing deletes the root)', () => {
@@ -519,5 +567,17 @@ describe('RecipeCanvas: Edit Mode drag (rows 35, 66-68)', () => {
     mouse('mouseUp', win, { clientX: from.x + 10, clientY: from.y, button: 0 })
     expect(nodeByName('Hemagglutinin').parent!.data.name).toBe('envelope')
     expect(fillTexts()).not.toContain('InfluenzaA*')
+  })
+})
+
+describe('RecipeCanvas with no recipe (review M1)', () => {
+  it('a left press does not throw', () => {
+    act(() => useRecipeStore.setState({ graph: null }))
+    render(<RecipeCanvas />)
+    expect(() => {
+      mouse('mouseDown', canvasEl(), { clientX: 10, clientY: 10, button: 0 })
+      mouse('mouseMove', win, { clientX: 90, clientY: 50, button: 0 })
+      mouse('mouseUp', win, { clientX: 90, clientY: 50, button: 0 })
+    }).not.toThrow()
   })
 })
