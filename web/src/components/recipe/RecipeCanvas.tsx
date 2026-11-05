@@ -202,6 +202,11 @@ function ContextMenu({ x, y, node: sim, fill, categorical, onClose, onResize }: 
   const store = useRecipeStore.getState()
   const ui = useUiModeStore.getState()
   const value = (node.data as Record<string, unknown>)[ui.colorMode]
+  const commit = (hex: string) => {
+    // In a categorical mode the colour is the category's (row 72), else the node's own.
+    if (categorical) ui.setCategoryColor(ui.colorMode, value == null ? '' : String(value), hex)
+    else store.setNodeColor(node, hex)
+  }
   const rename = () => {
     const name = window.prompt('Please enter new name', node.data.name)
     if (name !== null) store.renameNode(node, name)
@@ -231,10 +236,10 @@ function ContextMenu({ x, y, node: sim, fill, categorical, onClose, onResize }: 
           type="color"
           aria-label="Node color"
           defaultValue={toHex(categorical ? fill : (rgbList(node.data.color) ?? fill))}
-          onChange={(e) => {
-            // In a categorical mode the colour is the category's (row 72), else the node's own.
-            if (categorical) ui.setCategoryColor(ui.colorMode, value == null ? '' : String(value), e.target.value)
-            else store.setNodeColor(node, e.target.value)
+          ref={(el) => {
+            // The native `change`, as legacy (index.html:672): React's onChange fires on every input event while the
+            // picker is dragged, and each one would rebuild the graph (review S3).
+            if (el) el.onchange = () => commit(el.value)
           }}
         />
       </label>
