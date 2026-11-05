@@ -333,7 +333,8 @@ surface, checked).
   Recipe view keeps its look (recipe-view.md §2.4, §6.3); in dark, a ramp from the canvas to a light slate (proposal,
   §8).
 - **Categories** (`--data-cat-1..8`): Okabe–Ito, in order (as Mol\*'s `lists.ts:292`): group by, colour by a category,
-  one colour per ingredient in the Scene view. Past 8 categories, colour by compartment and vary lightness, and rely on
+  one colour per ingredient in the Scene view. Okabe–Ito's vermilion is near the accent: in a view the Focus is never
+  shown by colour alone (ring, soft fill, the rest faded, the pill). Past 8 categories, colour by compartment and vary lightness, and rely on
   the legend and hover for identity.
 - **Ingredient colour**: the recipe's own (`color`), shown as is; when absent, the depth colour (as legacy for a null
   colour, recipe-view.md §10.8).

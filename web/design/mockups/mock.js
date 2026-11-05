@@ -461,7 +461,7 @@
       h('div', { class: 'glass band', 'aria-label': 'Sequence features' },
         h('div', { style: 'display:flex;gap:8px;align-items:center' }, h('strong', {}, 'Sequence'), n.uniprot ? h('span', { class: 'mono' }, n.uniprot) : h('span', { class: 'muted' }, 'needs a UniProt accession · ', h('button', { class: 'button link', onclick: () => run(C.find((c) => c.id === 'structure.find')) }, 'Find one'))),
         svg('svg', { viewBox: '0 0 600 14', height: 14, preserveAspectRatio: 'none', 'aria-hidden': 'true' }, svg('rect', { x: 0, y: 6, width: 600, height: 2, fill: css('--color-border-strong') }), n.uniprot ? [svg('rect', { x: 80, y: 2, width: 140, height: 10, rx: 2, fill: css('--data-cat-2') }), svg('rect', { x: 300, y: 2, width: 60, height: 10, rx: 2, fill: css('--data-cat-1') })] : null)),
-      h('div', { class: 'view-title', style: 'top:auto;bottom:8px' }, `${n.name} · `, h('span', { class: 'mono' }, n.pdb || 'no structure'), ` · ${n.beads || '—'} beads at level 0 · drawn here as its beads; in the app, Mol* v6`),
+      h('div', { class: 'view-title', style: 'top:auto;bottom:8px' }, `${n.name} · `, h('span', { class: 'mono' }, n.pdb || 'no structure'), ` · ${n.beads ? n.beads + (n.beads === 1 ? ' bead' : ' beads') + ' at level 0' : 'no beads'} · ${n.beadsXYZ ? 'its real beads' : 'a placeholder shape'}; in the app, Mol* v6`),
       h('div', { class: 'glass toolbar', role: 'toolbar', 'aria-label': 'Ingredient view options' }, tool('Show', 'cartoon'), tool('Colour', 'chain'), tool('Chains', 'all'), sep(), h('button', { class: 'tool', 'aria-pressed': 'true' }, 'Membrane'), h('button', { class: 'tool', 'aria-pressed': 'true' }, 'Beads'), sep(), h('button', { class: 'tool', title: 'Frame (F)' }, '⤢')))
   }
 
@@ -597,7 +597,7 @@
         results.map(([id, t, m, src], i) => h('div', { class: 'result' }, h('div', { class: 'thumb', role: 'img', 'aria-label': 'Structure preview' }),
           h('div', {}, h('div', {}, h('span', { class: 'mono' }, id), ' · ', h('span', { class: 'muted' }, src)), h('div', {}, t), h('div', { class: 'muted' }, m)),
           h('button', { class: 'button' + (i === 0 ? ' primary' : ''), title: `Set ${src === 'UniProt' ? 'the UniProt accession' : 'the structure'} of ${n.name}` }, 'Use'))),
-        h('p', { class: 'muted' }, 'Hovering a result previews it in the Ingredient view; Use writes it onto the ingredient in the Focus (one undo step).'))]
+        h('p', { class: 'muted' }, 'Illustrative results, not a live search. Hovering a result previews it in the Ingredient view; Use writes it onto the ingredient in the Focus (one undo step).'))]
   }
 
   // ---- render ---------------------------------------------------------------------------------------------------
