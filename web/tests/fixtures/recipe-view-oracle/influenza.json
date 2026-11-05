@@ -1,0 +1,1764 @@
+{
+ "source": {
+  "recipe": "data/InfluenzaA.json",
+  "legacyRef": "8f38b69a9877a6ba2f9d47be66733c6df3739153",
+  "d3": "4.13.0",
+  "canvas": {
+   "width": 234,
+   "height": 353
+  },
+  "viewport": [
+   1200,
+   800
+  ]
+ },
+ "rotationText": [
+  -14,
+  4,
+  23,
+  -18,
+  -10.5,
+  -20,
+  20,
+  20,
+  46,
+  -30,
+  -25,
+  -20,
+  20,
+  15,
+  -30,
+  -15,
+  -45,
+  12,
+  -15,
+  -16,
+  15,
+  15,
+  5,
+  18,
+  5,
+  15,
+  20,
+  -20,
+  -25
+ ],
+ "colorModes": [
+  "pdb",
+  "pcpalAxis",
+  "offset",
+  "count_molarity",
+  "Beads",
+  "geom",
+  "interaction",
+  "confidence",
+  "color",
+  "viewed",
+  "size",
+  "count",
+  "molarity",
+  "molecularweight",
+  "default",
+  "automatic"
+ ],
+ "nondeterministic": [
+  "automatic"
+ ],
+ "nodes": [
+  {
+   "index": 0,
+   "name": "InfluenzaA",
+   "depth": 0,
+   "parent": null,
+   "nodetype": "compartment",
+   "surface": null,
+   "childCount": 1,
+   "packR": 117,
+   "r": {
+    "size": 117,
+    "default": 117,
+    "molecularweight": 117,
+    "radius_molecularweight": 117,
+    "size@radius_scale=2": 117
+   },
+   "fill": {
+    "pdb": "rgb(220, 232, 228)",
+    "pcpalAxis": "rgb(220, 232, 228)",
+    "offset": "rgb(220, 232, 228)",
+    "count_molarity": "rgb(220, 232, 228)",
+    "Beads": "rgb(220, 232, 228)",
+    "geom": "rgb(220, 232, 228)",
+    "interaction": "rgb(224, 224, 224)",
+    "confidence": "rgb(224, 224, 224)",
+    "color": "rgb(224, 224, 224)",
+    "viewed": "rgb(224, 224, 224)",
+    "size": "rgb(224, 224, 224)",
+    "count": "rgb(224, 224, 224)",
+    "molarity": "rgb(224, 224, 224)",
+    "molecularweight": "rgb(224, 224, 224)",
+    "default": "rgb(224, 224, 224)",
+    "automatic": "rgb(224, 224, 224)"
+   },
+   "stroke": "rgb(184, 209, 207)",
+   "depthColor": "rgb(220, 232, 228)",
+   "fillError": {
+    "molarity": "ChangeCanvasColor: color_mapping is not defined",
+    "molecularweight": "ChangeCanvasColor: color_mapping is not defined"
+   }
+  },
+  {
+   "index": 1,
+   "name": "envelope",
+   "depth": 1,
+   "parent": "InfluenzaA",
+   "nodetype": "compartment",
+   "surface": null,
+   "childCount": 3,
+   "packR": 98.937,
+   "r": {
+    "size": 111.188,
+    "default": 46.547,
+    "molecularweight": 111.188,
+    "radius_molecularweight": 111.188,
+    "size@radius_scale=2": 197.376
+   },
+   "fill": {
+    "pdb": "rgb(184, 209, 207)",
+    "pcpalAxis": "rgb(184, 209, 207)",
+    "offset": "rgb(184, 209, 207)",
+    "count_molarity": "rgb(184, 209, 207)",
+    "Beads": "rgb(184, 209, 207)",
+    "geom": "rgb(184, 209, 207)",
+    "interaction": "rgb(184, 209, 207)",
+    "confidence": "rgb(184, 209, 207)",
+    "color": "rgb(184, 209, 207)",
+    "viewed": "rgb(184, 209, 207)",
+    "size": "rgb(184, 209, 207)",
+    "count": "rgb(184, 209, 207)",
+    "molarity": "rgb(184, 209, 207)",
+    "molecularweight": "rgb(184, 209, 207)",
+    "default": "rgb(184, 209, 207)",
+    "automatic": "rgb(255, 0, 0)"
+   },
+   "stroke": "rgb(149, 185, 191)",
+   "depthColor": "rgb(184, 209, 207)",
+   "fillError": {
+    "molarity": "ChangeCanvasColor: color_mapping is not defined",
+    "molecularweight": "ChangeCanvasColor: color_mapping is not defined"
+   }
+  },
+  {
+   "index": 2,
+   "name": "Hemagglutinin",
+   "depth": 2,
+   "parent": "envelope",
+   "nodetype": "ingredient",
+   "surface": true,
+   "childCount": 0,
+   "packR": 32.694,
+   "r": {
+    "size": 40,
+    "default": 10,
+    "molecularweight": 40,
+    "radius_molecularweight": 40,
+    "size@radius_scale=2": 80
+   },
+   "fill": {
+    "pdb": "rgb(149, 185, 191)",
+    "pcpalAxis": "rgb(149, 185, 191)",
+    "offset": "rgb(149, 185, 191)",
+    "count_molarity": "rgb(149, 185, 191)",
+    "Beads": "rgb(149, 185, 191)",
+    "geom": "rgb(149, 185, 191)",
+    "interaction": "rgb(255, 128, 64)",
+    "confidence": "rgb(255, 0, 0)",
+    "color": "rgb(255, 128, 64)",
+    "viewed": "rgb(255, 0, 0)",
+    "size": "rgb(255, 0, 0)",
+    "count": "rgb(255, 0, 0)",
+    "molarity": "rgb(255, 0, 0)",
+    "molecularweight": "rgb(255, 0, 0)",
+    "default": "rgb(255, 128, 64)",
+    "automatic": "rgb(255, 0, 0)"
+   },
+   "stroke": "rgb(117, 161, 178)",
+   "depthColor": "rgb(149, 185, 191)",
+   "fillError": {
+    "molarity": "ChangeCanvasColor: color_mapping is not defined",
+    "molecularweight": "ChangeCanvasColor: color_mapping is not defined"
+   }
+  },
+  {
+   "index": 3,
+   "name": "Neuraminidase",
+   "depth": 2,
+   "parent": "envelope",
+   "nodetype": "ingredient",
+   "surface": true,
+   "childCount": 0,
+   "packR": 32.694,
+   "r": {
+    "size": 40,
+    "default": 10,
+    "molecularweight": 40,
+    "radius_molecularweight": 40,
+    "size@radius_scale=2": 80
+   },
+   "fill": {
+    "pdb": "rgb(149, 185, 191)",
+    "pcpalAxis": "rgb(149, 185, 191)",
+    "offset": "rgb(149, 185, 191)",
+    "count_molarity": "rgb(149, 185, 191)",
+    "Beads": "rgb(149, 185, 191)",
+    "geom": "rgb(149, 185, 191)",
+    "interaction": "rgb(128, 255, 0)",
+    "confidence": "rgb(255, 0, 0)",
+    "color": "rgb(128, 255, 0)",
+    "viewed": "rgb(255, 0, 0)",
+    "size": "rgb(255, 0, 0)",
+    "count": "rgb(255, 0, 0)",
+    "molarity": "rgb(255, 0, 0)",
+    "molecularweight": "rgb(255, 0, 0)",
+    "default": "rgb(128, 255, 0)",
+    "automatic": "rgb(255, 0, 0)"
+   },
+   "stroke": "rgb(117, 161, 178)",
+   "depthColor": "rgb(149, 185, 191)",
+   "fillError": {
+    "molarity": "ChangeCanvasColor: color_mapping is not defined",
+    "molecularweight": "ChangeCanvasColor: color_mapping is not defined"
+   }
+  },
+  {
+   "index": 4,
+   "name": "M2protein",
+   "depth": 2,
+   "parent": "envelope",
+   "nodetype": "ingredient",
+   "surface": true,
+   "childCount": 0,
+   "packR": 32.694,
+   "r": {
+    "size": 40,
+    "default": 10,
+    "molecularweight": 40,
+    "radius_molecularweight": 40,
+    "size@radius_scale=2": 80
+   },
+   "fill": {
+    "pdb": "rgb(149, 185, 191)",
+    "pcpalAxis": "rgb(149, 185, 191)",
+    "offset": "rgb(149, 185, 191)",
+    "count_molarity": "rgb(149, 185, 191)",
+    "Beads": "rgb(149, 185, 191)",
+    "geom": "rgb(149, 185, 191)",
+    "interaction": "rgb(0, 128, 128)",
+    "confidence": "rgb(255, 0, 0)",
+    "color": "rgb(0, 128, 128)",
+    "viewed": "rgb(255, 0, 0)",
+    "size": "rgb(255, 0, 0)",
+    "count": "rgb(255, 0, 0)",
+    "molarity": "rgb(255, 0, 0)",
+    "molecularweight": "rgb(255, 0, 0)",
+    "default": "rgb(0, 128, 128)",
+    "automatic": "rgb(255, 0, 0)"
+   },
+   "stroke": "rgb(117, 161, 178)",
+   "depthColor": "rgb(149, 185, 191)",
+   "fillError": {
+    "molarity": "ChangeCanvasColor: color_mapping is not defined",
+    "molecularweight": "ChangeCanvasColor: color_mapping is not defined"
+   }
+  }
+ ],
+ "frameNotes": "mousein=false; node_over=null; node_selected=null; canvas_color=pdb; canvas_label=name; canvas_map_r=size; radius_scale=1; simulation stopped before the call and the pointer was never over the canvas; rotate/transform/quadraticCurveTo/bezierCurveTo/ellipse are recorded in addition to the requested ops",
+ "frame": [
+  {
+   "op": "clearRect",
+   "args": [
+    0,
+    0,
+    234,
+    353
+   ],
+   "fillStyle": "#e0e0e0",
+   "strokeStyle": "#000000",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "fillRect",
+   "args": [
+    0,
+    0,
+    1200,
+    800
+   ],
+   "fillStyle": "#e0e0e0",
+   "strokeStyle": "#000000",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "save",
+   "args": [],
+   "fillStyle": "#e0e0e0",
+   "strokeStyle": "#000000",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "translate",
+   "args": [
+    0,
+    0
+   ],
+   "fillStyle": "#e0e0e0",
+   "strokeStyle": "#000000",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "scale",
+   "args": [
+    1,
+    1
+   ],
+   "fillStyle": "#e0e0e0",
+   "strokeStyle": "#000000",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "moveTo",
+   "args": [
+    0,
+    0
+   ],
+   "fillStyle": "#e0e0e0",
+   "strokeStyle": "#000000",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "beginPath",
+   "args": [],
+   "fillStyle": "#e0e0e0",
+   "strokeStyle": "#000000",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "fill",
+   "args": [],
+   "fillStyle": "#dce8e4",
+   "strokeStyle": "#000000",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "stroke",
+   "args": [],
+   "fillStyle": "#dce8e4",
+   "strokeStyle": "#b8d1cf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "moveTo",
+   "args": [
+    116,
+    175.5
+   ],
+   "fillStyle": "#dce8e4",
+   "strokeStyle": "#b8d1cf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "beginPath",
+   "args": [],
+   "fillStyle": "#dce8e4",
+   "strokeStyle": "#b8d1cf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "arc",
+   "args": [
+    116,
+    175.5,
+    116.188,
+    0,
+    10
+   ],
+   "fillStyle": "#dce8e4",
+   "strokeStyle": "#b8d1cf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "stroke",
+   "args": [],
+   "fillStyle": "#dce8e4",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "arc",
+   "args": [
+    116,
+    175.5,
+    106.188,
+    0,
+    10
+   ],
+   "fillStyle": "#dce8e4",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "stroke",
+   "args": [],
+   "fillStyle": "#dce8e4",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "fill",
+   "args": [],
+   "fillStyle": "#b8d1cf",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "stroke",
+   "args": [],
+   "fillStyle": "#b8d1cf",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "moveTo",
+   "args": [
+    19.708,
+    119.906
+   ],
+   "fillStyle": "#b8d1cf",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "beginPath",
+   "args": [],
+   "fillStyle": "#b8d1cf",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "arc",
+   "args": [
+    19.708,
+    119.906,
+    40,
+    0,
+    10
+   ],
+   "fillStyle": "#b8d1cf",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "fill",
+   "args": [],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "stroke",
+   "args": [],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "moveTo",
+   "args": [
+    213.407,
+    121.884
+   ],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "beginPath",
+   "args": [],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "arc",
+   "args": [
+    213.407,
+    121.884,
+    40,
+    0,
+    10
+   ],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "fill",
+   "args": [],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "stroke",
+   "args": [],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "moveTo",
+   "args": [
+    118.27,
+    286.665
+   ],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "beginPath",
+   "args": [],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "arc",
+   "args": [
+    118.27,
+    286.665,
+    40,
+    0,
+    10
+   ],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "fill",
+   "args": [],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "stroke",
+   "args": [],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "InfluenzaA",
+    5,
+    333
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "20px Georgia",
+   "textAlign": "start"
+  },
+  {
+   "op": "save",
+   "args": [],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "translate",
+   "args": [
+    116,
+    175.5
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.073
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.021
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "e",
+    0,
+    -116.188
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.021
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.024
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "p",
+    0,
+    -116.188
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.024
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.024
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "o",
+    0,
+    -116.188
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.024
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.013
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "l",
+    0,
+    -116.188
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.013
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.021
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "e",
+    0,
+    -116.188
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.021
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.024
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "v",
+    0,
+    -116.188
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.024
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.024
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "n",
+    0,
+    -116.188
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.024
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.021
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "e",
+    0,
+    -116.188
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.021
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "restore",
+   "args": [],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "restore",
+   "args": [],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  }
+ ],
+ "frameZoomed": [
+  {
+   "op": "clearRect",
+   "args": [
+    0,
+    0,
+    234,
+    353
+   ],
+   "fillStyle": "#e0e0e0",
+   "strokeStyle": "#000000",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "fillRect",
+   "args": [
+    0,
+    0,
+    1200,
+    800
+   ],
+   "fillStyle": "#e0e0e0",
+   "strokeStyle": "#000000",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "save",
+   "args": [],
+   "fillStyle": "#e0e0e0",
+   "strokeStyle": "#000000",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "translate",
+   "args": [
+    0,
+    0
+   ],
+   "fillStyle": "#e0e0e0",
+   "strokeStyle": "#000000",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "scale",
+   "args": [
+    2,
+    2
+   ],
+   "fillStyle": "#e0e0e0",
+   "strokeStyle": "#000000",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "moveTo",
+   "args": [
+    0,
+    0
+   ],
+   "fillStyle": "#e0e0e0",
+   "strokeStyle": "#000000",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "beginPath",
+   "args": [],
+   "fillStyle": "#e0e0e0",
+   "strokeStyle": "#000000",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "fill",
+   "args": [],
+   "fillStyle": "#dce8e4",
+   "strokeStyle": "#000000",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "stroke",
+   "args": [],
+   "fillStyle": "#dce8e4",
+   "strokeStyle": "#b8d1cf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "moveTo",
+   "args": [
+    116,
+    175.5
+   ],
+   "fillStyle": "#dce8e4",
+   "strokeStyle": "#b8d1cf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "beginPath",
+   "args": [],
+   "fillStyle": "#dce8e4",
+   "strokeStyle": "#b8d1cf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "arc",
+   "args": [
+    116,
+    175.5,
+    116.188,
+    0,
+    10
+   ],
+   "fillStyle": "#dce8e4",
+   "strokeStyle": "#b8d1cf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "stroke",
+   "args": [],
+   "fillStyle": "#dce8e4",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "arc",
+   "args": [
+    116,
+    175.5,
+    106.188,
+    0,
+    10
+   ],
+   "fillStyle": "#dce8e4",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "stroke",
+   "args": [],
+   "fillStyle": "#dce8e4",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "fill",
+   "args": [],
+   "fillStyle": "#b8d1cf",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "stroke",
+   "args": [],
+   "fillStyle": "#b8d1cf",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "moveTo",
+   "args": [
+    19.708,
+    119.906
+   ],
+   "fillStyle": "#b8d1cf",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "beginPath",
+   "args": [],
+   "fillStyle": "#b8d1cf",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "arc",
+   "args": [
+    19.708,
+    119.906,
+    40,
+    0,
+    10
+   ],
+   "fillStyle": "#b8d1cf",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "fill",
+   "args": [],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#95b9bf",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "stroke",
+   "args": [],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "moveTo",
+   "args": [
+    213.407,
+    121.884
+   ],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "beginPath",
+   "args": [],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "arc",
+   "args": [
+    213.407,
+    121.884,
+    40,
+    0,
+    10
+   ],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "fill",
+   "args": [],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "stroke",
+   "args": [],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "moveTo",
+   "args": [
+    118.27,
+    286.665
+   ],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "beginPath",
+   "args": [],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "arc",
+   "args": [
+    118.27,
+    286.665,
+    40,
+    0,
+    10
+   ],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "fill",
+   "args": [],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "stroke",
+   "args": [],
+   "fillStyle": "#95b9bf",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px sans-serif",
+   "textAlign": "start"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "InfluenzaA",
+    2.5,
+    166.5
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "10px Georgia",
+   "textAlign": "start"
+  },
+  {
+   "op": "save",
+   "args": [],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "translate",
+   "args": [
+    116,
+    175.5
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.073
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.021
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "e",
+    0,
+    -116.188
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.021
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.024
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "p",
+    0,
+    -116.188
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.024
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.024
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "o",
+    0,
+    -116.188
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.024
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.013
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "l",
+    0,
+    -116.188
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.013
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.021
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "e",
+    0,
+    -116.188
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.021
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.024
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "v",
+    0,
+    -116.188
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.024
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.024
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "n",
+    0,
+    -116.188
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.024
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.021
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "e",
+    0,
+    -116.188
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "rotate",
+   "args": [
+    -0.021
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "restore",
+   "args": [],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "11px Oswald",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "Hemagglutinin",
+    -20.292,
+    179.906
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "20px Georgia",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "Neuraminidase",
+    173.407,
+    181.884
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "20px Georgia",
+   "textAlign": "center"
+  },
+  {
+   "op": "fillText",
+   "args": [
+    "M2protein",
+    78.27,
+    346.665
+   ],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "20px Georgia",
+   "textAlign": "center"
+  },
+  {
+   "op": "restore",
+   "args": [],
+   "fillStyle": "#000000",
+   "strokeStyle": "#75a1b2",
+   "lineWidth": 1,
+   "font": "20px Georgia",
+   "textAlign": "center"
+  }
+ ],
+ "gestures": {
+  "click": {
+   "target": "Hemagglutinin",
+   "nodeSelected": "Hemagglutinin",
+   "nodesSelections": [
+    "Hemagglutinin"
+   ],
+   "lineSelected": false,
+   "visited": true,
+   "tableTab": 0,
+   "selectedRows": [
+    "id_2"
+   ],
+   "objectPropertiesText": "includeid: id_2namesizemolecularweightpdb: HA_align.pdbtransform: [object Object]bu: BU1model: selection: confidencecountmolaritylabeluniprotgeom: geom_type: NonesurfaceopmpcpalAxis: 0,0,0offset: 0,0,"
+  },
+  "ctrlClick": {
+   "target": "Neuraminidase",
+   "nodeSelected": "Neuraminidase",
+   "nodesSelections": [
+    "Hemagglutinin",
+    "Neuraminidase"
+   ],
+   "lineSelected": false,
+   "visited": true,
+   "tableTab": 0,
+   "selectedRows": [
+    "id_3"
+   ],
+   "objectPropertiesText": "includeid: id_3namesizemolecularweightpdb: NA_align.pdbtransform: [object Object]bu: BU1model: selection: confidencecountmolaritylabeluniprotgeom: geom_type: NonesurfaceopmpcpalAxis: 0,0,0offset: 0,0,"
+  },
+  "clickInsideCompartment": {
+   "target": "envelope",
+   "nodeSelected": "envelope",
+   "nodesSelections": [
+    "envelope"
+   ],
+   "lineSelected": false,
+   "visited": null,
+   "tableTab": 0,
+   "selectedRows": [],
+   "objectPropertiesText": "name: envelopenodetype: compartmentgeom: geom_type: Nonethickness: 7.5size: 200 path: InfluenzaA/envelope Nb of children: 3 Source:    File (.dae,.obj,.map)    Sphere    MetaBalls (multiple spheres)  ",
+   "world": [
+    116.812,
+    176.312
+   ]
+  },
+  "clickEmpty": {
+   "target": "InfluenzaA",
+   "nodeSelected": null,
+   "nodesSelections": [],
+   "lineSelected": false,
+   "visited": null,
+   "tableTab": 0,
+   "selectedRows": [],
+   "objectPropertiesText": "",
+   "world": [
+    4,
+    348
+   ]
+  }
+ },
+ "gestureNotes": "Each gesture group runs in a fresh page load: click+ctrlClick together, then clickInsideCompartment, then clickEmpty. The simulation is stopped (simulation.stop()) right before reading node positions and aiming; mouseup side effects were read 1500 ms later. tableTab is current_grid (0 = Recipe table, 1 = Interaction table); selectedRows are item ids of gridArray[0].getSelectedRows(). objectPropertiesText is the textContent of #objectOptions (the Object Properties panel; its Golden Layout tab is not the active one). No non-surface ingredient is pickable; used surface ingredient Hemagglutinin. No non-surface ingredient is pickable; used surface ingredient Neuraminidase."
+}
