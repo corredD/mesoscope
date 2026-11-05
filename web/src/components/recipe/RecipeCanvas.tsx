@@ -221,7 +221,8 @@ function ContextMenu({ x, y, node: sim, fill, categorical, onClose, onResize }: 
   const resize = () => {
     const answer = window.prompt('Please enter new size', String(sim.r))
     const r = answer === null ? NaN : parseFloat(answer)
-    if (!Number.isNaN(r)) {
+    // draw.ts arcs a compartment at r - 5 and a leaf at r: a smaller radius throws every frame and stops the loop (§10.7).
+    if (!Number.isNaN(r) && r >= (node.children ? 5 : 0)) {
       onResize(r)
       if (!node.children) store.updateIngredient(node, { size: r })
     }
