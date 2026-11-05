@@ -22,7 +22,7 @@
  *   ["--color-danger", "--color-bg", 4.5], ["--color-warning", "--color-bg", 4.5],
  *   ["--color-success", "--color-bg", 4.5], ["--color-info", "--color-bg", 4.5],
  *   ["--color-danger", "--color-raised", 4.5], ["--color-warning", "--color-raised", 4.5],
- *   ["--color-border-strong", "--color-bg", 3], ["--color-border-strong", "--color-raised", 3],
+ *   ["--color-field-edge", "--color-bg", 3], ["--color-field-edge", "--color-raised", 3],
  *   ["--color-focus-ring", "--color-bg", 3], ["--color-focus-ring", "--color-raised", 3],
  *   ["--color-focus-ring", "--color-bg-canvas", 3], ["--color-select", "--color-recipe-canvas-bg", 3],
  *   ["--color-select", "--color-select-soft", 3], ["--color-select", "--color-bg", 3],
@@ -148,6 +148,8 @@
   --color-hover: var(--color-bg-subtle);
   --color-pressed: var(--color-bg-muted);
   --color-control-bg: var(--color-raised);
+  /* A field's or a control's edge (inputs, selects, chips, buttons): 3:1 on paper and on raised (WCAG 1.4.11). */
+  --color-field-edge: var(--color-border-strong);
 
   /* Categorical data (group by, colour by a category): Okabe & Ito's colour-blind-safe set, in order. Past 8
      categories, colour by compartment and vary lightness (README §6.2). */

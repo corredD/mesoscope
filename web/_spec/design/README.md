@@ -319,7 +319,7 @@ the role is the same. Values: Stories Untold's paper-and-ink palette; structure 
 | `--color-bg-muted` | `#e6e2d9` | `#33312c` | pressed, a setting that is on | `--color-bg-muted` |
 | `--color-raised` | `#ffffff` | `#26241f` | fields, cards, menus | `--color-control-bg` |
 | `--color-border` | `#dcd8cf` | `#36342f` | hairlines | `--color-border` |
-| `--color-border-strong` | `#8a867e` | `#7a766e` | field and control edges (3:1) | `--color-border-strong` |
+| `--color-border-strong`, `--color-field-edge` | `#8a867e` | `#7a766e` | field and control edges (3:1): inputs, selects, chips, buttons | `--color-border-strong` |
 | `--color-text` | `#1c1b19` | `#efece6` | ink | `--color-text` |
 | `--color-text-muted` | `#5f5c56` | `#b3aea4` | labels, secondary | `--color-text-muted` |
 | `--color-text-subtle` | `#6a665f` | `#9a958b` | hints, disabled reasons | new |
