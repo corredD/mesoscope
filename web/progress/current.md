@@ -6,9 +6,9 @@ queue (`../TODO.md`).
 
 ## In flight
 
-- `recipe-view-port` (`~/Developments/mesoscope-lanes/recipe-view-port`, branch `lane/recipe-view-port`, ports
-  5181/8091): Recipe view rebuilt on Dragology from `_spec/recipe-view.md`; step 0 spike first. Brief:
-  [2026-11-04-recipe-view-port.md](2026-11-04-recipe-view-port.md) (on the lane's branch).
-
 ## Waiting on Ludovic
+
+- `recipe-view-port`: PR [#47](https://github.com/corredD/mesoscope/pull/47) open, gate done (9 fixed, 8 open);
+  review, side-by-side check, merge. Brief and results:
+  [2026-11-04-recipe-view-port.md](2026-11-04-recipe-view-port.md) (on the lane's branch).
 
