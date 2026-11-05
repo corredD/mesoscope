@@ -15,7 +15,6 @@ let nextId = 0
 
 function ing(raw, side, compPath) {
   const src = raw.source ?? {}
-  const pos = raw.positions ?? raw.radii
   const beads = raw.positions?.[0]?.coords ? raw.positions[0].coords.length / 3 : 0
   return {
     id: `i${nextId++}`, kind: 'ingredient', name: raw.name, side, path: compPath,
@@ -26,7 +25,12 @@ function ing(raw, side, compPath) {
     ingtype: raw.ingtype ?? (raw.Type === 'Grow' ? 'fiber' : 'protein'),
     color: raw.color ?? null, beads, lods: (raw.radii_lod ?? raw.radii ?? []).length,
     pcpalAxis: raw.principalVector ?? [0, 0, 1], offset: src.transform?.offset ?? raw.offset ?? [0, 0, 0],
-    partners: (raw.partners_properties ?? []).length + (raw.partners_name ?? []).length, _pos: !!pos,
+    partners: (raw.partners_properties ?? []).length + (raw.partners_name ?? []).length,
+    // Level-0 beads (xyz and radius), for the Ingredient view's bead drawing; serialized recipes only (Mpn's are
+    // large and not drawn).
+    beadsXYZ: raw.radii_lod && raw.positions?.[0]?.coords
+      ? raw.positions[0].coords.map((v) => +v.toFixed(1)) : undefined,
+    beadsR: raw.radii_lod?.[0]?.radii?.map((v) => +v.toFixed(1)),
   }
 }
 
