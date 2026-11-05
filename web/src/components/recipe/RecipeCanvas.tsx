@@ -158,8 +158,7 @@ export function RecipeCanvas() {
     const node = hitNode(view.scene.nodes, x, y)
     // A link or the empty canvas opens no menu, so nothing deletes the root (§10.7, §8.12).
     if (hitLink(view.scene.links, x, y, node) || !node.parent) return
-    const stage = stageRef.current!.getBoundingClientRect()
-    setMenu({ x: e.clientX - stage.left, y: e.clientY - stage.top, node })
+    setMenu({ x: e.clientX, y: e.clientY, node }) // the menu is position: fixed, so viewport coordinates
   }
 
   return (
