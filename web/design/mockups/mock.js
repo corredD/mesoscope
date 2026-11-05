@@ -394,7 +394,7 @@
       if (sel) box.append(svg('text', { class: 'rv-ing-label', x: l.x, y: l.y + l.r + 12, 'text-anchor': 'middle' }, n.name))
     }
     box.append(svg('text', { class: 'rv-root-label', x: 0, y: hgt + 4 }, R.root.name + '*'))
-    if (state.editMode) box.append(svg('text', { x: w, y: 10, 'text-anchor': 'end', fill: css('--color-accent'), 'font-size': 12 }, 'Edit layout: drag to move or reparent'))
+    if (state.editMode) box.append(svg('text', { class: 'rv-ing-label', x: w, y: 10, 'text-anchor': 'end', 'font-size': 12 }, 'Edit layout: drag to move or reparent'))
     const n = state.focus.length
     return h('section', { class: 'view recipe', 'aria-label': 'Recipe view' }, box,
       h('div', { class: 'glass toolbar', role: 'toolbar', 'aria-label': 'Recipe view options' },
