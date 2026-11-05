@@ -285,9 +285,29 @@ describe('group by (§6.5, rows 89-90)', () => {
     for (const a of clusters) for (const b of clusters) if (a !== b) expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThanOrEqual(a.r + b.r - 1e-6)
   })
 
-  it('a built-in key does not group (legacy `default_options`)', () => {
-    expect(assignClusters(grouped(), 'size')).toBe(false)
+  it('only none (null) turns grouping off: a built-in field groups by value too (Ludovic, 2026-11-05)', () => {
+    expect(assignClusters(grouped(), 'size')).toBe(true)
     expect(assignClusters(grouped(), null)).toBe(false)
+  })
+
+  it('on HIV, grouping by ingtype gives each leaf its type cluster; after the heat the clusters show', () => {
+    const { sim, nodes } = simulate(load('HIV_serialized.json'))
+    settle(sim)
+    const leaves = nodes.filter((n) => n.leaf)
+    const mean = () => {
+      let sum = 0
+      for (const n of leaves) sum += Math.hypot(n.x - (n.cluster!.x + n.parent!.x), n.y - (n.cluster!.y + n.parent!.y))
+      return sum / leaves.length
+    }
+    sim.clusterBy = assignClusters(nodes, 'ingtype')
+    expect(sim.clusterBy).toBe(true)
+    const types = new Set(leaves.map((n) => (n.node.data as { ingtype?: string }).ingtype ?? ''))
+    expect(new Set(leaves.map((n) => n.cluster)).size).toBe(types.size)
+    const before = mean()
+    sim.heat()
+    settle(sim)
+    const after = mean()
+    expect(after).toBeLessThan(before)
   })
 
   it('the cluster nudge pulls a leaf outside its cluster towards it, unscaled by alpha, only when clusterBy is on', () => {
