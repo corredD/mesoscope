@@ -277,7 +277,7 @@
     return svg('svg', { width: 22, height: 22, viewBox: '0 0 22 22', 'aria-hidden': 'true' },
       svg('circle', { cx: 11, cy: 11, r: 10, fill: 'none', stroke: css('--color-text'), 'stroke-width': 1.5 }),
       svg('circle', { cx: 8, cy: 9, r: 4, fill: css('--color-depth-3') }),
-      svg('circle', { cx: 14.5, cy: 13, r: 3, fill: css('--color-accent') }),
+      svg('circle', { cx: 14.5, cy: 13, r: 3, fill: css('--color-depth-2') }),
       svg('circle', { cx: 9, cy: 15.5, r: 2, fill: css('--color-depth-5') }))
   }
   function topbar() {

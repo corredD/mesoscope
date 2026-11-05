@@ -302,7 +302,7 @@ whole shell.
 - **Error**: in the status bar, kept until dismissed, with a link to the detail; a recipe that fails to parse says where
   and why on the Open page.
 - **Not built / cannot run**: greyed with the reason (P7).
-- **Unsaved**: the accent dot beside the recipe's name; leaving asks once.
+- **Unsaved**: a muted ink dot beside the recipe's name; leaving asks once.
 
 ## 6. The design system
 
