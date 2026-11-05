@@ -177,7 +177,10 @@ context compaction; written state and small PRs do not. Modelled on Mol\* v6 (`~
   production lines, the model of each step. Over the size: record it and what took the room, keep going; stop and
   report when the work turns out different from the brief.
 - **Models by step**: mechanical work (copying, renames, running checks and tests, measuring, oracle captures) to
-  Sonnet subagents; design, hot-path authoring and every review to Opus.
+  Sonnet subagents; design, hot-path authoring and every review to Opus. A lane session itself runs on Sonnet unless
+  its brief says why Opus (a background agent gets `model: "sonnet"` explicitly, else it inherits the coordinator's
+  Opus); it hands each design or hot-path step to one Opus subagent, and the gate's reviewer and skeptic are Opus. At
+  most 3 lanes run at once; the others wait in `current.md` as queued.
 - **A lane is done** when: it works as the brief's check says; it has tests (failing first for a fix); these pass, from
   `web/`: `npm run typecheck && npm run lint && npm test && npm run build && E2E_PORT=<port> npm run test:e2e`; no
   changelog file (the PR body and the progress file are the record); the specs it moves (`_spec/<area>.md`,
