@@ -33,7 +33,15 @@ export function RecipeCanvas() {
   const stageRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [view] = useState(() => new RecipeView())
+  const [themeTick, setThemeTick] = useState(0)
   const [menu, setMenu] = useState<{ x: number; y: number; node: SimNode } | null>(null)
+
+  // AppShell sets `data-theme` in its own effect, after this component's: re-read the theme token once it is set (M3).
+  useEffect(() => {
+    const observer = new MutationObserver(() => setThemeTick((t) => t + 1))
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => observer.disconnect()
+  }, [])
 
   // The canvas first: its size seeds the first layout (legacy's pack is the panel's size at mount, §1.1). Then HiDPI
   // (§10.1), gestures (§4.1), the frame loop.
@@ -131,7 +139,7 @@ export function RecipeCanvas() {
       s.rootLabel = graph.nodes[0].data.name + (graph !== view.loaded ? '*' : '')
     }
     view.request()
-  }, [graph, view, theme, ui.colorMode, ui.minColor, ui.maxColor, ui.useColorMapping, ui.visitedNodes, ui.categoryColors, ui.showLegend, ui.legend])
+  }, [graph, view, theme, themeTick, ui.colorMode, ui.minColor, ui.maxColor, ui.useColorMapping, ui.visitedNodes, ui.categoryColors, ui.showLegend, ui.legend])
 
   // Interaction state the frame reads (§2.6).
   useEffect(() => {
