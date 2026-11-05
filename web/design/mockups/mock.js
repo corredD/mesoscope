@@ -605,8 +605,10 @@
     const ok = paintable(n), p = placedOf(n), t = targetOf(n)
     const over = t && p > t
     return h('button', { class: 'paint-row', role: 'option', 'aria-selected': state.focus.includes(n.id) ? 'true' : 'false', 'aria-disabled': ok === true ? null : 'true', title: ok === true ? `Paint ${shown(n)} (B)` : ok, onclick: pick(n), oncontextmenu: ctx(n) },
-      h('span', { class: 'swatch', style: `background:${ingColor(n)}` }), h('span', { class: 'name' }, shown(n)),
+      h('span', { class: 'swatch', style: `background:${ingColor(n)}` }), h('span', { class: 'name' }, n.name),
       h('span', { class: 'n' + (over ? ' over' : '') }, `${p} / ${t || '—'}`),
+      // A name used twice (§5.3) keeps its compartment, on its own line so the ellipsis cannot eat it.
+      shown(n) !== n.name ? h('span', { class: 'tail' }, `in ${parentOf(n).name}`) : null,
       ok === true ? h('span', { class: 'meter' + (over ? ' over' : ''), 'aria-hidden': 'true' }, h('i', { style: `width:${t ? Math.min(100, (100 * p) / t) : 0}%` })) : h('span', { class: 'reason' }, ok))
   }
   /** The palette (§5.7.3): the recipe's ingredients by compartment and side; a click points at one, the brush paints the Focus. */

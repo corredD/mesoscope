@@ -326,7 +326,8 @@ textarea.input { height: 110px; padding: var(--space-3); font-family: var(--font
 .paint-row .n { font-family: var(--font-mono); font-size: var(--font-size-xs); color: var(--color-text-muted); }
 .paint-row[aria-selected='true'] .n, .paint-row[aria-selected='true'] .name { color: var(--color-text); }
 .paint-row .n.over { color: var(--color-warning); }
-.paint-row .meter, .paint-row .reason { grid-column: 2 / 4; }
+.paint-row .meter, .paint-row .reason, .paint-row .tail { grid-column: 2 / 4; }
+.paint-row .tail { font-family: var(--font-mono); font-size: var(--font-size-xs); color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .meter { height: 4px; border-radius: 2px; background: var(--color-bg-muted); position: relative; overflow: hidden; }
 .meter i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--color-text-muted); }
 .meter.over i { background: var(--color-warning); }
