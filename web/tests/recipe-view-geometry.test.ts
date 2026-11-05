@@ -140,12 +140,21 @@ describe('Edit-Mode reparent (rows 66-68)', () => {
   it('the deepest overlapping node is the target; the root when none; no target over an ingredient', () => {
     const s = small()
     const abs = absolutePositions(s)
-    expect(reparentTarget(s, 'a', { x: 0, y: 75 }, abs)).toEqual({ target: 'D', surface: true }) // |30 − 25| < 10
+    expect(reparentTarget(s, 'L', { x: 0, y: 80 }, abs)).toEqual({ target: 'D', surface: true }) // from the root: |30 − 30| < 20
     expect(reparentTarget(s, 'L', { x: 0, y: 60 }, abs).target).toBeNull() // overlap, not containment: d is deepest (§8.13)
     expect(reparentTarget(s, 'L', { x: 0, y: -60 }, abs)).toEqual({ target: 'C', surface: false })
     expect(reparentTarget(s, 'a', { x: 600, y: 600 }, abs)).toEqual({ target: 'root', surface: false })
     expect(reparentTarget(s, 'L', { x: 30, y: 0 }, abs).target).toBeNull() // b is deepest: an ingredient
     expect(reparentTarget(s, 'L', { x: 0, y: -95 }, abs)).toEqual({ target: 'C', surface: true })
+  })
+
+  it("stops at the subject's own parent, as legacy (main.js:4908-4910): a drop on its membrane is a surface drop even beside a sibling", () => {
+    const s = small()
+    const abs = absolutePositions(s)
+    // a (r 10) dropped at (96, 10): it overlaps its parent C and the surface sibling s at (100, 0).
+    expect(reparentTarget(s, 'a', { x: 96, y: 10 }, abs)).toEqual({ target: 'C', surface: true })
+    // The stop also means no drop into a sibling sub-compartment of a non-root parent (legacy's limit, kept).
+    expect(reparentTarget(s, 'a', { x: 0, y: 75 }, abs).target).toBe('C')
   })
 
   it('never targets the dragged subtree (a cycle, §10.6)', () => {
