@@ -252,12 +252,20 @@ describe('RecipeCanvas: selection by click (rows 49, 50, 63, 64, 65)', () => {
     expect(ui().selectedNodes).toEqual([nodeByName('Neuraminidase')])
   })
 
-  it('selects on mousedown; the visit is an effect of the end (row 63)', () => {
+  it('highlights on mousedown; the selection side effects (store, visit) wait for the release (§4.5, row 63)', () => {
+    // Legacy sets `node_selected` at drag start but loads the table, viewers and visit only at drag end (main.js:5106-5262):
+    // selecting in the store at the press would load the Ingredient View's structure in the middle of a drag.
     const at = centreOf('Hemagglutinin')
     mouse('mouseDown', canvasEl(), { clientX: at.x, clientY: at.y, button: 0 })
-    expect(store().selectedNode).toBe(nodeByName('Hemagglutinin'))
+    expect(store().selectedNode).toBeNull()
+    expect(ui().selectedNodes).toEqual([])
     expect(ui().visitedNodes.size).toBe(0)
+    rec.calls.length = 0
+    frames(1)
+    expect(rec.calls.some((c) => c.name === 'fill' && c.fillStyle === 'yellow')).toBe(true)
     mouse('mouseUp', win, { clientX: at.x, clientY: at.y, button: 0 })
+    expect(store().selectedNode).toBe(nodeByName('Hemagglutinin'))
+    expect(ui().selectedNodes).toEqual([nodeByName('Hemagglutinin')])
     expect(ui().visitedNodes.has(nodeByName('Hemagglutinin'))).toBe(true)
   })
 
@@ -284,8 +292,6 @@ describe('RecipeCanvas: selection by click (rows 49, 50, 63, 64, 65)', () => {
       ui().setSelection([nodeByName('Hemagglutinin')])
     })
     mouse('mouseDown', canvasEl(), { clientX: inside.x, clientY: inside.y, button: 0 })
-    expect(store().selectedNode).toBeNull()
-    expect(ui().selectedNodes).toEqual([])
     mouse('mouseUp', win, { clientX: inside.x, clientY: inside.y, button: 0 })
     // The drop of that no-move drag then selects its subject, as legacy's `dragended` (row 64): no multi-selection.
     expect(store().selectedNode).toBe(envelope)
