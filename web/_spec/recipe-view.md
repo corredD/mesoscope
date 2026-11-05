@@ -92,7 +92,7 @@ Rule: leaf radii are **absolute** (Å-scale numbers drawn as px at k=1) and inde
 
 1.8 **Colour init.** `update_graph` also calls `ChangeCanvasColor(null)` (m:5626). See §6.
 
-1.9 **No repack after load.** Add, delete, reparent and resize all mutate `graph.nodes` and `children` in place, then call `updateForce()`. Every other node keeps its position (m:4499-4519, 4678-4718, 4827-4861, 5280-5350). Panel resize does not repack either (§2.11).
+1.9 **No repack after load.** Add, delete, reparent and resize all mutate `graph.nodes` and `children` in place, then call `updateForce()`. Every other node keeps its position (m:4499-4519, 4678-4718, 4827-4861, 5280-5350). Panel resize does not repack either (§2.11). An append (Load → Append, `merge_graph`) is a load: it re-packs the whole recipe (m:5696-5718); the modern view lays it out again when an edit adds more than one node at once.
 
 ---
 

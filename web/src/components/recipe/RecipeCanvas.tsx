@@ -102,7 +102,9 @@ export function RecipeCanvas() {
     const center = { x: size.width / 2, y: size.height / 2 }
     let next: ViewState | null = null
     if (graph?.nodes.length) {
-      if (newRoot || layoutKey !== sync.layoutKey) {
+      // More than one node at once is an append (merge): legacy re-packs the whole recipe then (main.js:5696-5718).
+      const merged = !newRoot && graph.nodes.filter((node) => !sync.view!.nodes[viewId(node)]).length > 1
+      if (newRoot || merged || layoutKey !== sync.layoutKey) {
         const keep = !newRoot && sync.view ? sync.view.nodes[sync.view.order[0]] : null
         next = layoutRecipe(graph, { sizeBy: ui.sizeBy, radiusScale: ui.radiusScale, groupBy: ui.groupBy, center: keep ? { x: keep.x, y: keep.y } : center })
       } else next = reconcileView(sync.view!, graph, center, (node) => (node.children ? 150 : 30))
