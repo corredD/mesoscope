@@ -111,3 +111,4 @@ popup, titles) and the context menu took more than briefed.
 | N5 dead SVG-era CSS | nit | confirmed | 98fedaa |
 | N6 DPR read only on resize | nit | confirmed | open |
 | X1 menu not dismissed by a press outside the canvas | nit | confirmed | open |
+| B1 (Ludovic, testing PR #49) a nested compartment jumps on press and will not move | confirmed: HIV_serialized PackInner r 145 in PackOuter r 65, clamp limit 0, 106 px snap to the parent centre, pin reset there | 59a87a3 (test), 99b8625 (test, interior ingredient), 7690d38 (`clampInside` and the drag subject's `project` skip when it does not fit; §10.5, rows 58-59 say so) |
