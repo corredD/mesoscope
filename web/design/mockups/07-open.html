@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesoscope mockup · Open and import</title>
+<script>if (/theme=dark/.test(location.search)) document.documentElement.dataset.theme = 'dark'</script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="mock.css">
+<script src="sample-data.js"></script>
+<script src="mock.js"></script>
+<script src="shared-pages.js"></script>
+</head>
+<body>
+<script>
+Mock.render({
+  caption: 'Open and import (was Load › New Recipe, Append From, Colors, Molarity, Setup Data Directory; Skills): one page over the stage, every way in, examples with their real sizes; what is not built is shown greyed with why.',
+  recipe: 'hiv', views: ['recipe'], page: Mock.openPage(/append=1/.test(location.search) ? 'append' : 'open'),
+})
+</script>
+</body>
+</html>

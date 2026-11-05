@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesoscope mockup · Curate</title>
+<script>if (/theme=dark/.test(location.search)) document.documentElement.dataset.theme = 'dark'</script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="mock.css">
+<script src="sample-data.js"></script>
+<script src="mock.js"></script>
+</head>
+<body>
+<script>
+Mock.render({
+  caption: 'Curate (was Workspace › Recipe curation): Mpn, 180 ingredients, the Table beside the Ingredient view, filtered to what needs attention (no UniProt in all 180). The inspector lists the problems of the Focus, each with its fix.',
+  recipe: 'mpn', views: ['table', 'ingredient'], split: 'cols', filter: 'problems',
+  focus: ['mpn665'],
+})
+</script>
+</body>
+</html>

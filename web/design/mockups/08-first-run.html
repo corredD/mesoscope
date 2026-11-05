@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesoscope mockup · First run</title>
+<script>if (/theme=dark/.test(location.search)) document.documentElement.dataset.theme = 'dark'</script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="mock.css">
+<script src="sample-data.js"></script>
+<script src="mock.js"></script>
+<script src="shared-pages.js"></script>
+</head>
+<body>
+<script>
+Mock.render({
+  caption: 'First run (no recipe yet): not an empty dock of panels but the ways in, in the words of the task (NN/g: no totally empty states; direct pathways to the key tasks).',
+  recipe: null, body: Mock.firstRun,
+})
+</script>
+</body>
+</html>
