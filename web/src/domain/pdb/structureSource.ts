@@ -57,6 +57,6 @@ export function resolveStructureSource(pdb: string): StructureSource | null {
  */
 export function resolveSpriteImageUrl(spriteImage: string | null, pdb: string | undefined): string | null {
   if (spriteImage) return `${CELLPACK_REPO}images/${spriteImage}`
-  if (pdb && !EXTENSION_RE.test(pdb)) return `https://www.ebi.ac.uk/pdbe/static/entry/${pdb.toLowerCase()}_deposited_chain_front_image-200x200.png`
+  if (pdb && !EXTENSION_RE.test(pdb)) return `https://www.ebi.ac.uk/pdbe/static/entry/${pdb.split('_')[0].toLowerCase()}_deposited_chain_front_image-200x200.png`
   return null
 }
