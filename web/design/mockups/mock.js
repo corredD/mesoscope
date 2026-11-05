@@ -62,7 +62,10 @@
     if (!n.count && !n.molarity) p.push({ level: 'warning', text: 'No amount: count and molarity are 0', fix: 'focus.amount' })
     if (!n.uniprot) p.push({ level: 'warning', text: 'No UniProt accession', fix: 'structure.find' })
     if (n.side === 'surface' && n.pcpalAxis.every((v) => !v)) p.push({ level: 'warning', text: 'No principal axis: its orientation on the membrane is undefined', fix: 'structure.orient' })
-    if (n.pdb && !isPdbId(n.pdb)) p.push({ level: 'info', text: `Local file "${n.pdb}": not fetchable from the PDB`, fix: 'recipe.dataDirectory' })
+    // As the app resolves structures (web/src/domain/pdb/structureSource.ts): a .pdb/.cif/.mrc name is a file from the
+    // cellPACK_data repository; any other name is sent to the PDB as an id, so one that is not an id will not load.
+    if (n.pdb && /\.(pdb|cif|mrc)$/i.test(n.pdb)) p.push({ level: 'info', text: `File "${n.pdb}", from the cellPACK_data repository`, fix: 'recipe.dataDirectory' })
+    else if (n.pdb && !isPdbId(n.pdb)) p.push({ level: 'warning', text: `"${n.pdb}" is not a PDB id: it will not load`, fix: 'structure.find' })
     return p
   }
   const flagged = (n) => problems(n).some((p) => p.level !== 'info')
@@ -523,7 +526,7 @@
     return [
       h('div', { class: 'insp-head' }, h('div', { class: 'insp-kind' }, `Ingredient · ${n.side} · ${n.ingtype}`), h('div', { class: 'insp-name' }, n.name), crumbs(n)),
       h('div', { class: 'insp-body' },
-        p.length ? h('div', { class: 'section' }, h('div', { class: 'content', style: 'padding-top:12px' }, p.map((x) => h('div', { class: 'problem' }, h('b', {}, x.level === 'danger' ? '●' : x.level === 'info' ? 'i' : '●'), h('span', {}, x.text, ' · ', h('button', { class: 'button link', onclick: () => run(C.find((c) => c.id === x.fix)) }, x.fix === 'structure.find' ? 'Find…' : x.fix === 'recipe.dataDirectory' ? 'Data directory…' : x.fix === 'structure.orient' ? 'Orient…' : 'Set')))))) : null,
+        p.length ? h('div', { class: 'section' }, h('div', { class: 'content', style: 'padding-top:12px' }, p.map((x) => h('div', { class: 'problem' }, h('b', {}, x.level === 'danger' ? '●' : x.level === 'info' ? 'i' : '●'), h('span', {}, x.text, ' · ', h('button', { class: 'button link', onclick: () => run(C.find((c) => c.id === x.fix)) }, x.fix === 'structure.find' ? 'Find…' : x.fix === 'recipe.dataDirectory' ? 'Use a local copy…' : x.fix === 'structure.orient' ? 'Orient…' : 'Set')))))) : null,
         section('Amount', o('Amount'), n.count ? `${n.count} copies` : 'not set',
           field('Count', h('div', { class: 'row' }, input(n.count), h('span', { class: 'muted' }, 'copies'))),
           field('Molarity', h('div', { class: 'row' }, input(n.molarity), h('span', { class: 'muted' }, 'M'))),

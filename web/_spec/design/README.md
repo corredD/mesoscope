@@ -140,10 +140,10 @@ Real recipes, measured (`data/`):
 | Recipe | Format | Compartments | Ingredients | Fibers | What is missing |
 | --- | --- | --- | --- | --- | --- |
 | `InfluenzaA.json` | classic | 1 | 3 (all surface) | 0 | counts 0 |
-| `HIV_serialized.json` | serialized | 3 nested | 26 (6 surface, 20 interior) | 0 | all 26: count and molarity 0, no UniProt, no colour, no MW; all 6 surface ones have principal axis 0,0,0; 18 of 26 structures are local `.pdb` files |
+| `HIV_serialized.json` | serialized | 3 nested | 26 (6 surface, 20 interior) | 0 | all 26: count and molarity 0, no UniProt, no colour, no MW; all 6 surface ones have principal axis 0,0,0; 18 of 26 structures are `.pdb` files (served by the cellPACK_data repository) |
 | `exosome_catalase.json` | classic | 1 | 47 | 2 | — |
-| `Mpn_1.0_2.json` | classic | 1 | 180 (35 surface, 145 interior) | 3 | 0 of 180 have UniProt or a label; names are gene ids (`mpn665`); 98 of 180 PDB entries are processed models (`2fqx_aligned`) |
-| `PlasmaHIVcycle_serialized.json` | serialized | 3 | 60 | 2 | 13.9 MB; 30 of 60 structures are local `.pdb` files |
+| `Mpn_1.0_2.json` | classic | 1 | 180 (35 surface, 145 interior) | 3 | 0 of 180 have UniProt or a label; names are gene ids (`mpn665`); 98 of 180 structure names are not PDB ids and carry no file extension (`1pdz_1`, `2fqx_aligned`, `1pv6_mb`): the app sends them to the PDB as ids, where they do not load |
+| `PlasmaHIVcycle_serialized.json` | serialized | 3 | 60 | 2 | 13.9 MB; 30 of 60 structures are `.pdb` files |
 
 What this means for the design:
 - **Sizes span 3 to 180+ ingredients.** A 2D overview alone does not scale to Mpn; a table does. Both views must hold
@@ -203,7 +203,7 @@ UniProt. *Why:* an action then exists once, is found by typing, and behaves the 
 Stories Untold command mode (§2). *Shows:* screen 9; the menus in the top bar.
 
 **P5. Problems sit on the object.** What is missing or doubtful (no structure, no amount, no UniProt, no principal axis
-on a surface ingredient, a local file the PDB cannot serve) is computed once and shown wherever the object is: a dot in
+on a surface ingredient, a structure name that is not a PDB id and not a file) is computed once and shown wherever the object is: a dot in
 the outline and the Table, a list at the top of the inspector with a fix for each, a "Needs attention" filter, a count
 in the status bar. *Why:* §3.1: every real recipe has gaps, and finding them is the curation task. *Shows:* screens 2-4.
 
@@ -428,7 +428,7 @@ first cell is checked by `check.mjs` against the code; "command" is the registry
 | Load › Colors › Load Color palette (Ingredient-Colors) | Recipe › Import a colour palette…; Open page › Into this recipe | `recipe.importPalette` | |
 | Load › Colors › Load Color Mapping (Properties-Colors) | Recipe › Import a colour mapping…, greyed: "colouring by property" | `recipe.importMapping` | placeholder today |
 | Load › Load Molarity/Count | Recipe › Import counts and molarities… | `recipe.importMolarity` | |
-| Load › Setup Data Directory (PDB, geoms) | Recipe › Set the data directory…, greyed: "a local data server"; the fix of a "local file" problem | `recipe.dataDirectory` | placeholder today |
+| Load › Setup Data Directory (PDB, geoms) | Recipe › Set the data directory…, greyed: "a local data server"; offered beside a structure file ("Use a local copy…") | `recipe.dataDirectory` | placeholder today |
 | Save › cellPACK/cellPAINT recipe | Recipe › Export for cellPACK / cellPAINT (.json), ⌘S | `recipe.export.cellpack` | "Save" becomes "Export": the app holds the recipe; files are exports |
 | Save › cellPACK-gpu recipe | Recipe › Export for cellPACK-gpu, ⇧⌘S | `recipe.export.gpu` | |
 | Save › cellPAINT recipe and sprites (.zip) | Recipe › Export for cellPAINT with sprites, greyed: "sprite export" | `recipe.export.paintZip` | placeholder today |
