@@ -198,6 +198,20 @@
       h('span', { class: 'end' }, ok === true ? c.key || '' : ok))
   }
   let openMenu = null
+  /** Context menu (README §5.4): a right-click points at what is under it, then lists the commands that act on it. */
+  const CONTEXT = ['edit.rename', 'edit.color', 'edit.delete', 'structure.find', 'structure.open', 'edit.addInteraction']
+  const ctx = (n) => (e) => {
+    e.preventDefault(); e.stopPropagation()
+    if (!state.focus.includes(n.id)) setFocus([n.id], e.shiftKey)
+    closeMenu()
+    const box = h('div', { class: 'dropdown', role: 'menu', 'aria-label': `Commands for ${shown(n)}` }, h('div', { class: 'head' }, shown(n)))
+    for (const id of CONTEXT) for (const c of C.filter((c) => c.id === id)) box.append(commandRow(c))
+    Object.assign(box.style, { left: Math.min(e.clientX, innerWidth - 300) + 'px', top: Math.min(e.clientY, innerHeight - 260) + 'px' })
+    document.body.append(box)
+    const anchor = h('span')
+    anchor.setAttribute('aria-expanded', 'false')
+    openMenu = { box, button: anchor }
+  }
   function showMenu(name, button) {
     closeMenu()
     const box = h('div', { class: 'dropdown', role: 'menu' })
@@ -316,6 +330,15 @@
 
   // ---- the column: the recipe outline (README §5.1) --------------------------------------------------------------
   let columnEl
+  /** The Interactions tab (README §7.2, InteractionTable): one row per ingredient that has partners, and how to add one. */
+  function interactionsList() {
+    const withPartners = R.ings.filter((n) => n.partners)
+    return h('div', { class: 'tree', role: 'list', 'aria-label': 'Interactions' },
+      withPartners.length
+        ? withPartners.map((n) => h('div', { class: 'node', role: 'listitem', 'aria-selected': state.focus.includes(n.id) ? 'true' : 'false', onclick: pick(n), oncontextmenu: ctx(n) },
+          h('span', { class: 'label' }, shown(n)), h('span', { class: 'end' }, `${n.partners} partners`)))
+        : h('div', { class: 'empty-note muted', style: 'padding:var(--space-4)' }, 'No interactions in this recipe. Point at two ingredients (⇧-click the second), then Edit › Add an interaction. Each interaction is a row here: its two ingredients, the PDB and the selection on each.'))
+  }
   function renderColumn() {
     if (!columnEl) return
     const nProblems = R.ings.filter(flagged).length
@@ -324,7 +347,7 @@
     const tree = h('div', { class: 'tree', role: 'tree', 'aria-label': 'Recipe outline' })
     const walk = (c, depth) => {
       const kids = R.kids.get(c.id) || []
-      tree.append(h('div', { class: 'node compartment', role: 'treeitem', 'aria-level': depth + 1, 'aria-expanded': 'true', 'aria-selected': state.focus.includes(c.id) ? 'true' : 'false', style: `padding-left:${4 + depth * 12}px`, onclick: pick(c) },
+      tree.append(h('div', { class: 'node compartment', role: 'treeitem', 'aria-level': depth + 1, 'aria-expanded': 'true', 'aria-selected': state.focus.includes(c.id) ? 'true' : 'false', style: `padding-left:${4 + depth * 12}px`, onclick: pick(c), oncontextmenu: ctx(c) },
         h('span', { class: 'twisty' }, '▾'), h('span', { class: 'swatch square', style: `background:${css('--color-depth-' + Math.min(7, depth))}` }),
         h('span', { class: 'label' }, c.name), h('span', { class: 'end' }, (kids.filter((k) => k.kind === 'ingredient').length) || '')))
       for (const side of ['surface', 'interior']) {
@@ -333,7 +356,7 @@
         tree.append(h('div', { class: 'node group', style: `padding-left:${22 + depth * 12}px` }, h('span', { class: 'label' }, side), h('span', { class: 'end' }, ings.length)))
         for (const n of ings) {
           const p = problems(n).filter((x) => x.level !== 'info')
-          tree.append(h('div', { class: 'node', role: 'treeitem', 'aria-level': depth + 2, 'aria-selected': state.focus.includes(n.id) ? 'true' : 'false', style: `padding-left:${26 + depth * 12}px`, onclick: pick(n), title: p.map((x) => x.text).join('\n') || null },
+          tree.append(h('div', { class: 'node', role: 'treeitem', 'aria-level': depth + 2, 'aria-selected': state.focus.includes(n.id) ? 'true' : 'false', style: `padding-left:${26 + depth * 12}px`, onclick: pick(n), oncontextmenu: ctx(n), title: p.map((x) => x.text).join('\n') || null },
             h('span', { class: 'swatch', style: `background:${n.color ? `rgb(${n.color.map((v) => v * 255).join(',')})` : css('--color-depth-' + Math.min(7, depth + 1))}` }),
             h('span', { class: 'label' }, n.name),
             h('span', { class: 'end' }, h('span', { class: 'mono' }, n.count || ''), p.length ? h('span', { class: 'flag' + (p.some((x) => x.level === 'danger') ? ' danger' : '') }, '●') : null)))
@@ -344,12 +367,13 @@
     walk(R.root, 0)
     columnEl.replaceChildren(
       h('div', { class: 'tabs', role: 'tablist' },
-        h('button', { class: 'tab', role: 'tab', 'aria-selected': 'true' }, 'Recipe', h('span', { class: 'count' }, R.ings.length)),
-        h('button', { class: 'tab', role: 'tab', 'aria-selected': 'false', title: 'Interactions between ingredients' }, 'Interactions', h('span', { class: 'count' }, R.ings.reduce((s, n) => s + n.partners, 0)))),
-      h('div', { class: 'filter' },
+        h('button', { class: 'tab', role: 'tab', 'aria-selected': state.column === 'recipe' ? 'true' : 'false', onclick: () => { state.column = 'recipe'; renderColumn() } }, 'Recipe', h('span', { class: 'count' }, R.ings.length)),
+        h('button', { class: 'tab', role: 'tab', 'aria-selected': state.column === 'interactions' ? 'true' : 'false', title: 'Interactions between ingredients', onclick: () => { state.column = 'interactions'; renderColumn() } }, 'Interactions', h('span', { class: 'count' }, R.ings.reduce((s, n) => s + n.partners, 0)))),
+      state.column === 'interactions' ? interactionsList() : null,
+      state.column === 'interactions' ? null : h('div', { class: 'filter' },
         h('input', { class: 'input', placeholder: 'Filter by name, PDB, UniProt…', 'aria-label': 'Filter the outline' }),
         h('div', { class: 'chips' }, filters.map(([k, t]) => h('button', { class: 'chip' + (k === 'problems' ? ' warn' : ''), 'aria-pressed': state.filter === k ? 'true' : 'false', onclick: () => { state.filter = k; renderColumn() } }, t)))),
-      tree)
+      state.column === 'interactions' ? null : tree)
   }
 
   // ---- views ----------------------------------------------------------------------------------------------------
@@ -386,7 +410,7 @@
       if (n.kind !== 'compartment' || l.depth === 0) continue
       const fill = css('--color-depth-' + Math.min(7, l.depth)), stroke = css('--color-depth-' + Math.min(7, l.depth + 1))
       const sel = fx.includes(n.id)
-      box.append(svg('circle', { class: 'rv-compartment' + (sel ? ' rv-selected' : ''), cx: l.x, cy: l.y, r: l.r + 5, fill, stroke, onclick: pick(n) }),
+      box.append(svg('circle', { class: 'rv-compartment' + (sel ? ' rv-selected' : ''), cx: l.x, cy: l.y, r: l.r + 5, fill, stroke, onclick: pick(n), oncontextmenu: ctx(n) }),
         svg('circle', { cx: l.x, cy: l.y, r: l.r - 5, fill: 'none', stroke: sel ? css('--color-select') : stroke, 'pointer-events': 'none' }))
       const pid = 'arc-' + n.id
       defs.append(svg('path', { id: pid, d: `M ${l.x - l.r - 9} ${l.y} a ${l.r + 9} ${l.r + 9} 0 1 1 ${2 * (l.r + 9)} 0` }))
@@ -396,7 +420,7 @@
       if (n.kind !== 'ingredient') continue
       const sel = fx.includes(n.id)
       const fill = n.color ? `rgb(${n.color.map((v) => Math.round(v * 255)).join(',')})` : css('--color-depth-' + Math.min(7, l.depth))
-      box.append(svg('circle', { class: 'rv-ingredient' + (sel ? ' rv-selected' : ''), cx: l.x, cy: l.y, r: l.r, fill, stroke: css('--color-depth-' + Math.min(7, l.depth + 1)), onclick: pick(n) }, svg('title', {}, `${n.name} · ${n.pdb || 'no structure'}`)))
+      box.append(svg('circle', { class: 'rv-ingredient' + (sel ? ' rv-selected' : ''), cx: l.x, cy: l.y, r: l.r, fill, stroke: css('--color-depth-' + Math.min(7, l.depth + 1)), onclick: pick(n), oncontextmenu: ctx(n) }, svg('title', {}, `${n.name} · ${n.pdb || 'no structure'}`)))
       if (n.side === 'surface' && l.angle != null) {
         const tx = -Math.sin(l.angle), ty = Math.cos(l.angle)
         box.append(svg('line', { class: 'rv-membrane-mark', x1: l.x - tx * l.r * 0.8, y1: l.y - ty * l.r * 0.8, x2: l.x + tx * l.r * 0.8, y2: l.y + ty * l.r * 0.8, 'pointer-events': 'none' }))
@@ -424,7 +448,7 @@
     const body = h('tbody')
     for (const n of rows) {
       const p = problems(n)
-      body.append(h('tr', { 'aria-selected': state.focus.includes(n.id) ? 'true' : 'false', onclick: pick(n) },
+      body.append(h('tr', { 'aria-selected': state.focus.includes(n.id) ? 'true' : 'false', onclick: pick(n), oncontextmenu: ctx(n) },
         h('td', { title: p.map((x) => x.text).join('\n') }, p.some((x) => x.level === 'danger') ? h('span', { class: 'flag danger' }, '●') : flagged(n) ? h('span', { class: 'flag' }, '●') : ''),
         h('td', {}, n.name), h('td', { class: 'muted' }, parentOf(n).name), h('td', { class: 'muted' }, n.side),
         cell(n.count, 'num mono' + (!n.count && !n.molarity ? ' warn' : '')), cell(n.molarity, 'num mono'), cell(n.mw, 'num mono'),
@@ -489,7 +513,7 @@
     const surf = R.ings.filter((n) => n.side === 'surface' && parentOf(n).name.includes('envelope'))
     for (let i = 0; i < 150; i++) {
       const n = surf[i % surf.length], a = r() * Math.PI * 2, rr = R0 + (r() - 0.5) * 8
-      box.append(svg('circle', { cx: cx + rr * Math.cos(a), cy: cy + rr * Math.sin(a), r: n.name.includes('ENV') ? 9 : 5, fill: colorOf.get(n.id), opacity: dim && !f.has(n.id) ? 0.18 : 1, stroke: f.has(n.id) ? css('--color-select') : css('--color-text'), 'stroke-width': f.has(n.id) ? 2 : 0.6, onclick: pick(n) }))
+      box.append(svg('circle', { cx: cx + rr * Math.cos(a), cy: cy + rr * Math.sin(a), r: n.name.includes('ENV') ? 9 : 5, fill: colorOf.get(n.id), opacity: dim && !f.has(n.id) ? 0.18 : 1, stroke: f.has(n.id) ? css('--color-select') : css('--color-text'), 'stroke-width': f.has(n.id) ? 2 : 0.6, onclick: pick(n), oncontextmenu: ctx(n) }))
     }
     // The capsid: a cone of hexamers.
     const capsid = R.ings.find((n) => n.name.includes('CA_mono'))
@@ -501,7 +525,7 @@
     for (let i = 0; i < 260; i++) {
       const n = inner[i % inner.length], a = r() * Math.PI * 2, rr = Math.sqrt(r()) * (R0 - 26)
       const x = cx + rr * Math.cos(a), y = cy + rr * Math.sin(a)
-      box.append(svg('circle', { cx: x, cy: y, r: 3 + r() * 3, fill: colorOf.get(n.id), opacity: dim && !f.has(n.id) ? 0.15 : 0.95, stroke: f.has(n.id) ? css('--color-select') : css('--color-text'), 'stroke-width': f.has(n.id) ? 2 : 0.6, onclick: pick(n) }))
+      box.append(svg('circle', { cx: x, cy: y, r: 3 + r() * 3, fill: colorOf.get(n.id), opacity: dim && !f.has(n.id) ? 0.15 : 0.95, stroke: f.has(n.id) ? css('--color-select') : css('--color-text'), 'stroke-width': f.has(n.id) ? 2 : 0.6, onclick: pick(n), oncontextmenu: ctx(n) }))
     }
     return h('section', { class: 'view', 'aria-label': 'Scene view' }, box,
       h('div', { class: 'view-title' }, `${R.root.name}: whole packed model · an illustration; in the app, Mol* v6 (Prism) loading the cellPACK result`),
