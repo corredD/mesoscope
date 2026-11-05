@@ -175,6 +175,47 @@ describe('RecipeCanvas', () => {
     expect(useUiModeStore.getState().selectedNodes).toEqual([ha])
   })
 
+  it("matches the legacy oracle's gestures on Influenza: click, Ctrl-click, inside the compartment, empty (§4.5)", () => {
+    const oracle = JSON.parse(readFileSync(resolve(__dirname, 'fixtures/recipe-view-oracle/influenza.json'), 'utf-8')).gestures
+    loadInfluenza()
+    render(<RecipeCanvas />)
+    const names = () => ({ selected: useRecipeStore.getState().selectedNode?.data.name ?? null, selection: useUiModeStore.getState().selectedNodes.map((n) => n.data.name) })
+    clickNode(byName(oracle.click.target))
+    expect(names()).toEqual({ selected: oracle.click.nodeSelected, selection: oracle.click.nodesSelections })
+    clickNode(byName(oracle.ctrlClick.target), { ctrlKey: true })
+    expect(names()).toEqual({ selected: oracle.ctrlClick.nodeSelected, selection: oracle.ctrlClick.nodesSelections })
+    const envelope = byName(oracle.clickInsideCompartment.target)
+    const c = centre(layerOf(envelope))
+    click(c.x, c.y) // the centre of the envelope: its surface proteins sit on the membrane
+    expect(names()).toEqual({ selected: oracle.clickInsideCompartment.nodeSelected, selection: oracle.clickInsideCompartment.nodesSelections })
+    click(5000, 5000)
+    expect(names()).toEqual({ selected: oracle.clickEmpty.nodeSelected, selection: oracle.clickEmpty.nodesSelections })
+  })
+
+  it('draws membrane marker lines in every surface ingredient (§10.5)', () => {
+    loadInfluenza()
+    render(<RecipeCanvas />)
+    const surface = document.querySelectorAll('[data-surface="true"]')
+    expect(surface).toHaveLength(3)
+    for (const layer of surface) expect(layer.querySelectorAll('[data-membrane-markers] line')).toHaveLength(3)
+  })
+
+  it('opens no context menu on a link (§10.6, §8.12)', () => {
+    loadInfluenza()
+    const ha = byName('Hemagglutinin')
+    const na = byName('Neuraminidase')
+    useRecipeStore.getState().addLink(ha, na)
+    render(<RecipeCanvas />)
+    const a = centre(layerOf(ha))
+    const b = centre(layerOf(na))
+    const r = Number(layerOf(ha).getAttribute('data-r'))
+    const d = Math.hypot(b.x - a.x, b.y - a.y)
+    // A point on the edge-to-edge segment, just outside HA's circle.
+    const t = (r + 2) / d
+    fireEvent.contextMenu(stage(), { clientX: a.x + (b.x - a.x) * t, clientY: a.y + (b.y - a.y) * t, button: 2 })
+    expect(document.querySelector('.recipe-canvas-context-menu')).toBeNull()
+  })
+
   it('a press on a context-menu item does not also click the node under it (review #4)', () => {
     loadInfluenza()
     render(<RecipeCanvas />)

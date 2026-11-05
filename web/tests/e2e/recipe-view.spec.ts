@@ -227,6 +227,7 @@ for (const recipe of perfCases) {
     const id = await pickNestedIngredient(page)
     const layer = stageOf(page).locator(`[data-node-id="${id}"]`)
     const from = await screenCentre(layer)
+    const startWorld = await worldCentre(layer)
 
     const record = (ms: number) =>
       page.evaluate(
@@ -276,6 +277,9 @@ for (const recipe of perfCases) {
     const p95 = at(intervals, 0.95)
     testInfo.annotations.push({ type: 'rAF p50 (ms)', description: p50.toFixed(2) }, { type: 'rAF p95 (ms)', description: p95.toFixed(2) }, { type: 'frames', description: String(intervals.length) },
       { type: 'idle rAF p50/p95 (ms)', description: `${at(idle, 0.5).toFixed(2)} / ${at(idle, 0.95).toFixed(2)}` })
-    expect(p95).toBeLessThanOrEqual(Math.max(p50, 16.7) + 1)
+    // The step-0 bound: 95% of frames within one frame of the idle page (at 60 or 120 Hz, a frame's work < 16.7 ms),
+    // whatever the median; and the drag did move the node.
+    expect(p95).toBeLessThanOrEqual(Math.max(at(idle, 0.95), 16.7) + 1)
+    expect(await worldCentre(layer)).not.toEqual(startWorld)
   })
 }

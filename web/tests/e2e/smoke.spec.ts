@@ -147,3 +147,12 @@ test('Scale Radius slider stays inside a narrow Recipe Options panel', async ({ 
   expect(panelBounds.controlRight).toBeLessThanOrEqual(panelBounds.panelRight)
 })
 
+test('Layout Options toggles a workspace tab', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByText('Interaction table')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Layout Options' }).click()
+  await page.getByText('Show Interaction Table').click()
+
+  await expect(page.getByText('Interaction table', { exact: true })).toBeVisible()
+})
