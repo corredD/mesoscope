@@ -334,8 +334,9 @@ textarea.input { height: 110px; padding: var(--space-3); font-family: var(--font
 .sync-chip {
   position: absolute; z-index: 3; right: var(--space-3); top: var(--space-3); display: flex; align-items: center; gap: var(--space-2);
   max-width: 44%; padding: 2px var(--space-3); border-radius: var(--radius-lg); background: var(--color-bg);
-  box-shadow: 0 0 0 1px var(--color-border); font-size: var(--font-size-xs); color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  box-shadow: 0 0 0 1px var(--color-border); font-size: var(--font-size-xs); color: var(--color-text); flex-wrap: wrap; row-gap: 0;
 }
+.sync-chip .last { flex-basis: 100%; padding-left: calc(8px + var(--space-2)); }
 .sync-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); box-shadow: 0 0 0 1px var(--color-text); flex: none; }
 .sync-log { list-style: none; margin: 0; padding: 0 var(--space-4); font-family: var(--font-mono); font-size: var(--font-size-xs); color: var(--color-text-muted); }
 .sync-log li:first-child { color: var(--color-text); }

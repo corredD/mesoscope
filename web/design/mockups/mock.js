@@ -652,7 +652,7 @@
     const s = state.scene
     return h('div', { class: 'sync-chip', role: 'status' },
       h('span', { class: 'dot', 'aria-hidden': 'true' }), `Live with Mesoscope · ${R.root.name} · the Focus mirrored`,
-      s.log.length ? h('span', { class: 'muted' }, ` · last: ${s.log[0]}`) : null)
+      s.log.length ? h('span', { class: 'muted last' }, `last: ${s.log[0]}`) : null)
   }
   function paintView() {
     // Centred right of the palette (it covers the stage's left 310 px).
