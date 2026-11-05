@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RecipeCanvas } from '../src/components/recipe/RecipeCanvas'
 import type { RecipeNode } from '../src/domain/recipe/types'
 import { viewId } from '../src/domain/recipe/view/viewState'
+import { parseLegacyRecipe, detectRecipeFormat } from '../src/domain/recipe/parseLegacyRecipe'
+import { defaultMergeFieldFlags } from '../src/domain/recipe/mergeRecipe'
 import { useRecipeStore } from '../src/state/recipeStore'
 import { useThemeStore } from '../src/state/themeStore'
 import { useUiModeStore } from '../src/state/uiModeStore'
@@ -139,6 +141,19 @@ describe('RecipeCanvas', () => {
     const menu = document.querySelector('.recipe-canvas-context-menu')!
     expect(menu).toBeInTheDocument()
     for (const label of ['Color', 'Rename', 'Delete', 'Resize']) expect(menu.textContent).toContain(label)
+  })
+
+  it('appending a recipe lays the merged nodes out, as legacy re-packs on merge (main.js:5696-5718, review #5)', () => {
+    useRecipeStore.getState().loadFromJson(loadFixture('HIV_serialized.json'))
+    render(<RecipeCanvas />)
+    const before = new Set(layers().map((l) => l.getAttribute('data-node-id')))
+    const fluJson = loadFixture('InfluenzaA.json')
+    act(() => useRecipeStore.getState().mergeGraph(parseLegacyRecipe(fluJson, detectRecipeFormat(fluJson)), { fieldFlags: defaultMergeFieldFlags(), createWhenMerge: true }))
+    const added = layers().filter((l) => !before.has(l.getAttribute('data-node-id')))
+    expect(added.length).toBeGreaterThan(1)
+    const spots = new Set(added.map((l) => JSON.stringify(centre(l))))
+    expect(spots.size).toBe(added.length) // not stacked at one point
+    expect(added.some((l) => l.getAttribute('data-r') === '30')).toBe(false)
   })
 
   it('a press on a context-menu item does not also click the node under it (review #4)', () => {
