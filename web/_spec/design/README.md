@@ -327,9 +327,10 @@ builder did, not how: its physics is not ported (D11).
 
 - **Hand-off: one push, on a button, into shared objects.** The Preview button calls
   `GP_initFromNodes(graph.nodes,128,10,false)` (`js/layout_mg.js:505`): the builder takes the recipe's live node
-  objects, with no copy, and rebuilds on each press (`gp:3246-3278`). Nothing was sent back on purpose, yet the builder
-  wrote into those nodes: a compartment's default ball into its `pos`/`radii` (`gp:663-666`), a fiber's `curves` reset
-  and rewritten (`gp:942-948`). Hence one writer per fact (§5.7.2).
+  objects, with no copy, and rebuilds on each press (`gp:3246-3278`). The builder wrote into those nodes: a
+  compartment's default ball into its `pos`/`radii` (`gp:663-666`), a fiber's `curves` reset and rewritten
+  (`gp:942-948`), a metaball moved with the gizmo into its compartment's `pos` (below). Hence one writer per fact
+  (§5.7.2).
 - **Compartments as meshes.** Every compartment with children gets a mesh (`gp:825-828`), marching cubes over its
   metaballs (`GP_createOneCompartmentMesh`, `gp:652-731`); one with no metaball positions got one 500 Å ball
   (`gp:663-666`).
@@ -344,8 +345,11 @@ builder did, not how: its physics is not ported (D11).
   (`js/main.js:1482-1489`).
 - **Orientation ignored.** Surface bodies are added with up `0,0,1` and offset `0,0,0`, not the principal axis
   (`gp:754-756, 772-773`).
-- **Reshaping a compartment** (a gizmo on a metaball, `gp:3540-3549`) was wired but its mouse listener is commented
-  out (`gp:3568`).
+- **Reshaping a compartment was live.** `init` sets the container's `onmousedown` to `GP_onDocumentMouseDown`
+  (`gp:2433-2436`; `init(false)` runs on the first Preview, `gp:3272`). With the GUI toggle `renderSMB` on (off by
+  default, `gp:3008, 3137`) a click on a compartment's metaball attaches a gizmo to it (`gp:3526-3543`); moving it
+  writes the ball's position into `gp_nodes[comp].data.pos[0].coords`, the recipe's shared node, and rebuilds the
+  mesh (`gp:2666-2677`). Only a duplicate document-level listener is commented out (`gp:3568`).
 - **Export for cellPAINT**: the recipe and its sprites (`index.html:573, 575`), not the scene.
 
 #### 5.7.2 What lives where
@@ -404,8 +408,10 @@ the only writers (`me:_spec/README.md:31-32`); the recipe is the document Mesosc
 4. **Fibers are curves.** A drawn fiber is a curve of points; it comes back as the fiber ingredient's `curves` (points,
    `tlength` = their number, `ulength` = their spacing), as legacy read them (`js/cp_serialized.js:1395-1407`); the
    fiber's count is its number of curves (`gp:927`).
-5. **Compartment shapes do not come back** in this design: they are edited in the recipe (§5.2). Legacy's metaball
-   gizmo was never live (`gp:3568`).
+5. **Compartment shapes do not come back** (proposal, a departure from legacy; Ludovic's to decide, §9): they are
+   edited in the recipe (§5.2). Legacy let you move a metaball in the scene, behind the `renderSMB` toggle, and wrote
+   it into the recipe's node (§5.7.1, `gp:2666-2677`). *Why proposed:* one writer per fact (§5.7.2); a shape edited in
+   prism-me would be a second writer of the recipe's geometry.
 
 #### 5.7.5 The Focus, both ways
 
@@ -717,7 +723,9 @@ For Ludovic:
   `results` and `curves` (§5.7.4) and opened by the other app.
 - **Are placed instances part of the recipe?** Default: no; they live in prism-me's session, and Export for cellPACK
   offers "with the placed instances" to write `results` and `curves` (legacy's fields).
-- **Compartment shapes edited in the scene?** Default: no, in the recipe only (§5.7.4, item 5).
+- **Compartment shapes edited in the scene?** Legacy did it: a metaball moved with a gizmo, behind the `renderSMB`
+  toggle, written into the recipe (§5.7.1). Proposed default: no, in the recipe only (§5.7.4, item 5), a departure
+  from legacy; if kept, prism-me sends the moved metaball back as a recipe edit (one step in Mesoscope).
 - **A deleted ingredient's instances:** default: ask once, delete them or keep them unassigned (§5.7.7).
 - **Undo** across both depends on Mesoscope having one (above); until then, a recipe edit made during a paint session
   cannot be undone, only its effect flagged.
