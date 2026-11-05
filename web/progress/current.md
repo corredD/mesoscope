@@ -6,4 +6,9 @@ queue (`../TODO.md`).
 
 ## In flight
 
+- `builder-mockup` (`~/Developments/mesoscope-lanes/builder-mockup`, branch `lane/builder-mockup`, no ports): the
+  Build/Paint mode in the design mockups, painting in prism-me synced with the recipe; spec and mockups only. Brief:
+  [2026-11-05-builder-mockup.md](2026-11-05-builder-mockup.md) (on the lane's branch). Started 2026-11-05 on Sonnet
+  (background agent).
+
 ## Waiting on Ludovic
