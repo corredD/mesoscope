@@ -210,8 +210,10 @@ export function RecipeCanvas() {
   }
 
   const onPointerDown = (e: ReactPointerEvent) => {
-    press.current = e.button === 0 ? { x: e.clientX, y: e.clientY } : null
-    if (!(e.target as Element).closest?.('.recipe-canvas-context-menu')) setMenu(null)
+    // A press in the context menu is the menu's, not a click on the canvas under it.
+    const inMenu = !!(e.target as Element).closest?.('.recipe-canvas-context-menu')
+    press.current = e.button === 0 && !inMenu ? { x: e.clientX, y: e.clientY } : null
+    if (!inMenu) setMenu(null)
   }
   const onPointerUp = (e: ReactPointerEvent) => {
     const start = press.current
