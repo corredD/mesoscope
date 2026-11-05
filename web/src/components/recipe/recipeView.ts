@@ -246,24 +246,24 @@ export function bindGestures(canvas: HTMLCanvasElement, view: RecipeView, closeM
       return { node, link, x: e.x, y: e.y, ctrl: src.ctrlKey || src.metaKey, wx: x, wy: y, nx: node.x, ny: node.y }
     })
     .on('start', (e: DragEvent) => {
-      // Legacy selects at drag start (main.js:5106-5169); the side effects come at the end (§4.5).
+      // Legacy highlights at drag start (main.js:5106-5169) and runs the side effects at the end (§4.5, row 63): here
+      // only the frame's selection changes, so the table and the viewers do not load in the middle of a drag.
       closeMenu()
       const { node, link, ctrl } = e.subject
       if (!view.scene.nodes.length || link) return
-      const uiStore = useUiModeStore.getState()
-      const store = useRecipeStore.getState()
+      const editMode = useUiModeStore.getState().editMode
+      const scene = view.scene
       if (node.leaf) {
-        if (ctrl) uiStore.addToSelection(node.node)
-        else uiStore.setSelection([node.node])
-        store.selectNode(node.node)
-      } else if (node.parent && !uiStore.editMode) {
-        uiStore.setSelection([node.node])
-        store.selectNode(node.node)
+        scene.selected = node
+        scene.selection = ctrl ? (scene.selection.includes(node) ? scene.selection : [...scene.selection, node]) : [node]
+      } else if (node.parent && !editMode) {
+        scene.selected = node
+        scene.selection = [node]
       } else {
-        uiStore.clearSelection()
-        store.selectNode(null)
+        scene.selected = null
+        scene.selection = []
       }
-      view.sim.dragStart(node, uiStore.editMode, ctrl)
+      view.sim.dragStart(node, editMode, ctrl)
       if (view.sim.drag?.floating) view.sort()
       view.request()
     })
@@ -303,9 +303,19 @@ export function bindGestures(canvas: HTMLCanvasElement, view: RecipeView, closeM
       view.sim.dragEnd()
       if (floating) view.sort()
       clearDrop()
+      // The selection made at the press, now into the stores (table, viewers, visited).
       if (node.leaf) {
+        if (e.subject.ctrl) uiStore.addToSelection(node.node)
+        else uiStore.setSelection([node.node])
+        store.selectNode(node.node)
         store.selectLink(null)
         uiStore.markVisited(node.node)
+      } else if (node.parent && !uiStore.editMode) {
+        uiStore.setSelection([node.node])
+        store.selectNode(node.node)
+      } else {
+        uiStore.clearSelection()
+        store.selectNode(null)
       }
       if (drop) {
         // Rows 66-68: onto a compartment or the root; the target grows by r/2; `surface` recomputed.
