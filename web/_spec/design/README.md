@@ -50,6 +50,11 @@ Each finding ends with the decision it leads to (→).
   draws the membrane band with its faces; "Orient from OPM" is offered for surface ingredients (§5.2, screen 4).
 - **Principles.** "Everything visible can be pointed at (stable ids + human names), so Focus can resolve 'this'" and
   "Direct manipulation stays first-class" (`SU:designs/ux-map/README.md:90-94`). → P1, P5.
+- **The stage's menu.** "A right-click on the stage opens a menu on what is under the pointer" with Move, Rotate and
+  Color, each "one undo step"; "Right-click, not a gizmo"; "The menu's header names the target"
+  (`SU:designs/stage-menu/README.md:5-9, 57, 62`). → A right-click in any view opens the commands for what is under the
+  pointer, its name as the menu's header, built from the same registry (§5.4); today's Recipe view context menu (Rename,
+  Delete, Colour) becomes that menu.
 - **The opening.** "the first prompt ('What story do you want to tell?'), with files, options and examples"
   (`SU:designs/ux-map/home.md:39-40`). → First run asks "What will you pack?" with the ways in (screen 8).
 
@@ -265,6 +270,9 @@ whole shell.
   Workspace, Layout Options and Skills (§7).
 - **⌘K** (and ⇧⌘P) opens the palette anywhere: recent commands, then matches by category, then "Go to" ingredients
   matched by name, PDB or UniProt; rows show the key or the reason they cannot run. Commands act on the Focus.
+- **Context menu**: a right-click in any view or on any row opens the Focus-able commands for what is under the pointer
+  (its name as the header: Rename, Set colour, Delete, Find a structure, Open in 3D, Add interaction), from the
+  registry, as Stories Untold's stage menu.
 - **Keys** (proposed): 1-4 stage views, ⌘K palette, ⌘O open, ⌘S / ⇧⌘S export, ⌘F find a structure, E edit layout, F
   frame the Focus, ⌥↑ parent compartment, ⌘' next problem, F2 rename, ⌫ delete, Esc innermost first (palette, menu,
   card, then the Focus), ? shortcuts.
@@ -462,7 +470,7 @@ first cell is checked by `check.mjs` against the code; "command" is the registry
 | | Node label | toolbar "Label" menu |
 | | Node image (sprites), Show legend, Stroke line width | toolbar "More" |
 | | Forces (Parent, Surface, Link, Cluster, Collision) | toolbar "More" › Forces |
-| `RecipeCanvas.tsx` | context menu: Rename, Delete, Colour; zoom, pan, drag, drag to reparent, Ctrl+click multi | Edit menu and inspector (Rename F2, Delete ⌫, Set colour); the same gestures; ⇧/⌘/Ctrl-click adds to the Focus |
+| `RecipeCanvas.tsx` | context menu: Rename, Delete, Colour; zoom, pan, drag, drag to reparent, Ctrl+click multi | the context menu, from the registry, in every view (§5.4); Edit menu and inspector (Rename F2, Delete ⌫, Set colour); the same gestures; ⇧/⌘/Ctrl-click adds to the Focus |
 | `IngredientOptions.tsx` | Representation, Colour | Ingredient view toolbar |
 | | chain checkboxes | Ingredient view toolbar "Chains" |
 | | Membrane orientation (axis, offset, reset) | inspector Placement (principal axis, offset, Orient from OPM, drag in 3D) |

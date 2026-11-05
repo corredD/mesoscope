@@ -582,22 +582,24 @@
   function structureCard() {
     const n = focused().find((x) => x.kind === 'ingredient') || R.ings[0]
     const q = n.label || n.name.replace(/_.*$/, '')
+    // Placeholders, not search results: the first is the structure already in the recipe; the rest only show the
+    // shape of a result of each kind (no accession or measurement is claimed).
     const results = [
-      ['1OB2', 'Elongation factor Tu (Ef-Tu) complex', 'X-ray 3.35 Å · M. pneumoniae homolog · 2 chains', 'PDB'],
-      ['P23568', 'Elongation factor Tu · tuf · M. pneumoniae M129', 'UniProt reviewed · 394 aa', 'UniProt'],
-      ['AF-P23568-F1', 'AlphaFold model of P23568', 'pLDDT 94 · whole chain', 'AlphaFold'],
-      ['1EFC', 'Elongation factor Tu, E. coli', 'X-ray 2.05 Å · 1 chain', 'PDB'],
+      [n.pdb ? n.pdb.toUpperCase() : '—', 'The structure in this recipe', 'PDB entry · method, resolution, chains', 'PDB'],
+      ['UniProt entry', `The protein for ${n.name}`, 'organism · reviewed or not · length', 'UniProt'],
+      ['AlphaFold model', 'The predicted model of that UniProt entry', 'mean pLDDT · whole chain', 'AlphaFold'],
+      ['PDB entry', 'A homolog from another organism', 'PDB entry · method, resolution, chains', 'PDB'],
     ]
     return [
       h('div', { class: 'insp-head' }, h('div', { class: 'insp-kind' }, 'Find a structure · a card in the inspector’s place'), h('div', { class: 'insp-name' }, n.name), h('div', { class: 'insp-crumbs' }, 'Esc or ✕ goes back to the inspector · ', h('button', { class: 'button link', onclick: () => { state.card = null; renderInspector() } }, '✕ Close'))),
       h('div', { class: 'insp-body', style: 'padding:12px 16px' },
         h('div', { class: 'tabs', role: 'tablist', style: 'padding:0;margin-bottom:12px' }, ['All', 'PDB', 'UniProt', 'AlphaFold'].map((t, i) => h('button', { class: 'tab', role: 'tab', 'aria-selected': i === 0 ? 'true' : 'false' }, t))),
-        h('input', { class: 'input', value: R.key === 'mpn' ? 'mpn665 elongation factor Tu' : q, 'aria-label': 'Search' }),
-        h('div', { class: 'chips', style: 'margin:8px 0 12px' }, ['by name', 'by sequence', 'by UniProt', 'organism: M. pneumoniae'].map((t, i) => h('button', { class: 'chip', 'aria-pressed': i === 0 || i === 3 ? 'true' : 'false' }, t))),
+        h('input', { class: 'input', value: q, 'aria-label': 'Search' }),
+        h('div', { class: 'chips', style: 'margin:8px 0 12px' }, ['by name', 'by sequence', 'by UniProt', 'organism'].map((t, i) => h('button', { class: 'chip', 'aria-pressed': i === 0 || i === 3 ? 'true' : 'false' }, t))),
         results.map(([id, t, m, src], i) => h('div', { class: 'result' }, h('div', { class: 'thumb', role: 'img', 'aria-label': 'Structure preview' }),
           h('div', {}, h('div', {}, h('span', { class: 'mono' }, id), ' · ', h('span', { class: 'muted' }, src)), h('div', {}, t), h('div', { class: 'muted' }, m)),
           h('button', { class: 'button' + (i === 0 ? ' primary' : ''), title: `Set ${src === 'UniProt' ? 'the UniProt accession' : 'the structure'} of ${n.name}` }, 'Use'))),
-        h('p', { class: 'muted' }, 'Illustrative results, not a live search. Hovering a result previews it in the Ingredient view; Use writes it onto the ingredient in the Focus (one undo step).'))]
+        h('p', { class: 'muted' }, 'Placeholder results, not a search. Hovering a result previews it in the Ingredient view; Use writes it onto the ingredient in the Focus (one undo step).'))]
   }
 
   // ---- render ---------------------------------------------------------------------------------------------------
