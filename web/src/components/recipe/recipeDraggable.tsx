@@ -147,11 +147,12 @@ export function makeRecipeDraggable(ctx: RecipeDrawContext): Draggable<ViewState
       const sprite = url && spriteReady(url) ? url : null
       layers.push(
         <g id={nodeLayer(id)} transform={translate(at.x, at.y)} dragologyZIndex={dragged ? '/1' : Z.ingredients + node.depth} dragologyOnDrag={onDrag} data-node-id={id} data-depth={node.depth} data-r={node.r} data-kind="ingredient" data-surface={node.surface}>
-          <circle r={node.r} fill={style.fill} stroke={style.stroke} strokeWidth={ctx.strokeWidth} />
-          {sprite && <image href={sprite} x={-node.r} y={-node.r} width={2 * node.r} height={2 * node.r} preserveAspectRatio="xMidYMid meet" pointerEvents="none" />}
+          {/* Keyed children: a sprite may appear between two renders being blended (Dragology pairs by index). */}
+          <circle dragologyKey="disk" r={node.r} fill={style.fill} stroke={style.stroke} strokeWidth={ctx.strokeWidth} />
+          {sprite && <image dragologyKey="sprite" href={sprite} x={-node.r} y={-node.r} width={2 * node.r} height={2 * node.r} preserveAspectRatio="xMidYMid meet" pointerEvents="none" />}
           {node.surface && (
             // §10.5: membrane marker lines in the circle (legacy shows them only in the popup).
-            <g pointerEvents="none" data-membrane-markers="">
+            <g dragologyKey="markers" pointerEvents="none" data-membrane-markers="">
               <line x1={-node.r * 0.6} y1={0} x2={node.r * 0.6} y2={0} stroke="green" strokeWidth={1} />
               <line x1={-node.r * 0.6} y1={-node.r * 0.3} x2={node.r * 0.6} y2={-node.r * 0.3} stroke="red" strokeWidth={1} />
               <line x1={-node.r * 0.6} y1={node.r * 0.3} x2={node.r * 0.6} y2={node.r * 0.3} stroke="blue" strokeWidth={1} />
