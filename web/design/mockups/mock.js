@@ -706,19 +706,21 @@
     const ys = beads.map((b) => b.y), xs = beads.map((b) => b.x)
     const bx0 = beads.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0, by0 = beads.length ? Math.min(...ys) : 0
     const k = beads.length ? 95 / (Math.max(...ys) - Math.min(...ys) || 1) : 1
-    const draw = (x0, ghost) => beads.sort((a, b) => a.z - b.z).map((b) => svg('circle', { cx: x0 + (b.x - bx0) * k, cy: my - half - (b.y - by0) * k + 10, r: Math.max(1.5, b.r * k), fill: ingColor(n), opacity: ghost ? 0.45 : 1, stroke: state.focus.includes(n.id) && !ghost ? css('--color-select') : css('--color-text'), 'stroke-width': ghost ? 0.8 : 0.5, 'stroke-dasharray': ghost ? '2 2' : null, 'pointer-events': 'none' }))
+    const draw = (x0, ghost) => beads.sort((a, b) => a.z - b.z).map((b) => svg('circle', { cx: x0 + (b.x - bx0) * k, cy: my - half - (b.y - by0) * k + 10, r: Math.max(1.5, b.r * k), fill: ingColor(n), opacity: ghost ? 0.45 : 1, stroke: state.focus.includes(n.id) && !ghost ? css('--color-select') : css('--color-text'), 'stroke-width': ghost ? 0.8 : 0.5, 'stroke-dasharray': ghost ? '2 2' : null, 'data-ghost': ghost ? '' : null, 'pointer-events': 'none' }))
     // Right of the panel (it covers the stage's left 380 units): two placed ones, then the one under the pointer.
+    // Not paintable (§5.7.3 item 3): no ghost and no placement, the reason in the panel, as the palette and inspector.
+    const ok = paintable(n)
     const shownHere = Math.min(2, placedOf(n))
     for (let i = 0; i < shownHere; i++) box.append(...draw(450 + i * 135, false))
     const gx = 450 + shownHere * 135 + 30
-    box.append(...draw(gx, true))
+    if (ok === true) box.append(...draw(gx, true))
     // Upright: the membrane normal, because the principal axis is 0,0,0 (undefined).
-    box.append(svg('line', { x1: gx, y1: my + half + 30, x2: gx, y2: my - half - 140, stroke: css('--color-text'), 'stroke-width': 1.5, 'stroke-dasharray': '5 4', 'pointer-events': 'none' }),
+    if (ok === true) box.append(svg('line', { x1: gx, y1: my + half + 30, x2: gx, y2: my - half - 140, stroke: css('--color-text'), 'stroke-width': 1.5, 'stroke-dasharray': '5 4', 'pointer-events': 'none' }),
       svg('path', { d: `M ${gx - 6} ${my - half - 130} L ${gx} ${my - half - 144} L ${gx + 6} ${my - half - 130} Z`, fill: css('--color-text') }),
       svg('text', { x: gx - 12, y: my - half - 168, 'text-anchor': 'end', fill: css('--color-text'), 'font-size': 12 }, 'upright: the membrane normal'),
       svg('text', { x: gx - 12, y: my - half - 152, 'text-anchor': 'end', fill: css('--color-text-muted'), 'font-size': 11 }, `principal axis ${JSON.stringify(n.pcpalAxis)} is undefined`),
-      svg('text', { x: gx, y: my + half + 50, 'text-anchor': 'middle', fill: css('--color-text-muted'), 'font-size': 11 }, 'the next one, under the pointer'),
-      svg('text', { x: 400, y: my + half + 16, fill: css('--color-text-muted'), 'font-size': 11 }, `${parentOf(n).name} · its membrane`))
+      svg('text', { x: gx, y: my + half + 50, 'text-anchor': 'middle', fill: css('--color-text-muted'), 'font-size': 11 }, 'the next one, under the pointer'))
+    box.append(svg('text', { x: 400, y: my + half + 16, fill: css('--color-text-muted'), 'font-size': 11 }, `${parentOf(n).name} · its membrane`))
     const axisUnset = n.side === 'surface' && n.pcpalAxis.every((v) => !v)
     const fib = C.find((c) => c.id === 'scene.fiber'), fibOk = enabled(fib)
     const p = placedOf(n), t = targetOf(n)
@@ -726,7 +728,11 @@
       h('div', { class: 'scene-panel', style: 'width:340px', 'aria-label': 'Place' },
         h('h3', {}, 'Place · ', h('span', { class: 'mono' }, shown(n))),
         h('div', { class: 'note' }, `${n.side === 'surface' ? 'On the membrane of' : 'Inside'} ${parentOf(n).name} (${parentOf(n).geom_type}). Placed ${p} · target ${t || '—'}${state.scene.targets.has(n.id) ? ' (typed this session)' : ''}.`),
-        h('div', { style: 'padding:0 var(--space-4) var(--space-3);display:flex;flex-direction:column;gap:var(--space-2)' },
+        ok === true ? null : h('div', { style: 'padding:0 var(--space-4) var(--space-3);display:flex;flex-direction:column;gap:var(--space-2)' },
+          h('span', { class: 'reason' }, `Cannot place: ${ok}.`),
+          n.pdb ? h('button', { class: 'button link', style: 'align-self:flex-start', onclick: () => setFocus([parentOf(n).id]) }, `Point at ${parentOf(n).name} to give it a shape`)
+            : h('button', { class: 'button link', style: 'align-self:flex-start', onclick: () => run(C.find((c) => c.id === 'structure.find')) }, 'Find a structure…')),
+        ok !== true ? null : h('div', { style: 'padding:0 var(--space-4) var(--space-3);display:flex;flex-direction:column;gap:var(--space-2)' },
           h('div', { class: 'segmented', role: 'group', 'aria-label': 'Where to place' }, h('button', { 'aria-pressed': 'true' }, 'On the membrane'), h('button', { 'aria-pressed': 'false', 'aria-disabled': fibOk === true ? null : 'true', title: fibOk === true ? 'Along a curve' : fibOk }, 'Along a curve')),
           fibOk === true ? null : h('span', { class: 'reason' }, `Along a curve: ${fibOk}. A fiber is drawn as a curve of points; the recipe keeps the curve.`),
           axisUnset ? h('div', { class: 'problem' }, h('b', {}, '●'), h('span', {}, 'No principal axis: placed upright (the membrane normal) until it is set. ', h('button', { class: 'button link', onclick: () => run(C.find((c) => c.id === 'structure.orient')) }, 'Orient from OPM…'))) : null,
