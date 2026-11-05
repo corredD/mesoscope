@@ -317,6 +317,8 @@ textarea.input { height: 110px; padding: var(--space-3); font-family: var(--font
   cursor: pointer; color: var(--color-text); font: inherit;
 }
 .paint-row:hover { background: var(--color-hover); }
+.paint-more { display: block; width: 100%; padding: var(--space-1) var(--space-4); border: 0; background: none; text-align: left; color: var(--color-text-muted); font: inherit; font-size: var(--font-size-xs); cursor: pointer; }
+.paint-more:hover { background: var(--color-hover); color: var(--color-text); }
 .paint-row[aria-selected='true'] { background: var(--color-select-soft); box-shadow: inset 2px 0 0 var(--color-select); }
 .paint-row[aria-disabled='true'] .name { color: var(--color-text-muted); }
 .paint-row .swatch { box-shadow: 0 0 0 1px var(--color-text); }

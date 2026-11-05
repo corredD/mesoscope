@@ -613,7 +613,14 @@
       rows.push(h('div', { class: 'comp' }, c.name, h('span', { class: 'subtle mono' }, `  ${c.geom_type === 'mb' ? 'mesh (mb)' : c.geom_type}`)))
       for (const side of ['surface', 'interior']) {
         const ings = kids.filter((k) => k.side === side)
-        if (ings.length) rows.push(h('div', { class: 'side' }, side === 'surface' ? 'on its membrane' : 'inside'), ings.map(paletteRow))
+        if (!ings.length) continue
+        // A long side folds the rows with nothing placed and not in the Focus, so every compartment stays in view
+        // (HIV's envelope has 16 inside; the capsid's greyed rows, D14, would fall below the fold).
+        const key = c.id + side, open = ings.length <= 8 || state.scene.unfolded.has(key)
+        const shownRows = open ? ings : ings.filter((k) => placedOf(k) || state.focus.includes(k.id))
+        const folded = ings.length - shownRows.length
+        rows.push(h('div', { class: 'side' }, side === 'surface' ? 'on its membrane' : 'inside'), shownRows.map(paletteRow),
+          folded ? h('button', { class: 'paint-more', 'aria-expanded': 'false', onclick: () => { state.scene.unfolded.add(key); renderStage() } }, `+ ${folded} more, none placed`) : null)
       }
     }
     const nT = R.ings.filter((n) => state.scene.targets.has(n.id)).length
@@ -873,7 +880,7 @@
       state.card = cfg.card === 'structure' ? structureCard : null
       // The scene's side (README §5.7): mocked placed counts and session targets, keyed by name (unique ones) or id.
       const ids = (o) => new Map(Object.entries(o || {}).map(([k, v]) => [(R.byId.get(k) || byName(k) || {}).id, v]).filter(([k]) => k))
-      state.scene = cfg.scene ? { mode: cfg.scene.mode || null, placed: ids(cfg.scene.placed), targets: ids(cfg.scene.targets), log: cfg.scene.log || [], strokes: (cfg.scene.log || []).length, last: null, palette: cfg.scene.palette !== false } : null
+      state.scene = cfg.scene ? { mode: cfg.scene.mode || null, placed: ids(cfg.scene.placed), targets: ids(cfg.scene.targets), log: cfg.scene.log || [], unfolded: new Set(), strokes: (cfg.scene.log || []).length, last: null, palette: cfg.scene.palette !== false } : null
       // A session target is the recipe's count (§5.7.3): write it there, so the problems, Amount and the Table agree.
       if (state.scene) for (const [id, v] of state.scene.targets) R.byId.get(id).count = v
       renderAll()
