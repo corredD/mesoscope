@@ -29,11 +29,14 @@ export function RecipeCanvasToolbar() {
   if (!graph) return <p className="panel-note">Load a recipe to use the canvas view options.</p>
 
   const custom = customColumns(graph.nodes)
+  // Only nodes still in the recipe: a deleted one must not get a link.
+  const live = new Set(graph.nodes)
+  const selection = ui.selectedNodes.filter((node) => live.has(node))
   const ingredients = graph.nodes.filter(isIngredientNode)
 
   function addInteraction() {
     // Pairs (i, i+1) of the multi-selection, then clears it (§7.3).
-    for (let i = 0; i + 1 < ui.selectedNodes.length; i += 2) store.addLink(ui.selectedNodes[i], ui.selectedNodes[i + 1])
+    for (let i = 0; i + 1 < selection.length; i += 2) store.addLink(selection[i], selection[i + 1])
     ui.clearSelection()
   }
 
@@ -152,7 +155,7 @@ export function RecipeCanvasToolbar() {
             <Button size="sm" onClick={store.addCompartment}>
               Add compartment
             </Button>
-            <Button variant="primary" size="sm" onClick={addInteraction} disabled={ui.selectedNodes.length < 2}>
+            <Button variant="primary" size="sm" onClick={addInteraction} disabled={selection.length < 2}>
               Add interaction
             </Button>
           </div>

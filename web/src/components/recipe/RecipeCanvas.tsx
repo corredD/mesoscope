@@ -113,6 +113,12 @@ export function RecipeCanvas() {
   const state = current.view
 
   const index = useMemo(() => (graph ? indexGraph(graph) : new Map<string, RecipeNode>()), [graph])
+  // The multi-selection drops nodes that left the recipe (deleted, or another recipe loaded).
+  useEffect(() => {
+    const { selectedNodes, setSelection } = useUiModeStore.getState()
+    const live = new Set(graph?.nodes ?? [])
+    if (selectedNodes.some((node) => !live.has(node))) setSelection(selectedNodes.filter((node) => live.has(node)))
+  }, [graph])
   const prepared = useMemo(() => {
     if (!graph?.nodes.length) return null
     const infos = colorNodeInfos(graph.nodes[0])
