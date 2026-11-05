@@ -53,7 +53,7 @@ the random iwanthue palettes (86) and d3 v7's seeded randomness (94).
 | Beads / LOD building (k-means)                   | `domain/recipe/clustering.ts`                        | done    |
 | Sprite capture / Illustrate round trip           | Mol\* image capture; no `cgi-bin/illustrator.py`     | differs |
 | Sequence features (ProtVista)                    | `SequenceFeaturesPanel.tsx` (Nightingale)            | done    |
-| Topology, UniProt mapping (PDB Component Library)| —                                                    | placeholder |
+| Topology, UniProt mapping (PDB Component Library)| from Mol\* v6 Prism's sequence band (Ludovic, 2026-11-05), item 2 | placeholder |
 
 ## 5. Scene view (whole model)
 

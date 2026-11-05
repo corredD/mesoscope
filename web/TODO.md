@@ -19,8 +19,8 @@ each legacy feature stands: `_spec/parity.md`.
    post-receive hook. Check: the beta URL opens the modern app.
 6. **Remaining loaders and savers.** `.xlsx` and `.zip` import, Spreadsheet XL, Color mapping load/save, cellPAINT
    sprites zip, Setup Data Directory, the missing examples.
-7. **Remaining panels and pages.** Topology and UniProt mapping (PDB Component Library), Object Properties; Help,
-   FAQ, About, Contact, Settings.
+7. **Remaining panels and pages.** Object Properties; Help, FAQ, About, Contact, Settings. (Topology and UniProt
+   mapping come from Mol\* v6 Prism with the Ingredient view, item 2: Ludovic, 2026-11-05.)
 8. **Bundle size.** Mol\* and protvista load lazily; the main chunk shrinks from 4 MB.
 9. **Recipe view follow-ups (left open by PR #49).** S1: root label and compartment titles are black on the dark
    background: Ludovic picks their colour. S2, S4, N2-N4, N6 and X1 (the context menu does not close on a press

@@ -463,8 +463,8 @@ first cell is checked by `check.mjs` against the code; "command" is the registry
 | Panel › Table Options | the Table's header (columns, sort, density) | — | a stub today |
 | Panel › Object Properties | the inspector | — | a stub today; P2 |
 | Panel › Sequence features | the sequence band over the Ingredient view | `view.sequence` | |
-| Panel › Topology | a "Topology" fold of the sequence band | — | a stub today; open (§9) |
-| Panel › Uniprot mapping | a "UniProt mapping" fold of the sequence band | — | a stub today; open (§9) |
+| Panel › Topology | a "Topology" fold of the sequence band | — | from Mol\* v6 Prism (§9) |
+| Panel › Uniprot mapping | a "UniProt mapping" fold of the sequence band | — | from Mol\* v6 Prism (§9) |
 | Panel › Interaction table | the column's Interactions tab | `view.interactions` | |
 | Panel › Uniprot search table | Find a structure card, UniProt tab | `structure.find` | |
 | Panel › PDB search table | Find a structure card, PDB tab | `structure.find` | |
@@ -541,8 +541,10 @@ Each is a proposal; confirm or reject.
 - **An agent.** Stories Untold sends the Focus with every prompt to an agent. Mesoscope's LLM path today is Skills (copy,
   ask elsewhere, paste). The Focus and the command registry are what an in-app agent would need; not proposed here.
 - **Undo.** Proposed (Edit › Undo); the modern app has none today.
-- **Topology and UniProt mapping** (PDB Component Library): their place is a fold of the sequence band; their content
-  is not designed.
+- **Topology and UniProt mapping** (PDB Component Library): Mol\* v6 Prism provides both (Ludovic, 2026-11-05); we
+  do not design or build our own. Their place is Prism's sequence band. At molstar `c1b8ecb` the band reads SIFTS
+  numberings from the CIF block (`packages/prism/viewer/_spec/sequence.md`) and a SIFTS coverage track is queued
+  (`packages/prism/TODO.md`); the Mol\* v6 lanes check what the pinned commit ships.
 - **Colour mapping by property**, **.xlsx / .zip import**, **sprite export**, **data directory**: not built; shown
   greyed.
 - **Compact mode** (phones, narrow windows): not designed; Prism's bottom sheet is the reference.
