@@ -6,9 +6,8 @@ queue (`../TODO.md`).
 
 ## In flight
 
-- `builder-mockup` (`~/Developments/mesoscope-lanes/builder-mockup`, branch `lane/builder-mockup`, no ports): the
-  Build/Paint mode in the design mockups, painting in prism-me synced with the recipe; spec and mockups only. Brief:
-  [2026-11-05-builder-mockup.md](2026-11-05-builder-mockup.md) (on the lane's branch). Started 2026-11-05 on Sonnet
-  (background agent).
-
 ## Waiting on Ludovic
+
+- `builder-mockup`: PR [#50](https://github.com/corredD/mesoscope/pull/50) (branch `lane/builder-mockup`, spec and
+  mockups only). Gate: 2 must-fix, 8 should-fix fixed; open nits R16, R19, R20, N2. Check: screens 10 Paint, 11 Place,
+  12 Sync (light, `?theme=dark`), design spec §5.7; answer §9's open questions and D12-D15.
