@@ -478,7 +478,7 @@
       body.append(h('tr', { 'aria-selected': state.focus.includes(n.id) ? 'true' : 'false', onclick: pick(n), oncontextmenu: ctx(n) },
         h('td', { title: p.map((x) => x.text).join('\n') }, p.some((x) => x.level === 'danger') ? h('span', { class: 'flag danger' }, '●') : flagged(n) ? h('span', { class: 'flag' }, '●') : ''),
         h('td', {}, n.name),
-        // Beside the scene (README §5.7), target and placed come first: they are what changes as you paint.
+        // Under the scene (README §5.7), target and placed come first: they are what changes as you paint.
         state.scene ? [cell(targetOf(n) || '', 'num mono'), cell(placedOf(n), 'num mono' + (targetOf(n) && placedOf(n) > targetOf(n) ? ' warn' : '') + (state.scene.last === n.id ? ' changed' : ''))] : null,
         h('td', { class: 'muted' }, parentOf(n).name), h('td', { class: 'muted' }, n.side),
         state.scene ? null : cell(n.count, 'num mono' + (!n.count && !n.molarity ? ' warn' : '')),
@@ -642,7 +642,7 @@
     const s = state.scene
     return h('div', { class: 'scene-panel', style: 'width:280px', role: 'log', 'aria-label': 'From prism-me' },
       h('h3', {}, 'From prism-me, as it happens'),
-      h('div', { class: 'note' }, 'Each line is one operation in prism-me (one undo step there). The Table beside it shows the placed count against the recipe’s target. Click the stage to paint the Focus.'),
+      h('div', { class: 'note' }, 'Each line is one operation in prism-me (one undo step there). The Table under the stage shows the placed count against the recipe’s target. Click the stage to paint the Focus.'),
       h('ol', { class: 'sync-log' }, s.log.slice(0, 8).map((l) => h('li', {}, l))))
   }
   function sceneHead(what) {

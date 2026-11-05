@@ -273,7 +273,7 @@ whole shell.
   Structure, Scene (build and paint in prism-me, §5.7), Help. Each: id, title, category, key, `when` (true, or the reason it cannot run), and what it opens.
 - **Menus** are the categories, built from the registry: Recipe (new, open, append, examples, import, export, with an
   LLM), Edit, View (stage views, arrangements, panels, Focus), Structure, Scene (paint, place, curve, erase; fill and
-  settle greyed; the Table beside the scene, write the placed counts), Help. The top bar's menus replace Load, Save,
+  settle greyed; the scene over the Table, write the placed counts, open the scene in prism-me), Help. The top bar's menus replace Load, Save,
   Workspace, Layout Options and Skills (§7).
 - **⌘K** (and ⇧⌘P) opens the palette anywhere: recent commands, then matches by category, then "Go to" ingredients
   matched by name, PDB or UniProt; rows show the key or the reason they cannot run. Commands act on the Focus.
@@ -283,8 +283,8 @@ whole shell.
 - **Keys** (proposed): 1-4 stage views, ⌘K palette, ⌘O open, ⌘S / ⇧⌘S export, ⌘F find a structure, E edit layout, F
   frame the Focus, ⌥↑ parent compartment, ⌘' next problem, F2 rename, ⌫ delete, B paint, ⇧B erase, P place (§5.7), Esc
   innermost first (palette, menu, card, then the Focus), ? shortcuts.
-- **Single-key shortcuts** (1-4, A, B, E, F, P, ?) follow WCAG 2.1.4 (Level A, "Character Key Shortcuts"): they fire only
-  with no modifier and not while a field, select or text area has the keyboard, and Settings › Keyboard turns them
+- **Single-key shortcuts** (1-4, A, B, ⇧B, E, F, P, ?) follow WCAG 2.1.4 (Level A, "Character Key Shortcuts"; ⇧B
+  and ? are character keys too, upper case and a symbol): they fire only with no modifier but ⇧ and not while a field, select or text area has the keyboard, and Settings › Keyboard turns them
   off or remaps each one. Modified keys (⌘K, ⌘S, F2, ⌥↑) are not affected. Mockups only draw the keys; the one live
   key, H on screen 1, follows the same rule.
 - **Arrangements** replace the presets: Overview (Recipe view beside the Ingredient view; was Default), Build (Recipe view
@@ -331,7 +331,8 @@ builder did, not how: its physics is not ported (D11).
   compartment's default ball into its `pos`/`radii` (`gp:663-666`), a fiber's `curves` reset and rewritten
   (`gp:942-948`), a metaball moved with the gizmo into its compartment's `pos` (below). Hence one writer per fact
   (§5.7.2).
-- **Compartments as meshes.** Every compartment with children gets a mesh (`gp:825-828`), marching cubes over its
+- **Compartments as meshes.** Every compartment gets a mesh (`gp:825-828`: the test `children !== null` holds for a
+  d3 leaf too, whose `children` is undefined), marching cubes over its
   metaballs (`GP_createOneCompartmentMesh`, `gp:652-731`); one with no metaball positions got one 500 Å ball
   (`gp:663-666`).
 - **Distribute by count.** The count is molarity × the compartment's volume (`gp:784-787`, `js/util.js:566`), else the
@@ -431,8 +432,8 @@ New design (proposal), from P1 and §5.3; prism-me's side as its spec has it.
 
 #### 5.7.6 Undo across both
 
-- **An action is undone where it was made.** A stroke, a placement, an erase is one step in prism-me ("one undo step
-  per top-level operation", `me:_spec/architecture.md:102-104`; a drag previews outside the state and commits once on
+- **An action is undone where it was made.** A stroke, a placement, an erase is one step in prism-me (each top-level
+  operation is one undo step there, `me:_spec/architecture.md:102-104`; a drag previews outside the state and commits once on
   release, `:88-90`). The placed count Mesoscope shows follows it and is not a Mesoscope step.
 - A recipe edit is one step in Mesoscope (when it has undo, §9); its effect on the scene (palette, target, colour) is
   applied in prism-me without a step there.
