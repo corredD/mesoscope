@@ -181,7 +181,7 @@
   function run(c) {
     const ok = enabled(c)
     if (ok !== true) return
-    if (c.view) { state.views = [c.view]; renderStage(); return }
+    if (c.view) { state.views = [stageView(c.view)]; renderStage(); return }
     if (c.mode && state.scene) {
       // On a scene screen, a mode its stage has switches in place; another mode goes to its screen.
       const here = state.views.includes('place') ? ['place'] : state.views.includes('paint') ? ['paint', 'erase'] : []
@@ -402,14 +402,17 @@
 
   // ---- views ----------------------------------------------------------------------------------------------------
   const VIEWS = { recipe: 'Recipe view', table: 'Table', ingredient: 'Ingredient', scene: 'Scene' }
+  /** With prism-me live (§5.7), the Scene view is its stage, in its current mode (paint or place). */
+  const stageView = (k) => (k === 'scene' && state.scene ? (state.scene.mode === 'place' ? 'place' : 'paint') : k)
   let stageEl
   function renderStage() {
     if (!stageEl) return
     const head = h('div', { class: 'stage-head' },
       h('div', { role: 'tablist', 'aria-label': 'Stage views', style: 'display:flex;gap:16px' },
         Object.entries(VIEWS).map(([k, t], i) => h('button', { class: 'tab', role: 'tab', 'aria-selected': state.views.includes(k) || (k === 'scene' && state.views.some((v) => v === 'paint' || v === 'place')) ? 'true' : 'false', title: `${t} (${i + 1})`, onclick: (e) => {
-          if (e.shiftKey || e.metaKey) state.views = state.views.includes(k) ? state.views.filter((v) => v !== k) : [state.views[0], k]
-          else state.views = [k]
+          const v = stageView(k)
+          if (e.shiftKey || e.metaKey) state.views = state.views.includes(v) ? state.views.filter((x) => x !== v) : [state.views[0], v]
+          else state.views = [v]
           renderStage()
         } }, t))),
       h('span', { class: 'end' },
