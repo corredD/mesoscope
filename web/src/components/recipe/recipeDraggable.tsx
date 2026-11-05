@@ -82,7 +82,7 @@ export function settle(state: ViewState): ViewState {
 function compartmentLayer(id: string, at: Point, r: number, depth: number, fill: string, stroke: string, strokeWidth: number, z: number | string, onDrag: () => DragSpec<ViewState>) {
   // A filled disk r+5 with outlines at r±5: legacy's two arcs in one path, filled nonzero (§2.4).
   return (
-    <g id={nodeLayer(id)} transform={translate(at.x, at.y)} dragologyZIndex={z} dragologyOnDrag={onDrag} data-node-id={id} data-depth={depth}>
+    <g id={nodeLayer(id)} transform={translate(at.x, at.y)} dragologyZIndex={z} dragologyOnDrag={onDrag} data-node-id={id} data-depth={depth} data-r={r} data-kind="compartment">
       <circle r={r + 5} fill={fill} />
       <circle r={r + 5} fill="none" stroke={stroke} strokeWidth={strokeWidth} />
       <circle r={Math.max(r - 5, 0)} fill="none" stroke={stroke} strokeWidth={strokeWidth} />
@@ -145,7 +145,7 @@ export function makeRecipeDraggable(ctx: RecipeDrawContext): Draggable<ViewState
       const url = ctx.showSprites ? resolveSpriteImageUrl(data.sprite?.image ?? null, data.source?.pdb) : null
       const sprite = url && spriteReady(url) ? url : null
       layers.push(
-        <g id={nodeLayer(id)} transform={translate(at.x, at.y)} dragologyZIndex={dragged ? '/1' : Z.ingredients + node.depth} dragologyOnDrag={onDrag} data-node-id={id} data-depth={node.depth}>
+        <g id={nodeLayer(id)} transform={translate(at.x, at.y)} dragologyZIndex={dragged ? '/1' : Z.ingredients + node.depth} dragologyOnDrag={onDrag} data-node-id={id} data-depth={node.depth} data-r={node.r} data-kind="ingredient" data-surface={node.surface}>
           <circle r={node.r} fill={style.fill} stroke={style.stroke} strokeWidth={ctx.strokeWidth} />
           {sprite && <image href={sprite} x={-node.r} y={-node.r} width={2 * node.r} height={2 * node.r} preserveAspectRatio="xMidYMid meet" pointerEvents="none" />}
           {node.surface && (
