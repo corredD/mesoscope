@@ -157,6 +157,18 @@ What made it fit, each measured:
   as a COBYLA `lessThan` constraint (dev p50 6.4 vs 6.6 ms on Mpn) and cannot start infeasible (HIV's capsid pair,
   §8.1). Surface ingredients vary one angle: always exactly on the membrane, no `equal` constraint.
 
+### After the build
+
+- Dev and production differ about 4× per drag frame: on Mpn the real view drops frames in the dev build (rAF p95
+  41 ms) but not in production (p95 9.3 ms at 120 Hz). React's development element creation dominates the dev
+  profile. The e2e frame budget therefore runs against `vite preview` (a second Playwright web server on E2E_PORT+10).
+- The first real-view profile found `pushNeighbours` at ~5 ms a frame on Mpn: cells sized by the largest sibling
+  held every sibling, so the "grid" was a full scan. Cells sized by the mean diameter and flat arrays fixed it.
+- Dragology 0.1.7 blends children by index unless they carry `dragologyKey`; anything that may appear between two
+  renders (a sprite that just loaded) needs a key, or a spring throws.
+- Legacy's `anotherSubject` stops at the subject's own parent (main.js:4908-4910), which the spec had left out: the
+  reviewer found it, not the oracle (the oracle has no Edit-Mode gesture).
+
 ### Dragology on npm is not the reference checkout
 
 `dragology@0.1.7` on npm (published 2026-05-01) is not `b145bdd` (2026-11-03, same version string). npm 0.1.7 has no
@@ -171,9 +183,30 @@ ignores the button, so a capture-phase listener on the wrapper stops non-left pr
 
 ## Size
 
-<measured> against ~300 + ~1,300; what took the room.
+Spike ~420 lines (thrown away after the go). Production: +1,677 / −2,161 in `web/src` (the view's own modules
+~1,670 lines with their doc comments) against the brief's ~1,300, so ~370 over; tests +1,344 / −838 (fixtures apart).
+What took the room: the colour port (`ChangeCanvasColor` and `colorNode` mode by mode, ~200), the screen overlays
+(popup, root label) and the context menu with resize and category colours (~150), and the state sync with the store
+(layout vs reconcile vs append, selection pruning).
 
 ## Review
 
-| Finding | Severity | Verdict | Commit / open |
-| ------- | -------- | ------- | ------------- |
+Reviewer (Opus, read-only) on 961eddd: 4 must-fix, 8 should-fix, 6 nits. Skeptic: 17 confirmed (one in part), 0
+refuted, plus one new nit; severities as the skeptic set them.
+
+| # | Finding | Severity | Verdict | Commit / open |
+| - | ------- | -------- | ------- | ------------- |
+| 1 | A sprite loading mid-spring throws "Cannot lerp ... image and g" | must-fix | confirmed | be04961 test, 26353e0 fix |
+| 2 | Edit-Mode target ignores legacy's stop at the subject's parent | should-fix | confirmed | fca400a test, c6ca193 fix + spec |
+| 3 | Multi-selection keeps deleted nodes: dangling link | should-fix | confirmed | e188614 test, e29d23b fix |
+| 4 | A context-menu press also clicks the node under it | must-fix | confirmed | 2ee4426 test, 61c6697 fix |
+| 5 | Append stacks merged nodes at the centre | should-fix | confirmed | 78348a3 test, 52f9dbd fix |
+| 6 | A drop drops Ctrl; a drag back to start also clicks | should-fix | confirmed / plausible | 75c31eb test, d6ca447 fix |
+| 7 | Hover hit-test allocates positions per move | nit | confirmed | open (queue) |
+| 8 | Two small quadratics in `layoutRecipe` | nit | confirmed | open (queue; d3 dominates at 8000 leaves) |
+| 9 | "Scale Radius by" lays out again on every slider tick | should-fix | confirmed | open: §10.2 decides re-layout; commit-on-release is for Ludovic |
+| 10 | Perf e2e passes uniformly slow frames, never checks the move | should-fix | confirmed | 6b79fc6 |
+| 11 | Oracle gestures, markers, link menu untested; a smoke test deleted | should-fix | confirmed | 6b79fc6 |
+| 12 | §10.1's wording vs the lane's Decided | should-fix (doc) | confirmed | 341f2fe (a note for Ludovic) |
+| n1 | Ctrl-click selects a node twice | nit (skeptic) | confirmed | 75c31eb / d6ca447 |
+| n2 | metaKey counted as Ctrl; hoveredLink not cleared on leave; a link click keeps `selectedNode`; Resize ≤ 0; per-frame typed arrays in the push | nits | confirmed | open (queue) |
