@@ -156,6 +156,25 @@ describe('RecipeCanvas', () => {
     expect(added.some((l) => l.getAttribute('data-r') === '30')).toBe(false)
   })
 
+  it('a press that moved away and back is a drag, not also a click (review #6)', () => {
+    loadInfluenza()
+    render(<RecipeCanvas />)
+    const c = centre(layerOf(byName('Hemagglutinin')))
+    fireEvent.pointerDown(stage(), { button: 0, clientX: c.x, clientY: c.y, pointerId: 1 })
+    fireEvent.pointerMove(stage(), { buttons: 1, clientX: c.x + 20, clientY: c.y, pointerId: 1 })
+    fireEvent.pointerUp(stage(), { button: 0, clientX: c.x, clientY: c.y, pointerId: 1 })
+    expect(useRecipeStore.getState().selectedNode).toBeNull()
+  })
+
+  it('Ctrl-clicking a selected node again does not select it twice (main.js:5124)', () => {
+    loadInfluenza()
+    render(<RecipeCanvas />)
+    const ha = byName('Hemagglutinin')
+    clickNode(ha)
+    clickNode(ha, { ctrlKey: true })
+    expect(useUiModeStore.getState().selectedNodes).toEqual([ha])
+  })
+
   it('a press on a context-menu item does not also click the node under it (review #4)', () => {
     loadInfluenza()
     render(<RecipeCanvas />)
