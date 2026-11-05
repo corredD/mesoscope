@@ -141,6 +141,19 @@ describe('RecipeCanvas', () => {
     for (const label of ['Color', 'Rename', 'Delete', 'Resize']) expect(menu.textContent).toContain(label)
   })
 
+  it('a press on a context-menu item does not also click the node under it (review #4)', () => {
+    loadInfluenza()
+    render(<RecipeCanvas />)
+    const ha = byName('Hemagglutinin')
+    const c = centre(layerOf(ha))
+    fireEvent.contextMenu(stage(), { clientX: c.x, clientY: c.y, button: 2 })
+    const rename = Array.from(document.querySelectorAll('.recipe-canvas-context-menu button')).find((b) => b.textContent === 'Rename')!
+    fireEvent.pointerDown(rename, { button: 0, clientX: c.x, clientY: c.y, pointerId: 1 })
+    fireEvent.pointerUp(rename, { button: 0, clientX: c.x, clientY: c.y, pointerId: 1 })
+    expect(useRecipeStore.getState().selectedNode).toBeNull()
+    expect(useUiModeStore.getState().selectedNodes).toEqual([])
+  })
+
   it('deleting a compartment from the context menu removes it and its subtree (§10.6)', () => {
     const graph = loadInfluenza()
     render(<RecipeCanvas />)
