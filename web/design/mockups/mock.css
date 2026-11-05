@@ -299,3 +299,42 @@ textarea.input { height: 110px; padding: var(--space-3); font-family: var(--font
 .index { overflow: auto; }
 .index .page-inner { max-width: 1100px; }
 .index p { max-width: 760px; font-size: var(--font-size-md); }
+
+/* The prism-me stage (README §5.7): paint, place, sync. Panels that hold dense text over the stage are solid paper,
+   not glass, so their text meets the contrast pairs over a busy canvas. */
+.scene-panel {
+  position: absolute; z-index: 3; left: var(--space-3); top: 40px; width: 300px; max-height: calc(100% - 104px); overflow: auto;
+  background: var(--color-bg); border-radius: var(--radius-lg); box-shadow: 0 0 0 1px var(--color-border), var(--shadow-float);
+  font-size: var(--font-size-sm); padding-bottom: var(--space-2);
+}
+.scene-panel h3 { margin: 0; padding: var(--space-3) var(--space-4) var(--space-2); font: 600 var(--font-size-sm) var(--font-sans); color: var(--color-text); }
+.scene-panel .note { padding: 0 var(--space-4) var(--space-3); color: var(--color-text-muted); font-size: var(--font-size-xs); }
+.scene-panel .comp { padding: var(--space-3) var(--space-4) var(--space-1); font-family: var(--font-serif); color: var(--color-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scene-panel .side { padding: var(--space-1) var(--space-4); color: var(--color-text-muted); font-size: var(--font-size-xs); }
+.paint-row {
+  display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; column-gap: var(--space-3); row-gap: 2px; align-items: center;
+  width: 100%; min-height: var(--row-height); padding: var(--space-1) var(--space-4); border: 0; background: none; text-align: left;
+  cursor: pointer; color: var(--color-text); font: inherit;
+}
+.paint-row:hover { background: var(--color-hover); }
+.paint-row[aria-selected='true'] { background: var(--color-select-soft); box-shadow: inset 2px 0 0 var(--color-select); }
+.paint-row[aria-disabled='true'] .name { color: var(--color-text-muted); }
+.paint-row .swatch { box-shadow: 0 0 0 1px var(--color-text); }
+.paint-row .name { font-family: var(--font-mono); font-size: var(--font-size-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.paint-row .n { font-family: var(--font-mono); font-size: var(--font-size-xs); color: var(--color-text-muted); }
+.paint-row[aria-selected='true'] .n, .paint-row[aria-selected='true'] .name { color: var(--color-text); }
+.paint-row .n.over { color: var(--color-warning); }
+.paint-row .meter, .paint-row .reason { grid-column: 2 / 4; }
+.meter { height: 4px; border-radius: 2px; background: var(--color-bg-muted); position: relative; overflow: hidden; }
+.meter i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--color-text-muted); }
+.meter.over i { background: var(--color-warning); }
+.sync-chip {
+  position: absolute; z-index: 3; right: var(--space-3); top: var(--space-3); display: flex; align-items: center; gap: var(--space-2);
+  max-width: 44%; padding: 2px var(--space-3); border-radius: var(--radius-lg); background: var(--color-bg);
+  box-shadow: 0 0 0 1px var(--color-border); font-size: var(--font-size-xs); color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sync-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); box-shadow: 0 0 0 1px var(--color-text); flex: none; }
+.sync-log { list-style: none; margin: 0; padding: 0 var(--space-4); font-family: var(--font-mono); font-size: var(--font-size-xs); color: var(--color-text-muted); }
+.sync-log li:first-child { color: var(--color-text); }
+.grid td.changed { font-weight: 700; box-shadow: inset 0 -2px 0 var(--color-text); }
+.glass .tool[aria-disabled='true'] { color: var(--color-text-muted); cursor: default; }
