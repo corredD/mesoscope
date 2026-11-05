@@ -282,7 +282,7 @@ whole shell.
   registry, as Stories Untold's stage menu.
 - **Keys** (proposed): 1-4 stage views, ⌘K palette, ⌘O open, ⌘S / ⇧⌘S export, ⌘F find a structure, E edit layout, F
   frame the Focus, ⌥↑ parent compartment, ⌘' next problem, F2 rename, ⌫ delete, B paint, ⇧B erase, P place (§5.7), Esc
-  innermost first (palette, menu, card, then the Focus), ? shortcuts.
+  innermost first (palette, menu, card, paint or place mode, then the Focus), ? shortcuts.
 - **Single-key shortcuts** (1-4, A, B, ⇧B, E, F, P, ?) follow WCAG 2.1.4 (Level A, "Character Key Shortcuts"; ⇧B
   and ? are character keys too, upper case and a symbol): they fire only with no modifier but ⇧ and not while a field, select or text area has the keyboard, and Settings › Keyboard turns them
   off or remaps each one. Modified keys (⌘K, ⌘S, F2, ⌥↑) are not affected. Mockups only draw the keys; the one live
