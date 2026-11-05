@@ -68,15 +68,46 @@
 
 ## Built
 
+The Recipe view as a canvas with legacy's physics: `view/simulation.ts` (all-node force simulation, forces, constraints,
+nudges, cooling), `view/draw.ts` (one frame, legacy draw order), `view/hitTest.ts`, `view/layout.ts`, `colors.ts`,
+`labels.ts`, `recipeView.ts` (d3-drag/zoom gestures, scene), a thin `RecipeCanvas.tsx` with the context menu, the
+toolbar, the legacy oracle capture and fixtures, a perf guard (n and 4n with a quadratic control), unit tests per spec
+row and e2e (gestures, Mpn frame budget in a production build). Spec rows in `recipe-view.md` §9 and `parity.md` §2 updated.
+
 ## Decided
+
+- Ludovic: canvas, physics, the kept departures (`recipe-view.md` §10).
+- Lane: the all-node simulation carries membrane projection and rigid compartment drag (§10.5).
+- Lane (review): a resize below what draws (compartment < 5, leaf < 0) is ignored (§10.7); the menu is viewport-fixed.
 
 ## Learned
 
+- A child's passive effect runs before the parent's: the canvas read the theme token before AppShell set `data-theme`;
+  a MutationObserver on the attribute re-reads it.
+- React's `onChange` on `<input type=color>` is the input event; commit on the native `change`, as legacy.
+- d3-drag's `.subject` runs before `start`: guards belong there too.
+- The dev build can't hold the Mpn frame rate; the e2e frame budget runs on a production build.
+
 ## Size
 
-<measured> against ~1,300; what took the room.
+About 2,080 production lines in `src` (added) against ~1,300: the oracle-forced modules, the full draw path (legend,
+popup, titles) and the context menu took more than briefed.
 
 ## Review
 
 | Finding | Severity | Verdict | Commit / open |
 | ------- | -------- | ------- | ------------- |
+| M1 left press with no recipe throws, pans | should-fix (skeptic) | confirmed | 7855f78, 8394dd5 |
+| M2 context menu offset by panel position | must-fix | confirmed | 079905a |
+| M3 dark bg not applied on toggle | must-fix | confirmed | 261c11d |
+| S1 titles and root label black on dark bg | should-fix | confirmed, spec gap | open: needs Ludovic's colour choice (§10.3) |
+| S2 `selection.includes` per node per frame | nit (skeptic) | confirmed | open: s stays tiny, legacy does the same |
+| S3 colour picker rebuilds on every input | should-fix | confirmed | 9f5ef2d |
+| S4 Edit-Mode select loads viewers | nit (skeptic) | confirmed | open: row 62 wording / queue; base did the same |
+| N1 Resize below r 5 stops the frame loop | should-fix (skeptic) | confirmed | 794af8f |
+| N2 stale hover popup after merge | nit | plausible | open |
+| N3 drawPopup allocates | nit | confirmed | open |
+| N4 literal `#171a1f` duplicates the token | nit | confirmed | open |
+| N5 dead SVG-era CSS | nit | confirmed | 98fedaa |
+| N6 DPR read only on resize | nit | confirmed | open |
+| X1 menu not dismissed by a press outside the canvas | nit | confirmed | open |
