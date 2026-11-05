@@ -298,7 +298,7 @@ Rule: after the pointer first enters the canvas, the simulation runs indefinitel
 | Native `click` | `clearHighLight()` | m:2963 |
 
 `anotherSubject` (m:4863-4916) picks the target:
-- Start with the root, then take the deepest node with `dist < d.r + subject.r` (circle **overlap**, not containment), excluding the subject itself and its direct children.
+- Start with the root, then take the deepest node with `dist < d.r + subject.r` (circle **overlap**, not containment), excluding the subject itself and its direct children. The scan **stops at the subject's own parent** when it overlaps (m:4908-4910): in BFS order nothing inside the parent is reached, so a drop over the parent lands in it, never in a sibling sub-compartment of a non-root parent.
 - If the target is a compartment (the root counts, since its nodetype is compartment): `comp_highligh = target`. If `|target.r − dist| < subject.r`, also `comp_highligh_surface = target`. `temp_link = {source: target, target: subject}`.
 - Otherwise all three are cleared.
 
@@ -512,7 +512,7 @@ Modern files (lane `recipe-view-port`, cited by function): `components/recipe/Re
 | 63 | Selection timing | Mousedown selects; mouseup triggers effects (m:5106-5135, 5225) | On release of a click (2 px threshold) or on drop of a drag (RC) | Differs |
 | 64 | Compartment selection in Edit Mode | Deselects (m:5141-5148) | Deselects in Edit Mode (RC) | Same |
 | 65 | Ctrl multi-select | Both modes (m:5122) | Both modes (RC) | Same |
-| 66 | Edit drop target test | Overlap `d < r_t + r_s`, root fallback, ingredients included as candidates (m:4863-4916) | Overlap, deepest, root fallback, an ingredient blocks; the dragged subtree is excluded (a cycle otherwise, §10.6) (DR `reparentTarget`) | Same |
+| 66 | Edit drop target test | Overlap `d < r_t + r_s`, root fallback, ingredients included as candidates (m:4863-4916) | Overlap, deepest, root fallback, stops at the subject's parent, an ingredient blocks; the dragged subtree is excluded (a cycle otherwise, §10.6) (DR `reparentTarget`) | Same |
 | 67 | Reparent: target grows by r/2 | m:5313 | Target grows by r/2 (DR `dropReparent`) | Same |
 | 68 | Reparent recomputes `surface` from drop distance | m:5330-5337 | `surface` recomputed and written to the store; the node put on the grown target's centreline (DR, RC) | Same |
 | 69 | Reparent updates table compartment path | m:5314-5327 | The table derives the path from the store | Same |

@@ -126,7 +126,7 @@ export interface ReparentTarget {
 
 /**
  * Legacy `anotherSubject` (main.js:4863-4916, rows 66-68): the deepest node whose circle overlaps the dragged one
- * (dist < r_t + r_s), the root when none. The dragged subtree is excluded (legacy excludes only direct children,
+ * (dist < r_t + r_s), the root when none, stopping at the subject's own parent. The dragged subtree is excluded (legacy excludes only direct children,
  * which lets a grandchild become the parent: a cycle; §10.6).
  */
 export function reparentTarget(state: ViewState, id: string, at: Point, abs: Map<string, Point>): ReparentTarget {
@@ -137,7 +137,12 @@ export function reparentTarget(state: ViewState, id: string, at: Point, abs: Map
     const n = state.nodes[k]
     if (!n.parent || excluded.has(k) || n.depth <= state.nodes[best].depth) continue
     const c = abs.get(k)!
-    if (Math.hypot(c.x - at.x, c.y - at.y) < n.r + subject.r) best = k
+    if (Math.hypot(c.x - at.x, c.y - at.y) < n.r + subject.r) {
+      best = k
+      // Legacy stops at the subject's own parent (main.js:4908-4910): in breadth-first order nothing inside it is
+      // reached, so a drop over the parent lands in the parent, and never in a sibling sub-compartment.
+      if (k === subject.parent) break
+    }
   }
   const target = state.nodes[best]
   if (target.leaf) return { target: null, surface: false }
