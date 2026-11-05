@@ -77,7 +77,46 @@
 
 ## Built
 
+- **Oracle** (`tests/oracle/`, `tests/fixtures/recipe-view-oracle/`): `legacy_server.py` serves `localCGIServer.py` on
+  8091 without editing it; `capture-recipe-view.mjs` records from legacy, on HIV and Influenza, every node's radius per
+  size mode, fill per colour mode, stroke, a frame's draw calls (plain and zoomed), the click/Ctrl-click/compartment
+  click effects, and a screenshot. `tests/recipe-view-oracle.test.ts` checks our radii, fills, strokes, titles,
+  ingredient labels and layer order against it.
+- **Pure modules** (`domain/recipe/view/`): `layout.ts` (§1.7 radii, the layout as a function of the tree with
+  group-by as a level, `reconcileView` for edits without repack), `colors.ts` (`ChangeCanvasColor`/`colorNode`/
+  `Highlight`), `labels.ts`, `hitTest.ts`, `drag.ts` (containment, membrane, push neighbours, Edit-Mode target and
+  drop), `viewState.ts`. `tests/recipe-view-geometry.test.ts` tests them, with the perf guard (n vs 4n, quadratic
+  control) on the per-move push.
+- **The view**: `recipeDraggable.tsx` (the Dragology draggable: layers, drag specs, `isTracking` fast path),
+  `RecipeCanvas.tsx` (view state in step with the store, hover/click/menu by hit-test, d3-zoom for wheel, double-click
+  and middle-drag, popup and root label overlay), `spriteCache.ts`, `RecipeCanvasToolbar.tsx` (legacy §5 options;
+  Forces removed). Stores: legacy selection (`setSelection`/`addToSelection`), category colours, legend sizes, Edit
+  Mode first-toggle flag, add-ingredient defaults, apply-colour on every node.
+- Removed: `useRecipeSimulation.ts`, `recipeForces.ts`, `computeRecipeLayout.ts`, `colorModes.ts` and their tests
+  (`recipe-forces`, `compute-recipe-layout`, `color-modes`), replaced by the tests above.
+
 ## Decided
+
+- **Stay on npm `dragology@0.1.7`** and use only what it exports (Opus, after the advisor; the brief's pin "0.1.7 at
+  b145bdd" is two different codes). Our "operators" are state derivations in render plus `onDrop`.
+- **Edit-Mode reparent by legacy's deepest-overlap rule**, not `d.closest(...).withFloating()` over candidate states
+  (Opus): `closest` compares gaps, and every compartment containing the pointer has gap 0, so it cannot pick the
+  deepest; one free `varyFunc` plus the target derived in render is also one render per move instead of one per
+  candidate. §10.1/§10.2 allow our own operators where the demos don't fit.
+- **The dragged subtree is never a drop target** (Opus): legacy excludes only direct children, so a grandchild could
+  become the parent, a cycle (§10.6, a reproduction that would break the tree).
+- **Group-by eligibility as legacy** (keys outside `default_options`; Opus, following §9 row 89). With HIV and
+  Influenza, which have no custom column, grouping changes nothing in either app; check it with a CSV recipe that has
+  a custom column. Open question for Ludovic in the PR.
+- **Colour mode after load is `pdb`**, as the oracle shows legacy doing (Opus); the spec said `default`. **A null
+  colour shows the depth colour** in `default` mode, as the oracle shows on HIV (Opus); §8.3's black applies only to a
+  missing key, which our parser never produces.
+- **The depth ramp starts at hcl(148, 2, 100)** (Opus): d3 v4 gave white a hue where v7 gives none; fitted to the
+  oracle within 2 per channel.
+- **No compartment or empty-compartment pack radius**: a compartment without leaf children encloses its
+  sub-compartments +25, an empty one is 150 (Opus; legacy's pack radius depends on the canvas).
+- **Push neighbours, not sibling constraints** (Opus): a non-overlap constraint would block the drag in a packed
+  compartment; legacy's collisions moved neighbours aside.
 
 ## Learned
 
