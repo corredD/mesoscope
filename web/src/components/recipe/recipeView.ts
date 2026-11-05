@@ -238,6 +238,7 @@ export function bindGestures(canvas: HTMLCanvasElement, view: RecipeView, closeM
     .filter((e: MouseEvent) => !e.button)
     // e.x, e.y: the pointer in canvas pixels (the subject's x, y are the same point, so d3 adds no offset).
     .subject((e: DragEvent) => {
+      if (!view.scene.nodes.length) return null // no recipe: no gesture (review M1)
       const src = e.sourceEvent as MouseEvent
       const x = wx(e.x)
       const y = wy(e.y)
