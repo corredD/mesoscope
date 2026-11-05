@@ -44,7 +44,7 @@ interface RecipeStore {
   applyMolarityCount: (data: Record<string, MolarityCountEntry>) => void
   updateIngredient: (
     node: RecipeNode,
-    patch: Partial<Pick<IngredientData, 'name' | 'count' | 'molarity' | 'source' | 'ingtype'>>,
+    patch: Partial<Pick<IngredientData, 'name' | 'count' | 'molarity' | 'source' | 'ingtype' | 'surface' | 'size'>>,
   ) => void
   deleteIngredient: (node: RecipeNode) => void
   /** Legacy equivalent: js/main.js's `RenameNodeOver` (main.js:4812-4825) — renames either node
@@ -95,7 +95,7 @@ interface RecipeStore {
    *  the currently-displayed color into each ingredient's persisted `data.color`, backing up
    *  the previous value into `data._color` the first time only (never overwrites an existing
    *  backup). Takes a resolver rather than a color mode name so `recipeStore` doesn't need to
-   *  depend on `uiModeStore`/`colorModes.ts` — `RecipeCanvasToolbar.tsx` (which already reads
+   *  depend on `uiModeStore`/`view/colors.ts` — `RecipeCanvasToolbar.tsx` (which already reads
    *  both) supplies the actual per-node CSS color string, matching whatever `RecipeCanvas.tsx`
    *  is currently rendering. Colors are parsed via `d3-color` (handles `rgb()`/`hsl()`/named
    *  colors uniformly, same as legacy's `d3v4.color(...)`) and normalized to a `[0,1]` triplet. */
@@ -113,20 +113,19 @@ interface RecipeStore {
 // role as legacy's `comp_count` (main.js:4508) and `id = graph.links.length` (main.js:4558) —
 // a running counter here instead of `.length`-based ids since deletions would otherwise let
 // ids repeat (confirmed harmless either way: `serializeRecipe.ts` never reads a link's `.id`).
-let nextIngredientId = 1
-let nextCompartmentId = 1
+let nextCompartmentId = 0 // legacy `comp_count` starts at 0 (main.js:17)
 let nextLinkId = 1
 
-function createDefaultIngredient(): IngredientData {
-  const name = `newIngredient${nextIngredientId++}`
+/** Legacy `addIngredient`'s row (main.js:4630-4676, recipe-view.md §7.1, row 77): `protein_nameN` with N the node count. */
+function createDefaultIngredient(n: number): IngredientData {
   return {
     nodetype: 'ingredient',
-    name,
-    label: name,
-    size: 10,
+    name: `protein_name${n}`,
+    label: 'protein_label',
+    size: 40,
     molecularweight: 0,
     confidence: 0,
-    source: { pdb: '', bu: 'BU1', model: '0', selection: '' },
+    source: { pdb: '', bu: 'BU1', model: '', selection: '' },
     count: 0,
     molarity: 0,
     surface: false,
@@ -143,6 +142,7 @@ function createDefaultIngredient(): IngredientData {
     ingtype: 'protein',
     buildtype: 'random',
     color: null,
+    include: true,
     sprite: { image: null, offsety: 0, scale2d: 1, lengthy: 0 },
   }
 }
@@ -404,7 +404,7 @@ export const useRecipeStore = create<RecipeStore>((set) => ({
     set((state) => {
       if (!state.graph) return state
       const root = state.graph.nodes[0]
-      const newNode: RecipeNode = { data: createDefaultIngredient(), parent: root, children: undefined }
+      const newNode: RecipeNode = { data: createDefaultIngredient(state.graph.nodes.length), parent: root, children: undefined }
       root.children = [...(root.children ?? []), newNode]
       return { graph: { ...state.graph, nodes: [...state.graph.nodes, newNode] } }
     })
@@ -426,8 +426,8 @@ export const useRecipeStore = create<RecipeStore>((set) => ({
   applyColorModeToIngredient: (colorFor) => {
     set((state) => {
       if (!state.graph) return state
+      // Every node, compartments included (main.js:3356-3371, row 88).
       for (const node of state.graph.nodes) {
-        if (!isIngredientNode(node)) continue
         const data = node.data as IngredientData
         const parsed = parseColor(colorFor(node))
         if (!parsed) continue

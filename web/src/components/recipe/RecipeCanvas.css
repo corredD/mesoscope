@@ -125,3 +125,12 @@
   justify-content: space-between;
   padding: 2px 4px;
 }
+
+.recipe-canvas-stage > svg {
+  position: absolute;
+  inset: 0;
+}
+
+.recipe-canvas-overlay {
+  pointer-events: none;
+}
