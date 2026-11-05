@@ -11,8 +11,8 @@ each legacy feature stands: `_spec/parity.md`.
    shows in a panel, build and e2e pass.
 2. **Ingredient view on Mol\* v6.** The protein-in-focus viewer (Ingredient View/Options: chains, membrane and fiber
    orientation, beads/LOD, sprite) moves from Mol\* 5 to Prism. Spec: `_spec/ingredient-view.md`.
-3. **Full-scene viewer on Mol\* v6.** Load a whole packed model (legacy `MS_LoadModel`, e.g. Sars-cov-2 mature) in the
-   main 3D view. Spec: `_spec/scene-view.md`.
+3. **Full-scene viewer on prism-me.** Load a whole packed model (legacy `MS_LoadModel`, e.g. Sars-cov-2 mature) in the
+   main 3D view, with prism-me (`~/molstar-prism-me/apps/prism-me`, Ludovic, 2026-11-05). Spec: `_spec/scene-view.md`.
 4. **Recipe links in the URL.** `?recipe=`, `?recipe_url=`, `?load_recipe=`, `?recipe_json=`, `?recipe_format=` load
    a recipe as in legacy, so shared links and the Skills (LLM) flow work. Spec: `_spec/recipe-model.md`.
 5. **Deploy path.** `web/` reaches a beta subpath: Vite `base`, and either a committed build or a build step in the
@@ -32,3 +32,8 @@ each legacy feature stands: `_spec/parity.md`.
    ignores page and field, root inspector counts direct compartments only, selected-row accent edge, sequence band
    without UniProt, Interactions count double-counts, N1 logo dot accent, the coverage check is one-way and passes
    with 0 pages, MVS SceneSelector path not checked (`progress/2026-11-05-ui-design.md`, Review).
+11. **Build/Paint mockup.** The builder/painter mode in the design mockups: painting and placing in prism-me, synced
+   with the recipe (counts, compartments, the Focus). Mockups and spec only; lane `builder-mockup`.
+12. **Modern physics for Build/Paint.** Legacy's builder (`extras/gpuphysics/main_physics.js`, `gp.js`, three.js r113)
+   is old and does not run properly: not ported, rebuilt with modern physics in prism-me (`plans/2026-11-05-physics-eval.md`
+   there: a bead solver on Mol\*'s compute, CPU fallback on WebGL2) (Ludovic, 2026-11-05). Not needed for item 11.

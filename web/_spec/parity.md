@@ -62,6 +62,11 @@ the random iwanthue palettes (86) and d3 v7's seeded randomness (94).
 | `MS_LoadModel`: load a whole packed model    | —                                        | missing |
 | Per-ingredient color, highlight sync         | —                                        | missing |
 | Selected ingredient's structure in Mol\*     | `MolstarViewer.tsx`                      | partial |
+| GPU builder/painter (`extras/gpuphysics/main_physics.js`, `gp.js`, three.js r113): compartment meshes, distribute by count, fibers, physics, cellPAINT | — | missing |
+
+The whole-model view is prism-me (`~/molstar-prism-me/apps/prism-me`), and so is painting and placing; Mesoscope keeps
+the recipe and syncs with it (Ludovic, 2026-11-05). Legacy's GPU physics is not ported: it is old and does not run
+properly; the physics is rebuilt in prism-me (its `plans/2026-11-05-physics-eval.md`: a bead solver on Mol\*'s compute).
 
 ## 6. Shell
 
