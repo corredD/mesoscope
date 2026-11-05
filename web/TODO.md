@@ -27,3 +27,8 @@ each legacy feature stands: `_spec/parity.md`.
    outside it): the Review table of `progress/2026-11-05-recipe-view-canvas.md`. Group by: the examples have almost
    no field with two values (HIV: `surface`; Influenza: none): offer fields every recipe has, or keep it as is
    (Ludovic to decide).
+10. **Design follow-ups (left open by PR #48).** The ten proposals of `_spec/design/README.md §8` were merged
+   without changes (Ludovic, 2026-11-05) and the open items of §9 stand. Nits: Exosome UniProt gap in §3.1, Esc
+   ignores page and field, root inspector counts direct compartments only, selected-row accent edge, sequence band
+   without UniProt, Interactions count double-counts, N1 logo dot accent, the coverage check is one-way and passes
+   with 0 pages, MVS SceneSelector path not checked (`progress/2026-11-05-ui-design.md`, Review).
