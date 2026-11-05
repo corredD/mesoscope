@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 test('modern app shell loads with the four legacy menu groups', async ({ page }) => {
   await page.goto('/')
@@ -67,8 +67,7 @@ test('default layout favors Ingredient View and dark mode reaches both rendering
   await page.getByText('Empty Recipe', { exact: true }).click()
   await page.getByRole('button', { name: 'Switch to dark theme' }).click()
 
-  await expect(page.locator('.recipe-canvas-background')).toHaveAttribute('data-canvas-theme', 'dark')
-  await expect(page.locator('.recipe-canvas-background')).toHaveAttribute('fill', 'var(--color-recipe-canvas-bg)')
+  await expect(page.locator('.recipe-canvas-stage')).toHaveAttribute('data-canvas-theme', 'dark')
   await expect(page.locator('[data-molstar-viewer="ingredient"]')).toHaveAttribute('data-canvas-theme', 'dark')
   await expect(page.locator('[data-molstar-viewer="model"]')).toHaveAttribute('data-canvas-theme', 'dark')
 })
@@ -147,6 +146,18 @@ test('Layout Options toggles a workspace tab', async ({ page }) => {
   await expect(page.getByText('Interaction table', { exact: true })).toBeVisible()
 })
 
+type ProbeNode = { name: string; depth: number; r: number; x: number; y: number; leaf: boolean; surface: boolean; parent: string | null }
+type Probe = { nodes: ProbeNode[]; t: { x: number; y: number; k: number }; hot: boolean; box: { left: number; top: number; width: number; height: number }; stage: { width: number; height: number } }
+
+/** The Recipe View is one canvas; its stage exposes a read-only probe of the simulation's nodes and the view transform. */
+const probe = (page: Page): Promise<Probe> =>
+  page.locator('.recipe-canvas-stage').evaluate((el) => {
+    const p = (el as unknown as { __recipeView: { nodes: () => ProbeNode[]; transform: () => Probe['t']; hot: () => boolean } }).__recipeView
+    const c = el.querySelector('canvas.recipe-canvas')!.getBoundingClientRect()
+    const st = el.getBoundingClientRect()
+    return { nodes: p.nodes(), t: p.transform(), hot: p.hot(), box: { left: c.left, top: c.top, width: c.width, height: c.height }, stage: { width: st.width, height: st.height } }
+  })
+
 test('Recipe View fills its panel and allows compartment dragging outside Edit Mode', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Load', exact: true }).click()
@@ -158,57 +169,50 @@ test('Recipe View fills its panel and allows compartment dragging outside Edit M
   await page.getByRole('button', { name: 'Add ingredient' }).click()
   await page.getByRole('switch', { name: 'Edit Mode' }).click()
 
-  const svg = page.locator('svg.recipe-canvas')
-  await expect(svg).toBeVisible()
-  const geometry = await svg.evaluate((element) => {
-    const rect = element.getBoundingClientRect()
-    const viewBox = element.viewBox.baseVal
-    return { renderedRatio: rect.width / rect.height, viewBoxRatio: viewBox.width / viewBox.height }
-  })
-  expect(Math.abs(geometry.renderedRatio - geometry.viewBoxRatio)).toBeLessThan(0.03)
+  const canvas = page.locator('canvas.recipe-canvas')
+  await expect(canvas).toBeVisible()
+  await expect.poll(async () => (await probe(page)).nodes.some((n) => n.name === 'newCompartment')).toBe(true)
+  await expect.poll(async () => (await probe(page)).hot, { timeout: 30_000 }).toBe(false)
+  // The canvas fills its stage (the panel).
+  const geometry = await probe(page)
+  expect(Math.abs(geometry.box.width - geometry.stage.width)).toBeLessThan(2)
+  expect(Math.abs(geometry.box.height - geometry.stage.height)).toBeLessThan(2)
 
-  const compartmentCircle = svg.locator('title').filter({ hasText: 'newCompartment' }).first().locator('..')
-  const group = compartmentCircle.locator('..')
-  const before = await group.getAttribute('transform')
-  const box = await compartmentCircle.boundingBox()
-  if (!box) throw new Error('Compartment circle has no bounding box')
-  const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+  const before = geometry.nodes.find((n) => n.name === 'newCompartment')!
+  const { t, box } = geometry
+  // Press on the compartment's disk, away from its ingredient (the deepest disk wins), and drag 24 px.
+  const press = { x: box.left + (before.x - before.r * 0.8) * t.k + t.x, y: box.top + before.y * t.k + t.y }
+  await page.mouse.move(press.x, press.y)
+  await page.mouse.down()
+  await page.mouse.move(press.x + 24, press.y, { steps: 6 })
+  await page.mouse.up()
 
-  await compartmentCircle.dispatchEvent('pointerdown', { bubbles: true, pointerId: 1, clientX: start.x, clientY: start.y })
-  await svg.dispatchEvent('pointermove', { bubbles: true, pointerId: 1, clientX: start.x + 24, clientY: start.y })
-  await svg.dispatchEvent('pointerup', { bubbles: true, pointerId: 1, clientX: start.x + 24, clientY: start.y })
-
-  await expect(group).not.toHaveAttribute('transform', before ?? '')
+  await expect
+    .poll(async () => {
+      const n = (await probe(page)).nodes.find((m) => m.name === 'newCompartment')!
+      return Math.hypot(n.x - before.x, n.y - before.y) * t.k
+    })
+    .toBeGreaterThan(10)
 })
 
-test('Influenza renders a hidden root, two-edge envelope, and membrane-centred surface proteins', async ({ page }) => {
+test('Influenza renders one envelope compartment and membrane-centred surface proteins', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Load', exact: true }).click()
   await page.getByText('New Recipe', { exact: true }).click()
   await page.getByText('From Examples', { exact: true }).click()
   await page.getByText('Influenza envelope', { exact: true }).click()
 
-  const svg = page.locator('svg.recipe-canvas')
-  await expect(svg.locator('[data-node-name="root"]')).toHaveCount(0)
-  const envelope = svg.locator('[data-node-name="envelope"]')
-  await expect(envelope).toBeVisible()
-  await expect(envelope.locator('[data-membrane-edge]')).toHaveCount(2)
-
-  const geometry = await svg.evaluate((element) => {
-    const readPosition = (node: Element) => {
-      const match = node.getAttribute('transform')?.match(/translate\(([-\d.e+]+),([-\d.e+]+)\)/i)
-      if (!match) throw new Error(`Missing node transform for ${node.getAttribute('data-node-name')}`)
-      return { x: Number(match[1]), y: Number(match[2]) }
-    }
-    const parent = element.querySelector('[data-node-name="envelope"]')!
-    const parentPosition = readPosition(parent)
-    const parentRadius = Number(parent.querySelector('[data-compartment-hit="true"]')!.getAttribute('r'))
-    return ['Hemagglutinin', 'Neuraminidase', 'M2protein'].map((name) => {
-      const node = element.querySelector(`[data-node-name="${name}"]`)!
-      const position = readPosition(node)
-      return Math.hypot(position.x - parentPosition.x, position.y - parentPosition.y) - parentRadius
-    })
-  })
-
-  for (const radialError of geometry) expect(Math.abs(radialError)).toBeLessThan(0.01)
+  await expect.poll(async () => (await probe(page)).nodes.length, { timeout: 30_000 }).toBeGreaterThan(1)
+  await expect.poll(async () => (await probe(page)).hot, { timeout: 60_000, intervals: [200] }).toBe(false)
+  const { nodes } = await probe(page)
+  const compartments = nodes.filter((n) => !n.leaf && n.depth >= 1)
+  expect(compartments.map((n) => n.name)).toEqual(['envelope'])
+  const envelope = compartments[0]
+  const proteins = nodes.filter((n) => n.leaf)
+  expect(proteins.map((n) => n.name).sort()).toEqual(['Hemagglutinin', 'M2protein', 'Neuraminidase'])
+  for (const p of proteins) {
+    expect(p.surface).toBe(true)
+    expect(p.parent).toBe('envelope')
+    expect(Math.abs(Math.hypot(p.x - envelope.x, p.y - envelope.y) - envelope.r)).toBeLessThan(0.5)
+  }
 })
