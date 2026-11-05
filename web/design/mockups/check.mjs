@@ -3,6 +3,7 @@
 //   - fails on console errors, page errors, any non-file:/data:/about: request,
 //     or a wrong <html data-theme>;
 //   - saves a viewport screenshot to screenshots/<page>-<theme>.png (unless --no-shots);
+// Probes the prism-me screens (11 Place follows the Focus: a reason, an empty state, Inside; 10's Scene tab keeps it).
 // Then checks that every menu path (menuConfig.ts, e.g. "Load › New Recipe › Examples › Exosome")
 // and panel ("Panel › <title>" from Workspace.tsx) equals the first cell of a table row in the
 // "Coverage" section of _spec/design/README.md (`--list` prints the extracted paths), and
@@ -49,6 +50,25 @@ for (const page of pages) {
     if (problems.length === 0) console.log(`OK   ${page} [${theme}]`)
     else { console.log(`${page} [${theme}]`); problems.forEach(fail) }
   }
+}
+// Probes of the prism-me screens (README §5.7): the stage follows the Focus, and the Scene tab keeps the stage.
+if (!listOnly) {
+  console.log('Scene probes')
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+  const p = await ctx.newPage()
+  const probe = async (file, cfg, expr, label) => {
+    await p.goto(pathToFileURL(join(here, file)).href, { waitUntil: 'load' })
+    if (cfg) await p.evaluate((c) => window.Mock.render(c), cfg)
+    const got = await p.evaluate(expr)
+    if (got === true) console.log(`  OK   ${label}`); else fail(`${label}: ${got}`)
+  }
+  const place = (focus) => ({ recipe: 'hiv', views: ['place'], focus, scene: { mode: 'place' } })
+  const panel = `(document.querySelector('.scene-panel')?.textContent ?? 'no panel')`
+  await probe('11-place.html', place(['HIV1_CA_mono_0_1_0']), `/no geometry/.test(${panel}) && !document.querySelector('[data-ghost]') || ${panel}`, 'place, a capsid ingredient: the reason, no ghost')
+  await probe('11-place.html', place([]), `/Point at an ingredient to place it/.test(${panel}) || ${panel}`, 'place, an empty Focus: the empty state')
+  await probe('11-place.html', place(['HIV1_PR_7hvp_0_1_0']), `((b) => b?.textContent === 'Inside' || (b?.textContent ?? 'none pressed'))(document.querySelector('[aria-label="Where to place"] [aria-pressed="true"]'))`, 'place, an interior ingredient: Inside is pressed')
+  await probe('10-paint.html', null, `(() => { [...document.querySelectorAll('[aria-label="Stage views"] [role=tab]')].find((b) => b.textContent === 'Scene').click(); return !!document.querySelector('[aria-label^="prism-me stage"]') || 'the Scene tab left the prism-me stage' })()`, 'paint, the Scene tab keeps the prism-me stage')
+  await ctx.close()
 }
 await browser.close()
 
