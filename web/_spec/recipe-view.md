@@ -549,49 +549,34 @@ Modern files: `components/recipe/RecipeCanvas.tsx` (RC), `components/recipe/Reci
 
 ## §10 Decided (Ludovic, 2026-11-04)
 
-The modern Recipe view is rebuilt from this spec, not patched from the SVG view. Legacy is the contract for every row of
-§9 except the departures below; each one is kept on purpose, and code that implements it cites this section.
+The modern Recipe view is a re-port of this spec onto a 2D canvas with a live d3 force simulation, not a patch of the
+SVG view. Legacy is the contract for every row of §9 except the departures below; each one is kept on purpose, and code
+that implements it cites this section.
 
-1. **Drags are declared with Dragology; the view is SVG** (Ludovic, 2026-11-04; replaces an earlier canvas re-port
-   decision of the same day). `dragology` (MIT, pinned at `b145bdd`, 0.1.7) renders the view as a pure function of
-   the recipe state to SVG and owns every drag (§4): `d.vary` with constraints for a free drag, `d.closest(...)
-   .withFloating()` over candidate parents for Edit-Mode reparenting (rows 66-68), a shared centre for a compartment
-   drag (row 58). Why: the drag rules (on the membrane, inside the parent, out of siblings, into a new parent) are
-   constraints, which is what Dragology declares; legacy's look (filled disks, depth order, labels) is drawn in SVG,
-   depth order through `dragologyZIndex`. Rendering is not the bottleneck at recipe sizes (≤ a few hundred nodes);
-   Dragology's per-pointer-move work (one render of the recipe per candidate state and per optimizer step) is, so it
-   is measured first (the lane's spike) on Mpn. WebGPU is not used: it does not speed that work up, and text and
-   curved labels (rows 34-38) are costly there.
-2. **No live physics; the layout is a pure function of the tree** (Ludovic, 2026-11-04: "I probably won't need the
-   physics"; the two-kinds-of-tree approach for grouping). Legacy's always-running force simulation (§3, rows 10-21) is
-   replaced by:
-   - **Layout** = `layout(tree, grouping, options)`: legacy's pack and radii (§1). Group-by (rows 89-90) adds a
-     synthetic group level inside each compartment, packed like a compartment, as Dragology's `two-kinds-of-tree`
-     derives its layout from the tree's structure. Changing the grouping, the size mode or the radius scale computes
-     the new layout and animates to it (`setState` with a transition), instead of forces pulling nodes there.
-   - **Drags** are constraints and our own operators, not forces: containment and on-membrane are constraints
-     (surface and parent forces, rows 15 and 17); Edit-Mode reparenting enumerates every candidate parent (and group)
-     as `two-kinds-of-tree` enumerates insertion points, then `d.closest(...).withFloating().whenFar(free drag)`.
-     Dragology's demos are patterns, not limits: where none fits, the lane writes its own operator or modifier
-     (`docs/AGENTS.md`, "Writing Your Own Operators"); a candidate is a "push neighbours" modifier that relaxes
-     sibling overlaps on the preview state, giving back legacy's feel of neighbours moving aside (rows 11-12).
-   - **Interaction links** (row 13) are drawn as legacy; partners are not pulled together. If Ludovic wants them
-     close, it is a layout term (order siblings so partners pack side by side), not a force.
-   - The Forces options panel (§5, rows 21-22) keeps only what still has a meaning (group-by, its spacing); the
-     strength sliders without one are removed, each listed in the PR with its §9 row.
+1. **Renderer: a 2D canvas, as legacy** (§2), redrawn on each simulation tick, in legacy draw order (§9 row 29). One
+   addition: the bitmap is scaled by `devicePixelRatio` so it is sharp on HiDPI screens (row 2); positions, hit-tests
+   and line widths stay in CSS pixels.
+2. **Physics, as legacy** (§3): every node in a d3 force simulation, with legacy's forces and parameters (`updateForce`,
+   m:2865), custom forces as unscaled velocity nudges (row 14), neighbours pushed aside during a drag. Why (Ludovic,
+   2026-11-04): a declarative-drag rebuild on Dragology (lane `recipe-view-port`, PR #47, closed unmerged) measured
+   fast but felt less smooth than physics; "the experience is smoother" with the simulation.
 3. **Dark-theme background** (row 24): in the dark theme the background is the theme's; in the light theme it is the
    root colour, as legacy. Why: the rest of the app follows the theme.
-4. **Hard membrane constraints** (rows 15, 17, 58, 59): a surface ingredient stays on its parent's membrane centreline
-   (Dragology's point-on-circle constraint), an interior ingredient inside the membrane's inner edge, a compartment
-   drag moves its subtree rigidly, inside its parent. Why: Ludovic's earlier review found legacy's soft springs let
-   proteins drift off the membrane.
-5. **Membrane marker lines in every surface ingredient's circle** (row 40), as well as in the popup as legacy.
-6. **Crashes fixed, other oddities kept** (§8): deleting a compartment deletes its subtree and its links (§8.11);
+4. **The simulation comes to rest** (row 19, §8.9): it heats on drag and on a recipe or force change as legacy, and
+   cools to a stop after release instead of holding `alphaTarget(.3)` forever. Why: no permanent CPU load.
+5. **Hard membrane constraints** (rows 15, 17, 58, 59): after each tick, surface ingredients are projected onto their
+   parent's membrane centreline and interior ingredients into the membrane's inner edge; a compartment drag moves its
+   subtree rigidly, clamped inside its parent. Everything else in the simulation follows §3. Why: Ludovic's earlier
+   review found legacy's soft springs let proteins drift off the membrane.
+6. **Membrane marker lines in every surface ingredient's circle** (row 40), as well as in the popup as legacy.
+7. **Crashes fixed, other oddities kept** (§8): deleting a compartment deletes its subtree and its links (§8.11);
    right-click on a link or on the empty canvas opens no menu, so nothing deletes the root (§8.12). Every other item of
-   §8 is reproduced where it still applies without live physics (§8.8, §8.9 no longer do), with a comment citing it.
-   One whose reproduction would throw is fixed the same way and noted in the lane's progress file.
-7. **HiDPI**: SVG is vector, so sharp on every screen (row 2).
-8. **Proof** (How we work, oracle rule): the deterministic outputs (radii, colours, labels, draw order, the effects of
-   each gesture) are captured from the running legacy app on `HIV_serialized.json` and `InfluenzaA.json` into
-   `tests/fixtures/recipe-view-oracle/`, and screenshots of both apps at a fixed size are compared side by side. Exact
-   positions are not compared: legacy's pack uses `Math.random` (§8.20).
+   §8 is reproduced, with a comment citing it. One whose reproduction would throw is fixed the same way and noted in
+   the lane's progress file.
+8. **Proof** (How we work, oracle rule): the deterministic outputs (radii, colours, labels, draw order, force
+   parameters, the effects of each gesture) are captured from the running legacy app on `HIV_serialized.json` and
+   `InfluenzaA.json` (`tests/fixtures/recipe-view-oracle/`, first captured by lane `recipe-view-port`), and
+   screenshots of both apps at a fixed size are compared side by side. Exact positions are not compared: legacy's pack
+   uses `Math.random` (§8.20). Where the oracle and this spec disagree, the oracle wins and the spec is corrected
+   (two so far, on the `recipe-view-port` branch: the colour mode after a load is `pdb`; an ingredient whose `color`
+   key is present but null takes its depth colour, only a missing key gives black).

@@ -22,7 +22,3 @@ not built is the queue: `../TODO.md`.
 - Legacy reference: `web-modernization` at `ab6f09a` (the legacy files are unchanged from `master`).
 - Mol\* v6 (Prism): `~/Developments/molstar` at `c1b8ecb` (master, 2026-11-01, `6.0.0-dev.0`). Its
   `packages/prism/viewer/_spec/` is the model for these files, and its `parity.md` the model for ours.
-- Dragology (declarative dragging for the Recipe view, `recipe-view.md §10.1`): `declarative-dragging/dragology` at
-  `b145bdd` (0.1.7, MIT, pre-1.0, npm `dragology`); reference checkout `~/Developments/_refs/dragology`. Its
-  `docs/AGENTS.md` is the usage guide; `src/demos/` (`multi-circle-points`, `point-on-circle-via-constraint`,
-  `point-in-circle`, `sprouting-tree`, `graph`, `two-kinds-of-tree`) are patterns, not limits: our own operators are allowed.

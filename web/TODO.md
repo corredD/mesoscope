@@ -8,8 +8,8 @@ each legacy feature stands: `_spec/parity.md`.
 
 1. **Recipe view exactly as the original.** The legacy D3 Recipe view "was working really well": the modern one must
    look and behave the same. Check: load HIV and Influenza in both apps side by side; same layout, colors, labels,
-   drag, zoom, click-to-select, Edit Mode, options panel. Drags declared with Dragology, no live physics
-   (`_spec/recipe-view.md §10`); a spike on Mpn decides go/no-go first; proven by a legacy oracle capture.
+   drag, zoom, click-to-select, Edit Mode, options panel. A 2D canvas with legacy's physics
+   (`_spec/recipe-view.md §10`); proven by a legacy oracle capture.
 2. **Mol\* v6 spike.** Render one PDB in `web/` with the Prism viewer from `~/Developments/molstar` (not on npm):
    decide how `web/` consumes it (built packages linked, or the single-file `prism-viewer.js`). Check: a structure
    shows in a panel, build and e2e pass.

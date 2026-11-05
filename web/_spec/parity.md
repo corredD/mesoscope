@@ -28,7 +28,7 @@ means built and tested, not yet proven against a legacy oracle unless the row sa
 
 See [recipe-view.md](recipe-view.md) for the feature-by-feature divergence table. Summary: the modern view is an SVG
 rewrite (`components/recipe/RecipeCanvas.tsx`) of a legacy 2D-canvas view (`js/main.js:2839-3110, 5565`); it has the
-toolbar's controls but **differs** in 83 of 95 rows. It is being rebuilt on Dragology from the legacy spec
+toolbar's controls but **differs** in 83 of 95 rows. It is being re-ported to a 2D canvas with legacy's physics
 (`recipe-view.md §10`). Priority 1 in the queue.
 
 ## 3. Tables
