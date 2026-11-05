@@ -27,7 +27,12 @@
  *   ["--color-focus-ring", "--color-bg-canvas", 3], ["--color-select", "--color-recipe-canvas-bg", 3],
  *   ["--color-select", "--color-select-soft", 3], ["--color-select", "--color-bg", 3],
  *   ["--color-text", "--color-select-soft", 4.5], ["--color-recipe-ink", "--color-recipe-canvas-bg", 4.5],
- *   ["--color-recipe-ink", "--color-depth-1", 4.5], ["--color-recipe-ink", "--color-depth-2", 4.5]
+ *   ["--color-recipe-ink", "--color-depth-1", 4.5], ["--color-recipe-ink", "--color-depth-2", 4.5],
+ *   ["--color-recipe-ink", "--color-depth-3", 4.5], ["--color-recipe-ink", "--color-depth-4", 4.5],
+ *   ["--color-recipe-ink", "--color-recipe-label-halo", 4.5], ["--color-warning", "--color-warning-soft", 4.5],
+ *   ["--color-text", "--color-warning-soft", 4.5], ["--color-bg", "--color-warning", 4.5],
+ *   ["--color-text-subtle", "--color-bg-subtle", 4.5], ["--color-accent-text", "--color-accent-hover", 4.5],
+ *   ["--color-danger", "--color-danger-soft", 4.5], ["--color-bg", "--color-text", 4.5]
  * ]
  */
 :root,
@@ -57,7 +62,7 @@
   --color-select-soft: var(--color-accent-soft);
   /* A selected circle in the Recipe view is filled with --color-select-soft and ringed with --color-select, as
      legacy fills yellow and strokes orange (recipe-view.md §2.6): the ring meets its own fill at 3:1 or more on
-     any depth colour (WCAG 1.4.11), which the accent alone over the depth ramp does not (light depth 3+). */
+     any depth colour (WCAG 1.4.11), which the accent alone over the depth ramp does not (2.65:1 at depth 2). */
   --color-focus-ring: var(--color-accent);
 
   /* Status: text colours too (4.5:1 on paper). */
@@ -68,18 +73,22 @@
   --color-success: #2f7d4f;
   --color-info: #3c6fb0;
 
-  /* The Recipe view (recipe-view.md §2, §10.3): legacy's root colour and its HCL depth ramp, white to
-     hsl(228,30%,40%) (js/main.js:156-159), depth -1..6. Labels in legacy's black. */
+  /* The Recipe view (recipe-view.md §2, §10.3): legacy's root colour and depth colours, color(depth) for depth 0..6,
+     an HCL ramp from hsl(360,100%,100%) at depth -1 to hsl(228,30%,40%) at 6 (js/main.js:156-159). Values are the
+     legacy oracle's (recipe-view-oracle/hiv.json, captured from the running legacy app), not recomputed: d3 v7's HCL
+     differs from legacy's d3 v4 on a white endpoint. depth-7 clamps. Labels in legacy's black; from depth 5 black
+     fails 4.5:1, so labels there take a paper halo (--color-recipe-label-halo). */
   --color-recipe-canvas-bg: #e1e1e1;
   --color-recipe-ink: #1c1b19;
-  --color-depth-0: #f3fdff;
-  --color-depth-1: #d9e3ff;
-  --color-depth-2: #bfc9ff;
-  --color-depth-3: #a6b0e8;
-  --color-depth-4: #8e98ce;
-  --color-depth-5: #7680b5;
-  --color-depth-6: #5e6a9d;
-  --color-depth-7: #475485;
+  --color-recipe-label-halo: #f8f6f1;
+  --color-depth-0: #dce8e4;
+  --color-depth-1: #b8d1cf;
+  --color-depth-2: #95b9bf;
+  --color-depth-3: #75a1b2;
+  --color-depth-4: #5b88a6;
+  --color-depth-5: #4c6e97;
+  --color-depth-6: #475285;
+  --color-depth-7: #475285;
 
   /* Overlays. */
   --color-scrim: rgb(28 27 25 / 0.42);
@@ -118,6 +127,7 @@
   /* Dark: the theme's background (recipe-view.md §10.3) and the depth ramp run from it toward a light slate. */
   --color-recipe-canvas-bg: #1f1e1b;
   --color-recipe-ink: #efece6;
+  --color-recipe-label-halo: #1a1917;
   --color-depth-0: #1b1e24;
   --color-depth-1: #262c36;
   --color-depth-2: #323a49;

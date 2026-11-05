@@ -165,7 +165,7 @@ frequency as the menus and presets suggest:
 ### 3.3 Today's app
 
 Fourteen dockview panels (`Workspace.tsx:135-148`), three presets (Default, Recipe creation, Recipe curation,
-`Workspace.tsx:402-470`), four Layout Options toggles, five menus with 37 leaves of which 10 open "Not yet available"
+`Workspace.tsx:402-470`), four Layout Options toggles, five menus with 40 leaves of which 10 open "Not yet available"
 (`menuConfig.ts`). Four panels are stubs (Object Properties, Topology, Uniprot mapping, Table Options). Selection is
 already shared (`recipeStore.selectedNode`), but properties are spread across the Recipe table cells, Ingredient
 Options and a planned Object Properties panel; options for one view sit in a separate panel (Recipe Options, Ingredient
@@ -208,7 +208,7 @@ over their view, most-used visible, the rest under "More". *Why:* NN/g progressi
 ~30 properties. *Shows:* screens 3-4; the glass toolbars.
 
 **P7. Not yet possible says why, in place.** A command that cannot run stays visible, greyed, with its reason ("Point at
-two ingredients", "Not built yet: sprite export"); no dialog. *Why:* 10 of 37 menu items open the same "Not yet
+two ingredients", "Not built yet: sprite export"); no dialog. *Why:* 10 of 40 menu items open the same "Not yet
 available" dialog today, which hides what exists and what does not. Prism `when`, Stories Untold (§2). *Shows:* the
 menus, screen 7's greyed examples, screen 9.
 
@@ -323,19 +323,22 @@ the role is the same. Values: Stories Untold's paper-and-ink palette; structure 
 | `--color-recipe-canvas-bg` | `#e1e1e1` | `#1f1e1b` | the Recipe view background (legacy root colour; dark: the theme's, recipe-view.md §10.3) | same name |
 | `--color-scrim`, `--color-glass` | | | behind modals; what floats over a view | `--color-overlay` |
 
-Dropped: `--color-surface-strong(-hover)` (a dark menu bar; the new top bar is paper), `--color-recipe-label-halo`
-(labels are ink on light depth colours, 4.5:1 checked), `--color-focus-ring-inverse` (one ring colour passes on every
+Kept: `--color-recipe-label-halo` (paper; labels from depth 5 need it, §6.2). Dropped: `--color-surface-strong(-hover)`
+(a dark menu bar; the new top bar is paper), `--color-focus-ring-inverse` (one ring colour passes on every
 surface, checked).
 
 ### 6.2 Data colour
 
-- **Depth** (`--color-depth-0..7`): legacy's HCL ramp from white to `hsl(228,30%,40%)` (`js/main.js:156-159`), so the
-  Recipe view keeps its look (recipe-view.md §2.4, §6.3); in dark, a ramp from the canvas to a light slate (proposal,
-  §8).
+- **Depth** (`--color-depth-0..6`, 7 clamps): legacy's `color(depth)`, an HCL ramp from `hsl(360,100%,100%)` at depth
+  -1 to `hsl(228,30%,40%)` at 6 (`js/main.js:156-159`), taken from the legacy oracle
+  (`recipe-view-oracle/hiv.json` on lane `recipe-view-canvas`: `#dce8e4` `#b8d1cf` `#95b9bf` `#75a1b2` `#5b88a6`
+  `#4c6e97`), so the Recipe view keeps its teal-grey look (recipe-view.md §2.4, §6.3); recomputing it with d3 v7
+  gives lavender, not legacy's colours. Legacy's black labels fail 4.5:1 from depth 5 (3.27:1): they take a paper
+  halo. In dark, a ramp from the canvas to a light slate (proposal, §8 D10).
 - **Categories** (`--data-cat-1..8`): Okabe–Ito, in order (as Mol\*'s `lists.ts:292`): group by, colour by a category,
   one colour per ingredient in the Scene view. Okabe–Ito's vermilion is near the accent: in a view the Focus is never
-  shown by colour alone (ring, soft fill, the rest faded, the pill). Past 8 categories, colour by compartment and vary lightness, and rely on
-  the legend and hover for identity.
+  shown by colour alone (ring, soft fill, the rest faded, the pill). Past 8 categories, colour by compartment and vary
+  lightness, and rely on the legend and hover for identity.
 - **Ingredient colour**: the recipe's own (`color`), shown as is; when absent, the depth colour (as legacy for a null
   colour, recipe-view.md §10.8).
 - **Sequences and continuous properties**: a two-colour ramp chosen per property (legacy's Min/Max colour inputs);
@@ -374,7 +377,8 @@ simulation is its own (recipe-view.md §3) and rests when idle (§10.4).
 - **Contrast, checked.** The pairs in `tokens.css` (`contrast-pairs`: text, muted and subtle text on every surface;
   accent and status colours as text; the accent on its soft fill; field edges and the focus ring at 3:1; the Recipe
   view's ink on depth colours) are measured by `check.mjs` in both themes: all pass. One finding shaped the design: the
-  accent ring alone over the light depth colours falls to 2.65:1 at depth 3, so a Focus circle takes the soft accent fill
+  accent ring alone over the depth colours falls to 2.65:1 at depth 2 (the colour of HIV's ingredients) and lower
+  deeper, so a Focus circle takes the soft accent fill
   as well, as legacy filled yellow (recipe-view.md §2.6).
 - **Keyboard.** Every region reachable; the outline is an ARIA tree, the Table an ARIA grid, the palette a combobox with
   a listbox; Esc closes the innermost thing; focus visible as a 2 px accent ring.

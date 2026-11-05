@@ -167,9 +167,9 @@ kbd {
 .rv-ingredient { stroke-width: 1; cursor: pointer; }
 .rv-ingredient:hover, .rv-compartment:hover { stroke: var(--color-text); stroke-width: 1.5; }
 .rv-selected { fill: var(--color-select-soft) !important; stroke: var(--color-select) !important; stroke-width: 2.5 !important; }
-.rv-label { font-family: var(--font-recipe-label); fill: var(--color-recipe-ink); font-size: 13px; letter-spacing: 0.02em; }
+.rv-label { font-family: var(--font-recipe-label); fill: var(--color-recipe-ink); paint-order: stroke; stroke: var(--color-recipe-label-halo); stroke-width: 3px; font-size: 13px; letter-spacing: 0.02em; }
 .rv-root-label { font-family: Georgia, var(--font-serif); fill: var(--color-recipe-ink); font-size: 20px; }
-.rv-ing-label { font-family: Georgia, var(--font-serif); fill: var(--color-recipe-ink); font-size: 10px; }
+.rv-ing-label { font-family: Georgia, var(--font-serif); fill: var(--color-recipe-ink); paint-order: stroke; stroke: var(--color-recipe-label-halo); stroke-width: 3px; font-size: 10px; }
 .rv-membrane-mark { stroke: var(--color-recipe-ink); stroke-width: 1; opacity: 0.55; }
 
 /* Tables. */

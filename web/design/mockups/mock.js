@@ -314,7 +314,7 @@
     const walk = (c, depth) => {
       const kids = R.kids.get(c.id) || []
       tree.append(h('div', { class: 'node compartment', role: 'treeitem', 'aria-level': depth + 1, 'aria-expanded': 'true', 'aria-selected': state.focus.includes(c.id) ? 'true' : 'false', style: `padding-left:${4 + depth * 12}px`, onclick: pick(c) },
-        h('span', { class: 'twisty' }, '▾'), h('span', { class: 'swatch square', style: `background:${css('--color-depth-' + Math.min(7, depth + 1))}` }),
+        h('span', { class: 'twisty' }, '▾'), h('span', { class: 'swatch square', style: `background:${css('--color-depth-' + Math.min(7, depth))}` }),
         h('span', { class: 'label' }, c.name), h('span', { class: 'end' }, (kids.filter((k) => k.kind === 'ingredient').length) || '')))
       for (const side of ['surface', 'interior']) {
         const ings = kids.filter((k) => k.kind === 'ingredient' && k.side === side && show(k))
@@ -323,7 +323,7 @@
         for (const n of ings) {
           const p = problems(n).filter((x) => x.level !== 'info')
           tree.append(h('div', { class: 'node', role: 'treeitem', 'aria-level': depth + 2, 'aria-selected': state.focus.includes(n.id) ? 'true' : 'false', style: `padding-left:${26 + depth * 12}px`, onclick: pick(n), title: p.map((x) => x.text).join('\n') || null },
-            h('span', { class: 'swatch', style: `background:${n.color ? `rgb(${n.color.map((v) => v * 255).join(',')})` : css('--color-depth-' + Math.min(7, depth + 2))}` }),
+            h('span', { class: 'swatch', style: `background:${n.color ? `rgb(${n.color.map((v) => v * 255).join(',')})` : css('--color-depth-' + Math.min(7, depth + 1))}` }),
             h('span', { class: 'label' }, n.name),
             h('span', { class: 'end' }, h('span', { class: 'mono' }, n.count || ''), p.length ? h('span', { class: 'flag' + (p.some((x) => x.level === 'danger') ? ' danger' : '') }, '●') : null)))
         }
@@ -384,8 +384,8 @@
     for (const { l, n } of nodes) {
       if (n.kind !== 'ingredient') continue
       const sel = fx.includes(n.id)
-      const fill = n.color ? `rgb(${n.color.map((v) => Math.round(v * 255)).join(',')})` : css('--color-depth-' + Math.min(7, l.depth + 1))
-      box.append(svg('circle', { class: 'rv-ingredient' + (sel ? ' rv-selected' : ''), cx: l.x, cy: l.y, r: l.r, fill, stroke: css('--color-depth-' + Math.min(7, l.depth + 2)), onclick: pick(n) }, svg('title', {}, `${n.name} · ${n.pdb || 'no structure'}`)))
+      const fill = n.color ? `rgb(${n.color.map((v) => Math.round(v * 255)).join(',')})` : css('--color-depth-' + Math.min(7, l.depth))
+      box.append(svg('circle', { class: 'rv-ingredient' + (sel ? ' rv-selected' : ''), cx: l.x, cy: l.y, r: l.r, fill, stroke: css('--color-depth-' + Math.min(7, l.depth + 1)), onclick: pick(n) }, svg('title', {}, `${n.name} · ${n.pdb || 'no structure'}`)))
       if (n.side === 'surface' && l.angle != null) {
         const tx = -Math.sin(l.angle), ty = Math.cos(l.angle)
         box.append(svg('line', { class: 'rv-membrane-mark', x1: l.x - tx * l.r * 0.8, y1: l.y - ty * l.r * 0.8, x2: l.x + tx * l.r * 0.8, y2: l.y + ty * l.r * 0.8, 'pointer-events': 'none' }))
