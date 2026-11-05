@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesoscope mockup · Build</title>
+<script>if (/theme=dark/.test(location.search)) document.documentElement.dataset.theme = 'dark'</script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="mock.css">
+<script src="sample-data.js"></script>
+<script src="mock.js"></script>
+</head>
+<body>
+<script>
+Mock.render({
+  caption: 'Build (was Workspace › Recipe creation): Recipe view over the Table. Two ingredients in the Focus (⇧-click): the inspector edits both, Add interaction is enabled. Click anything in any view: every view follows.',
+  recipe: 'hiv', views: ['recipe', 'table'], split: 'rows', editMode: true,
+  focus: ['HIV1_ENV_4nco_0_1_1', 'HIV1_MA_Hyb_0_1_0'],
+})
+</script>
+</body>
+</html>

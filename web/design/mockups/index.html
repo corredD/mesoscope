@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesoscope mockups</title>
+<script>if (/theme=dark/.test(location.search)) document.documentElement.dataset.theme = 'dark'</script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="mock.css">
+<script src="sample-data.js"></script>
+<script src="mock.js"></script>
+</head>
+<body>
+<script>
+const { h } = Mock
+const SHOTS = [
+  ['01-shell.html', 'The shell', 'The same eight regions on every screen; the anatomy drawn over it.'],
+  ['02-build.html', 'Build', 'HIV: the Recipe view over the Table, two ingredients in the Focus, Edit layout on.'],
+  ['03-curate.html', 'Curate', 'Mpn, 180 ingredients: the Table beside the Ingredient view, filtered to what needs attention.'],
+  ['04-ingredient.html', 'Ingredient in focus', 'HIV Env on its membrane: orientation and beads in the inspector.'],
+  ['05-scene.html', 'The whole scene', 'The packed HIV model (Mol* v6), the capsid in the Focus.'],
+  ['06-structure.html', 'Find a structure', 'PDB, UniProt and AlphaFold for mpn665, as a card in the inspector’s place.'],
+  ['07-open.html', 'Open and import', 'Every way in: examples, file, link, an LLM; append; palettes and counts.'],
+  ['08-first-run.html', 'First run', 'No recipe yet: the ways in, not an empty dock.'],
+  ['09-palette.html', 'Commands', '⌘K: every menu item, with why when it cannot run.'],
+]
+Mock.render({
+  caption: 'Static mockups: no build, no network. Real names and counts from data/HIV_serialized.json and data/Mpn_1.0_2.json.',
+  recipe: null,
+  body: () => h('div', { class: 'body index' }, h('main', { class: 'stage', style: 'background:var(--color-bg);overflow:auto' }, h('div', { class: 'page-inner' },
+    h('h1', {}, 'Mesoscope: the interface, proposed'),
+    h('p', {}, 'Nine screens of one design. Open any of them and click: the outline, the Recipe view, the Table and the 3D views share one Focus, the inspector edits it, ⌘K runs anything. The review strip at the top (dark) is not part of the design: it links the screens and switches light and dark.'),
+    h('p', { class: 'muted' }, 'The design and why: web/_spec/design/README.md. Screenshots, light and dark at 1440×900: screenshots/.'),
+    h('div', { style: 'display:flex;gap:8px;margin:16px 0' }, h('a', { class: 'button', href: 'index.html' }, 'Light'), h('a', { class: 'button', href: 'index.html?theme=dark' }, 'Dark')),
+    h('div', { class: 'cards' }, SHOTS.map(([f, t, m]) => h('a', { class: 'card', href: f + location.search, style: 'text-decoration:none;color:inherit' },
+      h('img', { src: `screenshots/${f.replace('.html', '')}-${document.documentElement.dataset.theme}.png`, alt: '', style: 'width:100%;border-radius:4px;border:1px solid var(--color-border)' }),
+      h('span', { class: 't' }, t), h('span', { class: 'm' }, m))))))),
+})
+</script>
+</body>
+</html>

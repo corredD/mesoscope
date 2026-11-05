@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesoscope mockup · Scene</title>
+<script>if (/theme=dark/.test(location.search)) document.documentElement.dataset.theme = 'dark'</script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="mock.css">
+<script src="sample-data.js"></script>
+<script src="mock.js"></script>
+</head>
+<body>
+<script>
+Mock.render({
+  caption: 'The whole scene (was the Mol-* panel; legacy MS_LoadModel, missing today): the packed model in Mol* v6, one colour per ingredient. The Focus fades the rest, so the capsid stands out; the outline and inspector are the same as everywhere.',
+  recipe: 'hiv', views: ['scene'], focus: ['HIV1_CA_mono_0_1_0'],
+})
+</script>
+</body>
+</html>

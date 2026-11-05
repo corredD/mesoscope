@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesoscope mockup · Find a structure</title>
+<script>if (/theme=dark/.test(location.search)) document.documentElement.dataset.theme = 'dark'</script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="mock.css">
+<script src="sample-data.js"></script>
+<script src="mock.js"></script>
+</head>
+<body>
+<script>
+Mock.render({
+  caption: 'Find a structure (was the PDB and UniProt search tables): a card in the inspector’s place, for the ingredient in the Focus; PDB, UniProt and AlphaFold in one list; Use writes onto the ingredient. Esc goes back.',
+  recipe: 'mpn', views: ['ingredient'], focus: ['mpn665'], card: 'structure',
+})
+</script>
+</body>
+</html>

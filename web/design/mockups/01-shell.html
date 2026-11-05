@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesoscope mockup · Shell</title>
+<script>if (/theme=dark/.test(location.search)) document.documentElement.dataset.theme = 'dark'</script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="mock.css">
+<script src="sample-data.js"></script>
+<script src="mock.js"></script>
+</head>
+<body>
+<script>
+// The anatomy: every screen has the same regions, in the same places (README §4, principle P3).
+const REGIONS = [
+  ['.menus', '1 Menus: built from the commands'],
+  ['.search-field', '2 ⌘K: find and run anything'],
+  ['.column', '3 Column: the recipe outline'],
+  ['.stage-head', '4 Stage: one or two views'],
+  ['.views', '5 The views follow the Focus'],
+  ['.inspector', '6 Inspector: the Focus, edited'],
+  ['.statusbar', '7 Status: the Focus, messages'],
+  ['.glass.toolbar', '8 View options, over the view'],
+]
+function anatomy() {
+  document.querySelectorAll('.anno').forEach((a) => a.remove())
+  if (!window.showAnatomy) return
+  for (const [sel, label] of REGIONS) {
+    const el = document.querySelector(sel)
+    if (!el) continue
+    const r = el.getBoundingClientRect()
+    const a = Mock.h('div', { class: 'anno', style: `left:${r.left + 3}px;top:${r.top + 3}px;width:${r.width - 6}px;height:${r.height - 6}px` }, Mock.h('span', {}, label))
+    document.body.append(a)
+  }
+}
+window.showAnatomy = true
+Mock.render({
+  caption: 'The shell (Overview arrangement, was Workspace › Default): the same five regions on every screen (eight parts labelled). Press H to hide the labels. Click an ingredient in the outline, the Recipe view or 3D: all follow.',
+  recipe: 'hiv', views: ['recipe', 'ingredient'], split: 'cols', focus: ['HIV1_ENV_4nco_0_1_1'],
+  after: () => requestAnimationFrame(anatomy),
+})
+document.addEventListener('keydown', (e) => { if (e.key === 'h' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest('input, textarea, select, [contenteditable]')) { window.showAnatomy = !window.showAnatomy; anatomy() } })
+</script>
+</body>
+</html>
