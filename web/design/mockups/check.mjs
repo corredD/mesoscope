@@ -126,7 +126,13 @@ else {
       }, v)
       const lum = ([r, g, bl]) => [r, g, bl].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 })
         .reduce((a, c, i) => a + c * [0.2126, 0.7152, 0.0722][i], 0)
+      const defined = (name) => p.evaluate((n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() !== '', name)
       for (const [fg, bg, min] of pairs) {
+        // An undefined token would resolve to the inherited text colour and pass: fail it instead.
+        const missing = [fg, bg].filter((n) => n)
+        let undef = false
+        for (const n of missing) if (!(await defined(n))) { fail(`contrast ${n} is not defined [${theme}]`); undef = true }
+        if (undef) continue
         const [l1, l2] = [lum(await rgb(fg)), lum(await rgb(bg))]
         const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05)
         const line = `${fg} on ${bg} [${theme}] ${ratio.toFixed(2)} (min ${min})`
