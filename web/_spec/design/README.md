@@ -218,8 +218,8 @@ available" dialog today, which hides what exists and what does not. Prism `when`
 menus, screen 7's greyed examples, screen 9.
 
 **P8. Colour carries data; the accent carries the Focus.** Chrome is paper and ink; the one warm accent marks the Focus,
-the focus ring and the primary action, nothing else; depth, ingredient and category colours are data; a setting that is
-on is ink, not accent. Every pair is checked for contrast (WCAG 2.2). *Why:* the Recipe view is a field of blue-grey
+the focus ring and the primary action, nothing else; depth, ingredient and category colours are data, edged in ink; a
+setting that is on is ink, not accent. Every interface pair is checked for contrast (WCAG 2.2). *Why:* the Recipe view is a field of blue-grey
 depth colours: a warm accent stands out where a blue one would not, as legacy's yellow and orange selection did
 (recipe-view.md §2.6). Stories Untold's one accent, Prism's accent rule (§2). *Shows:* every screen, light and dark.
 
@@ -347,6 +347,9 @@ surface, checked).
   one colour per ingredient in the Scene view. Okabe–Ito's vermilion is near the accent: in a view the Focus is never
   shown by colour alone (ring, soft fill, the rest faded, the pill). Past 8 categories, colour by compartment and vary
   lightness, and rely on the legend and hover for identity.
+  Several Okabe–Ito colours are under 3:1 on the paper and the stage (yellow 1.08:1): every data mark (a Scene view
+  instance, a sequence feature, a swatch) takes a thin ink edge, which meets 3:1 on every surface (WCAG 1.4.11);
+  the data colours themselves are not required to.
 - **Ingredient colour**: the recipe's own (`color`), shown as is; when absent, the depth colour (as legacy for a null
   colour, recipe-view.md §10.8).
 - **Sequences and continuous properties**: a two-colour ramp chosen per property (legacy's Min/Max colour inputs);

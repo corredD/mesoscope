@@ -461,7 +461,7 @@
     return h('section', { class: 'view', 'aria-label': 'Ingredient view' }, box,
       h('div', { class: 'glass band', 'aria-label': 'Sequence features' },
         h('div', { style: 'display:flex;gap:8px;align-items:center' }, h('strong', {}, 'Sequence'), n.uniprot ? h('span', { class: 'mono' }, n.uniprot) : h('span', { class: 'muted' }, 'needs a UniProt accession · ', h('button', { class: 'button link', onclick: () => run(C.find((c) => c.id === 'structure.find')) }, 'Find one'))),
-        svg('svg', { viewBox: '0 0 600 14', height: 14, preserveAspectRatio: 'none', 'aria-hidden': 'true' }, svg('rect', { x: 0, y: 6, width: 600, height: 2, fill: css('--color-border-strong') }), n.uniprot ? [svg('rect', { x: 80, y: 2, width: 140, height: 10, rx: 2, fill: css('--data-cat-2') }), svg('rect', { x: 300, y: 2, width: 60, height: 10, rx: 2, fill: css('--data-cat-1') })] : null)),
+        svg('svg', { viewBox: '0 0 600 14', height: 14, preserveAspectRatio: 'none', 'aria-hidden': 'true' }, svg('rect', { x: 0, y: 6, width: 600, height: 2, fill: css('--color-border-strong') }), n.uniprot ? [svg('rect', { x: 80, y: 2, width: 140, height: 10, rx: 2, fill: css('--data-cat-2'), stroke: css('--color-text'), 'stroke-width': 0.75 }), svg('rect', { x: 300, y: 2, width: 60, height: 10, rx: 2, fill: css('--data-cat-1'), stroke: css('--color-text'), 'stroke-width': 0.75 })] : null)),
       h('div', { class: 'view-title', style: 'top:auto;bottom:8px' }, `${n.name} · `, h('span', { class: 'mono' }, n.pdb || 'no structure'), ` · ${n.beads ? n.beads + (n.beads === 1 ? ' bead' : ' beads') + ' at level 0' : 'no beads'} · ${n.beadsXYZ ? 'its real beads' : 'a placeholder shape'}; in the app, Mol* v6`),
       h('div', { class: 'glass toolbar', role: 'toolbar', 'aria-label': 'Ingredient view options' }, tool('Show', 'cartoon'), tool('Colour', 'chain'), tool('Chains', 'all'), sep(), h('button', { class: 'tool', 'aria-pressed': 'true' }, 'Membrane'), h('button', { class: 'tool', 'aria-pressed': 'true' }, 'Beads'), sep(), h('button', { class: 'tool', title: 'Frame (F)' }, '⤢')))
   }
@@ -479,19 +479,19 @@
     const surf = R.ings.filter((n) => n.side === 'surface' && parentOf(n).name.includes('envelope'))
     for (let i = 0; i < 150; i++) {
       const n = surf[i % surf.length], a = r() * Math.PI * 2, rr = R0 + (r() - 0.5) * 8
-      box.append(svg('circle', { cx: cx + rr * Math.cos(a), cy: cy + rr * Math.sin(a), r: n.name.includes('ENV') ? 9 : 5, fill: colorOf.get(n.id), opacity: dim && !f.has(n.id) ? 0.18 : 1, stroke: f.has(n.id) ? css('--color-select') : 'none', 'stroke-width': 2, onclick: pick(n) }))
+      box.append(svg('circle', { cx: cx + rr * Math.cos(a), cy: cy + rr * Math.sin(a), r: n.name.includes('ENV') ? 9 : 5, fill: colorOf.get(n.id), opacity: dim && !f.has(n.id) ? 0.18 : 1, stroke: f.has(n.id) ? css('--color-select') : css('--color-text'), 'stroke-width': f.has(n.id) ? 2 : 0.6, onclick: pick(n) }))
     }
     // The capsid: a cone of hexamers.
     const capsid = R.ings.find((n) => n.name.includes('CA_mono'))
     for (let i = 0; i < 160; i++) {
       const t = r(), w = 30 + t * 90, x = cx - 170 + t * 330, y = cy + (r() - 0.5) * 2 * w
-      box.append(svg('circle', { cx: x, cy: y, r: 6, fill: capsid ? colorOf.get(capsid.id) : cat(1), opacity: dim && !f.has(capsid && capsid.id) ? 0.18 : 0.9, stroke: f.has(capsid && capsid.id) ? css('--color-select') : 'none', 'stroke-width': 2, onclick: capsid ? pick(capsid) : null }))
+      box.append(svg('circle', { cx: x, cy: y, r: 6, fill: capsid ? colorOf.get(capsid.id) : cat(1), opacity: dim && !f.has(capsid && capsid.id) ? 0.18 : 0.9, stroke: f.has(capsid && capsid.id) ? css('--color-select') : css('--color-text'), 'stroke-width': f.has(capsid && capsid.id) ? 2 : 0.6, onclick: capsid ? pick(capsid) : null }))
     }
     const inner = R.ings.filter((n) => n.side === 'interior')
     for (let i = 0; i < 260; i++) {
       const n = inner[i % inner.length], a = r() * Math.PI * 2, rr = Math.sqrt(r()) * (R0 - 26)
       const x = cx + rr * Math.cos(a), y = cy + rr * Math.sin(a)
-      box.append(svg('circle', { cx: x, cy: y, r: 3 + r() * 3, fill: colorOf.get(n.id), opacity: dim && !f.has(n.id) ? 0.15 : 0.95, stroke: f.has(n.id) ? css('--color-select') : 'none', 'stroke-width': 2, onclick: pick(n) }))
+      box.append(svg('circle', { cx: x, cy: y, r: 3 + r() * 3, fill: colorOf.get(n.id), opacity: dim && !f.has(n.id) ? 0.15 : 0.95, stroke: f.has(n.id) ? css('--color-select') : css('--color-text'), 'stroke-width': f.has(n.id) ? 2 : 0.6, onclick: pick(n) }))
     }
     return h('section', { class: 'view', 'aria-label': 'Scene view' }, box,
       h('div', { class: 'view-title' }, `${R.root.name}: whole packed model · an illustration; in the app, Mol* v6 (Prism) loading the cellPACK result`),

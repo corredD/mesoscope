@@ -32,7 +32,7 @@
  *   ["--color-recipe-ink", "--color-recipe-label-halo", 4.5], ["--color-warning", "--color-warning-soft", 4.5],
  *   ["--color-text", "--color-warning-soft", 4.5], ["--color-bg", "--color-warning", 4.5],
  *   ["--color-text-subtle", "--color-bg-subtle", 4.5], ["--color-accent-text", "--color-accent-hover", 4.5],
- *   ["--color-danger", "--color-danger-soft", 4.5], ["--color-bg", "--color-text", 4.5]
+ *   ["--color-danger", "--color-danger-soft", 4.5], ["--color-text", "--color-bg-canvas", 3], ["--color-bg", "--color-text", 4.5]
  * ]
  */
 :root,
