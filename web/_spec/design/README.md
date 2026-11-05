@@ -17,7 +17,7 @@ Ludovic: "use state of the art design concept and prepare some mockup for the ov
 molstar v6 prism approach) … The UI should be easy to find and always make sense, and be consistent."
 
 - **"untold story" is Stories Untold** (`SU:`), Ludovic's agent-driven successor to MolViewStories (per Ludovic,
-  2026-11-04, correcting this lane's first reading as MolViewStories). It is the primary reference with Prism;
+  2026-11-04). It is the primary reference with Prism;
   MolViewStories is secondary context (§2.3).
 - **"easy to find, always make sense, consistent"** is read as three testable properties: every action is reachable from
   one search (P4); a region never changes job or place between tasks (P3); one pattern per job (one selection, one
@@ -89,9 +89,9 @@ Each finding ends with the decision it leads to (→).
 ### 2.3 MolViewStories (secondary context)
 
 - One view at a time in the editor (`MVS:@mol-view-stories/webapp/src/app/state/types.ts:36-39`); scenes picked from a
-  dropdown, no persistent list (`…/menus/SceneSelector.tsx:33-40`). → Avoided: our outline stays visible, since a
+  dropdown, no persistent list (`@mol-view-stories/webapp/src/components/story-builder/menus/SceneSelector.tsx:33-40`). → Avoided: our outline stays visible, since a
   recipe of 180 ingredients is navigated, not stepped through.
-- Example gallery on the landing page and `?template=` loading (`…/app/examples/list.ts:3-16`). → Examples are cards
+- Example gallery on the landing page and `?template=` loading (`…/app/examples/list.ts:3-16`; `?template=` in `app/page.tsx:286`). → Examples are cards
   with their real sizes (screens 7-8), and URL loading is a way in (§5.5).
 
 ### 2.4 The state of the art on the web
@@ -142,7 +142,7 @@ Real recipes, measured (`data/`):
 | `InfluenzaA.json` | classic | 1 | 3 (all surface) | 0 | counts 0 |
 | `HIV_serialized.json` | serialized | 3 nested | 26 (6 surface, 20 interior) | 0 | all 26: count and molarity 0, no UniProt, no colour, no MW; all 6 surface ones have principal axis 0,0,0; 18 of 26 structures are `.pdb` files (served by the cellPACK_data repository) |
 | `exosome_catalase.json` | classic | 1 | 47 | 2 | — |
-| `Mpn_1.0_2.json` | classic | 1 | 180 (35 surface, 145 interior) | 3 | 0 of 180 have UniProt or a label; names are gene ids (`mpn665`); 98 of 180 structure names are not PDB ids and carry no file extension (`1pdz_1`, `2fqx_aligned`, `1pv6_mb`): the app sends them to the PDB as ids, where they do not load |
+| `Mpn_1.0_2.json` | classic | 1 | 180 (35 surface, 145 interior) | 3 | 0 of 180 have UniProt or a label; names are gene ids (`mpn665`); 98 of 180 structure names are not PDB ids and carry no file extension (`1pdz_1`, `2fqx_aligned`, `1pv6_mb`; most end `_1`): the app sends them to the PDB as ids, where they do not load |
 | `PlasmaHIVcycle_serialized.json` | serialized | 3 | 60 | 2 | 13.9 MB; 30 of 60 structures are `.pdb` files |
 
 What this means for the design:
@@ -169,7 +169,7 @@ frequency as the menus and presets suggest:
 
 ### 3.3 Today's app
 
-Fourteen dockview panels (`Workspace.tsx:135-148`), three presets (Default, Recipe creation, Recipe curation,
+Fourteen dockview panels (`Workspace.tsx:135-149`), three presets (Default, Recipe creation, Recipe curation,
 `Workspace.tsx:402-470`), four Layout Options toggles, five menus with 40 leaves of which 10 open "Not yet available"
 (`menuConfig.ts`). Four panels are stubs (Object Properties, Topology, Uniprot mapping, Table Options). Selection is
 already shared (`recipeStore.selectedNode`), but properties are spread across the Recipe table cells, Ingredient
@@ -342,8 +342,7 @@ the role is the same. Values: Stories Untold's paper-and-ink palette; structure 
 | `--color-scrim`, `--color-glass` | | | behind modals; what floats over a view | `--color-overlay` |
 
 Kept: `--color-recipe-label-halo` (paper; labels from depth 5 need it, §6.2). Dropped: `--color-surface-strong(-hover)`
-(a dark menu bar; the new top bar is paper), `--color-focus-ring-inverse` (one ring colour passes on every
-surface, checked).
+(a dark menu bar; the new top bar is paper), `--color-focus-ring-inverse` (one ring colour on every surface, checked in §6.7; over depth colours the ring needs the soft fill).
 
 ### 6.2 Data colour
 

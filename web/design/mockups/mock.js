@@ -575,7 +575,7 @@
           field('Principal axis', vec(n.pcpalAxis)), field('Offset (Å)', vec(n.offset)),
           n.side === 'surface' ? h('div', { class: 'actions' }, btn('Orient from OPM', 'structure.orient'), h('span', { class: 'muted', style: 'align-self:center' }, 'or drag the axis in 3D')) : null,
           n.ingtype === 'fiber' ? field('Fiber length', input('', 'mono')) : null),
-        section('Beads and levels of detail', o('Beads and levels of detail'), n.beads ? `${n.beads} beads · ${n.lods} levels` : 'not built',
+        section('Beads and levels of detail', o('Beads and levels of detail'), n.beads ? `${n.beads} beads · ${n.lods} ${n.lods === 1 ? 'level' : 'levels'}` : 'not built',
           field('Level', h('div', { class: 'segmented' }, ['0 sphere', '1', '2'].map((t, i) => h('button', { 'aria-pressed': i === 1 ? 'true' : 'false' }, t)))),
           field('Beads', h('div', { class: 'row' }, input(n.beads || 'auto'), h('span', { class: 'switch on', role: 'switch', 'aria-checked': 'true', 'aria-label': 'Automatic number of beads' }), h('span', { class: 'muted' }, 'auto'))),
           field('Colour by', h('select', { class: 'input' }, ['level', 'radius', 'random'].map((t) => h('option', {}, t)))),
