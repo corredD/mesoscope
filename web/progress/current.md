@@ -9,9 +9,14 @@ queue (`../TODO.md`).
 - `recipe-view-canvas` (`~/Developments/mesoscope-lanes/recipe-view-canvas`, branch `lane/recipe-view-canvas`,
   ports 5182/8092): Recipe view re-ported to a 2D canvas with legacy physics, reusing the oracle and modules of
   `lane/recipe-view-port` (PR #47, closed). Brief: [2026-11-05-recipe-view-canvas.md](2026-11-05-recipe-view-canvas.md)
-  (on the lane's branch).
+  (on the lane's branch). **Paused 2026-11-05** at `9a24392` (pushed): code, tests, spec rows done; the review gate
+  was running (reviewer done, skeptic not recorded). Resume: rerun the gate (lane-reviewer, lane-skeptic), fixes
+  test-first, PR. `web/tests/_scratch/` is untracked scratch: not for commit.
 - `ui-design` (`~/Developments/mesoscope-lanes/ui-design`, branch `lane/ui-design`, no ports): research, principles,
   information architecture and static mockups of the whole interface (Prism, MolViewStories, state of the art); docs
-  and mockups only. Brief: [2026-11-05-ui-design.md](2026-11-05-ui-design.md) (on the lane's branch).
+  and mockups only. Brief: [2026-11-05-ui-design.md](2026-11-05-ui-design.md) (on the lane's branch). "untold story" =
+  Ludovic's Stories Untold (`~/Dev/stories-untold`), a primary reference with Prism. **Paused 2026-11-05** at
+  `6bd0ed8` (pushed): spec, nine mockups, screenshots done; review gate done, fixes applied through S6, was on S8
+  (duplicate names). Resume: finish the remaining confirmed fixes (gate table in the progress file), PR.
 
 ## Waiting on Ludovic
