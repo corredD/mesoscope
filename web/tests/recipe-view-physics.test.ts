@@ -107,6 +107,22 @@ describe('membrane constraints (§10.5, rows 15, 17, 58, 59)', () => {
     expect(inner.y).toBeCloseTo(start.y + 20, 0)
   })
 
+  it('a dragged interior ingredient with no room inside its parent is not snapped to the parent centre: it follows the pointer', () => {
+    const { sim, nodes } = simulate(load('HIV_serialized.json'))
+    settle(sim)
+    const leaf = nodes.find((n) => n.leaf && !n.surface && n.parent?.parent)!
+    const p = leaf.parent!
+    leaf.r = p.r // no room inside the parent's inner edge: the projection's limit is 0
+    const start = { x: leaf.x, y: leaf.y }
+    sim.dragStart(leaf, false, false)
+    sim.dragTo(start.x + 30, start.y)
+    for (let i = 0; i < 10; i++) sim.step()
+    sim.dragTo(start.x + 60, start.y + 20)
+    for (let i = 0; i < 10; i++) sim.step()
+    expect(leaf.x).toBeCloseTo(start.x + 60, 0)
+    expect(leaf.y).toBeCloseTo(start.y + 20, 0)
+  })
+
   it('a dragged surface protein slides on the membrane towards the pointer', () => {
     const { sim, nodes } = simulate(load('InfluenzaA.json'))
     settle(sim)
