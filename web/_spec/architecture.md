@@ -288,6 +288,9 @@ Lines in `web:`, TS/TSX not counting tests, total 9,424; CSS separate.
    - closes on Esc (`shell.md:97`);
    - cannot sit beside the stage.
 
+   Separately, a Prism bug to file: with a pinned right dock a page covers the rail and the panel, against the comment at
+   `shell-view.tsx:258` (§2.3).
+
    In addition, another extension's tabs can be hidden only by writing the person's hidden tabs (`shell.md:191-195`).
 2. **Minimum shape.** In `ui.layout`:
 
@@ -362,7 +365,7 @@ Lines in `web:`, TS/TSX not counting tests, total 9,424; CSS separate.
 | D7 | The switch. | App level now (§6); propose `ui.workspaces` to David (§7). |
 | D8 | The Ingredient view. | An embedded second Prism viewer in the Recipe page; prototype it first (§6.6). |
 | D9 | `web/` from now on. | Fixes only. Lanes in flight finish; no new feature lanes. |
-| D10 | PR #50. | Close §5.7 as a two-app contract and move §5.7.1, §5.7.3-§5.7.4 and §5.7.7 into the extension's spec. Merge the rest of its mockups. |
+| D10 | PR #50. | Close §5.7 as a two-app contract and move §5.7.1, §5.7.2, §5.7.3-§5.7.5 and §5.7.7 into the extension's spec (§8.2 keeps the one-writer rule, the identity, the conversions, the Focus and the conflict table as extension rules). Merge the rest of its mockups. |
 
 ## 11. Proposed `web/TODO.md` updates (for the PR body; TODO.md itself is not edited)
 

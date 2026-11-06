@@ -17,6 +17,7 @@ not built is the queue: `../TODO.md`.
 | shell.md                           | menus, panels, layout presets, theme, Skills, pages                            | to write   |
 | server.md                          | the CGI endpoints the app calls and what replaces them                         | to write   |
 | [design/README.md](design/README.md) | the interface design: research, principles, regions, the Focus, tokens, coverage | proposed   |
+| [architecture.md](architecture.md) | Mesoscope as a Prism extension in prism-me, or a second app; the Recipe ⇄ Model workspace switch; evidence from a prototype | proposed   |
 
 ## Pinned references
 
