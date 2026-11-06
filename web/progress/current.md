@@ -6,13 +6,11 @@ queue (`../TODO.md`).
 
 ## In flight
 
-- `prism-architecture` (`~/Developments/mesoscope-lanes/prism-architecture`, branch `lane/prism-architecture`, port
-  5183; prototype in `~/prism-me-lanes/mesoscope-extension`, branch `spike/mesoscope-extension`, local only): Mesoscope
-  as a Prism/prism-me extension vs two apps, and a Recipe ⇄ Model workspace switch. Brief:
-  [2026-11-06-prism-architecture.md](2026-11-06-prism-architecture.md) (on the lane's branch). Started 2026-11-06 on
-  Sonnet (background agent). PR #50 waits on its decision.
-
 ## Waiting on Ludovic
+
+- `prism-architecture`: PR [#51](https://github.com/corredD/mesoscope/pull/51) (branch `lane/prism-architecture`;
+  prototype `~/prism-me-lanes/mesoscope-extension` at `ff2b24509`, local only, port 5183). Recommends Mesoscope as an
+  extension in prism-me, staged. Decide D1-D10 in `web/_spec/architecture.md` §10; PR #50 waits on D1/D10.
 
 - `builder-mockup`: PR [#50](https://github.com/corredD/mesoscope/pull/50) (branch `lane/builder-mockup`, spec and
   mockups only). Gate: 2 must-fix, 8 should-fix fixed; open nits R16, R19, R20, N2. Check: screens 10 Paint, 11 Place,
