@@ -34,8 +34,9 @@ then switch to Model and build and look at the mesoscale model, with one Focus, 
 2. **These would change my mind:**
    - **Churn.** prism-me's or Prism's churn breaks the extension more often than once a week during the first month of
      lanes. An extension has no stability promise outside its repository (§4.1).
-   - **Undo cost.** A recipe of the size of `hivfull_serialized.json` (13 MB) cannot be checkpointed cheaply even with
-     structural sharing (§3.4). The fallback is a history inside the extension, which loses "one undo", not the
+   - **Undo cost.** This is met unless the design changes: a recipe with inline meshes (`hivfull_serialized.json`, 13 MB)
+     turns Prism's undo off for the whole scene (§3.4, Price 3). The design in D4 (meshes outside the custom state) avoids
+     it; if that cannot be done, the fallback is a history inside the extension, which loses "one undo", not the
      extension.
    - **Side by side.** Ludovic needs the Recipe view beside the 3D stage as a must, and upstream turns down both a
      workspace and a peer slot (§7). With pages only, the two cannot sit side by side.
@@ -131,13 +132,30 @@ then switch to Model and build and look at the mesoscale model, with one Focus, 
    - The camera, the selection and the focus are view state and never steps (`checkpoint.ts:17-20`;
      `viewer/_spec/sequence.md:216-219`).
    - **Price 1: write sites.** Only the data tree is watched for outside changes (`checkpoint.ts:194-207`). A recipe
-     write that bypasses `api.run` is therefore not detected; it silently falls outside history. All 16 files that
-     write through `useRecipeStore` must go through operations.
-   - **Price 2: in-place mutation.** `web:state/recipeStore.ts:277-283` mutates nodes in place (`Object.assign`). A
-     checkpoint `get()` that re-serializes the recipe on every step costs the whole recipe, up to 13 MB
-     (`data/hivfull_serialized.json`).
-   - **Price 3: immutable updates.** The store needs immutable updates with structural sharing, so that `get()`
-     returns shared read-only parts. Prism's own trees work this way (`sequence.md:258-262`).
+     write that bypasses `api.run` is therefore not detected; it silently falls outside history. Every writer (about 10 files call
+     a mutating store action; `selectNode` is view state) must go through operations, and so must the domain functions
+     the views call that write (§5).
+   - **Price 2: the recipe as it is cannot be registered. [read, and run by the skeptic's probe]**
+     - `web:domain/recipe/types.ts:138-148`: `RecipeNode.parent` and `RecipeLink.source/target` are object references,
+       so the graph is cyclic. `JSON.stringify(parseLegacyRecipe(json))` throws for HIV and hivfull. In the checkpoint
+       the size pass catches that and returns 0 (`checkpoint.ts:131-132`), so the budget never trips, and the
+       checkpoint holds live references that `web:state/recipeStore.ts:277-283` (`Object.assign`) mutates: undo
+       restores nothing.
+     - The custom state is acyclic and serializable by contract, so the state must be a plain tree (ids or paths for
+       parent and link ends), rebuilt into the graph the views read.
+   - **Price 3: the size pass is not memoized for custom state, so a big recipe turns undo off for the whole scene.**
+     - `checkpoint.ts:120-123` runs `JSON.stringify(rest, withoutPayloads)` on every checkpoint over everything but
+       the data and behavior trees, `custom` included (`plugin/core/src/state.ts:181-186`). Only tree transforms are
+       cached (`#sizes`, `:101`, `:136-142`), so structural sharing in the store does not lessen it.
+     - `withoutPayloads` (`:78-82`) drops only strings over 1 KB and typed arrays. `web:domain/recipe/parseLegacyRecipe.ts:273`
+       keeps `meshFile` as is: in `hivfull_serialized.json` 45 ingredients carry `{verts, faces, normals}` as plain number
+       arrays, and 13.27 MB remain after the filter (13,270,615 B; 135 ms warm). **[run: probe by the review's skeptic]**
+     - The budget is 5 MB and 50 ms per step (`prism:ui/src/managers/history.ts:221`, enforced `:648-666`; no override at
+       `viewer.ts:272`): over it, undo goes off for the whole viewer ("Undo is off for this large scene"). Plain
+       `HIV_serialized.json` filters to 25 KB, so it is under.
+     - So one undo needs state that stays small: meshes (and any big array) held outside the custom state by key, in a
+       non-undo cache, or as typed arrays. Or an upstream ask: a per-part size cache for custom state, as
+       `SerializedTrees` is for trees.
    - **Price 4: Focus identity.** The Focus becomes a path, not a node reference, because a restore rebuilds the nodes
      (§3.5).
 5. **One Focus: the extension mirrors it; Prism's selection does not hold it.**
@@ -304,7 +322,8 @@ Lines in `web:`, TS/TSX not counting tests, total 9,424; CSS separate.
    - the canvas and Table in `reactView`;
    - the outline in prism-ui;
    - a lazy stub.
-   - Check: open HIV, edit a count, undo it with ⌘Z, switch to Model.
+   - Check: open `hivfull_serialized.json` (not plain HIV, which is 25 KB and passes whatever the design), edit a count,
+     undo it with ⌘Z, and see that undo stays on (no "Undo is off for this large scene"); then switch to Model.
 3. **Stage 3.** The Ingredient view as an embedded Prism viewer (item 2), the Open page (items 4 and 6), then deploy
    (item 5).
 4. **Meanwhile, `web/`** takes only fixes. It stays the port's running reference until the extension reaches parity.
@@ -316,7 +335,7 @@ Lines in `web:`, TS/TSX not counting tests, total 9,424; CSS separate.
 | D1 | Extension in prism-me, or two apps (PR #50 §5.7). | Extension, staged (§9). |
 | D2 | Where the code and its specs live. | In the molstar-proto prism-me branch, `packages/extensions/mesoscope`, with its `_spec` and its tests (README decision 13). The Mesoscope repo keeps legacy and the oracle capture scripts. |
 | D3 | Which app. | Inside `apps/prism-me` first, as the prototype is. Split to a sibling `apps/mesoscope` only if the defaults conflict (prism-me's "one panel, one tree", `me:_spec/ui.md:7-10`). |
-| D4 | How the recipe is held. | As registered custom state with immutable updates; every write is an operation, one undo step (§3.4). |
+| D4 | How the recipe is held. | As registered custom state: a plain acyclic tree (no parent or link object references), meshes and other big arrays outside it by key, every write an operation, one undo step (§3.4). Otherwise undo turns off for large recipes. |
 | D5 | View technology. | React 18 islands for the canvas, Table and Interactions; prism-ui for the chrome. Drop Radix Themes and dockview. |
 | D6 | Identity between the recipe and the model. | The ingredient path, written into the model the extension builds; matching by name only for published models (§3.6). |
 | D7 | The switch. | App level now (§6); propose `ui.workspaces` to David (§7). |
