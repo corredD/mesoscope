@@ -6,6 +6,12 @@ queue (`../TODO.md`).
 
 ## In flight
 
+- `prism-architecture` (`~/Developments/mesoscope-lanes/prism-architecture`, branch `lane/prism-architecture`, port
+  5183; prototype in `~/prism-me-lanes/mesoscope-extension`, branch `spike/mesoscope-extension`, local only): Mesoscope
+  as a Prism/prism-me extension vs two apps, and a Recipe ⇄ Model workspace switch. Brief:
+  [2026-11-06-prism-architecture.md](2026-11-06-prism-architecture.md) (on the lane's branch). Started 2026-11-06 on
+  Sonnet (background agent). PR #50 waits on its decision.
+
 ## Waiting on Ludovic
 
 - `builder-mockup`: PR [#50](https://github.com/corredD/mesoscope/pull/50) (branch `lane/builder-mockup`, spec and
