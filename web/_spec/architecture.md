@@ -46,10 +46,11 @@ then switch to Model and build and look at the mesoscale model, with one Focus, 
 
 ## 2. Question 1: hosting
 
-1. **React views run in Prism unchanged. [run]**
+1. **React views run in Prism with a `Button` stub and the CSS inlined (§2.5). [run]**
    - `prism:ui/src/react/react-view.ts:26-47` (`reactView(component, { createRoot })`) mounts any React or Preact
      component as a Prism view. The caller passes `createRoot`, so prism-ui depends on neither library (`:18-20`).
-   - Ingredient views already in the repo use it, for example `ext:model-archive/src/quality-assessment/pairwise/ui.tsx:7`.
+   - No shipped extension mounts React through it yet (grep `reactView` in `packages` and `apps`: prism-ui's stories and
+     tests, and the prototype). The prototype is the first user: a risk, not a track record.
    - The prototype mounts the copied `web:` `RecipeCanvas` (d3-force physics, 2D canvas) and `RecipeTable` as a page,
      and an outline as a tab (`proto:197-201`).
 2. **The slots are closed.** They are named slots, `tabs`, `overlays` (cards), `pages` (over the app), scene-tree
@@ -58,17 +59,26 @@ then switch to Model and build and look at the mesoscale model, with one Focus, 
 3. **A page is the only way to take the main area, and it covers the 3D stage without replacing it.**
    - A page is "a full-size opaque card over the canvas" (`prism:ui/_spec/shell.md:96-97`).
    - It is drawn over the viewport (`prism:ui/src/views/shell/shell-view.tsx:258-259`).
-   - The WebGL canvas keeps rendering under it. **[run]**
-   - The code places the page beside the rail and the open panel (`shell-view.tsx:258`, `page.module.css:10-16`, the
-     right inset `shell-view.tsx:160-166`). In the prototype's run, the page covered the rail (screenshot 2). **[run]**
-     This difference is unresolved: check it by eye.
+   - The WebGL canvas keeps rendering under it: no pause is tied to a page, and the canvas presence check pauses only
+     out-of-view canvases (`canvas-presence.ts:15`), not occluded ones. **[read]**; it cannot be seen in a run, the page
+     being opaque.
+   - The code comment says the page sits beside the rail and the open panel (`shell-view.tsx:258`), but with the right
+     dock pinned (prism-me pins it, `me:src/spec.ts:58`) the inset is the edge alone (`shell-view.tsx:166`), the page
+     uses it (`page.module.css:16,20`) and its host is in the full-inset chrome layer (`shell.module.css:68-73`), so
+     the page spans the rail and the panel. **[run: screenshot 2; read: the lines above]** This is a Prism bug for
+     pinned docks (§7), and it means the outline tab's Recipe/Model control cannot be reached while a page is open
+     over a pinned panel: the switch must be in the page header (it is) and on ⌘K.
 4. **A page closes on Esc, and it unmounts when closed.**
    - Esc closes the page (`shell.md:97`).
    - A closed page is unmounted (`prism:ui/src/views/shell/page-host.tsx:26-27`, `Show when={page}`), so the recipe
      canvas restarts its simulation each time the page opens again. **[read]**
    - Therefore the canvas positions must be kept in the extension's state (view state, not undo steps), or a switch
      back to Recipe moves every node.
-5. **CSS from `web:` does not reach the views. [run]**
+5. **CSS and theme from `web:` do not reach the views. [run]**
+   - The recipe canvas follows `<html data-theme>` (`web:components/recipe/RecipeCanvas.tsx:39-42`). The prototype set
+     `data-theme="dark"` on a wrapper (`proto:160`), so the canvas drew on its light background in a dark page
+     (screenshot 2), and Prism's theme switch never reaches it. A `reactView` island must read Prism's theme and set
+     the tokens itself.
    - The shell renders inside an open shadow root with adopted sheets (`prism:viewer/src/ui/shell.tsx:118-119`), so
      document CSS (`web:` `import './X.css'`, `--color-*` tokens) does not reach the views.
    - The prototype puts the CSS in a string inside a `<style>` element (`web-css.ts`). Without this, the canvas draws
@@ -118,7 +128,7 @@ then switch to Model and build and look at the mesoscale model, with one Focus, 
      tabs stay where they are.
 3. **The recipe is extension state; the model stays in prism-me.**
    - In the prototype, the recipe is the `web:` zustand singleton (`proto:18`, `:41`) and the ops are
-     `history: false`. **[run]**
+     `history: false` (`proto:39,51,69`). **[read]**
    - This breaks two prism-me rules. **[read]**
      - "prism-me adds no store of its own" (`me:_spec/architecture.md:29-30`).
      - "operations are the only way its views … change anything (one history step each)" (`me:_spec/README.md:31-33`).
@@ -160,7 +170,9 @@ then switch to Model and build and look at the mesoscale model, with one Focus, 
    - **Price 4: Focus identity.** The Focus becomes a path, not a node reference, because a restore rebuilds the nodes
      (§3.5).
 5. **One Focus: the extension mirrors it; Prism's selection does not hold it.**
-   - The prototype mirrors the Focus both ways. **[run]**
+   - The prototype mirrors the Focus both ways. **[run]**: Recipe → model on screenshots 3 and 4; Model → recipe with
+     the pick emulated through the explorer's `picks` subject (`explorer.picks.next`), the same subject the canvas click
+     feeds, and with real canvas clicks that landed only on non-recipe entities (no screenshot).
      - Recipe → model: `recipe.focus` sets `selectedNode`, then calls `explorer.revealRow('me:<ref>:<id>')` and
        `explorer.highlight` (`proto:47-63`; screenshot 3).
      - Model → recipe: the explorer's `clicks` (`me:src/explorer/operations.ts:144-145`) → `pickedOf(loci).key`
@@ -190,8 +202,11 @@ then switch to Model and build and look at the mesoscale model, with one Focus, 
 2. **Fork.** molstar-proto is a fork that is not on npm, and Mol\* v6 is `6.0.0-dev.0`. This risk exists in both
    variants: item 1 of the queue (consuming Prism in `web/`) faces it too.
 3. **Bundle.**
-   - prism-me's budget is 3.4 MB for `index.js` (`me:package.json:67-69`). The baseline is already over it: 6.15 MB.
-   - The spike adds 0.30 MB, to 6.45 MB, because the extension is eager (`me:src/extensions.ts`). **[run]**
+   - prism-me's budget is 3.4 MB for `index.js` (`me:package.json:67-69`), checked on the start closure of a `--prd`
+     build (`scripts/esbuild/app.mjs:310-323`). The baseline is already over it and the budget is known to be stale
+     (`me:progress/current.md:138-141`): the `--prd` build of this worktree reported 6.15 MB without the spike.
+   - The spike adds 0.30 MB, to 6.45 MB, because the extension is eager (`me:src/extensions.ts`). **[run: `pnpm build`
+     in the prototype, which runs `--prd`, once with and once without the `extensions.ts` line]**
    - A lazy stub (`viewer-spec.md` §3, "Lazy") would move it to its own chunk. **[read]**
 4. **Deploy.**
    - prism-me is a pnpm workspace built with `node scripts/esbuild/app.mjs apps/prism-me --prd` (`me:_spec/README.md:47-51`).
@@ -220,7 +235,11 @@ Lines in `web:`, TS/TSX not counting tests, total 9,424; CSS separate.
 
 ## 6. The workspace switch at app level (built on what Prism has)
 
-1. **A workspace** is `{ id, title, page?, tabs, start }`, held by the extension's API area.
+1. **A workspace** is `{ id, title, page?, tabs, start }`. The current workspace is derived from `navigation.page`
+   (subscribe: page open is `recipe`, none is `model`), not held as a second field: the prototype kept both
+   (`proto:27,72-73,187-190`) and a close by ✕ or Esc (`page-host.tsx:49,64`) left the field at `recipe`, with the
+   control wrong, the Focus not picked in the model, and `recipe` persisted. Every way out of the page then runs the
+   Model entry (pick, frame).
    - `recipe`: page `mesoscope.page.recipe` with the Recipe view, the Table and the Ingredient view (§6.5). Tabs:
      Recipe outline and Interactions.
    - `model`: no page, so the 3D stage shows. Tabs: Scene (the explorer's) and the Recipe outline, which serves as the
@@ -242,7 +261,8 @@ Lines in `web:`, TS/TSX not counting tests, total 9,424; CSS separate.
    to choose), made with `operationCommand` (`prism:viewer/src/commands/operations.ts:80`). The segmented control sits
    in the page header and in the outline tab (§2.3: the rail may be covered).
    - **Esc conflict:** Esc closes the page (`shell.md:97`). That leaves Recipe, which conflicts with Esc clearing the
-     Focus (`pr50:284-285`). The page has to handle Esc itself, which needs checking against `shell.md:102-104`.
+     Focus (`pr50:284-285`). The page handler can keep Esc for the Focus: `page-host.tsx:61` returns early when
+     `e.defaultPrevented`, and the document listener runs after an in-page one. **[read]**
 6. **Where the queue items land:**
    - 1 is replaced by this lane.
    - 2: the Ingredient view is a second, embedded Prism viewer inside the Recipe page. That is the embedded mode
@@ -355,7 +375,9 @@ Lines in `web:`, TS/TSX not counting tests, total 9,424; CSS separate.
 5. **New:** "Port lane: the `mesoscope` extension with the recipe as custom state and undo" (§9.2).
 6. **New:** "Upstream: propose `ui.workspaces` to Prism" (§7).
 7. **Items 5 and 8:** reword them for the prism-me build (deploy; lazy stub).
-8. **Items 6, 7, 9 and 10:** move them to the extension's queue as written.
+8. **Items 6, 7 and 9:** move them to the extension's queue as written. **Item 10:** re-read against prism-ui (§6.6).
+   **Items 4, 11 and 12:** as §6.6 maps them (URL parameters; the Model workspace's outline palette; physics in the same
+   process).
 
 ## 12. What the prototype did not cover
 
