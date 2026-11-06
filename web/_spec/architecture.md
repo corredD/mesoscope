@@ -30,7 +30,8 @@ then switch to Model and build and look at the mesoscale model, with one Focus, 
      embedding, two undo histories and two ⌘K menus (§8).
    - What remains is recipe-domain work that both variants need anyway: identity by path, recipe → scene, and conflict
      handling.
-   - The cost falls mostly on the UI chrome. The domain code and the Recipe canvas drawing carry over unchanged (§5).
+   - The cost falls mostly on the UI chrome. The Recipe canvas drawing and most of the domain code carry over; the parts that mutate the recipe or hold the
+     cyclic graph are reworked for the custom state (§3.4, §5).
 2. **These would change my mind:**
    - **Churn.** prism-me's or Prism's churn breaks the extension more often than once a week during the first month of
      lanes. An extension has no stability promise outside its repository (§4.1).
@@ -207,8 +208,8 @@ Lines in `web:`, TS/TSX not counting tests, total 9,424; CSS separate.
 
 | Bucket | What | Lines |
 | --- | --- | --- |
-| Carries over unchanged | `domain/recipe` 1,717 + `domain/recipe/view` 1,258 (the Recipe canvas drawing, physics, hit test), `domain/colors` 101, `domain/files` 457, `domain/skills` 56, `domain/pdb/{pdbSearch,structureSource}` 171, `types` 27 | 3,787 |
-| Adapted (React kept in `reactView`; writes become `api.run`; CSS through `defineStyles`) | `state/recipeStore` 451 (immutable, custom state, ops), `components/recipe/{recipeView 348, RecipeCanvas 266, RecipeTable 122, InteractionTable 118, spriteCache 35}` | 1,340 (+155 CSS) |
+| Carries over unchanged (not the mutating parts listed under Adapted) | `domain/recipe` 1,717 + `domain/recipe/view` 1,258 (the Recipe canvas drawing, physics, hit test), `domain/colors` 101, `domain/files` 457, `domain/skills` 56, `domain/pdb/{pdbSearch,structureSource}` 171, `types` 27 | 3,787 |
+| Adapted (React kept in `reactView`; writes become `api.run`; CSS through `defineStyles`) | `state/recipeStore` 451 (immutable, custom state, ops), `components/recipe/{recipeView 348, RecipeCanvas 266, RecipeTable 122, InteractionTable 118, spriteCache 35}` | 1,340 (+155 CSS). Also adapted, within the rows above: the domain code that writes in place (`domain/colors/colorPalette.ts:42,45,63`, `domain/recipe/mergeRecipe.ts:101-125`, `importMolarityCount` `serializeRecipe.ts:537-538`) and `RecipeNode`'s parent and link references (`types.ts:138-148`), which D4 turns into ids or paths: path-copying cannot share nodes that carry parent back-pointers. `RecipeSaver` calls `exportColorPalette`, which writes `node.data.color` during an export (`RecipeSaver.tsx:50`): a write outside history under D4. So "unchanged 3,787" is an upper bound, not an estimate of the final figure. |
 | Rewritten **only because of the extension** | `components/layout` 1,011 (dockview `Workspace` 589, `MenuBar`, `menuConfig`, `AppShell`, `Dialog` → Prism shell, commands, pages); `components/ui` 124; `RecipeLoader`, `RecipeSaver`, `MergeDialog`, `ColumnMappingDialog`, `RecipeCanvasToolbar` 599 (→ an Open page, cards, toolbar, commands); `state/{layout,preset,theme,uiMode}Store` 241 (→ `viewState`, the theme, extension settings); `app`, `skills`, `main` 75 | 2,050 (+488 CSS) |
 | Rewritten **in either variant** (Mol\* 5 → Prism, queue item 2) | `components/pdb` 1,314; `domain/pdb` Mol\*-bound 871; `state/ingredientViewerStore` 62 | 2,247 (+183 CSS) |
 
