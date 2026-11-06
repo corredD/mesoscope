@@ -101,7 +101,7 @@ then switch to Model and build and look at the mesoscale model, with one Focus, 
      nothing. `forwardRef` works on 18. **[read]**
 8. **Imports and typecheck.**
    - An import of `web/src` from the other repository is impossible without a package or a copy. The prototype copies
-     43 files (6.7k lines).
+     43 files (6.7k lines), including about 870 lines of `domain/pdb` that it never uses: the needed copy is smaller.
    - The copy does not typecheck under prism-me's rules, which need NodeNext `.js` endings. esbuild bundles it anyway.
      **[run]**
 9. **Undo: see §3.4.** Recipe edits get Prism's one undo only when the recipe is registered custom state.
