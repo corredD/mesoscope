@@ -19,6 +19,9 @@
     ['07-open.html', '7 Open and import'],
     ['08-first-run.html', '8 First run'],
     ['09-palette.html', '9 Commands'],
+    ['10-paint.html', '10 Paint'],
+    ['11-place.html', '11 Place'],
+    ['12-sync.html', '12 Sync'],
   ]
 
   // ---- tiny DOM helper ------------------------------------------------------------------------------------------
@@ -78,7 +81,7 @@
   const flagged = (n) => problems(n).some((p) => p.level !== 'info')
 
   // ---- the Focus -----------------------------------------------------------------------------------------------
-  const state = { focus: [], views: ['recipe'], split: 'rows', column: 'recipe', filter: 'all', card: null, editMode: false }
+  const state = { focus: [], views: ['recipe'], split: 'rows', column: 'recipe', filter: 'all', card: null, editMode: false, scene: null }
   const listeners = []
   function setFocus(ids, additive) {
     if (additive) {
@@ -159,6 +162,16 @@
   cmd('structure.beads', 'Build beads (levels of detail)…', 'Structure', { when: needIngredient })
   cmd('structure.fiber', 'Build a fiber from chains', 'Structure', { when: needIngredient })
   cmd('structure.sprite', 'Capture the sprite from the view', 'Structure', { when: needIngredient })
+  // Build and paint (README §5.7): the scene is prism-me's; these commands drive it and act on the Focus.
+  cmd('scene.paint', 'Paint the Focus in the scene (brush)', 'Scene', { key: 'B', mode: 'paint', go: '10-paint.html', when: needIngredient, hint: 'in prism-me, the full-model view' })
+  cmd('scene.place', 'Place the Focus one at a time', 'Scene', { key: 'P', mode: 'place', go: '11-place.html', when: needIngredient, hint: 'on its membrane, or in its compartment' })
+  cmd('scene.fiber', 'Draw a fiber along a curve', 'Scene', { when: () => (focused().some((n) => n.ingtype === 'fiber') ? true : R && R.ings.some((n) => n.ingtype === 'fiber') ? 'Point at a fiber ingredient' : 'No fiber in this recipe (Blood plasma has one)') })
+  cmd('scene.erase', 'Erase instances of the Focus', 'Scene', { key: '⇧B', mode: 'erase', when: needIngredient })
+  cmd('scene.fill', 'Fill to the targets (distribute by count)', 'Scene', { when: NOT_BUILT('prism-me’s bead solver (physics is rebuilt there)') })
+  cmd('scene.settle', 'Settle: push overlapping instances apart', 'Scene', { when: NOT_BUILT('prism-me’s bead solver (physics is rebuilt there)') })
+  cmd('scene.sync', 'Show the Table with the scene', 'Scene', { go: '12-sync.html', hint: 'counts update as you paint' })
+  cmd('scene.useCounts', 'Write the placed counts as the recipe’s counts', 'Scene', { when: () => (state.scene && [...state.scene.placed.values()].some(Boolean) ? true : 'Nothing placed in the scene yet') })
+  cmd('scene.open', 'Open the scene in prism-me (its own window)', 'Scene', { hint: 'the whole app: tree, clips, labels' })
   cmd('help.shortcuts', 'Keyboard shortcuts', 'Help', { key: '?' })
   cmd('help.docs', 'Documentation', 'Help')
   cmd('help.about', 'About, FAQ and contact', 'Help')
@@ -168,10 +181,20 @@
   function run(c) {
     const ok = enabled(c)
     if (ok !== true) return
-    if (c.view) { state.views = [c.view]; renderStage(); return }
+    if (c.view) { state.views = [stageView(c.view)]; renderStage(); return }
+    if (c.mode && state.scene) {
+      // On a scene screen, a mode its stage has switches in place; another mode goes to its screen.
+      const here = state.views.includes('place') ? ['place'] : state.views.includes('paint') ? ['paint', 'erase'] : []
+      if (here.includes(c.mode)) { state.scene.mode = c.mode; renderStage(); return }
+    }
     if (c.id === 'view.theme') { toggleTheme(); return }
     if (c.id === 'focus.clear') { setFocus([]); return }
     if (c.id === 'edit.layout') { state.editMode = !state.editMode; renderStage(); return }
+    if (c.id === 'scene.useCounts' && state.scene) {
+      // D13: the placed counts become the recipe's counts only on this command (one step in Mesoscope).
+      for (const [id, v] of state.scene.placed) { R.byId.get(id).count = v; state.scene.targets.delete(id) }
+      listeners.forEach((f) => f()); return
+    }
     if (c.go) location.href = c.go + location.search
   }
   function toggleTheme() {
@@ -189,6 +212,7 @@
     Edit: [['', ['edit.undo', 'edit.redo']], ['', ['edit.addIngredient', 'edit.addCompartment', 'edit.addInteraction']], ['', ['edit.rename', 'edit.color', 'edit.delete', 'edit.layout']]],
     View: [['Stage', ['view.recipe', 'view.table', 'view.ingredient', 'view.scene']], ['Arrangements', ['view.arrangement']], ['', ['view.interactions', 'view.sequence', 'view.legend', 'view.theme', 'view.resetLayout']], ['Focus', ['focus.clear', 'focus.frame', 'focus.parent', 'focus.problems']]],
     Structure: [['', ['structure.find', 'structure.open', 'structure.orient', 'structure.beads', 'structure.fiber', 'structure.sprite']]],
+    Scene: [['Build and paint, in prism-me', ['scene.paint', 'scene.place', 'scene.fiber', 'scene.erase']], ['', ['scene.fill', 'scene.settle']], ['With the recipe', ['scene.sync', 'scene.useCounts', 'scene.open']]],
     Help: [['', ['help.shortcuts', 'help.docs', 'help.about', 'help.settings']]],
   }
   function commandRow(c, cls = 'row') {
@@ -199,7 +223,7 @@
   }
   let openMenu = null
   /** Context menu (README §5.4): a right-click points at what is under it, then lists the commands that act on it. */
-  const CONTEXT = ['edit.rename', 'edit.color', 'edit.delete', 'structure.find', 'structure.open', 'edit.addInteraction']
+  const CONTEXT = ['edit.rename', 'edit.color', 'edit.delete', 'structure.find', 'structure.open', 'scene.paint', 'edit.addInteraction']
   const ctx = (n) => (e) => {
     e.preventDefault(); e.stopPropagation()
     if (!state.focus.includes(n.id)) setFocus([n.id], e.shiftKey)
@@ -255,7 +279,7 @@
         return i < 0 ? t : [t.slice(0, i), h('mark', {}, t.slice(i, i + w.length)), t.slice(i + w.length)]
       }
       let rows = 0
-      const cats = ['Recipe', 'Edit', 'View', 'Focus', 'Structure', 'Help']
+      const cats = ['Recipe', 'Edit', 'View', 'Focus', 'Structure', 'Scene', 'Help']
       if (!q) list.append(h('div', { class: 'head' }, 'Recent'), ...['structure.find', 'recipe.export.gpu', 'view.table'].map((id) => commandRow(C.find((c) => c.id === id))))
       for (const cat of cats) {
         const cs = C.filter((c) => c.cat === cat && match(c.title + ' ' + (c.hint || '') + ' ' + c.id))
@@ -324,7 +348,7 @@
       h('span', { class: 'focus-label' }, 'Focus'),
       f.length ? f.map((n) => h('span', { class: 'pill' }, shown(n), h('button', { 'aria-label': `Remove ${shown(n)} from the Focus`, onclick: () => setFocus([n.id], true) }, '×'))) : h('span', { class: 'subtle' }, 'nothing: click anything in any view; ⇧-click adds'),
       f.length ? h('button', { class: 'button link', onclick: () => setFocus([]) }, 'Clear') : null,
-      h('span', { class: 'msg' }, R ? `Loaded ${R.file} · ${R.ings.filter(flagged).length} ingredients need attention` : 'Ready'),
+      h('span', { class: 'msg' }, R && state.scene ? `Live with prism-me · ${R.ings.reduce((a, n) => a + placedOf(n), 0)} instances placed · ${state.scene.targets.size} targets set` : R ? `Loaded ${R.file} · ${R.ings.filter(flagged).length} ingredients need attention` : 'Ready'),
       h('kbd', {}, '⌘K')].flat().filter(Boolean))
   }
 
@@ -365,7 +389,7 @@
       for (const k of kids.filter((k) => k.kind === 'compartment')) walk(k, depth + 1)
     }
     walk(R.root, 0)
-    columnEl.replaceChildren(
+    columnEl.replaceChildren(...[
       h('div', { class: 'tabs', role: 'tablist' },
         h('button', { class: 'tab', role: 'tab', 'aria-selected': state.column === 'recipe' ? 'true' : 'false', onclick: () => { state.column = 'recipe'; renderColumn() } }, 'Recipe', h('span', { class: 'count' }, R.ings.length)),
         h('button', { class: 'tab', role: 'tab', 'aria-selected': state.column === 'interactions' ? 'true' : 'false', title: 'Interactions between ingredients', onclick: () => { state.column = 'interactions'; renderColumn() } }, 'Interactions', h('span', { class: 'count' }, R.ings.reduce((s, n) => s + n.partners, 0)))),
@@ -373,19 +397,22 @@
       state.column === 'interactions' ? null : h('div', { class: 'filter' },
         h('input', { class: 'input', placeholder: 'Filter by name, PDB, UniProt…', 'aria-label': 'Filter the outline' }),
         h('div', { class: 'chips' }, filters.map(([k, t]) => h('button', { class: 'chip' + (k === 'problems' ? ' warn' : ''), 'aria-pressed': state.filter === k ? 'true' : 'false', onclick: () => { state.filter = k; renderColumn() } }, t)))),
-      state.column === 'interactions' ? null : tree)
+      state.column === 'interactions' ? null : tree].filter(Boolean))
   }
 
   // ---- views ----------------------------------------------------------------------------------------------------
   const VIEWS = { recipe: 'Recipe view', table: 'Table', ingredient: 'Ingredient', scene: 'Scene' }
+  /** With prism-me live (§5.7), the Scene view is its stage, in its current mode (paint or place). */
+  const stageView = (k) => (k === 'scene' && state.scene ? (state.scene.mode === 'place' ? 'place' : 'paint') : k)
   let stageEl
   function renderStage() {
     if (!stageEl) return
     const head = h('div', { class: 'stage-head' },
       h('div', { role: 'tablist', 'aria-label': 'Stage views', style: 'display:flex;gap:16px' },
-        Object.entries(VIEWS).map(([k, t], i) => h('button', { class: 'tab', role: 'tab', 'aria-selected': state.views.includes(k) ? 'true' : 'false', title: `${t} (${i + 1})`, onclick: (e) => {
-          if (e.shiftKey || e.metaKey) state.views = state.views.includes(k) ? state.views.filter((v) => v !== k) : [state.views[0], k]
-          else state.views = [k]
+        Object.entries(VIEWS).map(([k, t], i) => h('button', { class: 'tab', role: 'tab', 'aria-selected': state.views.includes(k) || (k === 'scene' && state.views.some((v) => v === 'paint' || v === 'place')) ? 'true' : 'false', title: `${t} (${i + 1})`, onclick: (e) => {
+          const v = stageView(k)
+          if (e.shiftKey || e.metaKey) state.views = state.views.includes(v) ? state.views.filter((x) => x !== v) : [state.views[0], v]
+          else state.views = [v]
           renderStage()
         } }, t))),
       h('span', { class: 'end' },
@@ -450,11 +477,15 @@
       const p = problems(n)
       body.append(h('tr', { 'aria-selected': state.focus.includes(n.id) ? 'true' : 'false', onclick: pick(n), oncontextmenu: ctx(n) },
         h('td', { title: p.map((x) => x.text).join('\n') }, p.some((x) => x.level === 'danger') ? h('span', { class: 'flag danger' }, '●') : flagged(n) ? h('span', { class: 'flag' }, '●') : ''),
-        h('td', {}, n.name), h('td', { class: 'muted' }, parentOf(n).name), h('td', { class: 'muted' }, n.side),
-        cell(n.count, 'num mono' + (!n.count && !n.molarity ? ' warn' : '')), cell(n.molarity, 'num mono'), cell(n.mw, 'num mono'),
+        h('td', {}, n.name),
+        // Under the scene (README §5.7), target and placed come first: they are what changes as you paint.
+        state.scene ? [cell(targetOf(n) || '', 'num mono'), cell(placedOf(n), 'num mono' + (targetOf(n) && placedOf(n) > targetOf(n) ? ' warn' : '') + (state.scene.last === n.id ? ' changed' : ''))] : null,
+        h('td', { class: 'muted' }, parentOf(n).name), h('td', { class: 'muted' }, n.side),
+        state.scene ? null : cell(n.count, 'num mono' + (!n.count && !n.molarity ? ' warn' : '')),
+        cell(n.molarity, 'num mono'), cell(n.mw, 'num mono'),
         cell(n.pdb, 'mono' + (n.pdb && !isPdbId(n.pdb) ? ' muted' : '')), cell(n.uniprot, 'mono'), h('td', { class: 'muted' }, n.ingtype), cell(n.beads || '', 'num mono')))
     }
-    const cols = [['', ''], ['Name', ''], ['Compartment', ''], ['Where', ''], ['Count', 'num'], ['Molarity (M)', 'num'], ['MW (kDa)', 'num'], ['PDB', ''], ['UniProt', ''], ['Type', ''], ['Beads', 'num']]
+    const cols = [['', ''], ['Name', ''], ...(state.scene ? [['Target (count)', 'num'], ['In the scene', 'num']] : []), ['Compartment', ''], ['Where', ''], ...(state.scene ? [] : [['Count', 'num']]), ['Molarity (M)', 'num'], ['MW (kDa)', 'num'], ['PDB', ''], ['UniProt', ''], ['Type', ''], ['Beads', 'num']]
     return h('section', { class: 'view', 'aria-label': 'Table' },
       h('div', { class: 'table-wrap' }, h('table', { class: 'grid', role: 'grid', 'aria-rowcount': rows.length }, h('thead', {}, h('tr', {}, cols.map(([t, c]) => h('th', { class: c }, t)))), body)))
   }
@@ -528,11 +559,223 @@
       box.append(svg('circle', { cx: x, cy: y, r: 3 + r() * 3, fill: colorOf.get(n.id), opacity: dim && !f.has(n.id) ? 0.15 : 0.95, stroke: f.has(n.id) ? css('--color-select') : css('--color-text'), 'stroke-width': f.has(n.id) ? 2 : 0.6, onclick: pick(n), oncontextmenu: ctx(n) }))
     }
     return h('section', { class: 'view', 'aria-label': 'Scene view' }, box,
-      h('div', { class: 'view-title' }, `${R.root.name}: whole packed model · an illustration; in the app, Mol* v6 (Prism) loading the cellPACK result`),
+      h('div', { class: 'view-title' }, `${R.root.name}: whole packed model · an illustration; in the app, prism-me (Mol* v6) loading the cellPACK result`),
       h('div', { class: 'glass legend', style: 'top:auto;bottom:8px' }, h('strong', {}, 'One colour per ingredient'), R.ings.slice(0, 6).map((n) => h('span', { style: 'display:flex;gap:6px;align-items:center' }, h('span', { class: 'swatch', style: `background:${colorOf.get(n.id)}` }), n.name)), h('span', { class: 'muted' }, `+ ${R.ings.length - 6} more in the outline`)),
       h('div', { class: 'glass toolbar', role: 'toolbar', 'aria-label': 'Scene view options' }, tool('Colour', 'ingredient'), tool('Detail', 'auto'), tool('Clip', 'off'), sep(), h('button', { class: 'tool', 'aria-pressed': dim ? 'true' : 'false' }, 'Fade the rest'), h('button', { class: 'tool' }, '⤢')))
   }
-  const VIEW_RENDER = { recipe: recipeView, table: tableView, ingredient: ingredientView, scene: sceneView }
+
+  // ---- the prism-me stage: paint, place, sync (README §5.7) -----------------------------------------------------
+  // A mocked stage: an SVG drawing standing in for prism-me's canvas. The recipe's side (the palette, the targets,
+  // the Focus) is Mesoscope's; the placed counts come back from the scene.
+  const placedOf = (n) => (state.scene && state.scene.placed.get(n.id)) || 0
+  // The target (§5.7.3 item 5), legacy's order (GP_GetCount): molarity × the compartment's volume first, else the count.
+  // 0.0006022 ingredients per Å³ at 1 M (js/util.js Util_getCountFromMolarity). The sample compartments carry no
+  // volume (prism-me measures it from the mesh), so a molarity without one gives no target here.
+  const targetOf = (n) => {
+    const typed = state.scene && state.scene.targets.get(n.id)
+    if (typed) return typed
+    if (n.molarity) { const v = parentOf(n) && parentOf(n).volume; return v ? Math.round(n.molarity * 0.0006022 * v) : 0 }
+    return n.count > 0 ? n.count : 0
+  }
+  /** Where the brush can put an ingredient (§5.7.3): a structure, and a compartment with a geometry. */
+  function paintable(n) {
+    if (!n.pdb) return 'No structure: find one first'
+    const c = parentOf(n)
+    if (c && c.geom_type === 'None') return 'Its compartment has no geometry (None): give it a shape first'
+    return true
+  }
+  const ingColor = (n) => css('--data-cat-' + ((R.ings.indexOf(n) % 8) + 1))
+  /** The brush's ingredient (§5.7.3 item 4): the one last pointed at in the Focus; the others are not painted. */
+  const brushOf = () => focused().filter((x) => x.kind === 'ingredient').pop()
+  const notPainted = () => focused().filter((x) => x.kind === 'ingredient').length - 1
+  /** One stroke: the brush adds instances of the Focus (prism-me's operation); the count comes back to the recipe. */
+  function stroke(e) {
+    const n = brushOf()
+    if (!state.scene || !n || paintable(n) !== true) return
+    const mode = state.scene.mode
+    const d = mode === 'erase' ? -Math.min(3, placedOf(n)) : mode === 'place' ? 1 : 3
+    if (!d) return
+    state.scene.placed.set(n.id, placedOf(n) + d)
+    state.scene.strokes++
+    state.scene.last = n.id
+    state.scene.log.unshift(`${d > 0 ? '+' : ''}${d} ${shown(n)} · ${mode === 'erase' ? 'erase' : mode} ${state.scene.strokes}`)
+    listeners.forEach((f) => f())
+  }
+  function paletteRow(n) {
+    const ok = paintable(n), p = placedOf(n), t = targetOf(n)
+    const over = t && p > t
+    return h('button', { class: 'paint-row', role: 'option', 'aria-selected': state.focus.includes(n.id) ? 'true' : 'false', 'aria-disabled': ok === true ? null : 'true', title: ok === true ? `Paint ${shown(n)} (B)` : ok, onclick: pick(n), oncontextmenu: ctx(n) },
+      h('span', { class: 'swatch', style: `background:${ingColor(n)}` }), h('span', { class: 'name' }, n.name),
+      h('span', { class: 'n' + (over ? ' over' : '') }, `${p} / ${t || '—'}`),
+      // A name used twice (§5.3) keeps its compartment, on its own line so the ellipsis cannot eat it.
+      shown(n) !== n.name ? h('span', { class: 'tail' }, `in ${parentOf(n).name}`) : null,
+      ok === true ? h('span', { class: 'meter' + (over ? ' over' : ''), 'aria-hidden': 'true' }, h('i', { style: `width:${t ? Math.min(100, (100 * p) / t) : 0}%` })) : h('span', { class: 'reason' }, ok))
+  }
+  /** The palette (§5.7.3): the recipe's ingredients by compartment and side; a click points at one, the brush paints the Focus. */
+  function paintPalette() {
+    const rows = []
+    for (const c of R.comps) {
+      if (c === R.root) continue
+      const kids = (R.kids.get(c.id) || []).filter((k) => k.kind === 'ingredient')
+      if (!kids.length) continue
+      rows.push(h('div', { class: 'comp' }, c.name, h('span', { class: 'subtle mono' }, `  ${c.geom_type === 'mb' ? 'mesh (mb)' : c.geom_type}`)))
+      for (const side of ['surface', 'interior']) {
+        const ings = kids.filter((k) => k.side === side)
+        if (!ings.length) continue
+        // A long side folds the rows with nothing placed and not in the Focus, so every compartment stays in view
+        // (HIV's envelope has 16 inside; the capsid's greyed rows, D14, would fall below the fold).
+        const key = c.id + side, open = ings.length <= 8 || state.scene.unfolded.has(key)
+        const shownRows = open ? ings : ings.filter((k) => placedOf(k) || state.focus.includes(k.id))
+        const folded = ings.length - shownRows.length
+        rows.push(h('div', { class: 'side' }, side === 'surface' ? 'on its membrane' : 'inside'), shownRows.map(paletteRow),
+          folded ? h('button', { class: 'paint-more', 'aria-expanded': 'false', onclick: () => { state.scene.unfolded.add(key); renderStage() } }, `+ ${folded} more, none placed`) : null)
+      }
+    }
+    const nT = R.ings.filter((n) => state.scene.targets.has(n.id)).length
+    return h('div', { class: 'scene-panel', role: 'listbox', 'aria-label': 'Paint palette, from the recipe' },
+      h('h3', {}, 'Palette · from the recipe', h('span', { class: 'muted', style: 'font-weight:400' }, '  placed / target')),
+      h('div', { class: 'note' }, `Targets: ${R.file} has count and molarity 0 for all ${R.ings.length}; the ${nT} shown were typed in this session. Placed counts are mocked.`),
+      rows)
+  }
+  /** What came back from prism-me, newest first (§5.7.4): one line per operation there; the Table's counts follow. */
+  function syncLog() {
+    const s = state.scene
+    return h('div', { class: 'scene-panel', style: 'width:280px', role: 'log', 'aria-label': 'From prism-me' },
+      h('h3', {}, 'From prism-me, as it happens'),
+      h('div', { class: 'note' }, 'Each line is one operation in prism-me (one undo step there). The Table under the stage shows the placed count against the recipe’s target. Click the stage to paint the Focus.'),
+      h('ol', { class: 'sync-log' }, s.log.slice(0, 8).map((l) => h('li', {}, l))))
+  }
+  function sceneHead(what) {
+    return h('div', { class: 'view-title', style: 'max-width:54%', title: 'A mocked stage: in the app, prism-me’s canvas (Mol* v6)' }, h('strong', { style: 'color:var(--color-text)' }, 'prism-me'), ` · ${what} · mocked here`)
+  }
+  function syncChip() {
+    const s = state.scene
+    return h('div', { class: 'sync-chip', role: 'status' },
+      h('span', { class: 'dot', 'aria-hidden': 'true' }), `Live with Mesoscope · ${R.root.name} · the Focus mirrored`,
+      s.log.length ? h('span', { class: 'muted last' }, `last: ${s.log[0]}`) : null)
+  }
+  function paintView() {
+    // Centred right of the palette (it covers the stage's left 310 px).
+    const W = 900, H = 640, cx = 575, cy = H / 2 + 10, R0 = 230
+    const s = state.scene
+    const box = svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': `prism-me stage, mocked: ${R.root.name}, its compartments as meshes and the instances painted so far. Click to paint the ingredient in the Focus.`, onclick: stroke, style: 'cursor:crosshair' })
+    box.append(svg('defs', {}, svg('radialGradient', { id: 'pshade', cx: '40%', cy: '38%' }, svg('stop', { offset: '0%', 'stop-color': css('--color-bg') }), svg('stop', { offset: '100%', 'stop-color': css('--color-depth-2') }))))
+    // The envelope: a metaball compartment (mb), drawn as its mesh (legacy GP_createOneCompartmentMesh).
+    box.append(svg('circle', { cx, cy, r: R0 + 10, fill: 'url(#pshade)', opacity: 0.6 }), svg('circle', { cx, cy, r: R0, fill: 'none', stroke: css('--color-depth-4'), 'stroke-width': 16, opacity: 0.55 }))
+    // The capsid compartments have no geometry (None): an outline only, nothing to paint on.
+    box.append(svg('path', { d: `M ${cx - 130} ${cy - 36} L ${cx + 120} ${cy - 92} Q ${cx + 152} ${cy} ${cx + 120} ${cy + 92} L ${cx - 130} ${cy + 36} Q ${cx - 148} ${cy} ${cx - 130} ${cy - 36} Z`, fill: 'none', stroke: css('--color-text-muted'), 'stroke-width': 1.5, 'stroke-dasharray': '6 5' }),
+      svg('text', { x: cx - 112, y: cy - 4, fill: css('--color-text'), 'font-size': 12 }, 'capsid: geometry None,'), svg('text', { x: cx - 112, y: cy + 12, fill: css('--color-text'), 'font-size': 12 }, 'no mesh to paint on'))
+    box.append(svg('text', { x: cx, y: cy + R0 + 34, 'text-anchor': 'middle', fill: css('--color-text-muted'), 'font-size': 12 }, 'HIV1_envelope_Pack_145_0_2_0 · its mesh (mb)'))
+    const f = new Set(state.focus)
+    for (const n of R.ings) {
+      const k = placedOf(n)
+      if (!k) continue
+      const r = rng(R.ings.indexOf(n) * 131 + 17)
+      const sel = f.has(n.id)
+      for (let i = 0; i < k; i++) {
+        let x, y
+        if (n.side === 'surface') { const a = r() * Math.PI * 2, rr = R0 + (r() - 0.5) * 8; x = cx + rr * Math.cos(a); y = cy + rr * Math.sin(a) }
+        else { const a = r() * Math.PI * 2, rr = 160 + r() * (R0 - 185); x = cx + rr * Math.cos(a); y = cy + rr * Math.sin(a) }
+        box.append(svg('circle', { cx: x, cy: y, r: n.side === 'surface' ? (n.name.includes('ENV') ? 8 : 5.5) : 4, fill: ingColor(n), stroke: sel ? css('--color-select') : css('--color-text'), 'stroke-width': sel ? 2 : 0.6, onclick: (e) => { if (!s.mode || e.altKey || e.shiftKey || e.metaKey || e.ctrlKey) pick(n)(e) } }))
+      }
+    }
+    // The brush, on the membrane: its ring and the instances it is about to add (ghosts).
+    // A plain click paints; ⌥-click on an instance points at its ingredient (replaces the Focus), ⇧/⌘-click adds.
+    const n = brushOf(), more = notPainted()
+    if (n && paintable(n) === true && s.mode !== 'place') {
+      // Surface: on the membrane; interior: inside the volume, off the capsid (R21).
+      const surf = n.side === 'surface', rb = surf ? R0 : 195, a = surf ? -1.2 : -2.0, bx = cx + rb * Math.cos(a), by = cy + rb * Math.sin(a)
+      box.append(svg('circle', { cx: bx, cy: by, r: 46, fill: 'none', stroke: css('--color-text'), 'stroke-width': 1.5, 'stroke-dasharray': s.mode === 'erase' ? '2 4' : '6 4', 'pointer-events': 'none' }))
+      if (s.mode !== 'erase') for (let i = -1; i <= 1; i++) box.append(svg('circle', { cx: cx + rb * Math.cos(a + i * 0.1), cy: cy + rb * Math.sin(a + i * 0.1), r: surf ? 8 : 5, fill: ingColor(n), opacity: 0.45, stroke: css('--color-text'), 'stroke-width': 0.6, 'stroke-dasharray': '2 2', 'pointer-events': 'none' }))
+      box.append(...[svg('text', { x: bx + 54, y: by - 8, fill: css('--color-text'), 'font-size': 12, 'pointer-events': 'none' }, s.mode === 'erase' ? `erase ${shown(n)}` : `paint ${shown(n)}`),
+        svg('text', { x: bx + 54, y: by + 8, fill: css('--color-text-muted'), 'font-size': 11, 'pointer-events': 'none' }, n.side === 'surface' ? 'on its membrane, from the recipe' : 'inside its compartment'),
+        more ? svg('text', { x: bx + 54, y: by + 24, fill: css('--color-text-muted'), 'font-size': 11, 'pointer-events': 'none' }, `+${more} more in the Focus, not painted`) : null,
+        svg('text', { x: bx + 54, y: by + (more ? 40 : 24), fill: css('--color-text-muted'), 'font-size': 11, 'pointer-events': 'none' }, '⌥-click an instance to paint its ingredient')].filter(Boolean))
+    }
+    const tools = [['scene.paint', 'Paint', 'paint'], ['scene.erase', 'Erase', 'erase']].map(([id, t, m]) => h('button', { class: 'tool', 'aria-pressed': s.mode === m ? 'true' : 'false', title: C.find((c) => c.id === id).title, onclick: () => run(C.find((c) => c.id === id)) }, t, h('span', { class: 'k' }, C.find((c) => c.id === id).key)))
+    const off = (id, t) => { const c = C.find((x) => x.id === id); return h('button', { class: 'tool', 'aria-disabled': 'true', title: enabled(c) }, t, h('span', { class: 'k' }, ' not built')) }
+    return h('section', { class: 'view scene', 'aria-label': 'prism-me stage (mocked): paint' }, box, sceneHead('the full-model view'),
+      s.palette ? paintPalette() : syncLog(), syncChip(),
+      h('div', { class: 'glass toolbar', role: 'toolbar', 'aria-label': 'Paint tools (prism-me)' }, tools,
+        h('button', { class: 'tool', title: 'Place one at a time (P)', onclick: () => run(C.find((c) => c.id === 'scene.place')) }, 'Place', h('span', { class: 'k' }, 'P')),
+        h('button', { class: 'tool', 'aria-disabled': enabled(C.find((c) => c.id === 'scene.fiber')) === true ? null : 'true', title: enabled(C.find((c) => c.id === 'scene.fiber')) === true ? 'Draw a fiber along a curve' : enabled(C.find((c) => c.id === 'scene.fiber')) }, 'Curve'),
+        sep(), h('span', { class: 'k', style: 'padding:0 4px' }, 'Size'), h('span', { class: 'slider', style: 'width:70px;flex:none' }, h('i', { style: 'width:45%' }), h('b', { style: 'left:40%' })),
+        h('span', { class: 'k', style: 'padding:0 4px' }, 'Density'), h('span', { class: 'slider', style: 'width:70px;flex:none' }, h('i', { style: 'width:50%' }), h('b', { style: 'left:45%' })),
+        sep(), off('scene.fill', 'Fill to targets'), off('scene.settle', 'Settle')))
+  }
+  function placeView() {
+    const W = 900, H = 640, my = 420, half = 20
+    const n = brushOf()
+    const placeTool = h('button', { class: 'tool', 'aria-pressed': 'true', title: 'Place one at a time (P)' }, 'Place', h('span', { class: 'k' }, 'P'))
+    const paintTool = h('button', { class: 'tool', title: 'Paint (B)', onclick: () => run(C.find((c) => c.id === 'scene.paint')) }, 'Paint', h('span', { class: 'k' }, 'B'))
+    // An empty Focus places nothing (§5.6 Empty): the view says what would fill it, no stand-in ingredient.
+    if (!n) return h('section', { class: 'view scene', 'aria-label': 'prism-me stage (mocked): place' },
+      svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'prism-me stage, mocked: nothing to place, the Focus is empty' }), sceneHead('placing one at a time'),
+      h('div', { class: 'scene-panel', style: 'width:340px', 'aria-label': 'Place' },
+        h('h3', {}, 'Place'),
+        h('div', { class: 'note' }, 'Point at an ingredient to place it: in the outline, the Table or the palette (B).')),
+      syncChip(), h('div', { class: 'glass toolbar', role: 'toolbar', 'aria-label': 'Place tools (prism-me)' }, paintTool, placeTool))
+    const surface = n.side === 'surface'
+    const comp = parentOf(n)
+    // Not paintable (§5.7.3 item 3): no ghost and no placement, the reason in the panel, as the palette and inspector.
+    const ok = paintable(n)
+    const noMesh = comp && comp.geom_type === 'None'
+    // Surface: a patch of the membrane, its two faces. Interior: a patch of the volume under its membrane.
+    const box = svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': ok === true ? `prism-me stage, mocked: ${surface ? `a patch of ${comp.name}'s membrane` : `inside ${comp.name}`}, the ${shown(n)} placed so far and one more under the pointer. Click to place it.` : `prism-me stage, mocked: nothing to place: ${ok}`, onclick: stroke, style: ok === true ? 'cursor:copy' : null })
+    const top = 150 // interior: the membrane at the top, the volume below it
+    // A compartment without geometry has no mesh: an outline only, as on the paint stage.
+    if (noMesh) box.append(svg('rect', { x: 420, y: 200, width: 420, height: 260, rx: 40, fill: 'none', stroke: css('--color-text-muted'), 'stroke-width': 1.5, 'stroke-dasharray': '6 5' }),
+      svg('text', { x: 444, y: 330, fill: css('--color-text'), 'font-size': 12 }, `${comp.name}: geometry None,`),
+      svg('text', { x: 444, y: 346, fill: css('--color-text'), 'font-size': 12 }, 'no mesh to place on or in'))
+    else if (surface) box.append(svg('rect', { x: 0, y: my - half, width: W, height: 2 * half, fill: css('--color-text'), opacity: 0.08 }),
+      svg('line', { x1: 0, x2: W, y1: my - half, y2: my - half, stroke: css('--color-danger'), 'stroke-width': 2 }),
+      svg('line', { x1: 0, x2: W, y1: my + half, y2: my + half, stroke: css('--color-info'), 'stroke-width': 2 }),
+      svg('text', { x: W - 12, y: my - half - 8, 'text-anchor': 'end', fill: css('--color-text-muted'), 'font-size': 11 }, 'outer face'),
+      svg('text', { x: W - 12, y: my + half + 16, 'text-anchor': 'end', fill: css('--color-text-muted'), 'font-size': 11 }, 'inner face'))
+    else box.append(svg('rect', { x: 0, y: top, width: W, height: H - top, fill: css('--color-text'), opacity: 0.04 }),
+      svg('line', { x1: 0, x2: W, y1: top, y2: top, stroke: css('--color-info'), 'stroke-width': 2 }),
+      svg('text', { x: W - 12, y: top - 8, 'text-anchor': 'end', fill: css('--color-text-muted'), 'font-size': 11 }, 'its membrane, inner face'))
+    const beads = []
+    if (n.beadsXYZ && n.beadsR) for (let i = 0; i < n.beadsR.length; i++) beads.push({ x: n.beadsXYZ[i * 3], y: n.beadsXYZ[i * 3 + 1], z: n.beadsXYZ[i * 3 + 2], r: n.beadsR[i] })
+    const ys = beads.map((b) => b.y), xs = beads.map((b) => b.x)
+    const bx0 = beads.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0, by0 = beads.length ? Math.min(...ys) : 0
+    const k = !beads.length ? 1 : surface ? 95 / (Math.max(...ys) - Math.min(...ys) || 1) : 50 / (Math.max(Math.max(...ys) - Math.min(...ys), Math.max(...xs) - Math.min(...xs)) || 1)
+    const base = surface ? my - half + 10 : 430
+    const draw = (x0, ghost) => beads.sort((a, b) => a.z - b.z).map((b) => svg('circle', { cx: x0 + (b.x - bx0) * k, cy: base - (b.y - by0) * k, r: Math.max(1.5, b.r * k), fill: ingColor(n), opacity: ghost ? 0.45 : 1, stroke: state.focus.includes(n.id) && !ghost ? css('--color-select') : css('--color-text'), 'stroke-width': ghost ? 0.8 : 0.5, 'stroke-dasharray': ghost ? '2 2' : null, 'data-ghost': ghost ? '' : null, 'pointer-events': 'none' }))
+    // Right of the panel (it covers the stage's left 380 units): two placed ones, then the one under the pointer.
+    const shownHere = Math.min(2, placedOf(n))
+    for (let i = 0; i < shownHere; i++) box.append(...draw(450 + i * 135, false))
+    const gx = 450 + shownHere * 135 + 30
+    if (ok === true) box.append(...draw(gx, true),
+      svg('text', { x: gx, y: base + 70, 'text-anchor': 'middle', fill: css('--color-text-muted'), 'font-size': 11 }, 'the next one, under the pointer'))
+    const axisUnset = surface && n.pcpalAxis.every((v) => !v)
+    // Upright: the membrane normal, because the principal axis is 0,0,0 (undefined); surface ingredients only.
+    if (ok === true && axisUnset) box.append(svg('line', { x1: gx, y1: my + half + 30, x2: gx, y2: my - half - 140, stroke: css('--color-text'), 'stroke-width': 1.5, 'stroke-dasharray': '5 4', 'pointer-events': 'none' }),
+      svg('path', { d: `M ${gx - 6} ${my - half - 130} L ${gx} ${my - half - 144} L ${gx + 6} ${my - half - 130} Z`, fill: css('--color-text') }),
+      svg('text', { x: gx - 12, y: my - half - 168, 'text-anchor': 'end', fill: css('--color-text'), 'font-size': 12 }, 'upright: the membrane normal'),
+      svg('text', { x: gx - 12, y: my - half - 152, 'text-anchor': 'end', fill: css('--color-text-muted'), 'font-size': 11 }, `principal axis ${JSON.stringify(n.pcpalAxis)} is undefined`))
+    if (!noMesh) box.append(svg('text', { x: 400, y: surface ? my + half + 16 : top + 18, fill: css('--color-text-muted'), 'font-size': 11 }, `${comp.name} · ${surface ? 'its membrane' : 'inside'}`))
+    const fib = C.find((c) => c.id === 'scene.fiber'), fibOk = enabled(fib)
+    const p = placedOf(n), t = targetOf(n)
+    return h('section', { class: 'view scene', 'aria-label': 'prism-me stage (mocked): place' }, box, sceneHead('placing one at a time'),
+      h('div', { class: 'scene-panel', style: 'width:340px', 'aria-label': 'Place' },
+        h('h3', {}, 'Place · ', h('span', { class: 'mono' }, shown(n))),
+        h('div', { class: 'note' }, `${surface ? 'On the membrane of' : 'Inside'} ${comp.name} (${comp.geom_type}). Placed ${p} · target ${t || '—'}${state.scene.targets.has(n.id) ? ' (typed this session)' : ''}.`),
+        ok === true ? null : h('div', { style: 'padding:0 var(--space-4) var(--space-3);display:flex;flex-direction:column;gap:var(--space-2)' },
+          h('span', { class: 'reason' }, `Cannot place: ${ok}.`),
+          n.pdb ? h('button', { class: 'button link', style: 'align-self:flex-start;text-align:left;white-space:normal;overflow-wrap:anywhere', onclick: () => setFocus([comp.id]) }, `Point at ${comp.name} to give it a shape`)
+            : h('button', { class: 'button link', style: 'align-self:flex-start', onclick: () => run(C.find((c) => c.id === 'structure.find')) }, 'Find a structure…')),
+        ok !== true ? null : h('div', { style: 'padding:0 var(--space-4) var(--space-3);display:flex;flex-direction:column;gap:var(--space-2)' },
+          // Where it goes is the recipe's side (§5.7.3 item 4); a fiber goes along a curve.
+          h('div', { class: 'segmented', role: 'group', 'aria-label': 'Where to place' }, h('button', { 'aria-pressed': 'true', title: 'The recipe’s side for this ingredient' }, surface ? 'On the membrane' : 'Inside'), h('button', { 'aria-pressed': 'false', 'aria-disabled': fibOk === true ? null : 'true', title: fibOk === true ? 'Along a curve' : fibOk }, 'Along a curve')),
+          fibOk === true ? null : h('span', { class: 'reason' }, `Along a curve: ${fibOk}. A fiber is drawn as a curve of points; the recipe keeps the curve.`),
+          axisUnset ? h('div', { class: 'problem' }, h('b', {}, '●'), h('span', {}, 'No principal axis: placed upright (the membrane normal) until it is set. ', h('button', { class: 'button link', onclick: () => run(C.find((c) => c.id === 'structure.orient')) }, 'Orient from OPM…'))) : null,
+          h('span', { class: 'muted' }, surface ? 'Click places one; drag turns it about the normal; Esc stops. Each placement is one undo step in prism-me.' : 'Click places one inside, kept off the membrane; drag turns it; Esc stops. Each placement is one undo step in prism-me.'))),
+      syncChip(),
+      h('div', { class: 'glass toolbar', role: 'toolbar', 'aria-label': 'Place tools (prism-me)' }, paintTool, placeTool,
+        sep(), h('button', { class: 'tool', 'aria-pressed': 'true', title: surface ? 'Snap to the membrane' : 'Keep inside the compartment' }, surface ? 'Snap to membrane' : 'Keep inside'), h('button', { class: 'tool', title: 'Frame (F)' }, '⤢')))
+  }
+  const VIEW_RENDER = { recipe: recipeView, table: tableView, ingredient: ingredientView, scene: sceneView, paint: paintView, place: placeView }
 
   // ---- the inspector (README §5.2) ------------------------------------------------------------------------------
   let inspEl
@@ -552,6 +795,16 @@
     for (let p = parentOf(n); p; p = parentOf(p)) path.unshift(p)
     return h('div', { class: 'insp-crumbs' }, path.map((p, i) => [i ? ' › ' : '', h('a', { href: '#', onclick: (e) => { e.preventDefault(); setFocus([p.id]) } }, p.name)]))
   }
+  /** The inspector's Use the placed count (§5.7.4): this ingredient only; Scene › Write the placed counts does them all. */
+  function useFocusCount(n) {
+    const k = placedOf(n)
+    const ok = k ? true : 'None of it placed yet'
+    const b = h('button', { class: 'button', title: ok === true ? `Write ${k}, the placed count, as the recipe’s count of ${shown(n)} (one step)` : ok, 'aria-disabled': ok === true ? null : 'true', onclick: () => {
+      if (ok !== true) return
+      n.count = k; state.scene.targets.delete(n.id); listeners.forEach((f) => f())
+    } }, 'Use the placed count')
+    return ok === true ? b : h('span', { class: 'with-reason' }, b, h('span', { class: 'reason' }, ok))
+  }
   function ingredientInspector(n) {
     const p = problems(n)
     const sectionsOpen = state.inspectorOpen || ['Amount', 'Structure']
@@ -560,6 +813,12 @@
       h('div', { class: 'insp-head' }, h('div', { class: 'insp-kind' }, `Ingredient · ${n.side} · ${n.ingtype}`), h('div', { class: 'insp-name' }, n.name), crumbs(n)),
       h('div', { class: 'insp-body' },
         p.length ? h('div', { class: 'section' }, h('div', { class: 'content', style: 'padding-top:12px' }, p.map((x) => h('div', { class: 'problem' }, h('b', {}, x.level === 'danger' ? '●' : x.level === 'info' ? 'i' : '●'), h('span', {}, x.text, ' · ', h('button', { class: 'button link', onclick: () => run(C.find((c) => c.id === x.fix)) }, x.fix === 'structure.find' ? 'Find…' : x.fix === 'recipe.dataDirectory' ? 'Use a local copy…' : x.fix === 'structure.orient' ? 'Orient…' : 'Set')))))) : null,
+        state.scene ? section('In the scene', o('In the scene'), `${placedOf(n)} placed`,
+          field('Placed', h('span', { class: 'mono' }, `${placedOf(n)} in prism-me`)),
+          field('Target', h('span', { class: 'mono' }, targetOf(n) ? `${targetOf(n)}${state.scene.targets.has(n.id) ? ' (typed this session)' : ''}` : '— (count and molarity 0)')),
+          field('Goes', paintable(n) === true ? h('span', {}, `${n.side === 'surface' ? 'on the membrane of' : 'inside'} ${parentOf(n).name}`) : h('span', { class: 'reason' }, paintable(n))),
+          h('div', { class: 'actions' }, btn('Paint (B)', 'scene.paint'), btn('Place (P)', 'scene.place'), useFocusCount(n)),
+          h('span', { class: 'muted' }, 'The count is the recipe’s; the placed number is the scene’s. Neither overwrites the other unless you say so.')) : null,
         section('Amount', o('Amount'), n.count ? `${n.count} copies` : 'not set',
           field('Count', h('div', { class: 'row' }, input(n.count), h('span', { class: 'muted' }, 'copies'))),
           field('Molarity', h('div', { class: 'row' }, input(n.molarity), h('span', { class: 'muted' }, 'M'))),
@@ -604,7 +863,9 @@
     return [
       h('div', { class: 'insp-head' }, h('div', { class: 'insp-kind' }, 'Focus'), h('div', { class: 'insp-name' }, `${ns.length} items`), h('div', { class: 'insp-crumbs' }, ns.map((n) => n.name).join(', '))),
       h('div', { class: 'insp-body' }, section('Together', true, '', h('span', { class: 'muted' }, 'Edits here apply to every item in the Focus.'), field('Count', input('mixed')), field('Colour', input('mixed')),
-        h('div', { class: 'actions' }, btn('Add interaction', 'edit.addInteraction', true), btn('Delete', 'edit.delete'))))]
+        h('div', { class: 'actions' }, btn('Add interaction', 'edit.addInteraction', true), btn('Delete', 'edit.delete'))),
+        state.scene && brushOf() ? section('In the scene', true, '', field('Brush', h('span', {}, h('span', { class: 'mono' }, shown(brushOf())), ', the last pointed at')),
+          notPainted() ? h('span', { class: 'muted' }, `+${notPainted()} more in the Focus, not painted. ⌥-click an instance, or a row, to paint another.`) : null) : null)]
   }
   function renderInspector() {
     if (!inspEl) return
@@ -667,6 +928,11 @@
       Object.assign(state, { views: cfg.views || ['recipe'], split: cfg.split || 'rows', filter: cfg.filter || 'all', editMode: !!cfg.editMode, page: cfg.page || null, inspectorOpen: cfg.inspectorOpen || null })
       state.focus = (cfg.focus || []).map((name) => byName(name)).filter(Boolean).map((n) => n.id)
       state.card = cfg.card === 'structure' ? structureCard : null
+      // The scene's side (README §5.7): mocked placed counts and session targets, keyed by name (unique ones) or id.
+      const ids = (o) => new Map(Object.entries(o || {}).map(([k, v]) => [(R.byId.get(k) || byName(k) || {}).id, v]).filter(([k]) => k))
+      state.scene = cfg.scene ? { mode: cfg.scene.mode || null, placed: ids(cfg.scene.placed), targets: ids(cfg.scene.targets), log: cfg.scene.log || [], unfolded: new Set(), strokes: (cfg.scene.log || []).length, last: null, palette: cfg.scene.palette !== false } : null
+      // A session target is the recipe's count (§5.7.3): write it there, so the problems, Amount and the Table agree.
+      if (state.scene) for (const [id, v] of state.scene.targets) R.byId.get(id).count = v
       renderAll()
       if (cfg.palette) openPalette(cfg.palette)
     },

@@ -8,8 +8,8 @@ no network; `?theme=dark` for dark). Screenshots: `web/design/mockups/screenshot
 
 Pinned references: Stories Untold `/Users/ludovicautin/Dev/stories-untold` at `5f4cf8dc`; Mol\* v6 Prism
 `~/Developments/molstar` at `c1b8ecb`; MolViewStories `~/Developments/mol-view-stories` at `7c33489`; this repo at
-`web-modernization` `a291338`. Paths below are relative to those roots (`SU:`, `molstar:`, `MVS:`); web sources were
-fetched on 2026-11-04.
+`web-modernization` `a291338`; prism-me `~/molstar-prism-me/apps/prism-me` at `a1126e871` (§5.7). Paths below are
+relative to those roots (`SU:`, `molstar:`, `MVS:`, `me:`); web sources were fetched on 2026-11-04.
 
 ## 1. The request, read
 
@@ -231,7 +231,7 @@ depth colours: a warm accent stands out where a blue one would not, as legacy's 
 
 | Region | Job | Contents |
 | --- | --- | --- |
-| Top bar | where you are, everything reachable | brand; menus Recipe, Edit, View, Structure, Help (from the commands); the recipe's name, unsaved dot, size and file; ⌘K search; theme; help |
+| Top bar | where you are, everything reachable | brand; menus Recipe, Edit, View, Structure, Scene, Help (from the commands); the recipe's name, unsaved dot, size and file; ⌘K search; theme; help |
 | Column (left, 260 px) | the recipe as a document | tabs Recipe and Interactions; a filter field; chips All, Needs attention *n*, Surface, Interior, Fibers; the outline: compartments (reading face, depth swatch), their surface and interior groups, ingredients (swatch, name, count, problem dot) |
 | Stage (centre) | one or two views of the recipe | tabs Recipe view, Table, Ingredient, Scene; ⇧-click a second tab to split, one over the other or side by side; each view's options float over it (glass, Prism) |
 | Inspector (right, 340 px) | the Focus, edited | header (kind, name, breadcrumb to its compartments), problems with fixes, folding sections; for a card (Find a structure), the card in its place |
@@ -269,10 +269,11 @@ whole shell.
 
 ### 5.4 Commands, menus, keys
 
-- The registry (`web/design/mockups/mock.js` `C`): about 60 commands in six categories, Recipe, Edit, View, Focus,
-  Structure, Help. Each: id, title, category, key, `when` (true, or the reason it cannot run), and what it opens.
+- The registry (`web/design/mockups/mock.js` `C`): about 70 commands in seven categories, Recipe, Edit, View, Focus,
+  Structure, Scene (build and paint in prism-me, §5.7), Help. Each: id, title, category, key, `when` (true, or the reason it cannot run), and what it opens.
 - **Menus** are the categories, built from the registry: Recipe (new, open, append, examples, import, export, with an
-  LLM), Edit, View (stage views, arrangements, panels, Focus), Structure, Help. The top bar's menus replace Load, Save,
+  LLM), Edit, View (stage views, arrangements, panels, Focus), Structure, Scene (paint, place, curve, erase; fill and
+  settle greyed; the scene over the Table, write the placed counts, open the scene in prism-me), Help. The top bar's menus replace Load, Save,
   Workspace, Layout Options and Skills (§7).
 - **⌘K** (and ⇧⌘P) opens the palette anywhere: recent commands, then matches by category, then "Go to" ingredients
   matched by name, PDB or UniProt; rows show the key or the reason they cannot run. Commands act on the Focus.
@@ -280,10 +281,10 @@ whole shell.
   (its name as the header: Rename, Set colour, Delete, Find a structure, Open in 3D, Add interaction), from the
   registry, as Stories Untold's stage menu.
 - **Keys** (proposed): 1-4 stage views, ⌘K palette, ⌘O open, ⌘S / ⇧⌘S export, ⌘F find a structure, E edit layout, F
-  frame the Focus, ⌥↑ parent compartment, ⌘' next problem, F2 rename, ⌫ delete, Esc innermost first (palette, menu,
-  card, then the Focus), ? shortcuts.
-- **Single-key shortcuts** (1-4, A, E, F, ?) follow WCAG 2.1.4 (Level A, "Character Key Shortcuts"): they fire only
-  with no modifier and not while a field, select or text area has the keyboard, and Settings › Keyboard turns them
+  frame the Focus, ⌥↑ parent compartment, ⌘' next problem, F2 rename, ⌫ delete, B paint, ⇧B erase, P place (§5.7), Esc
+  innermost first (palette, menu, card, paint or place mode, then the Focus), ? shortcuts.
+- **Single-key shortcuts** (1-4, A, B, ⇧B, E, F, P, ?) follow WCAG 2.1.4 (Level A, "Character Key Shortcuts"; ⇧B
+  and ? are character keys too, upper case and a symbol): they fire only with no modifier but ⇧ and not while a field, select or text area has the keyboard, and Settings › Keyboard turns them
   off or remaps each one. Modified keys (⌘K, ⌘S, F2, ⌥↑) are not affected. Mockups only draw the keys; the one live
   key, H on screen 1, follows the same rule.
 - **Arrangements** replace the presets: Overview (Recipe view beside the Ingredient view; was Default), Build (Recipe view
@@ -313,6 +314,161 @@ whole shell.
   and why on the Open page.
 - **Not built / cannot run**: greyed with the reason (P7).
 - **Unsaved**: a muted ink dot beside the recipe's name; leaving asks once.
+
+### 5.7 Build and paint
+
+Painting and placing ingredients into a scene happen in prism-me, the full-model view; Mesoscope keeps the recipe; the
+two stay in sync (Ludovic, 2026-11-05). This section is the sync contract between them. Screens 10-12 (§10).
+Citations: legacy `extras/gpuphysics/main_physics.js` as `gp:`, `js/` files by name; prism-me
+`~/molstar-prism-me/apps/prism-me` at `a1126e871` as `me:` (its `_spec/` and `plans/`). Legacy is read for *what* the
+builder did, not how: its physics is not ported (D11).
+
+#### 5.7.1 What legacy's builder did
+
+- **Hand-off: one push, on a button, into shared objects.** The Preview button calls
+  `GP_initFromNodes(graph.nodes,128,10,false)` (`js/layout_mg.js:505`): the builder takes the recipe's live node
+  objects, with no copy, and rebuilds on each press (`gp:3246-3278`). The builder wrote into those nodes: a
+  compartment's default ball into its `pos`/`radii` (`gp:663-666`), a fiber's `curves` reset and rewritten
+  (`gp:942-948`), a metaball moved with the gizmo into its compartment's `pos` (below). Hence one writer per fact
+  (§5.7.2).
+- **Compartments as meshes.** Every compartment gets a mesh (`gp:825-828`: the test `children !== null` holds for a
+  d3 leaf too, whose `children` is undefined), marching cubes over its
+  metaballs (`GP_createOneCompartmentMesh`, `gp:652-731`); one with no metaball positions got one 500 Å ball
+  (`gp:663-666`).
+- **Distribute by count.** The count is molarity × the compartment's volume (`gp:784-787`, `js/util.js:566`), else the
+  count (`gp:800`), and only a count of -1 draws a random 1..`copy_number` (`gp:802`). Only `raw` and `sphere`
+  geometries and no map (EMD, `.map`) are distributed (`gp:915-920`).
+- **Fibers.** A fiber's count is its number of fibers (`gp:927`), each a lattice walk of `tlength` segments of
+  `ulength` within `angle` (`gp:929-931`, `GP_walk_lattice` `gp:1345`), or its `curves` from a file (`gp:933`).
+- **Placed instances.** An ingredient with `results` is drawn from them instead (`gp:963`); a loaded packed model
+  becomes `results` (positions, rotations) per ingredient and `curves` (points) per fiber
+  (`cp_LoadGoodsellPDBModel`, `js/cp_serialized.js:1340, 1407-1422`); a recipe with `results` opens its model in Mol\*
+  (`js/main.js:1482-1489`).
+- **Orientation ignored.** Surface bodies are added with up `0,0,1` and offset `0,0,0`, not the principal axis
+  (`gp:754-756, 772-773`).
+- **Reshaping a compartment was live.** `init` sets the container's `onmousedown` to `GP_onDocumentMouseDown`
+  (`gp:2433-2436`; `init(false)` runs on the first Preview, `gp:3272`). With the GUI toggle `renderSMB` on (off by
+  default, `gp:3008, 3137`) a click on a compartment's metaball attaches a gizmo to it (`gp:3526-3543`); moving it
+  writes the ball's position into `gp_nodes[comp].data.pos[0].coords`, the recipe's shared node, and rebuilds the
+  mesh (`gp:2666-2677`). Only a duplicate document-level listener is commented out (`gp:3568`).
+- **Export for cellPAINT**: the recipe and its sprites (`index.html:573, 575`), not the scene.
+
+#### 5.7.2 What lives where
+
+| Thing | Owner | The other app holds |
+| --- | --- | --- |
+| The recipe: compartments, ingredients, structures, beads, colours, counts, molarity | Mesoscope | a read-only copy (the palette, the meshes) |
+| A target per ingredient (molarity × volume, else count) | Mesoscope | it, shown against the placed count |
+| Compartment meshes in the scene | prism-me, built from the recipe's geometry | the geometry (`geom_type`, metaballs) |
+| Placed instances (position, rotation), drawn curves | prism-me | the placed count per ingredient; the instances only on export (§5.7.4) |
+| The camera, clips, labels, representations | prism-me | nothing |
+| The Focus | both, mirrored (§5.7.5) | |
+| Physics (settle, fill to targets) | prism-me, rebuilt there | nothing |
+| Topology, UniProt mapping | Mol\* v6 Prism (§9) | |
+
+*Why:* each fact has one writer, as in Prism ("No third copy", §2.2); the scene is prism-me's model, its operations
+the only writers (`me:_spec/README.md:31-32`); the recipe is the document Mesoscope edits and exports.
+
+#### 5.7.3 Recipe → scene
+
+1. **Identity is the path, not the index or the name.** An ingredient is keyed by its compartment path, side and name
+   (`HIV.HIV1_envelope_Pack_145_0_2_0`, surface, `HIV1_ENV_4nco_0_1_1`). *Why:* HIV has four names twice (§5.3);
+   prism-me's colour import matches a bare name and does not check the path (`me:_spec/features.md:135-137`);
+   cellVIEW's index-keyed parameters misread a changed recipe (`me:_spec/cellview.md:165-168`); the serialized
+   `ingredient_id` is an index (0-25 in HIV), so it shifts on insert. Rename and move are sent as old path → new path.
+2. **Compartments become meshes**, from their geometry: `mb` from the metaballs, `sphere`, `file`, `raw` as given. A
+   compartment with `geom_type` None has no mesh, and nothing is painted on or in it until it has a shape: shown greyed
+   with that reason (P7), with a fix that opens its Geometry. *Why:* legacy drew a 500 Å ball for a compartment
+   with no metaballs (`gp:663-666`), a shape the recipe never said; HIV's two capsid compartments are None with no
+   metaballs (its envelope is `mb`, one ball of radius 725), so CA_mono and the five ingredients inside them wait
+   (screen 10).
+3. **Ingredients become the palette**, by compartment and side, each with its colour (the recipe's, else the Scene
+   view's category colour, §6.2), its placed and target count. Not paintable, greyed with why: no structure; a map
+   (`gp:915-919`); a compartment without geometry.
+4. **The brush paints the Focus.** Clicking a palette row points at the ingredient (P1); there is no second "current
+   ingredient". Surface ingredients go on their compartment's membrane, interior ones in its volume, fibers along a
+   curve (§5.7.4). With several ingredients in the Focus (proposal) the brush paints one, the last pointed at, and
+   says so: its label names it and "+1 more in the Focus, not painted" (the inspector's In the scene too). In paint
+   mode a plain click on the stage paints; ⌥-click on an instance points at its ingredient (a replacing pick),
+   ⇧/⌘-click adds it to the Focus, and Esc leaves paint mode for plain picking. *Why:* one brush, one ingredient per
+   stroke, as the placed count it sends back is per ingredient; a click in paint mode cannot also be a pick.
+5. **Targets are the recipe's**, in legacy's order (`GP_GetCount`, `gp:782-804`): molarity × the compartment's volume
+   when the molarity is not 0 (`gp:784-787`, `js/util.js:566`), else the count (`gp:800`). None is shown as "—",
+   never a random number (legacy's -1 rule, `gp:802`, is not kept: a departure, proposed). Beads are the collision
+   templates (the physics plan's "2–10 spheres from the target's coarse model", `me:plans/2026-11-05-physics-eval.md:93`).
+6. **Orientation is the recipe's.** A surface ingredient is placed along its principal axis and offset; with none
+   (0,0,0, all six of HIV's) it goes upright, the membrane normal, and its problem stays shown (P5) with Orient from
+   OPM (screen 11). *Why:* legacy ignored the axis (`gp:754-756`); an upright default is visible and fixable.
+
+#### 5.7.4 Scene → recipe
+
+1. **Placed counts come back, not instances.** Per ingredient path, the number placed in prism-me. It is shown beside
+   the target (palette, Table "In the scene", inspector "In the scene"), never written into `count` unless asked:
+   Scene › Write the placed counts as the recipe's counts, for every ingredient, or the inspector's Use the placed
+   count, for the ingredient in the Focus only (each one step in Mesoscope). *Why:* a target and a result are
+   different facts; legacy kept them apart too (`count` vs `results`, `gp:963`).
+2. **Over target is shown, not corrected**: the number and its meter in the warning colour; nothing is removed.
+3. **New instances live in prism-me**, in a drawn layer apart from a loaded model: the physics plan's L1 "a separate
+   small list for 'drawn' instances, kept apart from the big static list" (`me:plans/2026-11-05-physics-eval.md:92`).
+   Exported with the recipe as `results` per ingredient, legacy's field (`js/cp_serialized.js:949, 1410-1422`), when
+   the recipe is exported for cellPACK; its shape is open (§9: legacy has two).
+4. **Fibers are curves.** A drawn fiber is a curve of points; it comes back as the fiber ingredient's `curves` (points,
+   `tlength` = their number, `ulength` = their spacing), as legacy read them (`js/cp_serialized.js:1395-1407`); the
+   fiber's count is its number of curves (`gp:927`).
+5. **Compartment shapes do not come back** (proposal, a departure from legacy; Ludovic's to decide, §9): they are
+   edited in the recipe (§5.2). Legacy let you move a metaball in the scene, behind the `renderSMB` toggle, and wrote
+   it into the recipe's node (§5.7.1, `gp:2666-2677`). *Why proposed:* one writer per fact (§5.7.2); a shape edited in
+   prism-me would be a second writer of the recipe's geometry.
+
+#### 5.7.5 The Focus, both ways
+
+New design (proposal), from P1 and §5.3; prism-me's side as its spec has it.
+
+- Mesoscope's Focus (paths) is sent to prism-me as its pick of those entities; a pick in prism-me (a particle picks its
+  entity's row, `me:_spec/ui.md:101-104`) comes back as the Focus of that ingredient, not of the instance. Additive
+  picks (⇧, ⌘, Ctrl) add, as everywhere (§5.3).
+- Hover is not sent: it changes nothing (§5.3) and would cost a message per pointer move.
+- A compartment in the Focus picks its mesh; the recipe root picks nothing.
+
+#### 5.7.6 Undo across both
+
+- **An action is undone where it was made.** A stroke, a placement, an erase is one step in prism-me (each top-level
+  operation is one undo step there, `me:_spec/architecture.md:102-104`; a drag previews outside the state and commits once on
+  release, `:88-90`). The placed count Mesoscope shows follows it and is not a Mesoscope step.
+- A recipe edit is one step in Mesoscope (when it has undo, §9); its effect on the scene (palette, target, colour) is
+  applied in prism-me without a step there.
+- Write the placed counts (all) or Use the placed count (the Focus) is a Mesoscope step; undoing it leaves the scene
+  as it is.
+- *Why:* one history per app, each with its own writer (§5.7.2); a shared history across two apps is not proposed.
+
+#### 5.7.7 Conflicts: an ingredient edited after it was painted
+
+New design (proposal), from P5 (problems sit on the object) and P7; each prism-me change it offers is one step there
+(`me:_spec/architecture.md:102-104`).
+
+| Edit in Mesoscope | Its placed instances |
+| --- | --- |
+| Rename, move to another compartment | kept: the path change is sent (§5.7.3) |
+| Structure or beads changed | kept, drawn with the new structure; a problem "placed with the previous structure: Settle to fix overlaps" (P5) |
+| Surface ↔ interior | kept where they are, flagged "placed on the membrane, now interior", with Re-place (P5) |
+| Principal axis set | kept; "Re-orient the 38 placed" offered, one step in prism-me |
+| Target lowered under the placed count | kept; over target shown (§5.7.4) |
+| Deleted | the delete asks once: "38 placed in the scene: delete them too, or keep them as unassigned" |
+| Compartment geometry changed | instances outside the new shape flagged, not moved |
+
+Nothing in the scene is deleted or moved silently by a recipe edit. *Why:* painting is work by hand; P5's "problems
+sit on the object" applies to instances too.
+
+#### 5.7.8 Live or on save
+
+Open (§9): live, both ways, while both are open; or on save, through files. The screens show live. Either way the
+contract above holds; only when the counts and the Focus arrive differs.
+
+#### 5.7.9 Not in this design
+
+Physics (Settle, Fill to targets): prism-me's bead solver, not built (greyed with why, P7); it gives non-overlap, not
+dynamics, and is not presented as simulation (`me:plans/2026-11-05-physics-eval.md:109-110`). Grid- or count-driven
+automatic packing (cellPACK itself) stays outside both apps.
 
 ## 6. The design system
 
@@ -440,7 +596,7 @@ first cell is checked by `check.mjs` against the code; "command" is the registry
 | Load › Setup Data Directory (PDB, geoms) | Recipe › Set the data directory…, greyed: "a local data server"; offered beside a structure file ("Use a local copy…") | `recipe.dataDirectory` | placeholder today |
 | Save › cellPACK/cellPAINT recipe | Recipe › Export for cellPACK / cellPAINT (.json), ⌘S | `recipe.export.cellpack` | "Save" becomes "Export": the app holds the recipe; files are exports |
 | Save › cellPACK-gpu recipe | Recipe › Export for cellPACK-gpu, ⇧⌘S | `recipe.export.gpu` | |
-| Save › cellPAINT recipe and sprites (.zip) | Recipe › Export for cellPAINT with sprites, greyed: "sprite export" | `recipe.export.paintZip` | placeholder today |
+| Save › cellPAINT recipe and sprites (.zip) | Recipe › Export for cellPAINT with sprites, greyed: "sprite export" | `recipe.export.paintZip` | placeholder today; painting itself is prism-me's (§5.7) |
 | Save › Spreadsheet CSV | Recipe › Export as a spreadsheet (.csv) | `recipe.export.csv` | |
 | Save › Color palette | Recipe › Export the colour palette | `recipe.export.palette` | |
 | Save › Color mapping | Recipe › Export the colour mapping, greyed | `recipe.export.mapping` | placeholder today |
@@ -507,6 +663,9 @@ first cell is checked by `check.mjs` against the code; "command" is the registry
 | Help, FAQ, About, Contact, Settings (parity §6, missing) | Help menu; Settings page |
 | Grid context menu "Search PDB using name / label / uniprot / alphafold" (`index.html:483-489`) | Find a structure, with its filter chips |
 | Node "resize" (`index.html:671-676`) | inspector Appearance (open) |
+| GPU builder: Preview (`js/layout_mg.js:505`), compartment meshes, distribute by count, fibers (`extras/gpuphysics/main_physics.js`, parity §5) | Scene › Paint, Place, Draw a fiber along a curve, Erase (`scene.paint`, `scene.place`, `scene.fiber`, `scene.erase`), in prism-me (§5.7, screens 10-11) |
+| GPU builder physics (gp.js) | Scene › Fill to the targets, Settle (`scene.fill`, `scene.settle`), greyed: prism-me's bead solver, not built (§5.7.9) |
+| Builder "Load Model" (`js/layout_mg.js:506`); a recipe's `results` (`js/main.js:1482-1489`) | prism-me opens the model; placed counts in the Table and inspector "In the scene" (§5.7.4, screen 12); Scene › Write the placed counts as the recipe's counts (`scene.useCounts`, every ingredient); inspector › In the scene › Use the placed count (the Focus only) |
 | Spreadsheet XL export (commented out) | not proposed |
 
 ## 8. Decisions for Ludovic
@@ -531,6 +690,18 @@ Each is a proposal; confirm or reject.
 - **D9. One Find-a-structure card** for PDB, UniProt and AlphaFold instead of two search tables.
 - **D10. Dark Recipe view ramp**: the depth ramp runs from the canvas toward a light slate in dark, a proposal beside
   recipe-view.md §10.3 (which fixes only the background).
+- **D11. Build and paint in prism-me** (decided, Ludovic, 2026-11-05): painting and placing happen in prism-me, the
+  full-model view; Mesoscope keeps the recipe and syncs with it (§5.7). Legacy's GPU physics
+  (`extras/gpuphysics/main_physics.js`, gp.js, three.js r113) is not ported: it is old and does not run properly; the
+  physics is rebuilt in prism-me later. Topology and UniProt mapping come from Mol\* v6 Prism (§9).
+- **D12. The sync key is the ingredient's path** (compartment path, side, name), with renames sent as old → new; not
+  the serialized `ingredient_id` (an index) nor the bare name (HIV repeats four) (§5.7.3).
+- **D13. A placed count never overwrites the recipe's count** on its own: shown beside it, written only by Scene ›
+  Write the placed counts as the recipe's counts (all) or the inspector's Use the placed count (the Focus) (§5.7.4).
+- **D14. A compartment without geometry (None) is not painted on or in** until it has a shape, instead of legacy's
+  500 Å ball; HIV's capsid shows it (§5.7.3, screen 10).
+- **D15. No silent change to painted work**: a recipe edit flags placed instances (P5) and asks before deleting them
+  (§5.7.7).
 
 ## 9. Open, and constraints
 
@@ -550,6 +721,42 @@ Each is a proposal; confirm or reject.
 - **Compact mode** (phones, narrow windows): not designed; Prism's bottom sheet is the reference.
 - **The Focus in the URL** (open a link on an ingredient): proposed, not designed.
 
+**Build and paint (§5.7): open questions, each with the default proposed.**
+
+For Ludovic:
+- **Who owns the counts?** Default: the recipe's count (or molarity) is the target and Mesoscope's; the placed count
+  is the scene's, shown beside it; the recipe changes only on Write the placed counts or Use the placed count (D13).
+- **Live sync or on save?** Default: live while both are open, for the Focus, the palette and the placed counts (small
+  messages; the screens show this); instances never cross live. On save as the fallback: the recipe exported with
+  `results` and `curves` (§5.7.4) and opened by the other app.
+- **Are placed instances part of the recipe?** Default: no; they live in prism-me's session, and Export for cellPACK
+  offers "with the placed instances" to write `results` and `curves` (legacy's fields).
+- **Compartment shapes edited in the scene?** Legacy did it: a metaball moved with a gizmo, behind the `renderSMB`
+  toggle, written into the recipe (§5.7.1). Proposed default: no, in the recipe only (§5.7.4, item 5), a departure
+  from legacy; if kept, prism-me sends the moved metaball back as a recipe edit (one step in Mesoscope).
+- **A deleted ingredient's instances:** default: ask once, delete them or keep them unassigned (§5.7.7).
+- **Undo** across both depends on Mesoscope having one (above); until then, a recipe edit made during a paint session
+  cannot be undone, only its effect flagged.
+
+For prism-me:
+- **What it reads.** It opens cellPACK and PetWorld *models* as particles (`me:_spec/features.md:13`,
+  `me:_spec/README.md:15-16`), not recipes. Default: Mesoscope sends what prism-me already reads, compartment meshes
+  (OBJ, PLY, VTP, `me:_spec/features.md:16`) and one entity per ingredient path with its structure, beads and
+  colour, into an empty drawn layer; prism-me does not parse recipes (one parser, Mesoscope's).
+- **Embedded or its own window.** Default: its canvas is Mesoscope's Scene view (P3: the stage stays the stage,
+  Mesoscope's column and inspector serve), and Scene › Open the scene in prism-me opens the whole app. The screens
+  show it embedded; prism-me's spec has one panel and one tree (`me:_spec/ui.md:12-34`), which embedded mode would
+  hide.
+- **The channel.** Default: messages keyed by path (Focus, palette, counts, rename), in one browser; to decide in a
+  spike with prism-me.
+- **The export shape of placed instances** (for Ludovic and prism-me). Legacy's `results` has two shapes: the array
+  read as is from a recipe file (`js/cp_serialized.js:949`), and `{positions, rotations}` built by the model loader,
+  with random rotations (`js/cp_serialized.js:1410-1422`). Legacy's readers gate on `results.length` (`gp:963`,
+  `js/main.js:1485`), so the second shape is skipped by them. Undecided: which shape the export writes (and with what
+  rotations); no default proposed until prism-me's instance format is known.
+- **Draw mode** is the physics plan's L1 (a separate dynamic `ParticleList`, `me:plans/2026-11-05-physics-eval.md:92`);
+  painting needs L1 only, Settle and Fill to targets need L2.
+
 ## 10. Mockups
 
 `web/design/mockups/` (open `index.html`; `?theme=dark` for dark):
@@ -566,8 +773,12 @@ Each is a proposal; confirm or reject.
 | 7 Open and import | `07-open.html` | every way in; `?append=1` for append |
 | 8 First run | `08-first-run.html` | no recipe yet |
 | 9 Commands | `09-palette.html` | ⌘K with "export" typed |
+| 10 Paint | `10-paint.html` | prism-me (mocked): HIV's palette from the recipe, placed / target, the brush on Env; the capsid ingredients greyed (no geometry). Click the stage to paint |
+| 11 Place | `11-place.html` | prism-me (mocked): Env one at a time on the envelope membrane, upright (axis 0,0,0); Along a curve greyed (no fiber in HIV) |
+| 12 Sync | `12-sync.html` | prism-me over the Table: MA and Env in the Focus, the brush paints Env (the last pointed at); a click paints, the Table's In the scene follows; the Focus mirrored; what came back from prism-me |
 
-Also live on screens 1-3: the column's Interactions tab (empty for HIV, which has none: the empty state names the way
+On screens 10-12 the placed counts are mocked and two targets (Env 72, MA 100) are typed for the session: HIV's file
+has count and molarity 0 for all 26. Also live on screens 1-3: the column's Interactions tab (empty for HIV, which has none: the empty state names the way
 in) and the context menu (right-click an outline row, a Recipe view circle or a Table row).
 
 Shared: `tokens.css` (§6), `mock.css`, `mock.js` (the command registry, the Focus, the views), `shared-pages.js`,
