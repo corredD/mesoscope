@@ -12,6 +12,12 @@ each legacy feature stands: `_spec/parity.md`.
    field by field after the round trip, and against the oracles in `tests/fixtures/recipe-view-oracle/`; a list of
    every lost or changed field, each marked format addition (David), accepted loss (Ludovic) or import fix. No UI.
    Numbered 0 so the item numbers PR #51 §11 cites stay valid.
+   **Waits for MesoViewSpec to finish** (Ludovic, 2026-11-09), as does the item below.
+   - **Stories: the ingredient table and the recipe schematic in Prism's Storybook** (lane `mesoscope-stories`, in
+     prism-me). Both views on a small view-model (tree rows, schematic nodes and links) that a recipe feeds now and a
+     MesoViewSpec document later; the schematic is `web/`'s canvas as a React island, the table rebuilt on prism-ui's
+     virtual list. Check: Mesoscope › Recipe schematic and › Ingredient table with HIV and hivfull, light, dark and
+     compact, against mockup screens 02 and 03.
 1. **Mol\* v6 spike.** Render one PDB in `web/` with the Prism viewer from `~/Developments/molstar` (not on npm):
    decide how `web/` consumes it (built packages linked, or the single-file `prism-viewer.js`). Check: a structure
    shows in a panel, build and e2e pass.
