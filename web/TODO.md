@@ -6,6 +6,12 @@ each legacy feature stands: `_spec/parity.md`.
 
 ## Next
 
+0. **Round trip: legacy recipe → MesoViewSpec document → recipe.** Mesoscope is the authoring tool for MesoViewSpec;
+   the recipe is imported and exported (Ludovic, 2026-11-09; PR #51 D11, `_spec/architecture.md` §13). Against
+   `me/mesoviewspec` at a pinned commit (its cellPACKgpu reader). Check: each serialized example in `data/` diffed
+   field by field after the round trip, and against the oracles in `tests/fixtures/recipe-view-oracle/`; a list of
+   every lost or changed field, each marked format addition (David), accepted loss (Ludovic) or import fix. No UI.
+   Numbered 0 so the item numbers PR #51 §11 cites stay valid.
 1. **Mol\* v6 spike.** Render one PDB in `web/` with the Prism viewer from `~/Developments/molstar` (not on npm):
    decide how `web/` consumes it (built packages linked, or the single-file `prism-viewer.js`). Check: a structure
    shows in a panel, build and e2e pass.
