@@ -14,6 +14,8 @@ then switch to Model and build and look at the mesoscale model, with one Focus, 
   and was never pushed.
 - `web:` is `web/src` at `39175ca`.
 - `pr50:` is `origin/lane/builder-mockup:web/_spec/design/README.md`.
+- `mvs:` is `packages/mesoscale/_spec` on `me/mesoviewspec` `1f4b10dad` (worktree `~/prism-me-lanes/mesoviewspec`,
+  local only).
 
 **Evidence labels.**
 - **[run]**: seen while the prototype ran (port 5183; screenshots in `architecture/1-4`).
@@ -32,6 +34,8 @@ then switch to Model and build and look at the mesoscale model, with one Focus, 
      handling.
    - The cost falls mostly on the UI chrome. The Recipe canvas drawing and most of the domain code carry over; the parts that mutate the recipe or hold the
      cyclic graph are reworked for the custom state (§3.4, §5).
+   - **Superseded in part by §13 (Ludovic, 2026-11-09):** the authored model is a MesoViewSpec document, not a
+     recipe held as custom state. D4 and D6 give way to D11; the rest of this recommendation stands.
 2. **These would change my mind:**
    - **Churn.** prism-me's or Prism's churn breaks the extension more often than once a week during the first month of
      lanes. An extension has no stability promise outside its repository (§4.1).
@@ -338,11 +342,14 @@ Lines in `web:`, TS/TSX not counting tests, total 9,424; CSS separate.
 
 ## 9. Staged path
 
+0. **Stage 0, the round-trip spike (§13.4).** Before any port: legacy recipe → MesoViewSpec document → recipe,
+   diffed against the oracles. Its result sizes stages 2 and 3.
 1. **Stage 1, the next mockup round.** Two workspaces in one shell: Recipe (page) and Model (stage). Mockups on
    prism-ui with the Focus, ⌘K and Esc. No `web:` change.
 2. **Stage 2, a port lane.** A `mesoscope` extension package:
    - `domain/` copied as is, with `.js` endings;
-   - the recipe as custom state with undoable operations;
+   - the recipe as custom state with undoable operations (superseded by §13: the extension edits the open
+     MesoViewSpec document by patches, and the recipe is imported and exported);
    - the canvas and Table in `reactView`;
    - the outline in prism-ui;
    - a lazy stub.
@@ -359,23 +366,25 @@ Lines in `web:`, TS/TSX not counting tests, total 9,424; CSS separate.
 | D1 | Extension in prism-me, or two apps (PR #50 §5.7). | Extension, staged (§9). |
 | D2 | Where the code and its specs live. | In the molstar-proto prism-me branch, `packages/extensions/mesoscope`, with its `_spec` and its tests (README decision 13). The Mesoscope repo keeps legacy and the oracle capture scripts. |
 | D3 | Which app. | Inside `apps/prism-me` first, as the prototype is. Split to a sibling `apps/mesoscope` only if the defaults conflict (prism-me's "one panel, one tree", `me:_spec/ui.md:7-10`). |
-| D4 | How the recipe is held. | As registered custom state: a plain acyclic tree (no parent or link object references), meshes and other big arrays outside it by key, every write an operation, one undo step (§3.4). Otherwise undo turns off for large recipes. |
+| D4 | How the recipe is held. | **Superseded by D11.** Was: as registered custom state: a plain acyclic tree (no parent or link object references), meshes and other big arrays outside it by key, every write an operation, one undo step (§3.4). Otherwise undo turns off for large recipes. |
 | D5 | View technology. | React 18 islands for the canvas, Table and Interactions; prism-ui for the chrome. Drop Radix Themes and dockview. |
-| D6 | Identity between the recipe and the model. | The ingredient path, written into the model the extension builds; matching by name only for published models (§3.6). |
+| D6 | Identity between the recipe and the model. | **Superseded by D11** (the document's ids; the recipe path is kept on import, `mvs:format.md:53-54`). Was: the ingredient path, written into the model the extension builds; matching by name only for published models (§3.6). |
 | D7 | The switch. | App level now (§6); propose `ui.workspaces` to David (§7). |
 | D8 | The Ingredient view. | An embedded second Prism viewer in the Recipe page; prototype it first (§6.6). |
 | D9 | `web/` from now on. | Fixes only. Lanes in flight finish; no new feature lanes. |
-| D10 | PR #50. | Close §5.7 as a two-app contract and move §5.7.1, §5.7.2, §5.7.3-§5.7.5 and §5.7.7 into the extension's spec (§8.2 keeps the one-writer rule, the identity, the conversions, the Focus and the conflict table as extension rules). Merge the rest of its mockups. |
+| D10 | PR #50. | Close §5.7 as a two-app contract and move §5.7.1, §5.7.2, §5.7.3-§5.7.5 and §5.7.7 into the extension's spec (§8.2 keeps the one-writer rule, the identity, the conversions, the Focus and the conflict table as extension rules). Merge the rest of its mockups. With D11, the moved rules are restated as patches to the document (§13.3). |
+| D11 | What Mesoscope authors. | **Decided (Ludovic, 2026-11-09):** a MesoViewSpec document; the cellPACK recipe is a legacy format imported and exported. Mesoscope keeps its own spec, as the authoring spec over MesoViewSpec (§13). |
 
 ## 11. Proposed `web/TODO.md` updates (for the PR body; TODO.md itself is not edited)
 
+0. **New, first (Ludovic, 2026-11-09):** "Round trip: legacy recipe → MesoViewSpec document → recipe" (§13.4).
 1. **Item 1 (Mol\* v6 spike):** replaced by this lane. Prism is consumed as the host, not by `web/`. Remove it if D1
    is "extension".
 2. **Item 2 (Ingredient view):** reword it as "the embedded Prism viewer in the Recipe page", after its prototype (D8).
 3. **Item 3 (Full-scene viewer):** it is the Model workspace. Reword it as "model built from the open recipe, with
    ingredient paths on the entities" (D6, §3.6).
 4. **New, ahead of item 2:** "Two workspaces in one shell", mockups on prism-ui (§9.1).
-5. **New:** "Port lane: the `mesoscope` extension with the recipe as custom state and undo" (§9.2).
+5. **New:** "Port lane: the `mesoscope` extension, authoring the MesoViewSpec document by patches" (§9.2, §13).
 6. **New:** "Upstream: propose `ui.workspaces` to Prism" (§7).
 7. **Items 5 and 8:** reword them for the prism-me build (deploy; lazy stub).
 8. **Items 6, 7 and 9:** move them to the extension's queue as written. **Item 10:** re-read against prism-ui (§6.6).
@@ -394,3 +403,55 @@ Lines in `web:`, TS/TSX not counting tests, total 9,424; CSS separate.
 - duplicate names (§3.6);
 - `web:`'s chrome: the toolbars, the load and save dialogs, `MergeDialog` and `ColumnMappingDialog` were copied but
   not mounted.
+
+## 13. Mesoscope authors MesoViewSpec (D11)
+
+Decided by Ludovic, 2026-11-09: Mesoscope is the authoring tool for MesoViewSpec. It brings the legacy tools and
+features that authoring needs; MesoViewSpec is the document they write.
+
+### 13.1 Why
+
+- **One document, not two.** A recipe beside the document needs a conversion, two undos and identity by name or path:
+  the costs of §3.4 (D4) and §3.6 (D6). The document already has stable ids, patches with inverses and checkpointed
+  undo (`mvs:prism.md` §2, §7), and it already owns the lists it draws (`mvs:prism.md` §1, the `ParticleListOwner`
+  port).
+- **The format already carries most of a recipe** (`mvs:format.md:36-56`): populations with a location (interior,
+  membrane, inner or outer surface) and an abundance (count, concentration, density, volume fraction); relations as
+  constraints (where Interactions go); superstructures; cellPACK principal vectors, membrane offsets and the recipe path
+  of each ingredient; a cellPACKgpu reader that records each import choice as an assumption (`mvs:format.md:109-110`).
+- **The Scene tree, hover, pick and Focus on a document are built** (`mvs:prism.md` §4.1-§4.6, lane `mvs-tree`). The
+  Model workspace reuses them instead of the mirror of §3.5.
+
+### 13.2 Where the design lives
+
+Mesoscope keeps its own spec, beside `mvs:prism.md` ("Prism over MesoViewSpec") as "authoring over MesoViewSpec", in
+`packages/extensions/mesoscope/_spec` (D2). It cites the MesoViewSpec spec and does not redefine the tree, pick, undo or
+ids. *Why:* the MesoViewSpec spec is a library spec whose format changes are David's; authoring screens, legacy parity
+and oracles would put app churn into format review. The precedent is Seq\*: its format, and its editor's own spec in
+the Prism viewer (`prism:viewer/_spec/sequence.md`).
+
+| To the MesoViewSpec design (format changes: David) | Mesoscope's spec |
+| --- | --- |
+| Fields authoring needs and the format lacks: beads and collision templates, per-ingredient packing parameters, compartment geometry inputs, whatever a lossless cellPACK export needs (§13.4 lists them) | The authoring interface: Recipe canvas, Table, Interactions editor, Ingredient view, Paint and Place, what holds of the PR #48 and #50 mockups under D5 |
+| Authoring operations that other tools would share, as patches | Legacy import and export (classic, serialized, `.xlsx`, `.zip`), `parity.md`, the oracle fixtures |
+
+### 13.3 What changes
+
+- **D4, D6:** superseded (§10). No recipe custom state; the cyclic graph and the 13 MB meshes (§3.4, Prices 2 and 3)
+  become an import concern: meshes stay resources by reference (`mvs:format.md` § By value or by reference).
+- **PR #50 §5.7:** the one-writer rule holds with the document as the writer. Recipe → scene and scene → recipe
+  (§5.7.3-§5.7.4) become "an authoring edit is a patch; the runtime draws it"; placed and requested counts are the
+  session's (`mvs:prism.md` §4.1, "354 of 506").
+- **`web/` (D9):** its recipe model is kept as the import and export path and the oracle reference.
+
+### 13.4 First: the round-trip spike
+
+- **Asks:** how much of a recipe survives legacy recipe → MesoViewSpec document → recipe?
+- **Check:** for each serialized example in `data/` (`HIV_serialized.json`, `hivfull_serialized.json` and the
+  others), the round trip diffed field by field against the original, and against legacy's parsed model where an
+  oracle exists (`web/tests/fixtures/recipe-view-oracle/`: HIV, Influenza); every lost or changed field listed with
+  its path. Each is then a format addition proposed to David, a lossy field Ludovic accepts, or an import fix.
+- **Against:** `me/mesoviewspec` at a pinned commit (its cellPACKgpu reader, `mvs:format.md:70`). Not yet checked:
+  whether that reader reads Mesoscope's serialized recipes as they are, or only cellPACKgpu's.
+- **Not in it:** any UI, any port. Its result sizes stages 2 and 3 (§9).
+
